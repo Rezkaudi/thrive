@@ -32,7 +32,7 @@ export class Server {
   private configureMiddleware(): void {
     this.app.use(helmet());
     this.app.use(cors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: process.env.FRONTEND_URL,
       credentials: true
     }));
     this.app.use(compression());
