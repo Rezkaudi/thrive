@@ -5,7 +5,7 @@ export class PaymentController {
   async createPaymentIntent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { amount = 5000, currency = 'jpy' } = req.body; // ¥5000 default
-      
+
       const paymentService = new PaymentService();
       const paymentIntent = await paymentService.createPaymentIntent(amount, currency, {
         description: 'Thrive in Japan LMS Access'
@@ -25,7 +25,7 @@ export class PaymentController {
     try {
       const sig = req.headers['stripe-signature'] as string;
       const paymentService = new PaymentService();
-      
+
       const event = paymentService.constructWebhookEvent(req.body, sig);
 
       if (event.type === 'payment_intent.succeeded') {
@@ -40,4 +40,47 @@ export class PaymentController {
       next(error);
     }
   }
+
+  async createCheckoutSession(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { priceId, mode = 'payment', successUrl, cancelUrl, metadata } = req.body;
+
+      const paymentService = new PaymentService();
+      const session = await paymentService.createCheckoutSession({
+        priceId,
+        mode,
+        successUrl,
+        cancelUrl,
+        metadata,
+      });
+
+      res.json({ sessionId: session.id });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verifyCheckoutSession(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { sessionId } = req.body;
+
+      const paymentService = new PaymentService();
+      const session = await paymentService.retrieveCheckoutSession(sessionId);
+
+      if (!session) {
+        res.status(404).json({ error: 'Session not found' });
+        return;
+      }
+
+      res.json({
+        status: session.payment_status,
+        paymentIntentId: session.payment_intent,
+        customerEmail: session.customer_email,
+        metadata: session.metadata,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
 }

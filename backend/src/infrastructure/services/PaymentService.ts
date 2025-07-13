@@ -67,4 +67,36 @@ export class PaymentService implements IPaymentService {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   }
+  async createCheckoutSession(params: {
+    priceId: string;
+    mode: 'payment' | 'subscription';
+    successUrl: string;
+    cancelUrl: string;
+    metadata?: any;
+  }): Promise<Stripe.Checkout.Session> {
+    const session = await this.stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: params.priceId,
+          quantity: 1,
+        },
+      ],
+      mode: params.mode,
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+      metadata: params.metadata,
+    });
+
+    return session;
+  }
+
+  async retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session | null> {
+    try {
+      const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+      return session;
+    } catch (error) {
+      return null;
+    }
+  }
 }
