@@ -55,37 +55,41 @@ export class LessonRepository implements ILessonRepository {
       entity.order,
       entity.lessonType,
       entity.contentUrl ?? undefined,
+      entity.contentData ?? undefined,
       entity.audioFiles.split(',').filter(f => f),
       entity.resources.split(',').filter(r => r),
       entity.requiresReflection,
       entity.pointsReward,
+      entity.passingScore ?? undefined,
       entity.createdAt,
       entity.updatedAt
     );
   }
 
-private toEntity(lesson: Lesson): LessonEntity {
-  const entity = new LessonEntity();
-  entity.id = lesson.id;
-  entity.courseId = lesson.courseId;
-  entity.title = lesson.title;
-  entity.description = lesson.description;
-  entity.order = lesson.order;
-  entity.lessonType = lesson.lessonType;
-  entity.contentUrl = lesson.contentUrl || null;
-  
-  // Handle audioFiles - ensure it's an array before joining
-  entity.audioFiles = Array.isArray(lesson.audioFiles) 
-    ? lesson.audioFiles.join(',') 
-    : '';
+  private toEntity(lesson: Lesson): LessonEntity {
+    const entity = new LessonEntity();
+    entity.id = lesson.id;
+    entity.courseId = lesson.courseId;
+    entity.title = lesson.title;
+    entity.description = lesson.description;
+    entity.order = lesson.order;
+    entity.lessonType = lesson.lessonType;
+    entity.contentUrl = lesson.contentUrl || null;
+    entity.contentData = lesson.contentData || null;
     
-  // Handle resources - ensure it's an array before joining  
-  entity.resources = Array.isArray(lesson.resources) 
-    ? lesson.resources.join(',') 
-    : '';
-    
-  entity.requiresReflection = lesson.requiresReflection;
-  entity.pointsReward = lesson.pointsReward;
-  return entity;
-}
+    // Handle audioFiles - ensure it's an array before joining
+    entity.audioFiles = Array.isArray(lesson.audioFiles) 
+      ? lesson.audioFiles.join(',') 
+      : '';
+      
+    // Handle resources - ensure it's an array before joining  
+    entity.resources = Array.isArray(lesson.resources) 
+      ? lesson.resources.join(',') 
+      : '';
+      
+    entity.requiresReflection = lesson.requiresReflection;
+    entity.pointsReward = lesson.pointsReward;
+    entity.passingScore = lesson.passingScore || null;
+    return entity;
+  }
 }
