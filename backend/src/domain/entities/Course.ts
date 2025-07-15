@@ -24,5 +24,5 @@ export class Course implements ICourse {
     public isActive: boolean,
     public createdAt: Date,
     public updatedAt: Date
-  ) {}
+  ) { }
 }

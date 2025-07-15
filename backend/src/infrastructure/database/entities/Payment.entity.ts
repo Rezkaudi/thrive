@@ -1,17 +1,12 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { UserEntity } from './User.entity';
 
 @Entity('payments')
 export class PaymentEntity {
   @PrimaryColumn()
   id!: string;
 
-  @Column()
-  userId!: string;
-
-  @ManyToOne(() => UserEntity)
-  @JoinColumn({ name: 'userId' })
-  user!: UserEntity;
+  @Column({ unique: true })
+  email!: string;
 
   @Column({ unique: true })
   stripePaymentIntentId!: string;

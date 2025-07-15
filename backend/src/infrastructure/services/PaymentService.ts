@@ -3,11 +3,13 @@ import { IPaymentService, PaymentIntent } from '../../application/services/IPaym
 
 export class PaymentService implements IPaymentService {
   private stripe: Stripe;
+  private webhookSecret: string;
 
   constructor() {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2025-06-30.basil'
     });
+    this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
   }
 
   async createPaymentIntent(amount: number, currency: string, metadata?: any): Promise<PaymentIntent> {
@@ -60,13 +62,6 @@ export class PaymentService implements IPaymentService {
     });
   }
 
-  constructWebhookEvent(payload: Buffer | string, signature: string): Stripe.Event {
-    return this.stripe.webhooks.constructEvent(
-      payload,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  }
   async createCheckoutSession(params: {
     priceId: string;
     mode: 'payment' | 'subscription';
@@ -86,6 +81,7 @@ export class PaymentService implements IPaymentService {
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
       metadata: params.metadata,
+      customer_email: params.metadata.email
     });
 
     return session;
@@ -95,6 +91,45 @@ export class PaymentService implements IPaymentService {
     try {
       const session = await this.stripe.checkout.sessions.retrieve(sessionId);
       return session;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  constructWebhookEvent(payload: Buffer | string, signature: string): Stripe.Event {
+    if (!this.webhookSecret) {
+      throw new Error('Webhook secret not configured');
+    }
+
+    try {
+      return this.stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        this.webhookSecret
+      );
+    } catch (error: any) {
+      throw new Error(`Webhook signature verification failed: ${error.message}`);
+    }
+  }
+
+  // Add method to retrieve customer
+  async retrieveCustomer(customerId: string): Promise<Stripe.Customer | null> {
+    try {
+      const customer = await this.stripe.customers.retrieve(customerId);
+      if (customer.deleted) {
+        return null;
+      }
+      return customer as Stripe.Customer;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Add method to retrieve subscription
+  async retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription | null> {
+    try {
+      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      return subscription;
     } catch (error) {
       return null;
     }
