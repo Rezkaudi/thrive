@@ -109,8 +109,8 @@ export const LoginPage: React.FC = () => {
 
               {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
-                  {error === 'Invalid credentials'
-                    ? 'Invalid email or password. Please check your credentials and try again. If you forgot your password, check your email for the temporary password sent during registration.'
+                  {error === 'Request failed with status code 400'
+                    ? 'Invalid email or password. Please check your credentials and try again.'
                     : error
                   }
                 </Alert>
