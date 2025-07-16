@@ -201,12 +201,12 @@ export const LoginPage: React.FC = () => {
                 </Button>
               </Box>
 
-              <Alert severity="info" sx={{ mt: 3 }}>
+              {/* <Alert severity="info" sx={{ mt: 3 }}>
                 <Typography variant="caption">
                   After payment, you'll receive your login credentials via email.
                   Check your spam folder if you don't see it.
                 </Typography>
-              </Alert>
+              </Alert> */}
             </CardContent>
           </Card>
         </motion.div>
