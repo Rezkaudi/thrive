@@ -40,10 +40,14 @@ import {
   EmojiEvents,
   ArrowBack,
   Translate,
+  Quiz as QuizIcon,
+  Slideshow,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import { KeywordFlashcards } from '../components/classroom/KeywordFlashcards';
+import { Quiz } from '../components/classroom/Quiz';
+import { InteractiveSlides } from '../components/classroom/InteractiveSlides';
 
 interface Course {
   id: string;
@@ -60,10 +64,12 @@ interface Lesson {
   title: string;
   description: string;
   order: number;
-  lessonType: 'VIDEO' | 'PDF' | 'KEYWORDS';
+  lessonType: 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES';
   contentUrl?: string;
+  contentData?: any;
   pointsReward: number;
   requiresReflection: boolean;
+  passingScore?: number;
   isCompleted?: boolean;
   completedAt?: string;
   isLocked?: boolean;
@@ -362,11 +368,13 @@ export const ClassroomPage: React.FC = () => {
         (l: Lesson) => !l.isCompleted && !l.isLocked
       );
       if (firstIncompleteUnlocked) {
+        console.log('Selected lesson:', firstIncompleteUnlocked);
         setSelectedLesson(firstIncompleteUnlocked);
       } else {
         // If no incomplete unlocked lessons, select the first lesson
         const firstLesson = lessonsWithLocks.find((l: Lesson) => l.order === 1);
         if (firstLesson) {
+          console.log('Selected first lesson:', firstLesson);
           setSelectedLesson(firstLesson);
         }
       }
@@ -391,11 +399,17 @@ export const ClassroomPage: React.FC = () => {
     }
   };
 
-  const handleCompleteLesson = async () => {
+  const handleCompleteLesson = async (quizScore?: number) => {
     if (!selectedLesson) return;
 
     try {
-      await api.post(`/courses/lessons/${selectedLesson.id}/complete`);
+      const requestData: any = {};
+      
+      if (selectedLesson.lessonType === 'QUIZ' && quizScore !== undefined) {
+        requestData.quizScore = quizScore;
+      }
+      
+      await api.post(`/courses/lessons/${selectedLesson.id}/complete`, requestData);
 
       // Refresh lessons to get updated completion status and recalculate locks
       await fetchLessons(selectedCourse!.id);
@@ -507,6 +521,10 @@ export const ClassroomPage: React.FC = () => {
                         <VideoLibrary color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
                       ) : lesson.lessonType === 'PDF' ? (
                         <PictureAsPdf color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
+                      ) : lesson.lessonType === 'QUIZ' ? (
+                        <QuizIcon color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
+                      ) : lesson.lessonType === 'SLIDES' ? (
+                        <Slideshow color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
                       ) : (
                         <Translate color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
                       )}
@@ -722,11 +740,15 @@ export const ClassroomPage: React.FC = () => {
                     icon={
                       selectedLesson.lessonType === 'VIDEO' ? <VideoLibrary /> :
                       selectedLesson.lessonType === 'PDF' ? <PictureAsPdf /> :
+                      selectedLesson.lessonType === 'QUIZ' ? <QuizIcon /> :
+                      selectedLesson.lessonType === 'SLIDES' ? <Slideshow /> :
                       <Translate />
                     }
                     label={
                       selectedLesson.lessonType === 'VIDEO' ? 'Video Lesson' :
                       selectedLesson.lessonType === 'PDF' ? 'PDF Resource' :
+                      selectedLesson.lessonType === 'QUIZ' ? 'Quiz' :
+                      selectedLesson.lessonType === 'SLIDES' ? 'Interactive Slides' :
                       'Keywords Practice'
                     }
                   />
@@ -779,33 +801,77 @@ export const ClassroomPage: React.FC = () => {
                   </Box>
                 ) : (
                   <>
-                  {selectedLesson.lessonType === 'KEYWORDS' ? (
-                    selectedLesson.keywords && selectedLesson.keywords.length > 0 ? (
-                      <KeywordFlashcards
-                        keywords={selectedLesson.keywords}
-                        pointsReward={selectedLesson.pointsReward}
-                        onComplete={handleCompleteLesson}
-                        isLessonCompleted={!!selectedLesson.isCompleted}
-                      />
-                    ) : (
-                      <Alert severity="warning" sx={{ mb: 4 }}>
-                        No keywords available for this lesson. Please contact support.
-                      </Alert>
-                    )
-                    ) : selectedLesson.contentUrl ? (
-                      selectedLesson.lessonType === 'VIDEO' ? (
-                        <VideoPlayer url={selectedLesson.contentUrl} />
+                    {/* Keywords Lesson */}
+                    {selectedLesson.lessonType === 'KEYWORDS' && (
+                      selectedLesson.keywords && selectedLesson.keywords.length > 0 ? (
+                        <KeywordFlashcards
+                          keywords={selectedLesson.keywords}
+                          pointsReward={selectedLesson.pointsReward}
+                          onComplete={() => handleCompleteLesson()}
+                          isLessonCompleted={!!selectedLesson.isCompleted}
+                        />
                       ) : (
-                        <PDFViewer url={selectedLesson.contentUrl} />
+                        <Alert severity="warning" sx={{ mb: 4 }}>
+                          No keywords available for this lesson. Please contact support.
+                        </Alert>
                       )
-                    ) : (
-                      <Alert severity="warning" sx={{ mb: 4 }}>
-                        Content URL not available. Please contact support.
-                      </Alert>
+                    )}
+                    
+                    {/* Quiz Lesson */}
+                    {selectedLesson.lessonType === 'QUIZ' && (
+                      selectedLesson.contentData?.questions ? (
+                        <Quiz
+                          questions={selectedLesson.contentData.questions}
+                          passingScore={selectedLesson.passingScore || 70}
+                          timeLimit={selectedLesson.contentData.timeLimit}
+                          pointsReward={selectedLesson.pointsReward}
+                          onComplete={(score, passed) => {
+                            if (passed) {
+                              handleCompleteLesson(score);
+                            }
+                          }}
+                          isLessonCompleted={!!selectedLesson.isCompleted}
+                        />
+                      ) : (
+                        <Alert severity="warning" sx={{ mb: 4 }}>
+                          No quiz data available for this lesson. Please contact support.
+                        </Alert>
+                      )
+                    )}
+                    
+                    {/* Slides Lesson */}
+                    {selectedLesson.lessonType === 'SLIDES' && (
+                      selectedLesson.contentData?.slides ? (
+                        <InteractiveSlides
+                          slides={selectedLesson.contentData.slides}
+                          pointsReward={selectedLesson.pointsReward}
+                          onComplete={() => handleCompleteLesson()}
+                          isLessonCompleted={!!selectedLesson.isCompleted}
+                        />
+                      ) : (
+                        <Alert severity="warning" sx={{ mb: 4 }}>
+                          No slides data available for this lesson. Please contact support.
+                        </Alert>
+                      )
+                    )}
+                    
+                    {/* Video/PDF Lesson */}
+                    {(selectedLesson.lessonType === 'VIDEO' || selectedLesson.lessonType === 'PDF') && (
+                      selectedLesson.contentUrl ? (
+                        selectedLesson.lessonType === 'VIDEO' ? (
+                          <VideoPlayer url={selectedLesson.contentUrl} />
+                        ) : (
+                          <PDFViewer url={selectedLesson.contentUrl} />
+                        )
+                      ) : (
+                        <Alert severity="warning" sx={{ mb: 4 }}>
+                          Content URL not available. Please contact support.
+                        </Alert>
+                      )
                     )}
 
-                    {/* Action buttons */}
-                    {selectedLesson.lessonType !== 'KEYWORDS' && (
+                    {/* Action buttons for Video/PDF only */}
+                    {(selectedLesson.lessonType === 'VIDEO' || selectedLesson.lessonType === 'PDF') && (
                       <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 4 }}>
                         {selectedLesson.lessonType === 'PDF' && selectedLesson.contentUrl && (
                           <Button
@@ -820,7 +886,7 @@ export const ClassroomPage: React.FC = () => {
                         <Button
                           variant="contained"
                           disabled={selectedLesson.isCompleted}
-                          onClick={handleCompleteLesson}
+                          onClick={() => handleCompleteLesson()}
                         >
                           {selectedLesson.isCompleted ? 'Completed' : 'Mark as Complete'}
                         </Button>

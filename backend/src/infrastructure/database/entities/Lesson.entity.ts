@@ -37,6 +37,9 @@ export class LessonEntity {
   @Column({ type: 'varchar', nullable: true })
   contentUrl!: string | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  contentData!: any | null;
+
   @Column({ type: 'text' })
   audioFiles!: string;
 
@@ -48,6 +51,9 @@ export class LessonEntity {
 
   @Column({ default: 0 })
   pointsReward!: number;
+
+  @Column({ type: 'int', nullable: true })
+  passingScore!: number | null;
 
   @CreateDateColumn()
   createdAt!: Date;

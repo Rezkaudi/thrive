@@ -43,11 +43,15 @@ import {
   DeleteOutline,
   AddCircleOutline,
   CloudUpload,
+  Quiz as QuizIcon,
+  Slideshow,
 } from '@mui/icons-material';
 import { PictureAsPdf, VideoLibrary as VideoIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
 import { BulkAudioManager } from '../../components/admin/BulkAudioManager';
+import { QuizBuilder } from '../../components/admin/QuizBuilder';
+import { SlidesBuilder } from '../../components/admin/SlidesBuilder';
 
 
 interface Course {
@@ -67,9 +71,11 @@ interface Lesson {
   description: string;
   order: number;
   contentUrl?: string;
-  lessonType: 'VIDEO' | 'PDF' | 'KEYWORDS';
+  contentData?: any;
+  lessonType: 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES';
   pointsReward: number;
   requiresReflection: boolean;
+  passingScore?: number;
 }
 
 interface Keyword {
@@ -107,10 +113,12 @@ export const CourseManagement: React.FC = () => {
     title: '',
     description: '',
     order: 1,
-    lessonType: 'VIDEO' as 'VIDEO' | 'PDF' | 'KEYWORDS',
+    lessonType: 'VIDEO' as 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES',
     contentUrl: '',
+    contentData: null as any,
     pointsReward: 10,
     requiresReflection: false,
+    passingScore: 70,
     keywords: [] as Keyword[],
   });
 
@@ -177,6 +185,16 @@ export const CourseManagement: React.FC = () => {
           return false;
         }
       }
+    } else if (lessonForm.lessonType === 'QUIZ') {
+      if (!lessonForm.contentData?.questions || lessonForm.contentData.questions.length === 0) {
+        alert('Please add at least one quiz question');
+        return false;
+      }
+    } else if (lessonForm.lessonType === 'SLIDES') {
+      if (!lessonForm.contentData?.slides || lessonForm.contentData.slides.length === 0) {
+        alert('Please add at least one slide');
+        return false;
+      }
     } else if (!lessonForm.contentUrl.trim()) {
       alert(`Please provide a ${lessonForm.lessonType === 'VIDEO' ? 'video' : 'PDF'} URL`);
       return false;
@@ -213,10 +231,17 @@ export const CourseManagement: React.FC = () => {
     }
 
     try {
+      const lessonData: any = {
+        ...lessonForm,
+        keywords: lessonForm.lessonType === 'KEYWORDS' ? lessonForm.keywords : undefined,
+        contentData: (lessonForm.lessonType === 'QUIZ' || lessonForm.lessonType === 'SLIDES') ? lessonForm.contentData : undefined,
+        passingScore: lessonForm.lessonType === 'QUIZ' ? lessonForm.passingScore : undefined,
+      };
+
       if (editingLesson) {
-        await api.put(`/admin/lessons/${editingLesson.id}`, lessonForm);
+        await api.put(`/admin/lessons/${editingLesson.id}`, lessonData);
       } else {
-        await api.post(`/admin/courses/${selectedCourse!.id}/lessons`, lessonForm);
+        await api.post(`/admin/courses/${selectedCourse!.id}/lessons`, lessonData);
       }
       setLessonDialog(false);
       setEditingLesson(null);
@@ -226,8 +251,10 @@ export const CourseManagement: React.FC = () => {
         order: lessons.length + 1,
         lessonType: 'VIDEO',
         contentUrl: '',
+        contentData: null,
         pointsReward: 10,
         requiresReflection: false,
+        passingScore: 70,
         keywords: [],
       });
       fetchLessons(selectedCourse!.id);
@@ -302,6 +329,7 @@ export const CourseManagement: React.FC = () => {
                 ...lessonForm,
                 order: lessons.length + 1,
                 keywords: [],
+                contentData: null,
               });
               setEditingLesson(null);
               setLessonDialog(true);
@@ -340,16 +368,20 @@ export const CourseManagement: React.FC = () => {
                                 icon={
                                   lesson.lessonType === 'VIDEO' ? <VideoLibrary /> :
                                   lesson.lessonType === 'PDF' ? <PictureAsPdf /> :
+                                  lesson.lessonType === 'QUIZ' ? <QuizIcon /> :
+                                  lesson.lessonType === 'SLIDES' ? <Slideshow /> :
                                   <Translate />
                                 }
                                 label={
                                   lesson.lessonType === 'KEYWORDS' ? 'Keywords Practice' :
+                                  lesson.lessonType === 'QUIZ' ? 'Quiz' :
+                                  lesson.lessonType === 'SLIDES' ? 'Interactive Slides' :
                                   lesson.contentUrl
                                     ? (lesson.lessonType === 'VIDEO' ? 'Has Video' : 'Has PDF')
                                     : (lesson.lessonType === 'VIDEO' ? 'No Video' : 'No PDF')
                                 }
                                 size="small"
-                                color={lesson.contentUrl || lesson.lessonType === 'KEYWORDS' ? 'success' : 'default'}
+                                color={lesson.contentUrl || lesson.lessonType === 'KEYWORDS' || lesson.lessonType === 'QUIZ' || lesson.lessonType === 'SLIDES' ? 'success' : 'default'}
                               />
                               <Chip
                                 label={`${lesson.pointsReward} points`}
@@ -375,8 +407,10 @@ export const CourseManagement: React.FC = () => {
                                 order: lesson.order,
                                 lessonType: lesson.lessonType || 'VIDEO',
                                 contentUrl: lesson.contentUrl || '',
+                                contentData: lessonDetails?.contentData || null,
                                 pointsReward: lesson.pointsReward,
                                 requiresReflection: lesson.requiresReflection,
+                                passingScore: lessonDetails?.passingScore || 70,
                                 keywords: lessonDetails?.keywords || [],
                               });
                               setLessonDialog(true);
@@ -472,7 +506,7 @@ export const CourseManagement: React.FC = () => {
                 <RadioGroup
                   row
                   value={lessonForm.lessonType}
-                  onChange={(e) => setLessonForm({ ...lessonForm, lessonType: e.target.value as 'VIDEO' | 'PDF' | 'KEYWORDS' })}
+                  onChange={(e) => setLessonForm({ ...lessonForm, lessonType: e.target.value as 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES' })}
                 >
                   <FormControlLabel
                     value="VIDEO"
@@ -504,10 +538,30 @@ export const CourseManagement: React.FC = () => {
                       </Stack>
                     }
                   />
+                  <FormControlLabel
+                    value="QUIZ"
+                    control={<Radio />}
+                    label={
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <QuizIcon />
+                        <Typography>Quiz</Typography>
+                      </Stack>
+                    }
+                  />
+                  <FormControlLabel
+                    value="SLIDES"
+                    control={<Radio />}
+                    label={
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Slideshow />
+                        <Typography>Interactive Slides</Typography>
+                      </Stack>
+                    }
+                  />
                 </RadioGroup>
               </FormControl>
 
-              {lessonForm.lessonType !== 'KEYWORDS' && (
+              {lessonForm.lessonType !== 'KEYWORDS' && lessonForm.lessonType !== 'QUIZ' && lessonForm.lessonType !== 'SLIDES' && (
                 <TextField
                   fullWidth
                   label={lessonForm.lessonType === 'VIDEO' ? 'Video URL (S3)' : 'PDF URL (S3)'}
@@ -515,6 +569,39 @@ export const CourseManagement: React.FC = () => {
                   onChange={(e) => setLessonForm({ ...lessonForm, contentUrl: e.target.value })}
                   helperText={`Enter the S3 URL for the ${lessonForm.lessonType.toLowerCase()}`}
                 />
+              )}
+
+              {lessonForm.lessonType === 'QUIZ' && (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>Quiz Questions</Typography>
+                  <QuizBuilder
+                    initialQuestions={lessonForm.contentData?.questions || []}
+                    passingScore={lessonForm.passingScore}
+                    timeLimit={lessonForm.contentData?.timeLimit}
+                    onChange={(questions, settings) => {
+                      setLessonForm({
+                        ...lessonForm,
+                        contentData: { questions, timeLimit: settings.timeLimit },
+                        passingScore: settings.passingScore,
+                      });
+                    }}
+                  />
+                </Box>
+              )}
+
+              {lessonForm.lessonType === 'SLIDES' && (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>Slide Content</Typography>
+                  <SlidesBuilder
+                    initialSlides={lessonForm.contentData?.slides || []}
+                    onChange={(slides) => {
+                      setLessonForm({
+                        ...lessonForm,
+                        contentData: { slides },
+                      });
+                    }}
+                  />
+                </Box>
               )}
 
               {lessonForm.lessonType === 'KEYWORDS' && (
