@@ -16,6 +16,7 @@ import {
 import { motion } from 'framer-motion';
 import { School, Groups, EmojiEvents, CalendarMonth } from '@mui/icons-material';
 import { PaymentModal } from '../components/payment/PaymentModal';
+import { useNavigate } from 'react-router-dom';
 
 const FeatureCard = ({ icon, title, description, delay }: any) => (
   <Zoom in={true} style={{ transitionDelay: `${delay}ms` }}>
@@ -63,9 +64,14 @@ const FeatureCard = ({ icon, title, description, delay }: any) => (
 
 export const LandingPage: React.FC = () => {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = () => {
-    window.location.href = '/login';
+    navigate('/login');
+  };
+
+  const handleStartJourney = () => {
+    navigate('/register/email');
   };
 
   return (
@@ -133,7 +139,7 @@ export const LandingPage: React.FC = () => {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={() => setPaymentModalOpen(true)}
+                    onClick={handleStartJourney} // () => setPaymentModalOpen(true)
                     sx={{
                       background: 'white',
                       color: '#FF6B6B',
@@ -145,7 +151,7 @@ export const LandingPage: React.FC = () => {
                       },
                     }}
                   >
-                    Start Your Journey - ¥5,000
+                    Start Your Journey
                   </Button>
                   <Button
                     variant="outlined"
@@ -300,7 +306,7 @@ export const LandingPage: React.FC = () => {
           <Button
             variant="contained"
             size="large"
-            onClick={() => setPaymentModalOpen(true)}
+            onClick={handleStartJourney}
             sx={{
               background: 'white',
               color: '#4ECDC4',

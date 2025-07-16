@@ -34,7 +34,7 @@ router.post(
     body('email').isEmail(),
     body('name').notEmpty().trim(),
     body('password').isLength({ min: 8 }).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&])[A-Za-z\d@$!%*?&]/),
-    body('stripePaymentIntentId').notEmpty(),
+    // body('stripePaymentIntentId').notEmpty(),
   ],
   validateRequest,
   authController.completeRegistration
@@ -45,7 +45,6 @@ router.post(
   '/register',
   [
     body('email').isEmail(),
-    body('stripePaymentIntentId').notEmpty()
   ],
   validateRequest,
   authController.register

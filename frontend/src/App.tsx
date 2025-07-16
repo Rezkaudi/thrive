@@ -18,6 +18,12 @@ import { ProfilePage } from './pages/ProfilePage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 
+// Registration Pages
+import { EmailVerificationPage } from './pages/registration/EmailVerificationPage';
+import { PaymentPlanPage } from './pages/registration/PaymentPlanPage';
+import { CreateAccountPage } from './pages/registration/CreateAccountPage';
+import { RegistrationCompletePage } from './pages/registration/RegistrationCompletePage';
+
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
@@ -61,6 +67,12 @@ function AppContent() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+
+        <Route path="/register/email" element={<EmailVerificationPage />} />
+        <Route path="/register/payment" element={<PaymentPlanPage />} />
+        <Route path="/register/account" element={<CreateAccountPage />} />
+        <Route path="/register/complete" element={<RegistrationCompletePage />} />
+
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
