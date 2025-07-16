@@ -257,7 +257,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           flexGrow: 1,
           bgcolor: 'background.default',
           p: 0,
-          minHeight: '100vh',
+          minHeight: 'calc(100vh - 64px)',
           mt: '64px',
         }}
       >

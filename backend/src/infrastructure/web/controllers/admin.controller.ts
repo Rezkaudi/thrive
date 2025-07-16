@@ -199,10 +199,12 @@ export class AdminController {
         order, 
         lessonType, 
         contentUrl,
+        contentData,
         audioFiles, 
         resources, 
         requiresReflection, 
         pointsReward,
+        passingScore,
         keywords 
       } = req.body;
       
@@ -217,10 +219,12 @@ export class AdminController {
         order,
         lessonType || LessonType.VIDEO,
         contentUrl,
+        contentData,
         audioFiles || [],
         resources || [],
         requiresReflection || false,
         pointsReward || 0,
+        passingScore,
         new Date(),
         new Date()
       );
