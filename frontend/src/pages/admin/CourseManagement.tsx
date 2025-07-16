@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -31,7 +31,7 @@ import {
   RadioGroup,
   Radio,
   Alert,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Add,
   Edit,
@@ -45,20 +45,19 @@ import {
   CloudUpload,
   Quiz as QuizIcon,
   Slideshow,
-} from '@mui/icons-material';
-import { PictureAsPdf, VideoLibrary as VideoIcon } from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import api from '../../services/api';
-import { BulkAudioManager } from '../../components/admin/BulkAudioManager';
-import { QuizBuilder } from '../../components/admin/QuizBuilder';
-import { SlidesBuilder } from '../../components/admin/SlidesBuilder';
-
+} from "@mui/icons-material";
+import { PictureAsPdf, VideoLibrary as VideoIcon } from "@mui/icons-material";
+import { motion } from "framer-motion";
+import api from "../../services/api";
+import { BulkAudioManager } from "../../components/admin/BulkAudioManager";
+import { QuizBuilder } from "../../components/admin/QuizBuilder";
+import { SlidesBuilder } from "../../components/admin/SlidesBuilder";
 
 interface Course {
   id: string;
   title: string;
   description: string;
-  type: 'JAPAN_IN_CONTEXT' | 'JLPT_IN_CONTEXT';
+  type: "JAPAN_IN_CONTEXT" | "JLPT_IN_CONTEXT";
   icon: string;
   isActive: boolean;
   lessonCount?: number;
@@ -72,7 +71,7 @@ interface Lesson {
   order: number;
   contentUrl?: string;
   contentData?: any;
-  lessonType: 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES';
+  lessonType: "VIDEO" | "PDF" | "KEYWORDS" | "QUIZ" | "SLIDES";
   pointsReward: number;
   requiresReflection: boolean;
   passingScore?: number;
@@ -98,29 +97,58 @@ export const CourseManagement: React.FC = () => {
   const [courseForm, setCourseForm] = useState<{
     title: string;
     description: string;
-    type: 'JAPAN_IN_CONTEXT' | 'JLPT_IN_CONTEXT';
+    type: "JAPAN_IN_CONTEXT" | "JLPT_IN_CONTEXT";
     icon: string;
     isActive: boolean;
   }>({
-    title: '',
-    description: '',
-    type: 'JAPAN_IN_CONTEXT',
-    icon: '🏯',
+    title: "",
+    description: "",
+    type: "JAPAN_IN_CONTEXT",
+    icon: "🏯",
     isActive: true,
   });
 
   const [lessonForm, setLessonForm] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     order: 1,
-    lessonType: 'VIDEO' as 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES',
-    contentUrl: '',
+    lessonType: "VIDEO" as "VIDEO" | "PDF" | "KEYWORDS" | "QUIZ" | "SLIDES",
+    contentUrl: "",
     contentData: null as any,
     pointsReward: 10,
     requiresReflection: false,
     passingScore: 70,
     keywords: [] as Keyword[],
   });
+
+  // Helper function to reset course form to default values
+  const resetCourseForm = () => {
+    setCourseForm({
+      title: "",
+      description: "",
+      type: "JAPAN_IN_CONTEXT",
+      icon: "🏯",
+      isActive: true,
+    });
+    setEditingCourse(null);
+  };
+
+  // Helper function to reset lesson form to default values
+  const resetLessonForm = () => {
+    setLessonForm({
+      title: "",
+      description: "",
+      order: lessons.length + 1,
+      lessonType: "VIDEO",
+      contentUrl: "",
+      contentData: null,
+      pointsReward: 10,
+      requiresReflection: false,
+      passingScore: 70,
+      keywords: [],
+    });
+    setEditingLesson(null);
+  };
 
   useEffect(() => {
     fetchCourses();
@@ -132,22 +160,32 @@ export const CourseManagement: React.FC = () => {
     }
   }, [selectedCourse]);
 
+  // Reset states when navigating back to course list
+  useEffect(() => {
+    if (!selectedCourse) {
+      // Reset all lesson-related states when going back to course list
+      setLessons([]);
+      setLessonDialog(false);
+      resetLessonForm();
+    }
+  }, [selectedCourse]);
+
   const fetchCourses = async () => {
     try {
-      const response = await api.get('/courses');
+      const response = await api.get("/courses");
       setCourses(response.data);
     } catch (error) {
-      console.error('Failed to fetch courses:', error);
+      console.error("Failed to fetch courses:", error);
     }
   };
 
   const fetchLessons = async (courseId: string) => {
     try {
       const response = await api.get(`/courses/${courseId}/lessons`);
-      console.log('Lessons response:', response.data);
+      console.log("Lessons response:", response.data);
       setLessons(response.data);
     } catch (error) {
-      console.error('Failed to fetch lessons:', error);
+      console.error("Failed to fetch lessons:", error);
     }
   };
 
@@ -156,25 +194,25 @@ export const CourseManagement: React.FC = () => {
       const response = await api.get(`/admin/lessons/${lessonId}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch lesson details:', error);
+      console.error("Failed to fetch lesson details:", error);
       return null;
     }
   };
 
   const validateLessonForm = () => {
     if (!lessonForm.title.trim()) {
-      alert('Please enter a lesson title');
+      alert("Please enter a lesson title");
       return false;
     }
 
     if (!lessonForm.description.trim()) {
-      alert('Please enter a lesson description');
+      alert("Please enter a lesson description");
       return false;
     }
 
-    if (lessonForm.lessonType === 'KEYWORDS') {
+    if (lessonForm.lessonType === "KEYWORDS") {
       if (lessonForm.keywords.length === 0) {
-        alert('Please add at least one keyword');
+        alert("Please add at least one keyword");
         return false;
       }
 
@@ -185,18 +223,28 @@ export const CourseManagement: React.FC = () => {
           return false;
         }
       }
-    } else if (lessonForm.lessonType === 'QUIZ') {
-      if (!lessonForm.contentData?.questions || lessonForm.contentData.questions.length === 0) {
-        alert('Please add at least one quiz question');
+    } else if (lessonForm.lessonType === "QUIZ") {
+      if (
+        !lessonForm.contentData?.questions ||
+        lessonForm.contentData.questions.length === 0
+      ) {
+        alert("Please add at least one quiz question");
         return false;
       }
-    } else if (lessonForm.lessonType === 'SLIDES') {
-      if (!lessonForm.contentData?.slides || lessonForm.contentData.slides.length === 0) {
-        alert('Please add at least one slide');
+    } else if (lessonForm.lessonType === "SLIDES") {
+      if (
+        !lessonForm.contentData?.slides ||
+        lessonForm.contentData.slides.length === 0
+      ) {
+        alert("Please add at least one slide");
         return false;
       }
     } else if (!lessonForm.contentUrl.trim()) {
-      alert(`Please provide a ${lessonForm.lessonType === 'VIDEO' ? 'video' : 'PDF'} URL`);
+      alert(
+        `Please provide a ${
+          lessonForm.lessonType === "VIDEO" ? "video" : "PDF"
+        } URL`
+      );
       return false;
     }
 
@@ -208,20 +256,13 @@ export const CourseManagement: React.FC = () => {
       if (editingCourse) {
         await api.put(`/admin/courses/${editingCourse.id}`, courseForm);
       } else {
-        await api.post('/admin/courses', courseForm);
+        await api.post("/admin/courses", courseForm);
       }
       setCourseDialog(false);
-      setEditingCourse(null);
-      setCourseForm({
-        title: '',
-        description: '',
-        type: 'JAPAN_IN_CONTEXT',
-        icon: '🏯',
-        isActive: true,
-      });
+      resetCourseForm(); // Use helper function
       fetchCourses();
     } catch (error) {
-      console.error('Failed to save course:', error);
+      console.error("Failed to save course:", error);
     }
   };
 
@@ -233,72 +274,103 @@ export const CourseManagement: React.FC = () => {
     try {
       const lessonData: any = {
         ...lessonForm,
-        keywords: lessonForm.lessonType === 'KEYWORDS' ? lessonForm.keywords : undefined,
-        contentData: (lessonForm.lessonType === 'QUIZ' || lessonForm.lessonType === 'SLIDES') ? lessonForm.contentData : undefined,
-        passingScore: lessonForm.lessonType === 'QUIZ' ? lessonForm.passingScore : undefined,
+        keywords:
+          lessonForm.lessonType === "KEYWORDS"
+            ? lessonForm.keywords
+            : undefined,
+        contentData:
+          lessonForm.lessonType === "QUIZ" || lessonForm.lessonType === "SLIDES"
+            ? lessonForm.contentData
+            : undefined,
+        passingScore:
+          lessonForm.lessonType === "QUIZ"
+            ? lessonForm.passingScore
+            : undefined,
       };
 
       if (editingLesson) {
         await api.put(`/admin/lessons/${editingLesson.id}`, lessonData);
       } else {
-        await api.post(`/admin/courses/${selectedCourse!.id}/lessons`, lessonData);
+        await api.post(
+          `/admin/courses/${selectedCourse!.id}/lessons`,
+          lessonData
+        );
       }
       setLessonDialog(false);
-      setEditingLesson(null);
-      setLessonForm({
-        title: '',
-        description: '',
-        order: lessons.length + 1,
-        lessonType: 'VIDEO',
-        contentUrl: '',
-        contentData: null,
-        pointsReward: 10,
-        requiresReflection: false,
-        passingScore: 70,
-        keywords: [],
-      });
+      resetLessonForm(); // Use helper function
       fetchLessons(selectedCourse!.id);
     } catch (error) {
-      console.error('Failed to save lesson:', error);
-      alert('Failed to save lesson. Please try again.');
+      console.error("Failed to save lesson:", error);
+      alert("Failed to save lesson. Please try again.");
     }
   };
 
   const handleDeleteCourse = async (courseId: string) => {
-    if (window.confirm('Are you sure you want to delete this course?')) {
+    if (window.confirm("Are you sure you want to delete this course?")) {
       try {
         await api.delete(`/admin/courses/${courseId}`);
         fetchCourses();
       } catch (error) {
-        console.error('Failed to delete course:', error);
+        console.error("Failed to delete course:", error);
       }
     }
   };
 
   const handleDeleteLesson = async (lessonId: string) => {
-    if (window.confirm('Are you sure you want to delete this lesson?')) {
+    if (window.confirm("Are you sure you want to delete this lesson?")) {
       try {
         await api.delete(`/admin/lessons/${lessonId}`);
         fetchLessons(selectedCourse!.id);
       } catch (error) {
-        console.error('Failed to delete lesson:', error);
+        console.error("Failed to delete lesson:", error);
       }
     }
+  };
+
+  // Fixed: Close course dialog handler
+  const handleCloseCourseDialog = () => {
+    setCourseDialog(false);
+    resetCourseForm(); // Reset form and editing state
+  };
+
+  // Fixed: Close lesson dialog handler
+  const handleCloseLessonDialog = () => {
+    setLessonDialog(false);
+    resetLessonForm(); // Reset form and editing state
+  };
+
+  // Fixed: Add new course handler
+  const handleAddNewCourse = () => {
+    resetCourseForm(); // Ensure clean state
+    setCourseDialog(true);
+  };
+
+  // Fixed: Add new lesson handler
+  const handleAddNewLesson = () => {
+    resetLessonForm(); // Ensure clean state
+    setLessonDialog(true);
   };
 
   const addKeyword = () => {
     setLessonForm({
       ...lessonForm,
-      keywords: [...lessonForm.keywords, {
-        englishText: '',
-        japaneseText: '',
-        englishAudioUrl: '',
-        japaneseAudioUrl: '',
-      }],
+      keywords: [
+        ...lessonForm.keywords,
+        {
+          englishText: "",
+          japaneseText: "",
+          englishAudioUrl: "",
+          japaneseAudioUrl: "",
+        },
+      ],
     });
   };
 
-  const updateKeyword = (index: number, field: keyof Keyword, value: string) => {
+  const updateKeyword = (
+    index: number,
+    field: keyof Keyword,
+    value: string
+  ) => {
     const newKeywords = [...lessonForm.keywords];
     newKeywords[index] = { ...newKeywords[index], [field]: value };
     setLessonForm({ ...lessonForm, keywords: newKeywords });
@@ -312,7 +384,12 @@ export const CourseManagement: React.FC = () => {
   if (selectedCourse) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={4}
+        >
           <Box>
             <Button onClick={() => setSelectedCourse(null)} sx={{ mb: 1 }}>
               ← Back to Courses
@@ -324,16 +401,7 @@ export const CourseManagement: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => {
-              setLessonForm({
-                ...lessonForm,
-                order: lessons.length + 1,
-                keywords: [],
-                contentData: null,
-              });
-              setEditingLesson(null);
-              setLessonDialog(true);
-            }}
+            onClick={handleAddNewLesson} // Use the fixed handler
           >
             Add Lesson
           </Button>
@@ -350,13 +418,20 @@ export const CourseManagement: React.FC = () => {
                   {lessons.map((lesson) => (
                     <Paper key={lesson.id} sx={{ mb: 2 }}>
                       <ListItem>
-                        <IconButton edge="start" sx={{ cursor: 'grab' }}>
+                        <IconButton edge="start" sx={{ cursor: "grab" }}>
                           <DragIndicator />
                         </IconButton>
                         <ListItemText
                           primary={
-                            <Stack direction="row" alignItems="center" spacing={2}>
-                              <Chip label={`Lesson ${lesson.order}`} size="small" />
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={2}
+                            >
+                              <Chip
+                                label={`Lesson ${lesson.order}`}
+                                size="small"
+                              />
                               <Typography variant="subtitle1" fontWeight={500}>
                                 {lesson.title}
                               </Typography>
@@ -366,22 +441,42 @@ export const CourseManagement: React.FC = () => {
                             <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
                               <Chip
                                 icon={
-                                  lesson.lessonType === 'VIDEO' ? <VideoLibrary /> :
-                                  lesson.lessonType === 'PDF' ? <PictureAsPdf /> :
-                                  lesson.lessonType === 'QUIZ' ? <QuizIcon /> :
-                                  lesson.lessonType === 'SLIDES' ? <Slideshow /> :
-                                  <Translate />
+                                  lesson.lessonType === "VIDEO" ? (
+                                    <VideoLibrary />
+                                  ) : lesson.lessonType === "PDF" ? (
+                                    <PictureAsPdf />
+                                  ) : lesson.lessonType === "QUIZ" ? (
+                                    <QuizIcon />
+                                  ) : lesson.lessonType === "SLIDES" ? (
+                                    <Slideshow />
+                                  ) : (
+                                    <Translate />
+                                  )
                                 }
                                 label={
-                                  lesson.lessonType === 'KEYWORDS' ? 'Keywords Practice' :
-                                  lesson.lessonType === 'QUIZ' ? 'Quiz' :
-                                  lesson.lessonType === 'SLIDES' ? 'Interactive Slides' :
-                                  lesson.contentUrl
-                                    ? (lesson.lessonType === 'VIDEO' ? 'Has Video' : 'Has PDF')
-                                    : (lesson.lessonType === 'VIDEO' ? 'No Video' : 'No PDF')
+                                  lesson.lessonType === "KEYWORDS"
+                                    ? "Keywords Practice"
+                                    : lesson.lessonType === "QUIZ"
+                                    ? "Quiz"
+                                    : lesson.lessonType === "SLIDES"
+                                    ? "Interactive Slides"
+                                    : lesson.contentUrl
+                                    ? lesson.lessonType === "VIDEO"
+                                      ? "Has Video"
+                                      : "Has PDF"
+                                    : lesson.lessonType === "VIDEO"
+                                    ? "No Video"
+                                    : "No PDF"
                                 }
                                 size="small"
-                                color={lesson.contentUrl || lesson.lessonType === 'KEYWORDS' || lesson.lessonType === 'QUIZ' || lesson.lessonType === 'SLIDES' ? 'success' : 'default'}
+                                color={
+                                  lesson.contentUrl ||
+                                  lesson.lessonType === "KEYWORDS" ||
+                                  lesson.lessonType === "QUIZ" ||
+                                  lesson.lessonType === "SLIDES"
+                                    ? "success"
+                                    : "default"
+                                }
                               />
                               <Chip
                                 label={`${lesson.pointsReward} points`}
@@ -389,7 +484,11 @@ export const CourseManagement: React.FC = () => {
                                 color="primary"
                               />
                               {lesson.requiresReflection && (
-                                <Chip label="Reflection Required" size="small" color="secondary" />
+                                <Chip
+                                  label="Reflection Required"
+                                  size="small"
+                                  color="secondary"
+                                />
                               )}
                             </Stack>
                           }
@@ -398,15 +497,17 @@ export const CourseManagement: React.FC = () => {
                           <IconButton
                             onClick={async () => {
                               setEditingLesson(lesson);
-                              
-                              const lessonDetails = await fetchLessonDetails(lesson.id);
-                              
+
+                              const lessonDetails = await fetchLessonDetails(
+                                lesson.id
+                              );
+
                               setLessonForm({
                                 title: lesson.title,
                                 description: lesson.description,
                                 order: lesson.order,
-                                lessonType: lesson.lessonType || 'VIDEO',
-                                contentUrl: lesson.contentUrl || '',
+                                lessonType: lesson.lessonType || "VIDEO",
+                                contentUrl: lesson.contentUrl || "",
                                 contentData: lessonDetails?.contentData || null,
                                 pointsReward: lesson.pointsReward,
                                 requiresReflection: lesson.requiresReflection,
@@ -445,7 +546,7 @@ export const CourseManagement: React.FC = () => {
                       Type
                     </Typography>
                     <Typography variant="body1">
-                      {selectedCourse.type.replace('_', ' ')}
+                      {selectedCourse.type.replace("_", " ")}
                     </Typography>
                   </Box>
                   <Box>
@@ -454,8 +555,8 @@ export const CourseManagement: React.FC = () => {
                     </Typography>
                     <Typography variant="body1">
                       <Chip
-                        label={selectedCourse.isActive ? 'Active' : 'Inactive'}
-                        color={selectedCourse.isActive ? 'success' : 'default'}
+                        label={selectedCourse.isActive ? "Active" : "Inactive"}
+                        color={selectedCourse.isActive ? "success" : "default"}
                         size="small"
                       />
                     </Typography>
@@ -473,9 +574,14 @@ export const CourseManagement: React.FC = () => {
         </Grid>
 
         {/* Lesson Dialog */}
-        <Dialog open={lessonDialog} onClose={() => setLessonDialog(false)} maxWidth="md" fullWidth>
+        <Dialog
+          open={lessonDialog}
+          onClose={handleCloseLessonDialog}
+          maxWidth="md"
+          fullWidth
+        >
           <DialogTitle>
-            {editingLesson ? 'Edit Lesson' : 'Add New Lesson'}
+            {editingLesson ? "Edit Lesson" : "Add New Lesson"}
           </DialogTitle>
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 2 }}>
@@ -483,7 +589,9 @@ export const CourseManagement: React.FC = () => {
                 fullWidth
                 label="Lesson Title"
                 value={lessonForm.title}
-                onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
+                onChange={(e) =>
+                  setLessonForm({ ...lessonForm, title: e.target.value })
+                }
               />
               <TextField
                 fullWidth
@@ -491,14 +599,21 @@ export const CourseManagement: React.FC = () => {
                 rows={3}
                 label="Description"
                 value={lessonForm.description}
-                onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
+                onChange={(e) =>
+                  setLessonForm({ ...lessonForm, description: e.target.value })
+                }
               />
               <TextField
                 fullWidth
                 type="number"
                 label="Order"
                 value={lessonForm.order}
-                onChange={(e) => setLessonForm({ ...lessonForm, order: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setLessonForm({
+                    ...lessonForm,
+                    order: parseInt(e.target.value),
+                  })
+                }
               />
 
               <FormControl>
@@ -506,7 +621,17 @@ export const CourseManagement: React.FC = () => {
                 <RadioGroup
                   row
                   value={lessonForm.lessonType}
-                  onChange={(e) => setLessonForm({ ...lessonForm, lessonType: e.target.value as 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES' })}
+                  onChange={(e) =>
+                    setLessonForm({
+                      ...lessonForm,
+                      lessonType: e.target.value as
+                        | "VIDEO"
+                        | "PDF"
+                        | "KEYWORDS"
+                        | "QUIZ"
+                        | "SLIDES",
+                    })
+                  }
                 >
                   <FormControlLabel
                     value="VIDEO"
@@ -561,19 +686,32 @@ export const CourseManagement: React.FC = () => {
                 </RadioGroup>
               </FormControl>
 
-              {lessonForm.lessonType !== 'KEYWORDS' && lessonForm.lessonType !== 'QUIZ' && lessonForm.lessonType !== 'SLIDES' && (
-                <TextField
-                  fullWidth
-                  label={lessonForm.lessonType === 'VIDEO' ? 'Video URL (S3)' : 'PDF URL (S3)'}
-                  value={lessonForm.contentUrl}
-                  onChange={(e) => setLessonForm({ ...lessonForm, contentUrl: e.target.value })}
-                  helperText={`Enter the S3 URL for the ${lessonForm.lessonType.toLowerCase()}`}
-                />
-              )}
+              {lessonForm.lessonType !== "KEYWORDS" &&
+                lessonForm.lessonType !== "QUIZ" &&
+                lessonForm.lessonType !== "SLIDES" && (
+                  <TextField
+                    fullWidth
+                    label={
+                      lessonForm.lessonType === "VIDEO"
+                        ? "Video URL (S3)"
+                        : "PDF URL (S3)"
+                    }
+                    value={lessonForm.contentUrl}
+                    onChange={(e) =>
+                      setLessonForm({
+                        ...lessonForm,
+                        contentUrl: e.target.value,
+                      })
+                    }
+                    helperText={`Enter the S3 URL for the ${lessonForm.lessonType.toLowerCase()}`}
+                  />
+                )}
 
-              {lessonForm.lessonType === 'QUIZ' && (
+              {lessonForm.lessonType === "QUIZ" && (
                 <Box>
-                  <Typography variant="h6" sx={{ mb: 2 }}>Quiz Questions</Typography>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Quiz Questions
+                  </Typography>
                   <QuizBuilder
                     initialQuestions={lessonForm.contentData?.questions || []}
                     passingScore={lessonForm.passingScore}
@@ -581,7 +719,10 @@ export const CourseManagement: React.FC = () => {
                     onChange={(questions, settings) => {
                       setLessonForm({
                         ...lessonForm,
-                        contentData: { questions, timeLimit: settings.timeLimit },
+                        contentData: {
+                          questions,
+                          timeLimit: settings.timeLimit,
+                        },
                         passingScore: settings.passingScore,
                       });
                     }}
@@ -589,9 +730,11 @@ export const CourseManagement: React.FC = () => {
                 </Box>
               )}
 
-              {lessonForm.lessonType === 'SLIDES' && (
+              {lessonForm.lessonType === "SLIDES" && (
                 <Box>
-                  <Typography variant="h6" sx={{ mb: 2 }}>Slide Content</Typography>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Slide Content
+                  </Typography>
                   <SlidesBuilder
                     initialSlides={lessonForm.contentData?.slides || []}
                     onChange={(slides) => {
@@ -604,9 +747,14 @@ export const CourseManagement: React.FC = () => {
                 </Box>
               )}
 
-              {lessonForm.lessonType === 'KEYWORDS' && (
+              {lessonForm.lessonType === "KEYWORDS" && (
                 <Box>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
                     <Typography variant="h6">Keywords</Typography>
                     <Stack direction="row" spacing={1}>
                       <Button
@@ -628,13 +776,20 @@ export const CourseManagement: React.FC = () => {
                       </Button>
                     </Stack>
                   </Stack>
-                  
+
                   {lessonForm.keywords.length === 0 ? (
-                    <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
+                    <Paper
+                      sx={{ p: 3, textAlign: "center", bgcolor: "grey.50" }}
+                    >
                       <Typography color="text.secondary" gutterBottom>
                         No keywords added yet. You can:
                       </Typography>
-                      <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        justifyContent="center"
+                        sx={{ mt: 2 }}
+                      >
                         <Button
                           variant="outlined"
                           startIcon={<AddCircleOutline />}
@@ -657,7 +812,11 @@ export const CourseManagement: React.FC = () => {
                       {lessonForm.keywords.map((keyword, index) => (
                         <Paper key={index} sx={{ p: 2 }}>
                           <Stack spacing={2}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                            <Stack
+                              direction="row"
+                              justifyContent="space-between"
+                              alignItems="center"
+                            >
                               <Typography variant="subtitle2" fontWeight={600}>
                                 Keyword {index + 1}
                               </Typography>
@@ -669,17 +828,27 @@ export const CourseManagement: React.FC = () => {
                                 <DeleteOutline />
                               </IconButton>
                             </Stack>
-                            
+
                             <Grid container spacing={2}>
                               <Grid size={{ xs: 12, md: 6 }}>
                                 <TextField
                                   fullWidth
                                   label="Japanese Text"
                                   value={keyword.japaneseText}
-                                  onChange={(e) => updateKeyword(index, 'japaneseText', e.target.value)}
+                                  onChange={(e) =>
+                                    updateKeyword(
+                                      index,
+                                      "japaneseText",
+                                      e.target.value
+                                    )
+                                  }
                                   placeholder="こんにちは"
                                   InputProps={{
-                                    startAdornment: <Translate sx={{ mr: 1, color: 'action.active' }} />,
+                                    startAdornment: (
+                                      <Translate
+                                        sx={{ mr: 1, color: "action.active" }}
+                                      />
+                                    ),
                                   }}
                                 />
                               </Grid>
@@ -688,10 +857,20 @@ export const CourseManagement: React.FC = () => {
                                   fullWidth
                                   label="English Text"
                                   value={keyword.englishText}
-                                  onChange={(e) => updateKeyword(index, 'englishText', e.target.value)}
+                                  onChange={(e) =>
+                                    updateKeyword(
+                                      index,
+                                      "englishText",
+                                      e.target.value
+                                    )
+                                  }
                                   placeholder="Hello"
                                   InputProps={{
-                                    startAdornment: <Translate sx={{ mr: 1, color: 'action.active' }} />,
+                                    startAdornment: (
+                                      <Translate
+                                        sx={{ mr: 1, color: "action.active" }}
+                                      />
+                                    ),
                                   }}
                                 />
                               </Grid>
@@ -700,10 +879,20 @@ export const CourseManagement: React.FC = () => {
                                   fullWidth
                                   label="Japanese Audio URL (S3)"
                                   value={keyword.japaneseAudioUrl}
-                                  onChange={(e) => updateKeyword(index, 'japaneseAudioUrl', e.target.value)}
+                                  onChange={(e) =>
+                                    updateKeyword(
+                                      index,
+                                      "japaneseAudioUrl",
+                                      e.target.value
+                                    )
+                                  }
                                   placeholder="https://s3.../japanese-audio.mp3"
                                   InputProps={{
-                                    startAdornment: <VolumeUp sx={{ mr: 1, color: 'action.active' }} />,
+                                    startAdornment: (
+                                      <VolumeUp
+                                        sx={{ mr: 1, color: "action.active" }}
+                                      />
+                                    ),
                                   }}
                                 />
                               </Grid>
@@ -712,10 +901,20 @@ export const CourseManagement: React.FC = () => {
                                   fullWidth
                                   label="English Audio URL (S3)"
                                   value={keyword.englishAudioUrl}
-                                  onChange={(e) => updateKeyword(index, 'englishAudioUrl', e.target.value)}
+                                  onChange={(e) =>
+                                    updateKeyword(
+                                      index,
+                                      "englishAudioUrl",
+                                      e.target.value
+                                    )
+                                  }
                                   placeholder="https://s3.../english-audio.mp3"
                                   InputProps={{
-                                    startAdornment: <VolumeUp sx={{ mr: 1, color: 'action.active' }} />,
+                                    startAdornment: (
+                                      <VolumeUp
+                                        sx={{ mr: 1, color: "action.active" }}
+                                      />
+                                    ),
                                   }}
                                 />
                               </Grid>
@@ -725,10 +924,10 @@ export const CourseManagement: React.FC = () => {
                       ))}
                     </Stack>
                   )}
-                  
+
                   {/* Summary */}
                   {lessonForm.keywords.length > 0 && (
-                    <Paper sx={{ p: 2, mt: 2, bgcolor: 'grey.50' }}>
+                    <Paper sx={{ p: 2, mt: 2, bgcolor: "grey.50" }}>
                       <Stack spacing={1}>
                         <Typography variant="subtitle2">Summary</Typography>
                         <Stack direction="row" spacing={2}>
@@ -737,19 +936,42 @@ export const CourseManagement: React.FC = () => {
                             size="small"
                           />
                           <Chip
-                            label={`${lessonForm.keywords.filter(k => k.japaneseAudioUrl).length} with JP audio`}
+                            label={`${
+                              lessonForm.keywords.filter(
+                                (k) => k.japaneseAudioUrl
+                              ).length
+                            } with JP audio`}
                             size="small"
-                            color={lessonForm.keywords.filter(k => k.japaneseAudioUrl).length === lessonForm.keywords.length ? 'success' : 'warning'}
+                            color={
+                              lessonForm.keywords.filter(
+                                (k) => k.japaneseAudioUrl
+                              ).length === lessonForm.keywords.length
+                                ? "success"
+                                : "warning"
+                            }
                           />
                           <Chip
-                            label={`${lessonForm.keywords.filter(k => k.englishAudioUrl).length} with EN audio`}
+                            label={`${
+                              lessonForm.keywords.filter(
+                                (k) => k.englishAudioUrl
+                              ).length
+                            } with EN audio`}
                             size="small"
-                            color={lessonForm.keywords.filter(k => k.englishAudioUrl).length === lessonForm.keywords.length ? 'success' : 'warning'}
+                            color={
+                              lessonForm.keywords.filter(
+                                (k) => k.englishAudioUrl
+                              ).length === lessonForm.keywords.length
+                                ? "success"
+                                : "warning"
+                            }
                           />
                         </Stack>
-                        {lessonForm.keywords.some(k => !k.japaneseAudioUrl || !k.englishAudioUrl) && (
+                        {lessonForm.keywords.some(
+                          (k) => !k.japaneseAudioUrl || !k.englishAudioUrl
+                        ) && (
                           <Alert severity="warning" sx={{ mt: 1 }}>
-                            Some keywords are missing audio files. Consider using the Bulk Audio manager to import them.
+                            Some keywords are missing audio files. Consider
+                            using the Bulk Audio manager to import them.
                           </Alert>
                         )}
                       </Stack>
@@ -763,13 +985,23 @@ export const CourseManagement: React.FC = () => {
                 type="number"
                 label="Points Reward"
                 value={lessonForm.pointsReward}
-                onChange={(e) => setLessonForm({ ...lessonForm, pointsReward: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setLessonForm({
+                    ...lessonForm,
+                    pointsReward: parseInt(e.target.value),
+                  })
+                }
               />
               <FormControlLabel
                 control={
                   <Switch
                     checked={lessonForm.requiresReflection}
-                    onChange={(e) => setLessonForm({ ...lessonForm, requiresReflection: e.target.checked })}
+                    onChange={(e) =>
+                      setLessonForm({
+                        ...lessonForm,
+                        requiresReflection: e.target.checked,
+                      })
+                    }
                   />
                 }
                 label="Requires Reflection"
@@ -777,7 +1009,7 @@ export const CourseManagement: React.FC = () => {
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setLessonDialog(false)}>Cancel</Button>
+            <Button onClick={handleCloseLessonDialog}>Cancel</Button>
             <Button variant="contained" onClick={handleSaveLesson}>
               Save Lesson
             </Button>
@@ -799,14 +1031,19 @@ export const CourseManagement: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={4}
+      >
         <Typography variant="h4" fontWeight={700}>
           Course Management
         </Typography>
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setCourseDialog(true)}
+          onClick={handleAddNewCourse} // Use the fixed handler
         >
           Add Course
         </Button>
@@ -820,29 +1057,40 @@ export const CourseManagement: React.FC = () => {
                 <Box
                   sx={{
                     height: 120,
-                    background: `linear-gradient(135deg, ${course.type === 'JAPAN_IN_CONTEXT' ? '#FF6B6B' : '#4ECDC4'
-                      } 0%, ${course.type === 'JAPAN_IN_CONTEXT' ? '#FFB7C5' : '#7ED4D0'
-                      } 100%)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '3rem',
+                    background: `linear-gradient(135deg, ${
+                      course.type === "JAPAN_IN_CONTEXT" ? "#FF6B6B" : "#4ECDC4"
+                    } 0%, ${
+                      course.type === "JAPAN_IN_CONTEXT" ? "#FFB7C5" : "#7ED4D0"
+                    } 100%)`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "3rem",
                   }}
                 >
                   {course.icon}
                 </Box>
                 <CardContent>
-                  <Stack direction="row" justifyContent="space-between" alignItems="start" mb={2}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="start"
+                    mb={2}
+                  >
                     <Typography variant="h6" fontWeight={600}>
                       {course.title}
                     </Typography>
                     <Chip
-                      label={course.isActive ? 'Active' : 'Inactive'}
+                      label={course.isActive ? "Active" : "Inactive"}
                       size="small"
-                      color={course.isActive ? 'success' : 'default'}
+                      color={course.isActive ? "success" : "default"}
                     />
                   </Stack>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
                     {course.description}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -850,7 +1098,10 @@ export const CourseManagement: React.FC = () => {
                   </Typography>
                 </CardContent>
                 <CardActions>
-                  <Button size="small" onClick={() => setSelectedCourse(course)}>
+                  <Button
+                    size="small"
+                    onClick={() => setSelectedCourse(course)}
+                  >
                     Manage Lessons
                   </Button>
                   <Button
@@ -884,9 +1135,14 @@ export const CourseManagement: React.FC = () => {
       </Grid>
 
       {/* Course Dialog */}
-      <Dialog open={courseDialog} onClose={() => setCourseDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={courseDialog}
+        onClose={handleCloseCourseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
-          {editingCourse ? 'Edit Course' : 'Add New Course'}
+          {editingCourse ? "Edit Course" : "Add New Course"}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 2 }}>
@@ -894,7 +1150,9 @@ export const CourseManagement: React.FC = () => {
               fullWidth
               label="Course Title"
               value={courseForm.title}
-              onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
+              onChange={(e) =>
+                setCourseForm({ ...courseForm, title: e.target.value })
+              }
             />
             <TextField
               fullWidth
@@ -902,14 +1160,18 @@ export const CourseManagement: React.FC = () => {
               rows={3}
               label="Description"
               value={courseForm.description}
-              onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+              onChange={(e) =>
+                setCourseForm({ ...courseForm, description: e.target.value })
+              }
             />
             <FormControl fullWidth>
               <InputLabel>Course Type</InputLabel>
               <Select
                 value={courseForm.type}
                 label="Course Type"
-                onChange={(e) => setCourseForm({ ...courseForm, type: e.target.value as any })}
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, type: e.target.value as any })
+                }
               >
                 <MenuItem value="JAPAN_IN_CONTEXT">Japan in Context</MenuItem>
                 <MenuItem value="JLPT_IN_CONTEXT">JLPT in Context</MenuItem>
@@ -919,14 +1181,18 @@ export const CourseManagement: React.FC = () => {
               fullWidth
               label="Icon (Emoji)"
               value={courseForm.icon}
-              onChange={(e) => setCourseForm({ ...courseForm, icon: e.target.value })}
+              onChange={(e) =>
+                setCourseForm({ ...courseForm, icon: e.target.value })
+              }
               helperText="Enter an emoji to represent the course"
             />
             <FormControlLabel
               control={
                 <Switch
                   checked={courseForm.isActive}
-                  onChange={(e) => setCourseForm({ ...courseForm, isActive: e.target.checked })}
+                  onChange={(e) =>
+                    setCourseForm({ ...courseForm, isActive: e.target.checked })
+                  }
                 />
               }
               label="Active"
@@ -934,7 +1200,7 @@ export const CourseManagement: React.FC = () => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCourseDialog(false)}>Cancel</Button>
+          <Button onClick={handleCloseCourseDialog}>Cancel</Button>
           <Button variant="contained" onClick={handleSaveCourse}>
             Save Course
           </Button>
