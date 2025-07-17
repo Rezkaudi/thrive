@@ -44,21 +44,23 @@ export class Server {
 
     this.app.use(cors({
       origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-      credentials: true, // Important for cookies
+      credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
     }));
 
     this.app.use(compression());
     this.app.use(morgan('dev'));
-    this.app.use(cookieParser()); // Add cookie parser
+    this.app.use(cookieParser());
 
-    // Raw body for Stripe webhooks
+    // ⚠️ Register the Stripe webhook route BEFORE json middleware
     this.app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
 
+    // ✅ JSON body parsing for all other routes
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
   }
+
 
   private configureRoutes(): void {
     // Static files
@@ -77,7 +79,7 @@ export class Server {
     this.app.use('/api/sessions', sessionRouter);
 
     // Health check
-    this.app.get('/', (req, res) => {
+    this.app.get('/', (_, res) => {
       res.send("OK")
     });
   }
