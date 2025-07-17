@@ -91,11 +91,26 @@ export class PaymentController {
     const sig = req.headers['stripe-signature'] as string;
 
     if (!sig) {
+      console.error('❌ No stripe signature found in headers');
       res.status(400).json({ error: 'No stripe signature found' });
       return;
     }
+    // Log for debugging
+    console.log('📨 Webhook received');
+    console.log('Headers:', {
+      'stripe-signature': sig ? 'Present' : 'Missing',
+      'content-type': req.headers['content-type']
+    });
 
     try {
+
+      // Ensure we have the raw body
+      if (!req.body || !(req.body instanceof Buffer)) {
+        console.error('❌ Invalid body type:', typeof req.body);
+        res.status(400).json({ error: 'Webhook requires raw body' });
+        return;
+      }
+
       const event = this.paymentService.constructWebhookEvent(req.body, sig);
       console.log(`⚡ Webhook Event: ${event.type}`);
 
