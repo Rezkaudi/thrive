@@ -62,12 +62,17 @@ export class Server {
     // This ensures the raw body is preserved for Stripe signature verification
     this.app.use(
       '/api/payment/webhook',
-      express.raw({ type: 'application/json' })
+      express.raw({
+        type: 'application/json',
+        // Increase limit if needed for larger payloads
+        limit: '100kb'
+      })
     );
 
     // NOW we can add JSON parsing for all other routes
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(express.json({ limit: '10mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 
     // Static files
     this.app.use('/uploads', express.static('uploads'));
