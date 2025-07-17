@@ -199,11 +199,11 @@ export const ForgotPasswordPage: React.FC = () => {
                                 </Stack>
                             </form>
 
-                            <Alert severity="info" sx={{ mt: 3 }}>
+                            {/* <Alert severity="info" sx={{ mt: 3 }}>
                                 <Typography variant="caption">
                                     For security reasons, we'll always say we've sent an email, even if the address isn't registered.
                                 </Typography>
-                            </Alert>
+                            </Alert> */}
                         </CardContent>
                     </Card>
                 </motion.div>
