@@ -102,12 +102,19 @@ export class PaymentService implements IPaymentService {
     }
 
     try {
+      // Ensure payload is in the correct format
+      const bodyBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+
       return this.stripe.webhooks.constructEvent(
-        payload,
+        bodyBuffer,
         signature,
         this.webhookSecret
       );
     } catch (error: any) {
+      console.error('Webhook verification error:', error.message);
+      console.error('Webhook secret exists:', !!this.webhookSecret);
+      console.error('Signature exists:', !!signature);
+      console.error('Payload type:', Buffer.isBuffer(payload) ? 'Buffer' : typeof payload);
       throw new Error(`Webhook signature verification failed: ${error.message}`);
     }
   }
