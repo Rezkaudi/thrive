@@ -95,6 +95,7 @@ export class PaymentController {
       res.status(400).json({ error: 'No stripe signature found' });
       return;
     }
+
     // Log for debugging
     console.log('📨 Webhook received');
     console.log('Headers:', {
@@ -103,6 +104,17 @@ export class PaymentController {
     });
 
     try {
+      // Verify webhook secret is configured
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
+        res.status(500).json({ error: 'Webhook secret not configured' });
+        return;
+      }
+
+      console.log('Webhook secret exists:', !!webhookSecret);
+      console.log('Signature exists:', !!sig);
+      console.log('Payload type:', Buffer.isBuffer(req.body) ? 'Buffer' : typeof req.body);
 
       // Ensure we have the raw body
       if (!req.body || !(req.body instanceof Buffer)) {
@@ -111,9 +123,22 @@ export class PaymentController {
         return;
       }
 
-      const event = this.paymentService.constructWebhookEvent(req.body, sig);
-      console.log(`⚡ Webhook Event: ${event.type}`);
+      let event;
+      try {
+        event = this.paymentService.constructWebhookEvent(req.body, sig);
+        console.log(`✅ Webhook Event verified: ${event.type}`);
+      } catch (err: any) {
+        console.error('Webhook verification error:', err.message);
+        console.error('Webhook secret exists:', !!webhookSecret);
+        console.error('Signature exists:', !!sig);
+        console.error('Payload type:', Buffer.isBuffer(req.body) ? 'Buffer' : typeof req.body);
 
+        // Return a 400 error to Stripe
+        res.status(400).json({ error: `Webhook signature verification failed: ${err.message}` });
+        return;
+      }
+
+      // Handle the event
       switch (event.type) {
         case 'payment_intent.succeeded':
           await this.handlePaymentIntentSucceeded(event.data.object as any);
@@ -143,10 +168,12 @@ export class PaymentController {
           console.log(`Unhandled event type: ${event.type}`);
       }
 
+      // Return a 200 response to acknowledge receipt of the event
       res.json({ received: true });
     } catch (error: any) {
-      console.error('❌ Webhook error:', error.message);
-      res.status(400).json({ error: `Webhook Error: ${error.message}` });
+      console.error('❌ Webhook processing error:', error.message);
+      console.error('Stack trace:', error.stack);
+      res.status(500).json({ error: `Webhook processing error: ${error.message}` });
     }
   };
 

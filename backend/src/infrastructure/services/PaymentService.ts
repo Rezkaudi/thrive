@@ -102,23 +102,36 @@ export class PaymentService implements IPaymentService {
     }
 
     try {
-      // Ensure payload is in the correct format
-      const bodyBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+      // Log the webhook secret format (first few chars only for security)
+      console.log('Webhook secret format check:', {
+        startsWithWhsec: this.webhookSecret.startsWith('whsec_'),
+        length: this.webhookSecret.length
+      });
 
-      return this.stripe.webhooks.constructEvent(
-        bodyBuffer,
+      // Ensure payload is a Buffer
+      const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+
+      // Construct the event
+      const event = this.stripe.webhooks.constructEvent(
+        payloadBuffer,
         signature,
         this.webhookSecret
       );
+
+      return event;
     } catch (error: any) {
-      console.error('Webhook verification error:', error.message);
-      console.error('Webhook secret exists:', !!this.webhookSecret);
-      console.error('Signature exists:', !!signature);
-      console.error('Payload type:', Buffer.isBuffer(payload) ? 'Buffer' : typeof payload);
+      console.error('Webhook verification detailed error:', {
+        errorMessage: error.message,
+        errorType: error.type,
+        webhookSecretExists: !!this.webhookSecret,
+        signatureExists: !!signature,
+        payloadType: Buffer.isBuffer(payload) ? 'Buffer' : typeof payload,
+        payloadLength: Buffer.isBuffer(payload) ? payload.length : payload.length
+      });
+
       throw new Error(`Webhook signature verification failed: ${error.message}`);
     }
   }
-
   // Add method to retrieve customer
   async retrieveCustomer(customerId: string): Promise<Stripe.Customer | null> {
     try {
