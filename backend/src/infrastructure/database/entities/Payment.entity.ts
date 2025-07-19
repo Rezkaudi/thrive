@@ -1,14 +1,14 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('payments')
 export class PaymentEntity {
   @PrimaryColumn()
   id!: string;
 
-  @Column({ unique: true })
+  @Column() // No unique constraint on email
   email!: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true }) // Unique constraint only on stripePaymentIntentId
   stripePaymentIntentId!: string;
 
   @Column()
