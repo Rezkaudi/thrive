@@ -96,39 +96,20 @@ export class PaymentService implements IPaymentService {
     }
   }
 
-  constructWebhookEvent(payload: Buffer | string, signature: string): Stripe.Event {
+  constructWebhookEvent(payload: string, signature: string): Stripe.Event {
     if (!this.webhookSecret) {
       throw new Error('Webhook secret not configured');
     }
 
     try {
-      // Log the webhook secret format (first few chars only for security)
-      console.log('Webhook secret format check:', {
-        startsWithWhsec: this.webhookSecret.startsWith('whsec_'),
-        length: this.webhookSecret.length
-      });
-
-      // Ensure payload is a Buffer
-      const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
-
-      // Construct the event
       const event = this.stripe.webhooks.constructEvent(
-        payloadBuffer,
+        payload,
         signature,
         this.webhookSecret
       );
 
       return event;
     } catch (error: any) {
-      console.error('Webhook verification detailed error:', {
-        errorMessage: error.message,
-        errorType: error.type,
-        webhookSecretExists: !!this.webhookSecret,
-        signatureExists: !!signature,
-        payloadType: Buffer.isBuffer(payload) ? 'Buffer' : typeof payload,
-        payloadLength: Buffer.isBuffer(payload) ? payload.length : payload.length
-      });
-
       throw new Error(`Webhook signature verification failed: ${error.message}`);
     }
   }
