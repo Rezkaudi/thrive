@@ -96,13 +96,6 @@ export class PaymentController {
       return;
     }
 
-    // Log for debugging
-    console.log('📨 Webhook received');
-    console.log('Headers:', {
-      'stripe-signature': sig ? 'Present' : 'Missing',
-      'content-type': req.headers['content-type']
-    });
-
     try {
       // Verify webhook secret is configured
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -111,11 +104,6 @@ export class PaymentController {
         res.status(500).json({ error: 'Webhook secret not configured' });
         return;
       }
-
-      console.log('Webhook secret exists:', !!webhookSecret);
-      console.log('Signature exists:', !!sig);
-      console.log('Payload type:', Buffer.isBuffer(req.body) ? 'Buffer' : typeof req.body);
-
       // Ensure we have the raw body
       if (!req.body || !(req.body instanceof Buffer)) {
         console.error('❌ Invalid body type:', typeof req.body);

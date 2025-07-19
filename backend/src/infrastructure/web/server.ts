@@ -53,26 +53,16 @@ export class Server {
     this.app.use(morgan('dev'));
     this.app.use(cookieParser());
 
-    // ⚠️ CRITICAL: DO NOT add any body parsing middleware here
-    // Body parsing is handled in configureRoutes() to ensure webhook gets raw body
+    this.app.use((req, res, next) => {
+      if (req.originalUrl === "/api/payment/webhook") {
+        next();
+      } else {
+        express.json()(req, res, next);
+      }
+    });
   }
 
   private configureRoutes(): void {
-    // ⚠️ WEBHOOK ROUTE MUST BE REGISTERED FIRST - BEFORE ANY BODY PARSING
-    // This ensures the raw body is preserved for Stripe signature verification
-    this.app.use(
-      '/api/payment/webhook',
-      express.raw({
-        type: 'application/json',
-        // Increase limit if needed for larger payloads
-        limit: '100kb'
-      })
-    );
-
-    // NOW we can add JSON parsing for all other routes
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 
     // Static files
     this.app.use('/uploads', express.static('uploads'));
