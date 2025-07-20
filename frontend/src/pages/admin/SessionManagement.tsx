@@ -185,6 +185,18 @@ export const SessionManagement: React.FC = () => {
     }
   };
 
+  // Function to format date without seconds
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   // Filter sessions based on tab
   const now = new Date();
   const upcomingSessions = sessions.filter(s => new Date(s.scheduledAt) > now);
@@ -220,6 +232,7 @@ export const SessionManagement: React.FC = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={() => setSessionDialog(true)}
+            sx={{color: "white"}}
           >
             Create Session
           </Button>
@@ -361,10 +374,11 @@ export const SessionManagement: React.FC = () => {
                               label={session.type}
                               size="small"
                               color={session.type === 'SPEAKING' ? 'primary' : 'secondary'}
+                              sx={{color: "white"}}
                             />
                           </TableCell>
                           <TableCell>
-                            {new Date(session.scheduledAt).toLocaleString()}
+                            {formatDateTime(session.scheduledAt)}
                           </TableCell>
                           <TableCell>{session.duration} min</TableCell>
                           <TableCell>
@@ -393,6 +407,7 @@ export const SessionManagement: React.FC = () => {
                                 label={session.isActive ? 'Active' : 'Inactive'}
                                 size="small"
                                 color={session.isActive ? 'success' : 'default'}
+                                sx={{color: 'white'}}
                               />
                               {isPast && (
                                 <Chip
@@ -558,6 +573,7 @@ export const SessionManagement: React.FC = () => {
               variant="contained" 
               onClick={handleSaveSession}
               disabled={!sessionForm.title || !sessionForm.description}
+              sx={{color: "white"}}
             >
               Save Session
             </Button>
