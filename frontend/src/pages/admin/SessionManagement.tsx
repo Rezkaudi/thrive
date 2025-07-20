@@ -46,6 +46,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import api from '../../services/api';
+import { useSweetAlert } from '../../utils/sweetAlert';
 
 interface Session {
   id: string;
@@ -65,6 +66,7 @@ interface Session {
 }
 
 export const SessionManagement: React.FC = () => {
+  const { showConfirm, showSuccess, showError } = useSweetAlert();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionDialog, setSessionDialog] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -97,7 +99,6 @@ export const SessionManagement: React.FC = () => {
     pointsRequired: 0,
     isActive: true,
   });
-
 
   useEffect(() => {
     fetchSessions();
@@ -136,8 +137,10 @@ export const SessionManagement: React.FC = () => {
 
       if (editingSession) {
         await api.put(`/admin/sessions/${editingSession.id}`, payload);
+        showSuccess('Success', 'Session updated successfully');
       } else {
         await api.post('/admin/sessions', payload);
+        showSuccess('Success', 'Session created successfully');
       }
 
       setSessionDialog(false);
@@ -157,18 +160,27 @@ export const SessionManagement: React.FC = () => {
       fetchSessions();
     } catch (error: any) {
       console.error('Failed to save session:', error);
-      alert(error.response?.data?.error || 'Failed to save session');
+      showError('Error', error.response?.data?.error || 'Failed to save session');
     }
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    if (window.confirm('Are you sure you want to delete this session?')) {
+    const result = await showConfirm({
+      title: 'Delete Session',
+      text: 'Are you sure you want to delete this session? This action cannot be undone.',
+      icon: 'warning',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/admin/sessions/${sessionId}`);
+        showSuccess('Deleted', 'Session has been deleted successfully');
         fetchSessions();
       } catch (error: any) {
         console.error('Failed to delete session:', error);
-        alert(error.response?.data?.error || 'Failed to delete session');
+        showError('Error', error.response?.data?.error || 'Failed to delete session');
       }
     }
   };

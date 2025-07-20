@@ -11,3 +11,58 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* SweetAlert2 Custom Styles */
+.sweet-alert-popup {
+  font-family: 'Inter', 'Noto Sans JP', 'Helvetica', 'Arial', sans-serif !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12) !important;
+}
+
+.sweet-alert-title {
+  font-weight: 600 !important;
+  color: #2D3436 !important;
+  font-size: 1.5rem !important;
+}
+
+.sweet-alert-confirm {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 12px 24px !important;
+  transition: all 0.3s ease !important;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%) !important;
+  border: none !important;
+}
+
+.sweet-alert-confirm:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3) !important;
+  background: linear-gradient(135deg, #E55555 0%, #FF9FAC 100%) !important;
+}
+
+.sweet-alert-cancel {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 12px 24px !important;
+  transition: all 0.3s ease !important;
+  background-color: #6C757D !important;
+  border: none !important;
+}
+
+.sweet-alert-cancel:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3) !important;
+  background-color: #5A6268 !important;
+}
+
+.swal2-popup {
+  border-radius: 16px !important;
+}
+
+.swal2-title {
+  font-family: 'Inter', 'Noto Sans JP', 'Helvetica', 'Arial', sans-serif !important;
+}
+
+.swal2-content {
+  font-family: 'Inter', 'Noto Sans JP', 'Helvetica', 'Arial', sans-serif !important;
+}
