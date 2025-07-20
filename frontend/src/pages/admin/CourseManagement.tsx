@@ -94,6 +94,10 @@ export const CourseManagement: React.FC = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [bulkAudioDialog, setBulkAudioDialog] = useState(false);
 
+  // Drag and drop state
+  const [draggedLesson, setDraggedLesson] = useState<Lesson | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   const [courseForm, setCourseForm] = useState<{
     title: string;
     description: string;
@@ -120,6 +124,94 @@ export const CourseManagement: React.FC = () => {
     passingScore: 70,
     keywords: [] as Keyword[],
   });
+
+  // Drag and Drop handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, lesson: Lesson) => {
+    setDraggedLesson(lesson);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", "");
+    
+    // Add some visual feedback
+    if (e.currentTarget) {
+      e.currentTarget.style.opacity = "0.5";
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    setDraggedLesson(null);
+    setDragOverIndex(null);
+    
+    // Reset visual feedback
+    if (e.currentTarget) {
+      e.currentTarget.style.opacity = "1";
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Only clear if we're leaving the entire drop zone, not just moving between children
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (!draggedLesson) return;
+
+    const dragIndex = lessons.findIndex(lesson => lesson.id === draggedLesson.id);
+    
+    if (dragIndex === dropIndex) {
+      setDraggedLesson(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Create new array with reordered lessons
+    const newLessons = [...lessons];
+    const [draggedItem] = newLessons.splice(dragIndex, 1);
+    newLessons.splice(dropIndex, 0, draggedItem);
+
+    // Update order numbers
+    const reorderedLessons = newLessons.map((lesson, index) => ({
+      ...lesson,
+      order: index + 1
+    }));
+
+    // Optimistically update UI
+    setLessons(reorderedLessons);
+    setDraggedLesson(null);
+    setDragOverIndex(null);
+
+    try {
+      // Update all affected lessons in the backend
+      const updatePromises = reorderedLessons.map(lesson => 
+        api.put(`/admin/lessons/${lesson.id}`, {
+          ...lesson,
+          order: lesson.order
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      console.log('Lessons reordered successfully');
+    } catch (error) {
+      console.error("Failed to reorder lessons:", error);
+      // Revert on error
+      fetchLessons(selectedCourse!.id);
+      alert("Failed to reorder lessons. Please try again.");
+    }
+  };
+
 
   // Helper function to reset course form to default values
   const resetCourseForm = () => {
@@ -183,7 +275,9 @@ export const CourseManagement: React.FC = () => {
     try {
       const response = await api.get(`/courses/${courseId}/lessons`);
       console.log("Lessons response:", response.data);
-      setLessons(response.data);
+      // Sort lessons by order to ensure correct display
+      const sortedLessons = response.data.sort((a: Lesson, b: Lesson) => a.order - b.order);
+      setLessons(sortedLessons);
     } catch (error) {
       console.error("Failed to fetch lessons:", error);
     }
@@ -259,7 +353,7 @@ export const CourseManagement: React.FC = () => {
         await api.post("/admin/courses", courseForm);
       }
       setCourseDialog(false);
-      resetCourseForm(); // Use helper function
+      resetCourseForm();
       fetchCourses();
     } catch (error) {
       console.error("Failed to save course:", error);
@@ -297,7 +391,7 @@ export const CourseManagement: React.FC = () => {
         );
       }
       setLessonDialog(false);
-      resetLessonForm(); // Use helper function
+      resetLessonForm();
       fetchLessons(selectedCourse!.id);
     } catch (error) {
       console.error("Failed to save lesson:", error);
@@ -330,24 +424,24 @@ export const CourseManagement: React.FC = () => {
   // Fixed: Close course dialog handler
   const handleCloseCourseDialog = () => {
     setCourseDialog(false);
-    resetCourseForm(); // Reset form and editing state
+    resetCourseForm();
   };
 
   // Fixed: Close lesson dialog handler
   const handleCloseLessonDialog = () => {
     setLessonDialog(false);
-    resetLessonForm(); // Reset form and editing state
+    resetLessonForm();
   };
 
   // Fixed: Add new course handler
   const handleAddNewCourse = () => {
-    resetCourseForm(); // Ensure clean state
+    resetCourseForm();
     setCourseDialog(true);
   };
 
   // Fixed: Add new lesson handler
   const handleAddNewLesson = () => {
-    resetLessonForm(); // Ensure clean state
+    resetLessonForm();
     setLessonDialog(true);
   };
 
@@ -401,7 +495,8 @@ export const CourseManagement: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={handleAddNewLesson} // Use the fixed handler
+            onClick={handleAddNewLesson}
+            sx={{color:'white'}}
           >
             Add Lesson
           </Button>
@@ -415,12 +510,50 @@ export const CourseManagement: React.FC = () => {
                   Lesson List
                 </Typography>
                 <List>
-                  {lessons.map((lesson) => (
-                    <Paper key={lesson.id} sx={{ mb: 2 }}>
+                  {lessons.map((lesson, index) => (
+                    <Paper 
+                      key={lesson.id} 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, lesson)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      sx={{ 
+                        mb: 2,
+                        cursor: 'grab',
+                        transition: 'all 0.2s ease',
+                        transform: dragOverIndex === index && draggedLesson?.id !== lesson.id 
+                          ? 'translateY(-2px)' 
+                          : 'none',
+                        boxShadow: dragOverIndex === index && draggedLesson?.id !== lesson.id 
+                          ? 3 
+                          : 1,
+                        borderLeft: dragOverIndex === index && draggedLesson?.id !== lesson.id 
+                          ? '4px solid #1976d2' 
+                          : 'none',
+                        backgroundColor: draggedLesson?.id === lesson.id 
+                          ? 'rgba(0,0,0,0.05)' 
+                          : 'white',
+                        '&:hover': {
+                          boxShadow: 2
+                        },
+                        '&:active': {
+                          cursor: 'grabbing'
+                        }
+                      }}
+                    >
                       <ListItem>
-                        <IconButton edge="start" sx={{ cursor: "grab" }}>
-                          <DragIndicator />
-                        </IconButton>
+                        <Stack direction="row" spacing={1} sx={{ mr: 1 }}>
+                          
+                          <DragIndicator 
+                            sx={{ 
+                              color: 'action.active',
+                              alignSelf: 'center',
+                              ml: 0.5
+                            }} 
+                          />
+                        </Stack>
                         <ListItemText
                           primary={
                             <Stack
@@ -496,7 +629,8 @@ export const CourseManagement: React.FC = () => {
                         />
                         <ListItemSecondaryAction>
                           <IconButton
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.stopPropagation();
                               setEditingLesson(lesson);
 
                               const lessonDetails = await fetchLessonDetails(
@@ -521,7 +655,10 @@ export const CourseManagement: React.FC = () => {
                             <Edit />
                           </IconButton>
                           <IconButton
-                            onClick={() => handleDeleteLesson(lesson.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteLesson(lesson.id);
+                            }}
                             color="error"
                           >
                             <Delete />
@@ -616,6 +753,10 @@ export const CourseManagement: React.FC = () => {
                     order: parseInt(e.target.value),
                   })
                 }
+                helperText="Change this number to reorder the lesson"
+                InputProps={{
+                  inputProps: { min: 1, max: lessons.length + 1 }
+                }}
               />
 
               <FormControl>
@@ -1012,7 +1153,7 @@ export const CourseManagement: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseLessonDialog}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveLesson}>
+            <Button variant="contained" onClick={handleSaveLesson} sx={{color: "white"}}>
               Save Lesson
             </Button>
           </DialogActions>
@@ -1046,7 +1187,7 @@ export const CourseManagement: React.FC = () => {
           variant="contained"
           startIcon={<Add />}
           sx={{ color: "white" }}
-          onClick={handleAddNewCourse} // Use the fixed handler
+          onClick={handleAddNewCourse}
         >
           Add Course
         </Button>
