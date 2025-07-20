@@ -269,7 +269,7 @@ export const SessionManagement: React.FC = () => {
                     {Math.round(
                       sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
                       sessions.length
-                    )}%
+                    ) || 0}%
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Average Fill Rate
