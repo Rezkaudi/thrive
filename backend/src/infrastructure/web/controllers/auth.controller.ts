@@ -6,7 +6,6 @@ import { RefreshTokenUseCase } from '../../../application/use-cases/auth/Refresh
 import { UserRepository } from '../../database/repositories/UserRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
 import { PaymentRepository } from '../../database/repositories/PaymentRepository';
-import { RefreshTokenRepository } from '../../database/repositories/RefreshTokenRepository';
 import { EmailService } from '../../services/EmailService';
 import { PasswordService } from '../../services/PasswordService';
 import { TokenService } from '../../services/TokenService';
@@ -179,7 +178,6 @@ export class AuthController {
 
       const loginUseCase = new LoginUseCase(
         new UserRepository(),
-        new RefreshTokenRepository(),
         new PasswordService(),
         new TokenService()
       );
@@ -224,20 +222,12 @@ export class AuthController {
         return;
       }
 
-      const ipAddress = req.ip;
-      const userAgent = req.headers['user-agent'];
-
-      const refreshTokenUseCase = new RefreshTokenUseCase(
+      const refreshAccessTokenUseCase = new RefreshTokenUseCase(
         new UserRepository(),
-        new RefreshTokenRepository(),
         new TokenService()
       );
 
-      const { response, tokens } = await refreshTokenUseCase.execute({
-        refreshToken,
-        ipAddress,
-        userAgent
-      });
+      const { response, tokens } = await refreshAccessTokenUseCase.execute({ refreshToken });
 
       // Set new cookies
       const accessTokenConfig = getAccessTokenCookieConfig();
@@ -270,18 +260,6 @@ export class AuthController {
 
     res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, accessTokenConfig);
     res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, refreshTokenConfig);
-
-    // If we have a refresh token, invalidate it in the database
-    const refreshToken = req.cookies[COOKIE_NAMES.REFRESH_TOKEN];
-    if (refreshToken) {
-      try {
-        const refreshTokenRepository = new RefreshTokenRepository();
-        await refreshTokenRepository.deleteByToken(refreshToken);
-      } catch (error) {
-        // Log error but don't fail the logout
-        console.error('Failed to invalidate refresh token:', error);
-      }
-    }
 
     res.json({ message: 'Logout successful' });
   }
