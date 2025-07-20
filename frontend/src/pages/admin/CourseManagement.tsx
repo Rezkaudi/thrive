@@ -477,6 +477,7 @@ export const CourseManagement: React.FC = () => {
                                     ? "success"
                                     : "default"
                                 }
+                                sx={{ color: "white" }}
                               />
                               <Chip
                                 label={`${lesson.pointsReward} points`}
@@ -558,6 +559,7 @@ export const CourseManagement: React.FC = () => {
                         label={selectedCourse.isActive ? "Active" : "Inactive"}
                         color={selectedCourse.isActive ? "success" : "default"}
                         size="small"
+                        sx={{ color: "white" }}
                       />
                     </Typography>
                   </Box>
@@ -1043,6 +1045,7 @@ export const CourseManagement: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
+          sx={{ color: "white" }}
           onClick={handleAddNewCourse} // Use the fixed handler
         >
           Add Course
@@ -1084,6 +1087,7 @@ export const CourseManagement: React.FC = () => {
                       label={course.isActive ? "Active" : "Inactive"}
                       size="small"
                       color={course.isActive ? "success" : "default"}
+                      sx={{ color: "white" }}
                     />
                   </Stack>
                   <Typography
@@ -1201,7 +1205,11 @@ export const CourseManagement: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseCourseDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveCourse}>
+          <Button
+            variant="contained"
+            onClick={handleSaveCourse}
+            sx={{ color: "white" }}
+          >
             Save Course
           </Button>
         </DialogActions>
