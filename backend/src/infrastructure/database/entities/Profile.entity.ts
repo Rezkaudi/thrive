@@ -9,7 +9,10 @@ export class ProfileEntity {
   @Column()
   userId!: string;
 
-  @OneToOne(() => UserEntity, { onDelete: 'CASCADE', onUpdate: "CASCADE" })
+  @OneToOne(() => UserEntity, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  })
   @JoinColumn({ name: 'userId' }) // Ensure the foreign key is recognized
   user!: UserEntity;
 

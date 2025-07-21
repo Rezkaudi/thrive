@@ -9,14 +9,20 @@ export class MessageEntity {
   @Column()
   senderId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  })
   @JoinColumn({ name: 'senderId' })
   sender!: UserEntity;
 
   @Column()
   receiverId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  })
   @JoinColumn({ name: 'receiverId' })
   receiver!: UserEntity;
 

@@ -9,7 +9,10 @@ export class PostEntity {
   @Column()
   userId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  })
   @JoinColumn({ name: 'userId' })
   user!: UserEntity;
 
