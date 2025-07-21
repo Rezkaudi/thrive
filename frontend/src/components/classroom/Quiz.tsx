@@ -331,11 +331,13 @@ export const Quiz: React.FC<QuizProps> = ({
                 icon={<Timer />}
                 label={formatTime(timeRemaining)}
                 color={timeRemaining < 60 ? 'error' : 'default'}
+                sx={{color: "white"}}
               />
             )}
             <Chip
               label={`${currentQuestion + 1} / ${questions.length}`}
               color="primary"
+              sx={{color: "white"}}
             />
           </Stack>
         </Stack>
@@ -364,12 +366,12 @@ export const Quiz: React.FC<QuizProps> = ({
                       </Typography>
                     )}
                   </Box>
-                  <IconButton
+                  {/* <IconButton
                     onClick={handleFlagQuestion}
                     color={flaggedQuestions.has(currentQuestion) ? 'warning' : 'default'}
                   >
                     <Flag />
-                  </IconButton>
+                  </IconButton> */}
                 </Stack>
 
                 {question.type === 'single' ? (
@@ -466,6 +468,7 @@ export const Quiz: React.FC<QuizProps> = ({
               onClick={handleSubmit}
               disabled={selectedAnswers.some(a => a === null)}
               color="success"
+              sx={{color: "white"}}
             >
               Submit Quiz
             </Button>
@@ -474,6 +477,7 @@ export const Quiz: React.FC<QuizProps> = ({
               endIcon={<NavigateNext />}
               onClick={handleNext}
               variant="contained"
+              sx={{color: "white"}}
             >
               Next
             </Button>

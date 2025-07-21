@@ -462,6 +462,7 @@ export const CreateAccountPage: React.FC = () => {
                                                     size="small"
                                                     icon={<CheckCircle />}
                                                     color="success"
+                                                    sx={{color: "white"}}
                                                 />
                                             )}
                                         </Stack>

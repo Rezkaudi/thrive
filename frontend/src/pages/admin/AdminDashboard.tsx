@@ -316,15 +316,15 @@ export const AdminDashboard: React.FC = () => {
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Database</Typography>
-                  <Chip label="Healthy" color="success" size="small" />
+                  <Chip label="Healthy" color="success" size="small" sx={{color: "white"}}/>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Payment Gateway</Typography>
-                  <Chip label="Active" color="success" size="small" />
+                  <Chip label="Active" color="success" size="small" sx={{color: "white"}}/>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Email Service</Typography>
-                  <Chip label="Active" color="success" size="small" />
+                  <Chip label="Active" color="success" size="small" sx={{color: "white"}} />
                 </Stack>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Storage</Typography>

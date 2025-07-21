@@ -228,6 +228,7 @@ export const UserInfoStep: React.FC<UserInfoStepProps> = ({
                                         size="small"
                                         icon={<CheckCircle />}
                                         color="success"
+                                        sx={{color: "white"}}
                                     />
                                 )}
                             </Stack>

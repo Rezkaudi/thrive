@@ -47,8 +47,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
 import { calendarService, CalendarSession, Booking, BookingEligibility } from '../services/calendarService';
+import { useSweetAlert } from '../utils/sweetAlert';
 
 export const CalendarPage: React.FC = () => {
+  const { showConfirm, showSuccess, showError } = useSweetAlert();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
@@ -107,22 +109,30 @@ export const CalendarPage: React.FC = () => {
 
     try {
       await calendarService.createBooking(bookingDialog.id);
-      showSnackbar('Session booked successfully!', 'success');
+      showSuccess('Success', 'Session booked successfully!');
       setBookingDialog(null);
       fetchCalendarData();
     } catch (error) {
-      showSnackbar('Failed to book session', 'error');
+      showError('Error', 'Failed to book session');
     }
   };
 
   const handleCancelBooking = async (booking: Booking) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
+    const result = await showConfirm({
+      title: 'Cancel Booking',
+      text: 'Are you sure you want to cancel this booking?',
+      icon: 'warning',
+      confirmButtonText: 'Yes, cancel it',
+      cancelButtonText: 'Keep booking',
+    });
+
+    if (result.isConfirmed) {
       try {
         await calendarService.cancelBooking(booking.id);
-        showSnackbar('Booking cancelled successfully', 'success');
+        showSuccess('Cancelled', 'Booking cancelled successfully');
         fetchCalendarData();
       } catch (error) {
-        showSnackbar('Failed to cancel booking', 'error');
+        showError('Error', 'Failed to cancel booking');
       }
     }
   };
