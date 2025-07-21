@@ -50,6 +50,9 @@ export class UserRepository implements IUserRepository {
       entity.password,
       entity.role,
       entity.isActive,
+      entity.isverify,      // New field
+      entity.verificationCode,
+      entity.exprirat,       // New field
       entity.createdAt,
       entity.updatedAt
     );
@@ -62,6 +65,9 @@ export class UserRepository implements IUserRepository {
     entity.password = domain.password;
     entity.role = domain.role;
     entity.isActive = domain.isActive;
+    entity.isverify = domain.isverify;      // New field
+    entity.verificationCode = domain.verificationCode
+    entity.exprirat = domain.exprirat;       // New field
     entity.createdAt = domain.createdAt;
     entity.updatedAt = domain.updatedAt;
     return entity;

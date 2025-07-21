@@ -1,3 +1,5 @@
+// Add these columns to your existing UserEntity in backend/src/infrastructure/database/entities/User.entity.ts
+
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm';
 import { UserRole } from '../../../domain/entities/User';
 
@@ -21,6 +23,15 @@ export class UserEntity {
 
   @Column({ default: true })
   isActive!: boolean;
+
+  @Column({ default: false })
+  isverify!: boolean;  // New field
+
+  @Column({ type: 'varchar', nullable: true, default: null })
+  verificationCode!: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  exprirat!: Date | null;  // New field
 
   @CreateDateColumn()
   createdAt!: Date;

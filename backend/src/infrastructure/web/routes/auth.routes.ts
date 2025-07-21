@@ -96,4 +96,34 @@ router.get(
   authController.validateResetToken
 );
 
+router.post(
+  '/register-new',
+  [
+    body('name').notEmpty().trim(),
+    body('email').isEmail(),
+    body('password').isLength({ min: 8 }).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&])[A-Za-z\d@$!%*?&]/),
+  ],
+  validateRequest,
+  authController.registerWithVerification
+);
+
+router.post(
+  '/verify-email-code',
+  [
+    body('email').isEmail(),
+    body('code').isLength({ min: 6, max: 6 }).isNumeric(),
+  ],
+  validateRequest,
+  authController.verifyEmailCode
+);
+
+router.post(
+  '/resend-verification',
+  [
+    body('email').isEmail(),
+  ],
+  validateRequest,
+  authController.resendVerificationCode
+);
+
 export { router as authRouter };

@@ -49,21 +49,6 @@ export class LoginUseCase {
       role: user.role
     });
 
-    // Store refresh token
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-    // const refreshToken = new RefreshToken(
-    //   `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-    //   user.id,
-    //   tokenPair.refreshToken,
-    //   expiresAt,
-    //   new Date(),
-    //   new Date(),
-    //   dto.ipAddress,
-    //   dto.userAgent
-    // );
-
     // Generate CSRF token
     const csrfToken = this.tokenService.generateCSRFToken();
 

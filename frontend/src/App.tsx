@@ -19,10 +19,11 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 
 // Registration Pages
-import { EmailVerificationPage } from './pages/registration/EmailVerificationPage';
-import { PaymentPlanPage } from './pages/registration/PaymentPlanPage';
-import { CreateAccountPage } from './pages/registration/CreateAccountPage';
-import { RegistrationCompletePage } from './pages/registration/RegistrationCompletePage';
+// import { EmailVerificationPage } from './pages/registration/EmailVerificationPage';
+// import { PaymentPlanPage } from './pages/registration/PaymentPlanPage';
+// import { CreateAccountPage } from './pages/registration/CreateAccountPage';
+// import { RegistrationCompletePage } from './pages/registration/RegistrationCompletePage';
+import { NewRegistrationPage } from './pages/NewRegistrationPage';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -37,6 +38,8 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 
 import { CalendarPage } from './pages/CalendarPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>();
@@ -68,10 +71,14 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
 
-        <Route path="/register/email" element={<EmailVerificationPage />} />
+        {/* <Route path="/register/email" element={<EmailVerificationPage />} />
         <Route path="/register/payment" element={<PaymentPlanPage />} />
         <Route path="/register/account" element={<CreateAccountPage />} />
-        <Route path="/register/complete" element={<RegistrationCompletePage />} />
+        <Route path="/register/complete" element={<RegistrationCompletePage />} /> */}
+
+        <Route path="/register" element={<NewRegistrationPage />} />
+        <Route path="/register/verify" element={<VerifyEmailPage />} />
+        <Route path="/register/success" element={<RegistrationSuccessPage />} />
 
         <Route
           path="/login"
