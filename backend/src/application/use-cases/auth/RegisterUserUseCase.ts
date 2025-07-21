@@ -53,6 +53,9 @@ export class RegisterUserUseCase {
       hashedPassword,
       UserRole.STUDENT,
       true,
+      false,
+      null,
+      null,
       new Date(),
       new Date()
     );
