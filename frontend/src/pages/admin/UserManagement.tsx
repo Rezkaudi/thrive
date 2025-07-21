@@ -35,6 +35,7 @@ import {
   CheckCircle,
 } from '@mui/icons-material';
 import api from '../../services/api';
+import { useSweetAlert } from '../../utils/sweetAlert';
 
 interface User {
   id: string;
@@ -51,6 +52,7 @@ interface User {
 }
 
 export const UserManagement: React.FC = () => {
+  const { showConfirm, showSuccess, showError } = useSweetAlert();
   const [users, setUsers] = useState<User[]>([]);
   // const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -97,26 +99,59 @@ export const UserManagement: React.FC = () => {
   };
 
   const toggleUserStatus = async (user: User) => {
-    try {
-      await api.put(`/admin/users/${user.id}/status`, {
-        isActive: !user.isActive,
-      });
-      fetchUsers();
-    } catch (error) {
-      console.error('Failed to update user status:', error);
+    const action = user.isActive ? 'deactivate' : 'activate';
+    const result = await showConfirm({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} User`,
+      text: `Are you sure you want to ${action} ${user.profile?.name || user.email}?`,
+      icon: 'warning',
+      confirmButtonText: `Yes, ${action}`,
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.put(`/admin/users/${user.id}/status`, {
+          isActive: !user.isActive,
+        });
+        showSuccess('Success', `User ${action}d successfully`);
+        fetchUsers();
+      } catch (error) {
+        console.error('Failed to update user status:', error);
+        showError('Error', `Failed to ${action} user`);
+      }
     }
   };
 
   const handlePointsAdjustment = async () => {
-    if (!selectedUser || !pointsData.reason) return;
+    if (!selectedUser || !pointsData.reason) {
+      showError('Validation Error', 'Please provide a reason for the points adjustment');
+      return;
+    }
 
-    try {
-      await api.post(`/admin/users/${selectedUser.id}/points`, pointsData);
-      setPointsDialog(false);
-      setPointsData({ points: 0, reason: '' });
-      fetchUsers();
-    } catch (error) {
-      console.error('Failed to adjust points:', error);
+    if (pointsData.points === 0) {
+      showError('Validation Error', 'Please enter a points value (positive or negative)');
+      return;
+    }
+
+    const result = await showConfirm({
+      title: 'Adjust Points',
+      text: `${pointsData.points > 0 ? 'Add' : 'Remove'} ${Math.abs(pointsData.points)} points ${pointsData.points > 0 ? 'to' : 'from'} ${selectedUser?.profile?.name || selectedUser?.email}?`,
+      icon: 'question',
+      confirmButtonText: 'Yes, adjust points',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.post(`/admin/users/${selectedUser.id}/points`, pointsData);
+        showSuccess('Success', 'Points adjusted successfully');
+        setPointsDialog(false);
+        setPointsData({ points: 0, reason: '' });
+        fetchUsers();
+      } catch (error) {
+        console.error('Failed to adjust points:', error);
+        showError('Error', 'Failed to adjust points');
+      }
     }
   };
 

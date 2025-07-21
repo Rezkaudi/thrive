@@ -924,7 +924,7 @@ export const ProfilePage: React.FC = () => {
                               label={activity.points}
                               color="success"
                               size="small"
-                              sx={{ fontWeight: 600 }}
+                              sx={{ fontWeight: 600 , color: "white"}}
                             />
                           </Stack>
                         </Paper>

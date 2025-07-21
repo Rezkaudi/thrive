@@ -46,6 +46,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import api from '../../services/api';
+import { useSweetAlert } from '../../utils/sweetAlert';
 
 interface Session {
   id: string;
@@ -65,6 +66,7 @@ interface Session {
 }
 
 export const SessionManagement: React.FC = () => {
+  const { showConfirm, showSuccess, showError } = useSweetAlert();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionDialog, setSessionDialog] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -97,7 +99,6 @@ export const SessionManagement: React.FC = () => {
     pointsRequired: 0,
     isActive: true,
   });
-
 
   useEffect(() => {
     fetchSessions();
@@ -136,8 +137,10 @@ export const SessionManagement: React.FC = () => {
 
       if (editingSession) {
         await api.put(`/admin/sessions/${editingSession.id}`, payload);
+        showSuccess('Success', 'Session updated successfully');
       } else {
         await api.post('/admin/sessions', payload);
+        showSuccess('Success', 'Session created successfully');
       }
 
       setSessionDialog(false);
@@ -157,20 +160,41 @@ export const SessionManagement: React.FC = () => {
       fetchSessions();
     } catch (error: any) {
       console.error('Failed to save session:', error);
-      alert(error.response?.data?.error || 'Failed to save session');
+      showError('Error', error.response?.data?.error || 'Failed to save session');
     }
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    if (window.confirm('Are you sure you want to delete this session?')) {
+    const result = await showConfirm({
+      title: 'Delete Session',
+      text: 'Are you sure you want to delete this session? This action cannot be undone.',
+      icon: 'warning',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/admin/sessions/${sessionId}`);
+        showSuccess('Deleted', 'Session has been deleted successfully');
         fetchSessions();
       } catch (error: any) {
         console.error('Failed to delete session:', error);
-        alert(error.response?.data?.error || 'Failed to delete session');
+        showError('Error', error.response?.data?.error || 'Failed to delete session');
       }
     }
+  };
+
+  // Function to format date without seconds
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   // Filter sessions based on tab
@@ -208,6 +232,7 @@ export const SessionManagement: React.FC = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={() => setSessionDialog(true)}
+            sx={{color: "white"}}
           >
             Create Session
           </Button>
@@ -257,7 +282,7 @@ export const SessionManagement: React.FC = () => {
                     {Math.round(
                       sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
                       sessions.length
-                    )}%
+                    ) || 0}%
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Average Fill Rate
@@ -349,10 +374,11 @@ export const SessionManagement: React.FC = () => {
                               label={session.type}
                               size="small"
                               color={session.type === 'SPEAKING' ? 'primary' : 'secondary'}
+                              sx={{color: "white"}}
                             />
                           </TableCell>
                           <TableCell>
-                            {new Date(session.scheduledAt).toLocaleString()}
+                            {formatDateTime(session.scheduledAt)}
                           </TableCell>
                           <TableCell>{session.duration} min</TableCell>
                           <TableCell>
@@ -381,6 +407,7 @@ export const SessionManagement: React.FC = () => {
                                 label={session.isActive ? 'Active' : 'Inactive'}
                                 size="small"
                                 color={session.isActive ? 'success' : 'default'}
+                                sx={{color: 'white'}}
                               />
                               {isPast && (
                                 <Chip
@@ -546,6 +573,7 @@ export const SessionManagement: React.FC = () => {
               variant="contained" 
               onClick={handleSaveSession}
               disabled={!sessionForm.title || !sessionForm.description}
+              sx={{color: "white"}}
             >
               Save Session
             </Button>
