@@ -42,7 +42,19 @@ import {
   ContentCopy,
   Refresh,
 } from '@mui/icons-material';
-import { format, addDays, startOfWeek, isSameDay, addMonths, subMonths } from 'date-fns';
+import { 
+  format, 
+  addDays, 
+  startOfWeek, 
+  isSameDay, 
+  addMonths, 
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  endOfWeek,
+  isSameMonth,
+  isToday
+} from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
@@ -156,12 +168,30 @@ export const CalendarPage: React.FC = () => {
     showSnackbar('Meeting link copied to clipboard', 'success');
   };
 
-  const weekStart = startOfWeek(selectedDate);
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  // Generate calendar days for the month view
+  const generateCalendarDays = () => {
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    const calendarStart = startOfWeek(monthStart);
+    const calendarEnd = endOfWeek(monthEnd);
+
+    const days = [];
+    let day = calendarStart;
+
+    while (day <= calendarEnd) {
+      days.push(day);
+      day = addDays(day, 1);
+    }
+
+    return days;
+  };
 
   const getSessionsForDay = (date: Date) => {
     return sessions.filter(s => isSameDay(new Date(s.scheduledAt), date));
   };
+
+  const calendarDays = generateCalendarDays();
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const SessionCard = ({ session, compact = false }: { session: CalendarSession; compact?: boolean }) => {
     const isBooked = myBookings.some(b => b.sessionId === session.id);
@@ -339,6 +369,7 @@ export const CalendarPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent>
+              {/* Calendar Header */}
               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
                 <IconButton onClick={() => setSelectedDate(subMonths(selectedDate, 1))}>
                   <ChevronLeft />
@@ -351,44 +382,104 @@ export const CalendarPage: React.FC = () => {
                 </IconButton>
               </Stack>
 
+              {/* Days of Week Header */}
+              <Grid container spacing={1} sx={{ mb: 1 }}>
+                {weekDays.map((day) => (
+                  <Grid size={{ xs: 12/7 }} key={day}>
+                    <Typography 
+                      variant="caption" 
+                      fontWeight={600}
+                      color="text.secondary"
+                      textAlign="center"
+                      display="block"
+                      sx={{ py: 1 }}
+                    >
+                      {day}
+                    </Typography>
+                  </Grid>
+                ))}
+              </Grid>
+
+              {/* Calendar Grid */}
               <Grid container spacing={1}>
-                {weekDays.map((day) => {
+                {calendarDays.map((day) => {
                   const daySessions = getSessionsForDay(day);
                   const hasBooking = daySessions.some(s => 
                     myBookings.some(b => b.sessionId === s.id)
                   );
+                  const isCurrentMonth = isSameMonth(day, selectedDate);
+                  const isSelected = isSameDay(day, selectedDate);
+                  const isCurrentDay = isToday(day);
                   
                   return (
-                    <Grid size={{ xs: 12, sm:6, md: 3 }} key={day.toISOString()}>
+                    <Grid size={{ xs: 12/7 }} key={day.toISOString()}>
                       <Paper
                         sx={{
-                          p: 2,
+                          p: 1,
+                          minHeight: 80,
                           textAlign: 'center',
                           cursor: 'pointer',
                           position: 'relative',
-                          bgcolor: isSameDay(day, selectedDate) ? 'primary.main' : 'background.paper',
-                          color: isSameDay(day, selectedDate) ? 'white' : 'text.primary',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          bgcolor: isSelected ? 'primary.main' : 
+                                 isCurrentDay ? 'primary.light' : 
+                                 'background.paper',
+                          color: isSelected ? 'white' : 
+                                isCurrentDay ? 'primary.contrastText' :
+                                isCurrentMonth ? 'text.primary' : 'text.disabled',
                           border: hasBooking ? '2px solid' : '1px solid',
                           borderColor: hasBooking ? 'primary.main' : 'divider',
+                          opacity: isCurrentMonth ? 1 : 0.5,
                           '&:hover': {
-                            bgcolor: isSameDay(day, selectedDate) ? 'primary.dark' : 'action.hover',
+                            bgcolor: isSelected ? 'primary.dark' : 
+                                    isCurrentDay ? 'primary.main' :
+                                    'action.hover',
+                            transform: 'scale(1.02)',
                           },
+                          transition: 'all 0.2s ease-in-out',
                         }}
                         onClick={() => setSelectedDate(day)}
                       >
-                        <Typography variant="caption" display="block">
-                          {format(day, 'EEE')}
-                        </Typography>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography 
+                          variant="body2" 
+                          fontWeight={isCurrentDay ? 700 : isSelected ? 600 : 400}
+                          sx={{ mb: 0.5 }}
+                        >
                           {format(day, 'd')}
                         </Typography>
-                        <Badge
-                          badgeContent={daySessions.length}
-                          color="error"
-                          sx={{ mt: 1 }}
-                        >
-                          <Box sx={{ width: 8, height: 8 }} />
-                        </Badge>
+                        
+                        {/* Session indicators */}
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25, justifyContent: 'center' }}>
+                          {daySessions.slice(0, 3).map((session, index) => (
+                            <Box
+                              key={session.id}
+                              sx={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                bgcolor: session.type === 'SPEAKING' ? 
+                                        (isSelected ? 'white' : 'primary.main') : 
+                                        (isSelected ? 'white' : 'secondary.main'),
+                                opacity: 0.8,
+                              }}
+                            />
+                          ))}
+                          {daySessions.length > 3 && (
+                            <Typography 
+                              variant="caption" 
+                              sx={{ 
+                                fontSize: '10px', 
+                                color: isSelected ? 'white' : 'text.secondary',
+                                ml: 0.5 
+                              }}
+                            >
+                              +{daySessions.length - 3}
+                            </Typography>
+                          )}
+                        </Box>
                       </Paper>
                     </Grid>
                   );
@@ -397,6 +488,7 @@ export const CalendarPage: React.FC = () => {
 
               <Divider sx={{ my: 3 }} />
 
+              {/* Selected Day Sessions */}
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 Sessions on {format(selectedDate, 'MMMM d, yyyy')}
               </Typography>
@@ -408,9 +500,12 @@ export const CalendarPage: React.FC = () => {
               ) : (
                 <AnimatePresence>
                   {getSessionsForDay(selectedDate).length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
-                      No sessions scheduled for this day
-                    </Typography>
+                    <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
+                      <Event sx={{ fontSize: 48, color: 'grey.300', mb: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        No sessions scheduled for this day
+                      </Typography>
+                    </Paper>
                   ) : (
                     getSessionsForDay(selectedDate).map((session) => (
                       <SessionCard key={session.id} session={session} />
