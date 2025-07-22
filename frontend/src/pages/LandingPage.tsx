@@ -71,7 +71,7 @@ export const LandingPage: React.FC = () => {
   };
 
   const handleStartJourney = () => {
-    navigate('/register/email');
+    navigate('/register');
   };
 
   return (

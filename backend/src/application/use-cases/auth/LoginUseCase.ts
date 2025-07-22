@@ -1,10 +1,8 @@
 // backend/src/application/use-cases/auth/LoginUseCase.ts
 import { IUserRepository } from '../../../domain/repositories/IUserRepository';
-import { IRefreshTokenRepository } from '../../../domain/repositories/IRefreshTokenRepository';
 import { IPasswordService } from '../../services/IPasswordService';
 import { ITokenService } from '../../services/ITokenService';
 import { AuthenticationError } from '../../../domain/errors/AuthenticationError';
-import { RefreshToken } from '../../../domain/entities/RefreshToken';
 
 export interface LoginDTO {
   email: string;
@@ -25,7 +23,6 @@ export interface LoginResponse {
 export class LoginUseCase {
   constructor(
     private userRepository: IUserRepository,
-    private refreshTokenRepository: IRefreshTokenRepository,
     private passwordService: IPasswordService,
     private tokenService: ITokenService
   ) { }
@@ -42,11 +39,12 @@ export class LoginUseCase {
     }
 
     if (!user.isActive) {
-      throw new AuthenticationError('Account is inactive', 403);
+      throw new AuthenticationError('Account is inactive', 400);
     }
 
-    // Invalidate existing refresh tokens for this user
-    await this.refreshTokenRepository.deleteByUserId(user.id);
+    if (!user.isverify) {
+      throw new AuthenticationError('Account Not Verified', 400);
+    }
 
     // Generate new token pair
     const tokenPair = this.tokenService.generateTokenPair({
@@ -54,23 +52,6 @@ export class LoginUseCase {
       email: user.email,
       role: user.role
     });
-
-    // Store refresh token
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-    const refreshToken = new RefreshToken(
-      `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-      user.id,
-      tokenPair.refreshToken,
-      expiresAt,
-      new Date(),
-      new Date(),
-      dto.ipAddress,
-      dto.userAgent
-    );
-
-    await this.refreshTokenRepository.create(refreshToken);
 
     // Generate CSRF token
     const csrfToken = this.tokenService.generateCSRFToken();

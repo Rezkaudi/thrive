@@ -10,14 +10,21 @@ export class BookingEntity {
   @Column()
   userId!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  })
   @JoinColumn({ name: 'userId' })
   user!: UserEntity;
 
   @Column()
   sessionId!: string;
 
-  @ManyToOne(() => SessionEntity)
+  @ManyToOne(() => SessionEntity, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  })
+
   @JoinColumn({ name: 'sessionId' })
   session!: SessionEntity;
 

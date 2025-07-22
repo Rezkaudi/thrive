@@ -6,7 +6,6 @@ import { RefreshTokenUseCase } from '../../../application/use-cases/auth/Refresh
 import { UserRepository } from '../../database/repositories/UserRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
 import { PaymentRepository } from '../../database/repositories/PaymentRepository';
-import { RefreshTokenRepository } from '../../database/repositories/RefreshTokenRepository';
 import { EmailService } from '../../services/EmailService';
 import { PasswordService } from '../../services/PasswordService';
 import { TokenService } from '../../services/TokenService';
@@ -16,6 +15,9 @@ import { getAccessTokenCookieConfig, getRefreshTokenCookieConfig, COOKIE_NAMES }
 import { VerificationCodeService } from '../../services/VerificationCodeService';
 import { ResetPasswordUseCase } from '../../../application/use-cases/auth/ResetPasswordUseCase';
 import { RequestPasswordResetUseCase } from '../../../application/use-cases/auth/RequestPasswordResetUseCase';
+import { RegisterWithVerificationUseCase } from '../../../application/use-cases/auth/RegisterWithVerificationUseCase';
+import { VerifyEmailUseCase } from '../../../application/use-cases/auth/VerifyEmailUseCase';
+import { ResendVerificationCodeUseCase } from '../../../application/use-cases/auth/ResendVerificationCodeUseCase';
 
 export class AuthController {
   private verificationCodeService: VerificationCodeService;
@@ -179,7 +181,6 @@ export class AuthController {
 
       const loginUseCase = new LoginUseCase(
         new UserRepository(),
-        new RefreshTokenRepository(),
         new PasswordService(),
         new TokenService()
       );
@@ -224,20 +225,12 @@ export class AuthController {
         return;
       }
 
-      const ipAddress = req.ip;
-      const userAgent = req.headers['user-agent'];
-
-      const refreshTokenUseCase = new RefreshTokenUseCase(
+      const refreshAccessTokenUseCase = new RefreshTokenUseCase(
         new UserRepository(),
-        new RefreshTokenRepository(),
         new TokenService()
       );
 
-      const { response, tokens } = await refreshTokenUseCase.execute({
-        refreshToken,
-        ipAddress,
-        userAgent
-      });
+      const { response, tokens } = await refreshAccessTokenUseCase.execute({ refreshToken });
 
       // Set new cookies
       const accessTokenConfig = getAccessTokenCookieConfig();
@@ -270,18 +263,6 @@ export class AuthController {
 
     res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, accessTokenConfig);
     res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, refreshTokenConfig);
-
-    // If we have a refresh token, invalidate it in the database
-    const refreshToken = req.cookies[COOKIE_NAMES.REFRESH_TOKEN];
-    if (refreshToken) {
-      try {
-        const refreshTokenRepository = new RefreshTokenRepository();
-        await refreshTokenRepository.deleteByToken(refreshToken);
-      } catch (error) {
-        // Log error but don't fail the logout
-        console.error('Failed to invalidate refresh token:', error);
-      }
-    }
 
     res.json({ message: 'Logout successful' });
   }
@@ -391,5 +372,95 @@ export class AuthController {
       res.status(400).json({ valid: false, error: 'Invalid token' });
     }
   }
+
+  async registerWithVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { name, email, password } = req.body;
+
+      const registerUseCase = new RegisterWithVerificationUseCase(
+        new UserRepository(),
+        new PasswordService(),
+        new EmailService(),
+        new ProfileRepository()
+      );
+
+      const { user, verificationCode } = await registerUseCase.execute({
+        name,
+        email,
+        password,
+      });
+
+      res.status(201).json({
+        message: 'Registration successful. Please check your email for verification code.',
+        ...(process.env.NODE_ENV === 'development' && { verificationCode }),
+      });
+    } catch (error: any) {
+      if (error.message.includes('already exists')) {
+        res.status(409).json({ error: error.message });
+      } else {
+        next(error);
+      }
+    }
+  }
+
+  async verifyEmailCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email, code } = req.body;
+
+      const verifyEmailUseCase = new VerifyEmailUseCase(
+        new UserRepository(),
+        new TokenService(),
+      );
+
+      const { user, tokens, csrfToken } = await verifyEmailUseCase.execute(
+        { email, code }
+      );
+
+      // Set cookies
+      const accessTokenConfig = getAccessTokenCookieConfig();
+      const refreshTokenConfig = getRefreshTokenCookieConfig();
+
+      res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, {
+        ...accessTokenConfig,
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, {
+        ...refreshTokenConfig,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      res.json({
+        user,
+        csrfToken,
+        message: 'Email verified successfully'
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+
+  async resendVerificationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body;
+
+      const resendUseCase = new ResendVerificationCodeUseCase(
+        new UserRepository(),
+        new EmailService()
+      );
+
+      const { verificationCode } = await resendUseCase.execute({ email });
+
+      res.json({
+        message: 'Verification code resent successfully',
+        ...(process.env.NODE_ENV === 'development' && { verificationCode }),
+
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
 }
 

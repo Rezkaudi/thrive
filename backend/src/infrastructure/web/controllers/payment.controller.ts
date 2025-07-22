@@ -87,57 +87,21 @@ export class PaymentController {
     }
   }
 
-  handleWebhook = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  handleWebhook = async (req: Request, res: Response): Promise<void> => {
     const sig = req.headers['stripe-signature'] as string;
 
-    if (!sig) {
-      console.error('❌ No stripe signature found in headers');
-      res.status(400).json({ error: 'No stripe signature found' });
-      return;
-    }
-
     try {
-      // Verify webhook secret is configured
-      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-      if (!webhookSecret) {
-        console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
-        res.status(500).json({ error: 'Webhook secret not configured' });
-        return;
-      }
-      // Ensure we have the raw body
-      if (!req.body || !(req.body instanceof Buffer)) {
-        console.error('❌ Invalid body type:', typeof req.body);
-        res.status(400).json({ error: 'Webhook requires raw body' });
-        return;
-      }
-
-      let event;
-      try {
-        event = this.paymentService.constructWebhookEvent(req.body, sig);
-        console.log(`✅ Webhook Event verified: ${event.type}`);
-      } catch (err: any) {
-        console.error('Webhook verification error:', err.message);
-        console.error('Webhook secret exists:', !!webhookSecret);
-        console.error('Signature exists:', !!sig);
-        console.error('Payload type:', Buffer.isBuffer(req.body) ? 'Buffer' : typeof req.body);
-
-        // Return a 400 error to Stripe
-        res.status(400).json({ error: `Webhook signature verification failed: ${err.message}` });
-        return;
-      }
+      const event = this.paymentService.constructWebhookEvent(req.body, sig);
+      console.log(`📍 Webhook received: ${event.type}--------------------------------------------------------------------------`);
 
       // Handle the event
       switch (event.type) {
-        case 'payment_intent.succeeded':
-          await this.handlePaymentIntentSucceeded(event.data.object as any);
-          break;
-
-        case 'payment_intent.payment_failed':
-          await this.handlePaymentIntentFailed(event.data.object as any);
-          break;
-
         case 'checkout.session.completed':
           await this.handleCheckoutSessionCompleted(event.data.object as any);
+          break;
+
+        case 'invoice.payment_succeeded':
+          await this.handleInvoicePaymentSucceeded(event.data.object as any);
           break;
 
         case 'customer.subscription.created':
@@ -152,21 +116,22 @@ export class PaymentController {
           await this.handleSubscriptionDeleted(event.data.object as any);
           break;
 
+        case 'payment_intent.payment_failed':
+          await this.handlePaymentFailed(event.data.object as any);
+          break;
+
         default:
-          console.log(`Unhandled event type: ${event.type}`);
+          console.log(`ℹ️ Unhandled event type: ${event.type}`);
       }
 
-      // Return a 200 response to acknowledge receipt of the event
       res.json({ received: true });
     } catch (error: any) {
-      console.error('❌ Webhook processing error:', error.message);
-      console.error('Stack trace:', error.stack);
-      res.status(500).json({ error: `Webhook processing error: ${error.message}` });
+      console.error('❌ Webhook error:', error.message);
+      res.status(400).json({ error: `Webhook Error: ${error.message}` });
     }
   };
 
-  // Helper method to get email from customer
-  private getEmailFromCustomer = async (customerId: string): Promise<string | null> => {
+  private async getEmailFromCustomer(customerId: string): Promise<string | null> {
     try {
       const customer = await this.paymentService.retrieveCustomer(customerId);
       return customer?.email || null;
@@ -174,89 +139,187 @@ export class PaymentController {
       console.error('Error retrieving customer:', error);
       return null;
     }
-  };
+  }
 
-  private handlePaymentIntentSucceeded = async (paymentIntent: any): Promise<void> => {
+  private async extractEmail(source: any): Promise<string | null> {
+    // Try multiple sources for email
+    return source.metadata?.email ||
+      source.customer_email ||
+      (source.customer ? await this.getEmailFromCustomer(source.customer) : null);
+  }
+
+  private handleCheckoutSessionCompleted = async (session: any): Promise<void> => {
     try {
-      console.log('✅ payment_intent.succeeded:', paymentIntent.id);
+      console.log('✅ checkout.session.completed:', session.id);
 
-      // Try to get email from metadata first
-      let email = paymentIntent.metadata?.email;
-
-      // If no email in metadata and we have a customer ID, get it from customer
-      if (!email && paymentIntent.customer) {
-        email = await this.getEmailFromCustomer(paymentIntent.customer);
+      // Skip if already processed
+      if (session.payment_intent) {
+        const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(session.payment_intent);
+        if (existingPayment) {
+          console.log('Payment already exists, skipping...');
+          return;
+        }
       }
 
-      const plan = paymentIntent.metadata?.plan || 'unknown';
-
+      const email = await this.extractEmail(session);
       if (!email) {
-        console.warn('⚠️ No email found in metadata or customer. Payment not recorded.');
+        console.error('❌ No email found for session:', session.id);
         return;
       }
 
-      const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(paymentIntent.id);
-      if (existingPayment) return;
+      // Determine payment type based on mode
+      const paymentType = session.mode === 'subscription' ? 'subscription' : 'one-time';
 
+      // For subscriptions, we'll handle the actual payment in invoice.payment_succeeded
+      if (session.mode === 'subscription') {
+        console.log('📝 Subscription checkout completed, waiting for invoice.payment_succeeded');
+        return;
+      }
+
+      // Record one-time payment
       const payment: Payment = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+        id: this.generatePaymentId(),
         email,
-        stripePaymentIntentId: paymentIntent.id,
-        amount: paymentIntent.amount_received,
-        currency: paymentIntent.currency,
+        stripePaymentIntentId: session.payment_intent,
+        amount: session.amount_total,
+        currency: session.currency,
         status: 'COMPLETED',
         metadata: {
-          type: 'one-time',
-          plan,
-          email,
-          description: paymentIntent.description || '',
-          customerId: paymentIntent.customer || null,
+          type: paymentType,
+          sessionId: session.id,
+          customerId: session.customer || null,
         },
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
       await this.paymentRepository.create(payment);
-      console.log(`💾 One-time payment recorded for ${email}: ${paymentIntent.id}`);
+      console.log('💾 One-time payment recorded:', payment.id);
     } catch (error) {
-      console.error('❌ Error in handlePaymentIntentSucceeded:', error);
+      console.error('❌ Error in handleCheckoutSessionCompleted:', error);
       throw error;
     }
   };
 
-  private handlePaymentIntentFailed = async (paymentIntent: any): Promise<void> => {
+  private handleInvoicePaymentSucceeded = async (invoice: any): Promise<void> => {
     try {
-      console.log('❌ payment_intent.payment_failed:', paymentIntent.id);
+      console.log('✅ invoice.payment_succeeded:', invoice.id);
 
-      // Try to get email from metadata first
-      let email = paymentIntent.metadata?.email;
-
-      // If no email in metadata and we have a customer ID, get it from customer
-      if (!email && paymentIntent.customer) {
-        email = await this.getEmailFromCustomer(paymentIntent.customer);
+      // Skip if already processed
+      if (invoice.payment_intent) {
+        const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(invoice.payment_intent);
+        if (existingPayment) {
+          console.log('Payment already exists, skipping...');
+          return;
+        }
       }
 
-      const plan = paymentIntent.metadata?.plan || 'unknown';
-
+      const email = await this.extractEmail(invoice);
       if (!email) {
-        console.warn('⚠️ No email found. Failed payment not recorded.');
+        console.error('❌ No email found for invoice:', invoice.id);
         return;
       }
 
-      const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(paymentIntent.id);
-      if (existingPayment) return;
+      // Get subscription details
+      const subscriptionId = invoice.subscription;
+      let interval = 'unknown';
+      let subscriptionDetail = null;
+
+      if (subscriptionId) {
+        try {
+          subscriptionDetail = await this.paymentService.retrieveSubscription(subscriptionId);
+          interval = subscriptionDetail?.items.data[0]?.price.recurring?.interval || 'unknown';
+        } catch (err) {
+          console.error('Error fetching subscription details:', err);
+        }
+      }
 
       const payment: Payment = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+        id: this.generatePaymentId(),
+        email,
+        stripePaymentIntentId: invoice.payment_intent,
+        amount: invoice.amount_paid,
+        currency: invoice.currency,
+        status: 'COMPLETED',
+        metadata: {
+          type: 'subscription',
+          interval, // 'month' or 'year'
+          invoiceId: invoice.id,
+          subscriptionId,
+          customerId: invoice.customer,
+          billingReason: invoice.billing_reason, // 'subscription_create', 'subscription_cycle', etc.
+          periodStart: new Date(invoice.period_start * 1000).toISOString(),
+          periodEnd: new Date(invoice.period_end * 1000).toISOString(),
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await this.paymentRepository.create(payment);
+      console.log(`💾 ${interval}ly subscription payment recorded:`, payment.id);
+    } catch (error) {
+      console.error('❌ Error in handleInvoicePaymentSucceeded:', error);
+      throw error;
+    }
+  };
+
+  private handleSubscriptionCreated = async (subscription: any): Promise<void> => {
+    try {
+      console.log('🔔 customer.subscription.created:', subscription.id);
+
+      // Log subscription creation but don't create payment record
+      // Actual payment will be recorded when invoice.payment_succeeded fires
+      const email = await this.extractEmail(subscription);
+      const interval = subscription.items.data[0]?.price.recurring?.interval || 'unknown';
+
+      console.log(`📅 New ${interval}ly subscription created for ${email || 'unknown'}`);
+    } catch (error) {
+      console.error('❌ Error in handleSubscriptionCreated:', error);
+    }
+  };
+
+  private handleSubscriptionUpdated = async (subscription: any): Promise<void> => {
+    try {
+      console.log('🔄 customer.subscription.updated:', subscription.id);
+
+      // You can add logic here to update user subscription status in your database
+      const status = subscription.status;
+      const cancelAtPeriodEnd = subscription.cancel_at_period_end;
+
+      console.log(`📝 Subscription ${subscription.id} updated - Status: ${status}, Cancel at period end: ${cancelAtPeriodEnd}`);
+    } catch (error) {
+      console.error('❌ Error in handleSubscriptionUpdated:', error);
+    }
+  };
+
+  private handleSubscriptionDeleted = async (subscription: any): Promise<void> => {
+    try {
+      console.log('🚫 customer.subscription.deleted:', subscription.id);
+
+      // You can add logic here to update user access in your database
+      const email = await this.extractEmail(subscription);
+      console.log(`❌ Subscription cancelled for ${email || 'unknown'}`);
+    } catch (error) {
+      console.error('❌ Error in handleSubscriptionDeleted:', error);
+    }
+  };
+
+  private handlePaymentFailed = async (paymentIntent: any): Promise<void> => {
+    try {
+      console.log('❌ payment_intent.payment_failed:', paymentIntent.id);
+
+      const email = await this.extractEmail(paymentIntent);
+      if (!email) return;
+
+      const payment: Payment = {
+        id: this.generatePaymentId(),
         email,
         stripePaymentIntentId: paymentIntent.id,
-        amount: paymentIntent.amount || 0,
+        amount: paymentIntent.amount,
         currency: paymentIntent.currency,
         status: 'FAILED',
         metadata: {
-          type: 'one-time',
-          plan,
-          email,
+          type: 'failed',
           failureCode: paymentIntent.last_payment_error?.code || 'unknown',
           failureMessage: paymentIntent.last_payment_error?.message || '',
           customerId: paymentIntent.customer || null,
@@ -266,181 +329,14 @@ export class PaymentController {
       };
 
       await this.paymentRepository.create(payment);
-      console.log(`💾 Failed payment recorded for ${email}: ${paymentIntent.id}`);
+      console.log('💾 Failed payment recorded:', payment.id);
     } catch (error) {
-      console.error('❌ Error in handlePaymentIntentFailed:', error);
+      console.error('❌ Error in handlePaymentFailed:', error);
       throw error;
     }
   };
 
-  private handleCheckoutSessionCompleted = async (session: any): Promise<void> => {
-    try {
-      console.log('✅ checkout.session.completed:', session.id);
-
-      // Try to get email from session metadata first
-      let email = session.metadata?.email;
-
-      // If no email in metadata, try customer email from session
-      if (!email && session.customer_email) {
-        email = session.customer_email;
-      }
-
-      // If still no email and we have a customer ID, get it from customer
-      if (!email && session.customer) {
-        email = await this.getEmailFromCustomer(session.customer);
-      }
-
-      const plan = session.metadata?.plan || 'unknown';
-
-      if (!email || !session.payment_intent) {
-        console.warn('⚠️ No email or payment intent found. Session not recorded.');
-        return;
-      }
-
-      const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(session.payment_intent);
-      if (existingPayment) return;
-
-      const payment: Payment = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-        email,
-        stripePaymentIntentId: session.payment_intent,
-        amount: session.amount_total,
-        currency: session.currency,
-        status: 'COMPLETED',
-        metadata: {
-          type: 'checkout-session',
-          plan,
-          email,
-          sessionId: session.id,
-          customerId: session.customer,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await this.paymentRepository.create(payment);
-      console.log(`💾 Checkout session payment recorded for ${email}: ${session.payment_intent}`);
-    } catch (error) {
-      console.error('❌ Error in handleCheckoutSessionCompleted:', error);
-      throw error;
-    }
-  };
-
-  private handleSubscriptionCreated = async (subscription: any): Promise<void> => {
-    try {
-      console.log('🟢 customer.subscription.created:', subscription.id);
-
-      // For subscriptions, the email is usually not in subscription metadata
-      // We need to get it from the customer object
-      let email = subscription.metadata?.email;
-
-      if (!email && subscription.customer) {
-        email = await this.getEmailFromCustomer(subscription.customer);
-      }
-
-      const plan = subscription.metadata?.plan || subscription.items.data[0]?.price.nickname || 'unknown';
-
-      console.log("Subscription email:", email);
-
-      if (!email) {
-        console.warn('⚠️ No email found for subscription. Not recorded.');
-        return;
-      }
-
-      const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(subscription.id);
-      if (existingPayment) return;
-
-      const payment: Payment = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-        email,
-        stripePaymentIntentId: subscription.id,
-        amount: subscription.items.data[0]?.price.unit_amount || 0,
-        currency: subscription.currency,
-        status: subscription.status === 'active' ? 'COMPLETED' : 'PENDING',
-        metadata: {
-          type: 'subscription',
-          plan,
-          email,
-          subscriptionId: subscription.id,
-          customerId: subscription.customer,
-          priceId: subscription.items.data[0]?.price.id,
-          interval: subscription.items.data[0]?.price.recurring?.interval,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000).toISOString(),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await this.paymentRepository.create(payment);
-      console.log(`💾 Subscription created for ${email}: ${subscription.id}`);
-    } catch (error) {
-      console.error('❌ Error in handleSubscriptionCreated:', error);
-      throw error;
-    }
-  };
-
-  private handleSubscriptionUpdated = async (subscription: any): Promise<void> => {
-    try {
-      console.log('🔄 customer.subscription.updated:', subscription.id);
-
-      const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(subscription.id);
-      if (!existingPayment) {
-        // If payment doesn't exist, we might need to create it
-        // This can happen if the subscription was created outside of our system
-        await this.handleSubscriptionCreated(subscription);
-        return;
-      }
-
-      existingPayment.status =
-        subscription.status === 'active'
-          ? 'COMPLETED'
-          : subscription.status === 'canceled'
-            ? 'FAILED'
-            : 'PENDING';
-
-      existingPayment.metadata = {
-        ...existingPayment.metadata,
-        status: subscription.status,
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-      };
-
-      existingPayment.updatedAt = new Date();
-
-      await this.paymentRepository.update(existingPayment);
-      console.log(`📝 Subscription updated: ${subscription.id}`);
-    } catch (error) {
-      console.error('❌ Error in handleSubscriptionUpdated:', error);
-      throw error;
-    }
-  };
-
-  private handleSubscriptionDeleted = async (subscription: any): Promise<void> => {
-    try {
-      console.log('⛔ customer.subscription.deleted:', subscription.id);
-
-      const existingPayment = await this.paymentRepository.findByStripePaymentIntentId(subscription.id);
-      if (!existingPayment) {
-        console.warn('⚠️ No existing payment found for deleted subscription:', subscription.id);
-        return;
-      }
-
-      existingPayment.status = 'FAILED';
-      existingPayment.metadata = {
-        ...existingPayment.metadata,
-        status: 'cancelled',
-        cancelledAt: new Date().toISOString(),
-        endedAt: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
-      };
-      existingPayment.updatedAt = new Date();
-
-      await this.paymentRepository.update(existingPayment);
-      console.log(`🗑️ Subscription cancelled: ${subscription.id}`);
-    } catch (error) {
-      console.error('❌ Error in handleSubscriptionDeleted:', error);
-      throw error;
-    }
-  };
+  private generatePaymentId(): string {
+    return `pay_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  }
 }
