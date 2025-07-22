@@ -3,6 +3,8 @@ import { IUserRepository } from '../../../domain/repositories/IUserRepository';
 import { User, UserRole } from '../../../domain/entities/User';
 import { IPasswordService } from '../../services/IPasswordService';
 import { IEmailService } from '../../services/IEmailService';
+import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
+import { Profile } from '../../../domain/entities/Profile';
 
 export interface RegisterWithVerificationDTO {
     name: string;
@@ -14,7 +16,9 @@ export class RegisterWithVerificationUseCase {
     constructor(
         private userRepository: IUserRepository,
         private passwordService: IPasswordService,
-        private emailService: IEmailService
+        private emailService: IEmailService,
+        private profileRepository: IProfileRepository,
+
     ) { }
 
     async execute(dto: RegisterWithVerificationDTO): Promise<{ user: User; verificationCode: string }> {
@@ -69,6 +73,23 @@ export class RegisterWithVerificationUseCase {
         );
 
         const savedUser = await this.userRepository.create(user);
+
+
+        const profile = new Profile(
+            `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+            savedUser.id,
+            dto.name,
+            '',
+            '',
+            'N5',
+            0,
+            [],
+            1,
+            new Date(),
+            new Date()
+        );
+
+        await this.profileRepository.create(profile);
 
         // Send verification email
         await this.emailService.sendVerificationCode(dto.email, verificationCode);

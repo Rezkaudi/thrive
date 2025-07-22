@@ -39,7 +39,11 @@ export class LoginUseCase {
     }
 
     if (!user.isActive) {
-      throw new AuthenticationError('Account is inactive', 403);
+      throw new AuthenticationError('Account is inactive', 400);
+    }
+
+    if (!user.isverify) {
+      throw new AuthenticationError('Account Not Verified', 400);
     }
 
     // Generate new token pair

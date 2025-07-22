@@ -380,7 +380,8 @@ export class AuthController {
       const registerUseCase = new RegisterWithVerificationUseCase(
         new UserRepository(),
         new PasswordService(),
-        new EmailService()
+        new EmailService(),
+        new ProfileRepository()
       );
 
       const { user, verificationCode } = await registerUseCase.execute({
