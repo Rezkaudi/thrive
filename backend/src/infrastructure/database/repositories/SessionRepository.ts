@@ -4,6 +4,20 @@ import { SessionEntity } from '../entities/Session.entity';
 import { ISessionRepository } from '../../../domain/repositories/ISessionRepository';
 import { Session } from '../../../domain/entities/Session';
 
+interface PaginationOptions {
+  offset: number;
+  limit: number;
+  filters?: {
+    type?: 'SPEAKING' | 'EVENT';
+    isActive?: boolean;
+  };
+}
+
+interface PaginatedResult {
+  sessions: Session[];
+  total: number;
+}
+
 export class SessionRepository implements ISessionRepository {
   private repository: Repository<SessionEntity>;
 
@@ -24,9 +38,9 @@ export class SessionRepository implements ISessionRepository {
 
   async findUpcoming(limit?: number): Promise<Session[]> {
     const entities = await this.repository.find({
-      where: { 
+      where: {
         scheduledAt: MoreThan(new Date()),
-        isActive: true 
+        isActive: true
       },
       order: { scheduledAt: 'ASC' },
       take: limit,
@@ -36,13 +50,40 @@ export class SessionRepository implements ISessionRepository {
 
   async findByDateRange(startDate: Date, endDate: Date): Promise<Session[]> {
     const entities = await this.repository.find({
-      where: { 
+      where: {
         scheduledAt: Between(startDate, endDate),
-        isActive: true 
+        isActive: true
       },
       order: { scheduledAt: 'ASC' },
     });
     return entities.map(e => this.toDomain(e));
+  }
+
+  async findAllWithPagination(options: PaginationOptions): Promise<PaginatedResult> {
+    const queryBuilder = this.repository.createQueryBuilder('session');
+
+    // Apply filters
+    if (options.filters?.type) {
+      queryBuilder.andWhere('session.type = :type', { type: options.filters.type });
+    }
+
+    if (options.filters?.isActive !== undefined) {
+      queryBuilder.andWhere('session.isActive = :isActive', { isActive: options.filters.isActive });
+    }
+
+    // Order by scheduled date (most recent first for admin view)
+    queryBuilder.orderBy('session.scheduledAt', 'DESC');
+
+    // Apply pagination
+    queryBuilder.skip(options.offset).take(options.limit);
+
+    // Get results and count
+    const [entities, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      sessions: entities.map(e => this.toDomain(e)),
+      total
+    };
   }
 
   async update(session: Session): Promise<Session> {
@@ -69,7 +110,7 @@ export class SessionRepository implements ISessionRepository {
   async findByMonth(year: number, month: number): Promise<Session[]> {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
-    
+
     return this.findByDateRange(startDate, endDate);
   }
 
@@ -77,14 +118,14 @@ export class SessionRepository implements ISessionRepository {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
-    
+
     return this.findByDateRange(startOfWeek, endOfWeek);
   }
 
   async countByDay(date: Date): Promise<number> {
     const startOfDay = new Date(date.setHours(0, 0, 0, 0));
     const endOfDay = new Date(date.setHours(23, 59, 59, 999));
-    
+
     return await this.repository.count({
       where: {
         scheduledAt: Between(startOfDay, endOfDay),

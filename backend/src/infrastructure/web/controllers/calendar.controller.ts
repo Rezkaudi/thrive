@@ -9,7 +9,7 @@ export class CalendarController {
   async getCalendarSessions(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { year, month, view = 'month' } = req.query;
-      
+
       let startDate: Date;
       let endDate: Date;
 
@@ -31,9 +31,9 @@ export class CalendarController {
       const sessionRepository = new SessionRepository();
       const bookingRepository = new BookingRepository();
 
-      // Get sessions in date range
+      // Get active sessions in date range
       const sessions = await sessionRepository.findByDateRange(startDate, endDate);
-      
+
       // Get user's bookings
       const userBookings = await bookingRepository.findActiveByUserId(req.user!.userId);
       const bookedSessionIds = userBookings.map(b => b.sessionId);
@@ -59,16 +59,16 @@ export class CalendarController {
     try {
       const { date } = req.params;
       const targetDate = new Date(date);
-      
+
       const sessionRepository = new SessionRepository();
       const bookingRepository = new BookingRepository();
 
       // Get sessions for specific day
       const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
       const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
-      
+
       const sessions = await sessionRepository.findByDateRange(startOfDay, endOfDay);
-      
+
       // Get user's bookings
       const userBookings = await bookingRepository.findActiveByUserId(req.user!.userId);
       const bookedSessionIds = userBookings.map(b => b.sessionId);
@@ -88,7 +88,7 @@ export class CalendarController {
   async checkBookingEligibility(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sessionId } = req.params;
-      
+
       const sessionRepository = new SessionRepository();
       const bookingRepository = new BookingRepository();
       const profileRepository = new ProfileRepository();
@@ -143,6 +143,11 @@ export class CalendarController {
         eligibility.reasons.push('Session has already started');
       }
 
+      if (!session.isActive) {
+        eligibility.canBook = false;
+        eligibility.reasons.push('Session is not active');
+      }
+
       res.json(eligibility);
     } catch (error) {
       next(error);
@@ -155,7 +160,7 @@ export class CalendarController {
       const sessionRepository = new SessionRepository();
 
       const bookings = await bookingRepository.findActiveByUserId(req.user!.userId);
-      
+
       // Enhance bookings with session details
       const enhancedBookings = await Promise.all(
         bookings.map(async (booking) => {
@@ -167,13 +172,15 @@ export class CalendarController {
         })
       );
 
-      // Sort by session date
-      enhancedBookings.sort((a, b) => {
-        if (!a.session || !b.session) return 0;
-        return new Date(a.session.scheduledAt).getTime() - new Date(b.session.scheduledAt).getTime();
-      });
+      // Sort by session date and filter out past sessions
+      const upcomingBookings = enhancedBookings
+        .filter(booking => booking.session && new Date(booking.session.scheduledAt) > new Date())
+        .sort((a, b) => {
+          if (!a.session || !b.session) return 0;
+          return new Date(a.session.scheduledAt).getTime() - new Date(b.session.scheduledAt).getTime();
+        });
 
-      res.json(enhancedBookings);
+      res.json(upcomingBookings);
     } catch (error) {
       next(error);
     }
@@ -186,7 +193,7 @@ export class CalendarController {
       const profileRepository = new ProfileRepository();
 
       const bookings = await bookingRepository.findBySessionId(sessionId);
-      
+
       const attendees = await Promise.all(
         bookings
           .filter(b => b.status === 'CONFIRMED')
