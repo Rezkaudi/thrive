@@ -209,16 +209,20 @@ export const SessionManagement: React.FC = () => {
     });
   };
 
-  // Function to get relative time
-  const getRelativeTime = (dateString: string) => {
+   const getRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
+
+    // Set both dates to midnight
+    date.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+
     const diffMs = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return 'Past';
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
+
+    if (diffDays < 0) return "Past";
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Tomorrow";
     if (diffDays < 7) return `In ${diffDays} days`;
     return `In ${Math.ceil(diffDays / 7)} weeks`;
   };
@@ -509,14 +513,6 @@ export const SessionManagement: React.FC = () => {
                                 <Typography variant="body2" fontWeight={600}>
                                   {session.title}
                                 </Typography>
-                                {session.type === 'EVENT' && (
-                                  <Chip 
-                                    label="Special" 
-                                    size="small" 
-                                    color="secondary" 
-                                    sx={{ fontSize: '0.65rem' }}
-                                  />
-                                )}
                               </Stack>
                               <Stack direction="row" spacing={1} alignItems="center">
                                 {session.type === 'SPEAKING' ? (
