@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { CreateBookingUseCase } from '../../../application/use-cases/booking/CreateBookingUseCase';
+import { CancelBookingUseCase } from '../../../application/use-cases/booking/CancelBookingUseCase';
 import { SessionRepository } from '../../database/repositories/SessionRepository';
 import { BookingRepository } from '../../database/repositories/BookingRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
@@ -40,15 +41,18 @@ export class BookingController {
   async cancelBooking(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { bookingId } = req.params;
-      const bookingRepository = new BookingRepository();
-      
-      const booking = await bookingRepository.findById(bookingId);
-      if (!booking || booking.userId !== req.user!.userId) {
-        res.status(404).json({ error: 'Booking not found' });
-        return;
-      }
 
-      await bookingRepository.cancel(bookingId);
+      const cancelBookingUseCase = new CancelBookingUseCase(
+        new SessionRepository(),
+        new BookingRepository(),
+        new ProfileRepository()
+      );
+
+      await cancelBookingUseCase.execute({
+        userId: req.user!.userId,
+        bookingId
+      });
+
       res.json({ message: 'Booking cancelled successfully' });
     } catch (error) {
       next(error);
