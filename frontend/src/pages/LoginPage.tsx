@@ -111,7 +111,7 @@ export const LoginPage: React.FC = () => {
                 <Alert severity="error" sx={{ mb: 3 }}>
                   {error === 'Request failed with status code 400'
                     ? 'Invalid email or password. Please check your credentials and try again.'
-                    : error
+                    : error === "Request failed with status code 500" ? "Internal Server Error" : error
                   }
                 </Alert>
               )}

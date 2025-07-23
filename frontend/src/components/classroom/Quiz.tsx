@@ -331,7 +331,7 @@ export const Quiz: React.FC<QuizProps> = ({
                 icon={<Timer />}
                 label={formatTime(timeRemaining)}
                 color={timeRemaining < 60 ? 'error' : 'default'}
-                sx={{color: "white"}}
+                sx={timeRemaining < 60 ? {color: "white"} : null}
               />
             )}
             <Chip
