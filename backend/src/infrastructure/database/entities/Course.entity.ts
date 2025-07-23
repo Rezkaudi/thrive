@@ -1,3 +1,4 @@
+// backend/src/infrastructure/database/entities/Course.entity.ts
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { CourseType } from '../../../domain/entities/Course';
 import { LessonEntity } from './Lesson.entity';
@@ -24,6 +25,9 @@ export class CourseEntity {
 
   @Column({ default: true })
   isActive!: boolean;
+
+  @Column({ default: 0 }) // NEW FIELD
+  freeLessonCount!: number;
 
   @OneToMany(() => LessonEntity, lesson => lesson.course)
   lessons!: LessonEntity[];

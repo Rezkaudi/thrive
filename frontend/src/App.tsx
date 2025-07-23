@@ -40,6 +40,8 @@ import { Layout } from './components/layout/Layout';
 import { CalendarPage } from './pages/CalendarPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
+import { SubscriptionPage } from './pages/SubscriptionPage';
+import { SubscriptionSuccessPage } from './pages/SubscriptionSuccessPage';
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>();
@@ -79,6 +81,24 @@ function AppContent() {
         <Route path="/register" element={<NewRegistrationPage />} />
         <Route path="/register/verify" element={<VerifyEmailPage />} />
         <Route path="/register/success" element={<RegistrationSuccessPage />} />
+
+        <Route
+          path="/subscription"
+          element={
+            <ProtectedRoute>
+              <SubscriptionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/subscription/success"
+          element={
+            <ProtectedRoute>
+              <SubscriptionSuccessPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/login"

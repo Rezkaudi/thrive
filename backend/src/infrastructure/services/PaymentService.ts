@@ -80,8 +80,10 @@ export class PaymentService implements IPaymentService {
       mode: params.mode,
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
+      automatic_tax: { enabled: true },
+      // locale: "ja",
       metadata: params.metadata,
-      customer_email: params.metadata.email
+      customer_email: params.metadata.email,
     });
 
     return session;
