@@ -9,18 +9,18 @@ export class SessionController {
     try {
       const { limit = 10 } = req.query;
       const sessionRepository = new SessionRepository();
-      
+
       const sessions = await sessionRepository.findUpcoming(Number(limit));
-      
+
       // Enhance sessions with host information
       const userRepository = new UserRepository();
       const profileRepository = new ProfileRepository();
-      
+
       const enhancedSessions = await Promise.all(
         sessions.map(async (session) => {
           const host = await userRepository.findById(session.hostId);
           const hostProfile = await profileRepository.findByUserId(session.hostId);
-          
+
           return {
             ...session,
             hostName: hostProfile?.name || host?.email || 'Unknown Host',
@@ -28,7 +28,7 @@ export class SessionController {
           };
         })
       );
-      
+
       res.json(enhancedSessions);
     } catch (error) {
       next(error);
@@ -39,20 +39,20 @@ export class SessionController {
     try {
       const { sessionId } = req.params;
       const sessionRepository = new SessionRepository();
-      
+
       const session = await sessionRepository.findById(sessionId);
       if (!session) {
         res.status(404).json({ error: 'Session not found' });
         return;
       }
-      
+
       // Enhance with host information
       const userRepository = new UserRepository();
       const profileRepository = new ProfileRepository();
-      
+
       const host = await userRepository.findById(session.hostId);
       const hostProfile = await profileRepository.findByUserId(session.hostId);
-      
+
       res.json({
         ...session,
         hostName: hostProfile?.name || host?.email || 'Unknown Host',
@@ -66,18 +66,18 @@ export class SessionController {
   async getSessionsByDateRange(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { startDate, endDate } = req.query;
-      
+
       if (!startDate || !endDate) {
         res.status(400).json({ error: 'Start date and end date are required' });
         return;
       }
-      
+
       const sessionRepository = new SessionRepository();
       const sessions = await sessionRepository.findByDateRange(
         new Date(String(startDate)),
         new Date(String(endDate))
       );
-      
+
       res.json(sessions);
     } catch (error) {
       next(error);
@@ -88,31 +88,39 @@ export class SessionController {
     try {
       const { page = 1, limit = 20, type, isActive } = req.query;
       const sessionRepository = new SessionRepository();
-      
-      // For now, return all upcoming sessions
-      // In production, you'd implement proper pagination
-      const sessions = await sessionRepository.findUpcoming(Number(limit) * Number(page));
-      
-      // Filter by type if provided
-      let filteredSessions = sessions;
-      if (type) {
-        filteredSessions = sessions.filter(s => s.type === type);
+
+      // Convert query params to appropriate types
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Build filter conditions
+      const filters: any = {};
+
+      if (type && (type === 'SPEAKING' || type === 'EVENT')) {
+        filters.type = type;
       }
-      
-      // Filter by active status if provided
+
       if (isActive !== undefined) {
-        filteredSessions = filteredSessions.filter(s => s.isActive === (isActive === 'true'));
+        filters.isActive = isActive === 'true';
       }
-      
+
+      // Get sessions with pagination and filters
+      const { sessions, total } = await sessionRepository.findAllWithPagination({
+        offset,
+        limit: limitNum,
+        filters
+      });
+
       // Enhance sessions with host information
       const userRepository = new UserRepository();
       const profileRepository = new ProfileRepository();
-      
+
       const enhancedSessions = await Promise.all(
-        filteredSessions.map(async (session) => {
+        sessions.map(async (session) => {
           const host = await userRepository.findById(session.hostId);
           const hostProfile = await profileRepository.findByUserId(session.hostId);
-          
+
           return {
             ...session,
             hostName: hostProfile?.name || host?.email || 'Unknown Host',
@@ -120,12 +128,14 @@ export class SessionController {
           };
         })
       );
-      
+
       res.json({
         sessions: enhancedSessions,
-        total: enhancedSessions.length,
-        page: Number(page),
-        totalPages: Math.ceil(enhancedSessions.length / Number(limit)),
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        hasNextPage: pageNum * limitNum < total,
+        hasPrevPage: pageNum > 1,
       });
     } catch (error) {
       next(error);
