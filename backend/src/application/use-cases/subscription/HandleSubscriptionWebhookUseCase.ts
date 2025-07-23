@@ -110,10 +110,10 @@ export class HandleSubscriptionWebhookUseCase {
         console.log('✅ one-time subscription created:', subscription.id);
     }
 
-    private async handleSubscriptionCreated(stripeSubscription: any): Promise<void> {
+    private async handleSubscriptionCreated(stripeSubscription: Stripe.Subscription): Promise<void> {
         console.log('🔔 Processing customer.subscription.created:', stripeSubscription);
 
-        const email = await this.getEmailFromCustomer(stripeSubscription.customer);
+        const email = await this.getEmailFromCustomer(stripeSubscription.customer as string);
 
         if (!email) {
             console.error('❌ Missing email in subscription metadata');
@@ -147,8 +147,8 @@ export class HandleSubscriptionWebhookUseCase {
             undefined, // Payment intent will be linked in invoice.payment_succeeded
             plan,
             status,
-            new Date(stripeSubscription.current_period_start * 1000),
-            new Date(stripeSubscription.current_period_end * 1000),
+            new Date(stripeSubscription.items.data[0].current_period_start * 1000),
+            new Date(stripeSubscription.items.data[0].current_period_end * 1000),
             new Date(),
             new Date()
         );
@@ -167,7 +167,7 @@ export class HandleSubscriptionWebhookUseCase {
         }
     }
 
-    private async handleSubscriptionUpdated(stripeSubscription: any): Promise<void> {
+    private async handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription): Promise<void> {
         console.log('🔄 Processing customer.subscription.updated:', stripeSubscription.id);
 
         const subscription = await this.subscriptionRepository.findByStripeSubscriptionId(stripeSubscription.id);
@@ -180,8 +180,8 @@ export class HandleSubscriptionWebhookUseCase {
 
         // Update subscription details
         subscription.status = this.mapStripeStatusToSubscriptionStatus(stripeSubscription.status);
-        subscription.currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
-        subscription.currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+        subscription.currentPeriodStart = new Date(stripeSubscription.items.data[0].current_period_start * 1000);
+        subscription.currentPeriodEnd = new Date(stripeSubscription.items.data[0].current_period_end * 1000);
         subscription.updatedAt = new Date();
 
         // Check if plan changed
