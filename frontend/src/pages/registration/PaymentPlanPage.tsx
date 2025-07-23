@@ -40,7 +40,7 @@ const plans: PlanOption[] = [
         price: 220000,
         currency: '¥',
         period: 'one-time',
-        stripePriceId: process.env.REACT_APP_STRIPE_PREMIERE_PRICE_ID || 'price_premiere',
+        stripePriceId: process.env.REACT_APP_STRIPE_ONE_TIME_PRICE_ID || 'price_premiere',
         features: [
             { title: 'Thrive in Japan Platform', included: true },
             { title: 'Speaking Sessions', included: false },

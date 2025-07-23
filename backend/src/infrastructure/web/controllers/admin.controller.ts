@@ -20,10 +20,10 @@ export class AdminController {
       const { page = 1, limit = 20 } = req.query;
       const userRepository = new UserRepository();
       const profileRepository = new ProfileRepository();
-      
+
       const users = await userRepository.findAll();
       const profiles = await profileRepository.findAll();
-      
+
       const usersWithProfiles = users.map(user => {
         const profile = profiles.find(p => p.userId === user.id);
         return {
@@ -47,10 +47,10 @@ export class AdminController {
     try {
       const { userId } = req.params;
       const { isActive } = req.body;
-      
+
       const userRepository = new UserRepository();
       const user = await userRepository.findById(userId);
-      
+
       if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
@@ -104,7 +104,7 @@ export class AdminController {
     try {
       const { postId } = req.params;
       const postRepository = new PostRepository();
-      
+
       const deleted = await postRepository.delete(postId);
       if (!deleted) {
         res.status(404).json({ error: 'Post not found' });
@@ -129,7 +129,7 @@ export class AdminController {
 
   async createCourse(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { title, description, type, icon } = req.body;
+      const { title, description, type, icon, freeLessonCount = 0 } = req.body;
       const courseRepository = new CourseRepository();
 
       const course = new Course(
@@ -139,6 +139,7 @@ export class AdminController {
         type as CourseType,
         icon,
         true,
+        freeLessonCount,
         new Date(),
         new Date()
       );
@@ -154,10 +155,10 @@ export class AdminController {
     try {
       const { courseId } = req.params;
       const updates = req.body;
-      
+
       const courseRepository = new CourseRepository();
       const course = await courseRepository.findById(courseId);
-      
+
       if (!course) {
         res.status(404).json({ error: 'Course not found' });
         return;
@@ -165,7 +166,7 @@ export class AdminController {
 
       Object.assign(course, updates);
       course.updatedAt = new Date();
-      
+
       const updated = await courseRepository.update(course);
       res.json(updated);
     } catch (error) {
@@ -177,7 +178,7 @@ export class AdminController {
     try {
       const { courseId } = req.params;
       const courseRepository = new CourseRepository();
-      
+
       const deleted = await courseRepository.delete(courseId);
       if (!deleted) {
         res.status(404).json({ error: 'Course not found' });
@@ -193,21 +194,21 @@ export class AdminController {
   async createLesson(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { courseId } = req.params;
-      const { 
-        title, 
-        description, 
-        order, 
-        lessonType, 
+      const {
+        title,
+        description,
+        order,
+        lessonType,
         contentUrl,
         contentData,
-        audioFiles, 
-        resources, 
-        requiresReflection, 
+        audioFiles,
+        resources,
+        requiresReflection,
         pointsReward,
         passingScore,
-        keywords 
+        keywords
       } = req.body;
-      
+
       const lessonRepository = new LessonRepository();
       const keywordRepository = new KeywordRepository();
 
@@ -259,12 +260,12 @@ export class AdminController {
     try {
       const { lessonId } = req.params;
       const updates = req.body;
-      
+
       const lessonRepository = new LessonRepository();
       const keywordRepository = new KeywordRepository();
-      
+
       const lesson = await lessonRepository.findById(lessonId);
-      
+
       if (!lesson) {
         res.status(404).json({ error: 'Lesson not found' });
         return;
@@ -274,7 +275,7 @@ export class AdminController {
       if (lesson.lessonType === LessonType.KEYWORDS && updates.keywords) {
         // Delete existing keywords
         await keywordRepository.deleteByLessonId(lessonId);
-        
+
         // Create new keywords
         if (Array.isArray(updates.keywords) && updates.keywords.length > 0) {
           const keywordEntities = updates.keywords.map((kw: any, index: number) => new Keyword(
@@ -291,14 +292,14 @@ export class AdminController {
 
           await keywordRepository.createMany(keywordEntities);
         }
-        
+
         // Remove keywords from updates to avoid trying to save them to lesson
         delete updates.keywords;
       }
 
       Object.assign(lesson, updates);
       lesson.updatedAt = new Date();
-      
+
       const updated = await lessonRepository.update(lesson);
       res.json(updated);
     } catch (error) {
@@ -310,7 +311,7 @@ export class AdminController {
     try {
       const { lessonId } = req.params;
       const lessonRepository = new LessonRepository();
-      
+
       const deleted = await lessonRepository.delete(lessonId);
       if (!deleted) {
         res.status(404).json({ error: 'Lesson not found' });
@@ -356,10 +357,10 @@ export class AdminController {
     try {
       const { sessionId } = req.params;
       const updates = req.body;
-      
+
       const sessionRepository = new SessionRepository();
       const session = await sessionRepository.findById(sessionId);
-      
+
       if (!session) {
         res.status(404).json({ error: 'Session not found' });
         return;
@@ -367,7 +368,7 @@ export class AdminController {
 
       Object.assign(session, updates);
       session.updatedAt = new Date();
-      
+
       const updated = await sessionRepository.update(session);
       res.json(updated);
     } catch (error) {
@@ -379,7 +380,7 @@ export class AdminController {
     try {
       const { sessionId } = req.params;
       const sessionRepository = new SessionRepository();
-      
+
       const deleted = await sessionRepository.delete(sessionId);
       if (!deleted) {
         res.status(404).json({ error: 'Session not found' });
@@ -466,7 +467,7 @@ export class AdminController {
       const { lessonId } = req.params;
       const lessonRepository = new LessonRepository();
       const keywordRepository = new KeywordRepository();
-      
+
       const lesson = await lessonRepository.findById(lessonId);
       if (!lesson) {
         res.status(404).json({ error: 'Lesson not found' });

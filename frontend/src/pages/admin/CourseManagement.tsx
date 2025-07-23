@@ -61,6 +61,7 @@ interface Course {
   icon: string;
   isActive: boolean;
   lessonCount?: number;
+  freeLessonCount: number
 }
 
 interface Lesson {
@@ -104,12 +105,14 @@ export const CourseManagement: React.FC = () => {
     type: "JAPAN_IN_CONTEXT" | "JLPT_IN_CONTEXT";
     icon: string;
     isActive: boolean;
+    freeLessonCount: number;
   }>({
     title: "",
     description: "",
     type: "JAPAN_IN_CONTEXT",
     icon: "🏯",
     isActive: true,
+    freeLessonCount: 2,
   });
 
   const [lessonForm, setLessonForm] = useState({
@@ -130,7 +133,7 @@ export const CourseManagement: React.FC = () => {
     setDraggedLesson(lesson);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", "");
-    
+
     // Add some visual feedback
     if (e.currentTarget) {
       e.currentTarget.style.opacity = "0.5";
@@ -140,7 +143,7 @@ export const CourseManagement: React.FC = () => {
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
     setDraggedLesson(null);
     setDragOverIndex(null);
-    
+
     // Reset visual feedback
     if (e.currentTarget) {
       e.currentTarget.style.opacity = "1";
@@ -158,7 +161,7 @@ export const CourseManagement: React.FC = () => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
-    
+
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       setDragOverIndex(null);
     }
@@ -166,11 +169,11 @@ export const CourseManagement: React.FC = () => {
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
     e.preventDefault();
-    
+
     if (!draggedLesson) return;
 
     const dragIndex = lessons.findIndex(lesson => lesson.id === draggedLesson.id);
-    
+
     if (dragIndex === dropIndex) {
       setDraggedLesson(null);
       setDragOverIndex(null);
@@ -195,13 +198,13 @@ export const CourseManagement: React.FC = () => {
 
     try {
       // Update all affected lessons in the backend
-      const updatePromises = reorderedLessons.map(lesson => 
+      const updatePromises = reorderedLessons.map(lesson =>
         api.put(`/admin/lessons/${lesson.id}`, {
           ...lesson,
           order: lesson.order
         })
       );
-      
+
       await Promise.all(updatePromises);
       console.log('Lessons reordered successfully');
     } catch (error) {
@@ -221,6 +224,7 @@ export const CourseManagement: React.FC = () => {
       type: "JAPAN_IN_CONTEXT",
       icon: "🏯",
       isActive: true,
+      freeLessonCount: 2,
     });
     setEditingCourse(null);
   };
@@ -260,7 +264,7 @@ export const CourseManagement: React.FC = () => {
       setLessonDialog(false);
       resetLessonForm();
     }
-  }, [selectedCourse]);
+  }, [selectedCourse,]);
 
   const fetchCourses = async () => {
     try {
@@ -335,8 +339,7 @@ export const CourseManagement: React.FC = () => {
       }
     } else if (!lessonForm.contentUrl.trim()) {
       alert(
-        `Please provide a ${
-          lessonForm.lessonType === "VIDEO" ? "video" : "PDF"
+        `Please provide a ${lessonForm.lessonType === "VIDEO" ? "video" : "PDF"
         } URL`
       );
       return false;
@@ -496,7 +499,7 @@ export const CourseManagement: React.FC = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={handleAddNewLesson}
-            sx={{color:'white'}}
+            sx={{ color: 'white' }}
           >
             Add Lesson
           </Button>
@@ -511,29 +514,29 @@ export const CourseManagement: React.FC = () => {
                 </Typography>
                 <List>
                   {lessons.map((lesson, index) => (
-                    <Paper 
-                      key={lesson.id} 
+                    <Paper
+                      key={lesson.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, lesson)}
                       onDragEnd={handleDragEnd}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, index)}
-                      sx={{ 
+                      sx={{
                         mb: 2,
                         cursor: 'grab',
                         transition: 'all 0.2s ease',
-                        transform: dragOverIndex === index && draggedLesson?.id !== lesson.id 
-                          ? 'translateY(-2px)' 
+                        transform: dragOverIndex === index && draggedLesson?.id !== lesson.id
+                          ? 'translateY(-2px)'
                           : 'none',
-                        boxShadow: dragOverIndex === index && draggedLesson?.id !== lesson.id 
-                          ? 3 
+                        boxShadow: dragOverIndex === index && draggedLesson?.id !== lesson.id
+                          ? 3
                           : 1,
-                        borderLeft: dragOverIndex === index && draggedLesson?.id !== lesson.id 
-                          ? '4px solid #1976d2' 
+                        borderLeft: dragOverIndex === index && draggedLesson?.id !== lesson.id
+                          ? '4px solid #1976d2'
                           : 'none',
-                        backgroundColor: draggedLesson?.id === lesson.id 
-                          ? 'rgba(0,0,0,0.05)' 
+                        backgroundColor: draggedLesson?.id === lesson.id
+                          ? 'rgba(0,0,0,0.05)'
                           : 'white',
                         '&:hover': {
                           boxShadow: 2
@@ -545,13 +548,13 @@ export const CourseManagement: React.FC = () => {
                     >
                       <ListItem>
                         <Stack direction="row" spacing={1} sx={{ mr: 1 }}>
-                          
-                          <DragIndicator 
-                            sx={{ 
+
+                          <DragIndicator
+                            sx={{
                               color: 'action.active',
                               alignSelf: 'center',
                               ml: 0.5
-                            }} 
+                            }}
                           />
                         </Stack>
                         <ListItemText
@@ -590,23 +593,23 @@ export const CourseManagement: React.FC = () => {
                                   lesson.lessonType === "KEYWORDS"
                                     ? "Keywords Practice"
                                     : lesson.lessonType === "QUIZ"
-                                    ? "Quiz"
-                                    : lesson.lessonType === "SLIDES"
-                                    ? "Interactive Slides"
-                                    : lesson.contentUrl
-                                    ? lesson.lessonType === "VIDEO"
-                                      ? "Has Video"
-                                      : "Has PDF"
-                                    : lesson.lessonType === "VIDEO"
-                                    ? "No Video"
-                                    : "No PDF"
+                                      ? "Quiz"
+                                      : lesson.lessonType === "SLIDES"
+                                        ? "Interactive Slides"
+                                        : lesson.contentUrl
+                                          ? lesson.lessonType === "VIDEO"
+                                            ? "Has Video"
+                                            : "Has PDF"
+                                          : lesson.lessonType === "VIDEO"
+                                            ? "No Video"
+                                            : "No PDF"
                                 }
                                 size="small"
                                 color={
                                   lesson.contentUrl ||
-                                  lesson.lessonType === "KEYWORDS" ||
-                                  lesson.lessonType === "QUIZ" ||
-                                  lesson.lessonType === "SLIDES"
+                                    lesson.lessonType === "KEYWORDS" ||
+                                    lesson.lessonType === "QUIZ" ||
+                                    lesson.lessonType === "SLIDES"
                                     ? "success"
                                     : "default"
                                 }
@@ -1079,11 +1082,10 @@ export const CourseManagement: React.FC = () => {
                             size="small"
                           />
                           <Chip
-                            label={`${
-                              lessonForm.keywords.filter(
-                                (k) => k.japaneseAudioUrl
-                              ).length
-                            } with JP audio`}
+                            label={`${lessonForm.keywords.filter(
+                              (k) => k.japaneseAudioUrl
+                            ).length
+                              } with JP audio`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1094,11 +1096,10 @@ export const CourseManagement: React.FC = () => {
                             }
                           />
                           <Chip
-                            label={`${
-                              lessonForm.keywords.filter(
-                                (k) => k.englishAudioUrl
-                              ).length
-                            } with EN audio`}
+                            label={`${lessonForm.keywords.filter(
+                              (k) => k.englishAudioUrl
+                            ).length
+                              } with EN audio`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1112,11 +1113,11 @@ export const CourseManagement: React.FC = () => {
                         {lessonForm.keywords.some(
                           (k) => !k.japaneseAudioUrl || !k.englishAudioUrl
                         ) && (
-                          <Alert severity="warning" sx={{ mt: 1 }}>
-                            Some keywords are missing audio files. Consider
-                            using the Bulk Audio manager to import them.
-                          </Alert>
-                        )}
+                            <Alert severity="warning" sx={{ mt: 1 }}>
+                              Some keywords are missing audio files. Consider
+                              using the Bulk Audio manager to import them.
+                            </Alert>
+                          )}
                       </Stack>
                     </Paper>
                   )}
@@ -1153,7 +1154,7 @@ export const CourseManagement: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseLessonDialog}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveLesson} sx={{color: "white"}}>
+            <Button variant="contained" onClick={handleSaveLesson} sx={{ color: "white" }}>
               Save Lesson
             </Button>
           </DialogActions>
@@ -1201,11 +1202,9 @@ export const CourseManagement: React.FC = () => {
                 <Box
                   sx={{
                     height: 120,
-                    background: `linear-gradient(135deg, ${
-                      course.type === "JAPAN_IN_CONTEXT" ? "#FF6B6B" : "#4ECDC4"
-                    } 0%, ${
-                      course.type === "JAPAN_IN_CONTEXT" ? "#FFB7C5" : "#7ED4D0"
-                    } 100%)`,
+                    background: `linear-gradient(135deg, ${course.type === "JAPAN_IN_CONTEXT" ? "#FF6B6B" : "#4ECDC4"
+                      } 0%, ${course.type === "JAPAN_IN_CONTEXT" ? "#FFB7C5" : "#7ED4D0"
+                      } 100%)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1259,6 +1258,7 @@ export const CourseManagement: React.FC = () => {
                         type: course.type,
                         icon: course.icon,
                         isActive: course.isActive,
+                        freeLessonCount: course.freeLessonCount,
                       });
                       setCourseDialog(true);
                     }}
@@ -1330,6 +1330,16 @@ export const CourseManagement: React.FC = () => {
                 setCourseForm({ ...courseForm, icon: e.target.value })
               }
               helperText="Enter an emoji to represent the course"
+            />
+            <TextField
+              fullWidth
+              required
+              type="number"
+              label="Free Lesson Count"
+              value={courseForm.freeLessonCount}
+              onChange={(e) =>
+                setCourseForm({ ...courseForm, freeLessonCount: parseInt(e.target.value) })
+              }
             />
             <FormControlLabel
               control={

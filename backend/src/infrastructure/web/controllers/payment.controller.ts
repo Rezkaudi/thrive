@@ -4,6 +4,10 @@ import { PaymentService } from '../../services/PaymentService';
 import { PaymentRepository } from '../../database/repositories/PaymentRepository';
 import { UserRepository } from '../../database/repositories/UserRepository';
 import { Payment } from '../../../domain/repositories/IPaymentRepository';
+import { Subscription } from '../../../domain/entities/Subscription';
+import { AuthRequest } from '../middleware/auth.middleware';
+import { HandleSubscriptionWebhookUseCase } from '../../../application/use-cases/subscription/HandleSubscriptionWebhookUseCase';
+import { SubscriptionRepository } from '../../database/repositories/SubscriptionRepository';
 
 export class PaymentController {
   private paymentRepository: PaymentRepository;
@@ -41,9 +45,12 @@ export class PaymentController {
     }
   }
 
-  createCheckoutSession = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createCheckoutSession = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { priceId, mode = 'payment', successUrl, cancelUrl, metadata } = req.body;
+      const email = req.user!.email
+      const userId = req.user!.userId
+
 
       // Ensure email is passed in the session metadata
       const sessionData = {
@@ -53,8 +60,8 @@ export class PaymentController {
         cancelUrl,
         metadata: {
           ...metadata,
-          // Make sure email is included if provided
-          email: metadata?.email || req.body.email
+          email,
+          userId
         },
       };
 
@@ -92,30 +99,34 @@ export class PaymentController {
 
     try {
       const event = this.paymentService.constructWebhookEvent(req.body, sig);
-      console.log(`📍 Webhook received: ${event.type}--------------------------------------------------------------------------`);
+      console.log(`📍 Webhook received: ${event.type}`);
 
-      // Handle the event
+      // Initialize the subscription webhook handler
+      const subscriptionWebhookHandler = new HandleSubscriptionWebhookUseCase(
+        new SubscriptionRepository(),
+        new UserRepository(),
+        this.paymentService
+      );
+
+      // Handle subscription-related events with the use case
+      const subscriptionEvents = [
+        'checkout.session.completed',
+        'customer.subscription.created',
+        'customer.subscription.updated',
+        'customer.subscription.deleted',
+        'invoice.payment_succeeded',
+        'invoice.payment_failed',
+        'customer.subscription.trial_will_end'
+      ];
+
+      if (subscriptionEvents.includes(event.type)) {
+        await subscriptionWebhookHandler.execute({ event });
+        res.json({ received: true });
+        return;
+      }
+
+      // Handle other events (your existing code for non-subscription events)
       switch (event.type) {
-        case 'checkout.session.completed':
-          await this.handleCheckoutSessionCompleted(event.data.object as any);
-          break;
-
-        case 'invoice.payment_succeeded':
-          await this.handleInvoicePaymentSucceeded(event.data.object as any);
-          break;
-
-        case 'customer.subscription.created':
-          await this.handleSubscriptionCreated(event.data.object as any);
-          break;
-
-        case 'customer.subscription.updated':
-          await this.handleSubscriptionUpdated(event.data.object as any);
-          break;
-
-        case 'customer.subscription.deleted':
-          await this.handleSubscriptionDeleted(event.data.object as any);
-          break;
-
         case 'payment_intent.payment_failed':
           await this.handlePaymentFailed(event.data.object as any);
           break;
