@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class Migrations1753272117647 implements MigrationInterface {
-    name = 'Migrations1753272117647'
+export class Migrations1753351115693 implements MigrationInterface {
+    name = 'Migrations1753351115693'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TYPE "public"."subscriptions_subscriptionplan_enum" AS ENUM('monthly', 'yearly', 'one-time')`);
