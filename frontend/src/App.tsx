@@ -52,7 +52,6 @@ function AppContent() {
     // Check auth status on app load
     dispatch(checkAuth());
     dispatch(fetchDashboardData());
-
   }, [dispatch]);
 
   if (authChecking) {
