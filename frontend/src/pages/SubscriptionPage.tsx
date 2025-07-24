@@ -120,7 +120,7 @@ export const SubscriptionPage: React.FC = () => {
             const response = await api.post('/payment/create-checkout-session', {
                 priceId: plan.stripePriceId,
                 mode: plan.period === 'one-time' ? 'payment' : 'subscription',
-                successUrl: `${window.location.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+                successUrl: `${window.location.origin}/classroom`,
                 cancelUrl: `${window.location.origin}/subscription`,
                 metadata: {
                     plan: planId
@@ -211,7 +211,7 @@ export const SubscriptionPage: React.FC = () => {
             <Container maxWidth="xl">
                 <Button
                     startIcon={<ArrowBack />}
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/classroom')}
                     sx={{
                         mb: 3,
                         '&:hover': {
@@ -219,7 +219,7 @@ export const SubscriptionPage: React.FC = () => {
                         },
                     }}
                 >
-                    Back to Dashboard
+                    Back to Classroom
                 </Button>
 
                 {/* Header Section */}
