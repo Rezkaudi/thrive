@@ -1,4 +1,4 @@
-// frontend/src/pages/ClassroomPage.tsx
+// frontend/src/pages/ClassroomPage.tsx - Enhanced version with subscription logic
 import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
@@ -38,6 +38,7 @@ import {
   PlayCircle,
   CheckCircle,
   Lock,
+  LockOutlined,
   Menu as MenuIcon,
   Close,
   VideoLibrary,
@@ -57,7 +58,9 @@ import {
   AutoAwesome,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { subscriptionService } from "../services/subscriptionService";
 import { KeywordFlashcards } from "../components/classroom/KeywordFlashcards";
 import { Quiz } from "../components/classroom/Quiz";
 import { InteractiveSlides } from "../components/classroom/InteractiveSlides";
@@ -69,6 +72,7 @@ interface Course {
   type: string;
   icon: string;
   isActive: boolean;
+  freeLessonCount?: number;
 }
 
 interface Lesson {
@@ -86,6 +90,7 @@ interface Lesson {
   isCompleted?: boolean;
   completedAt?: string;
   isLocked?: boolean;
+  lockReason?: string;
   keywords?: Array<{
     id: string;
     englishText: string;
@@ -125,7 +130,10 @@ const gradientColors = {
 
 // Helper function to get colors for a course type
 const getCourseColors = (courseType: string) => {
-  return gradientColors[courseType as keyof typeof gradientColors] || gradientColors.JAPAN_IN_CONTEXT;
+  return (
+    gradientColors[courseType as keyof typeof gradientColors] ||
+    gradientColors.JAPAN_IN_CONTEXT
+  );
 };
 
 const CourseCard = ({
@@ -550,6 +558,7 @@ const PDFViewer = ({ url }: { url: string }) => {
 
 export const ClassroomPage: React.FC = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -562,19 +571,38 @@ export const ClassroomPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [lessonLoading, setLessonLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSubscription, setHasSubscription] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
   // Get dynamic colors based on selected course
-  const selectedCourseColors = selectedCourse ? getCourseColors(selectedCourse.type) : getCourseColors('JAPAN_IN_CONTEXT');
+  const selectedCourseColors = selectedCourse
+    ? getCourseColors(selectedCourse.type)
+    : getCourseColors("JAPAN_IN_CONTEXT");
 
   useEffect(() => {
     fetchData();
+    checkSubscriptionStatus();
   }, []);
 
   useEffect(() => {
     if (selectedCourse) {
       fetchLessons(selectedCourse.id);
     }
-  }, [selectedCourse]);
+  }, [selectedCourse, hasSubscription]);
+
+  const checkSubscriptionStatus = async () => {
+    try {
+      setCheckingSubscription(true);
+      const response = await subscriptionService.checkSubscriptionStatus();
+      setHasSubscription(response.hasActiveSubscription);
+    } catch (error) {
+      console.error("Failed to check subscription:", error);
+      setHasSubscription(false);
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -631,7 +659,7 @@ export const ClassroomPage: React.FC = () => {
       setLessonLoading(true);
       const response = await api.get(`/courses/${courseId}/lessons`);
 
-      const lessonsWithLocks = calculateLessonLocks(response.data);
+      const lessonsWithLocks = calculateLessonLocks(response.data, selectedCourse);
       setLessons(lessonsWithLocks);
 
       const firstIncompleteUnlocked = lessonsWithLocks.find(
@@ -710,21 +738,46 @@ export const ClassroomPage: React.FC = () => {
     );
   };
 
-  const calculateLessonLocks = (lessons: Lesson[]): Lesson[] => {
-    if (!lessons.length) return lessons;
+  const calculateLessonLocks = (
+    lessons: Lesson[],
+    course: Course | null
+  ): Lesson[] => {
+    if (!lessons.length || !course) return lessons;
 
     const sortedLessons = [...lessons].sort((a, b) => a.order - b.order);
+    const freeLessonCount = course.freeLessonCount || 0;
 
     return sortedLessons.map((lesson, index) => {
-      if (index === 0) {
-        return { ...lesson, isLocked: false };
+      let isLocked = false;
+      let lockReason = '';
+
+      if (hasSubscription) {
+        // If user has subscription, only lock if previous lesson isn't completed
+        if (index > 0) {
+          const previousLesson = sortedLessons[index - 1];
+          isLocked = !previousLesson.isCompleted;
+          lockReason = isLocked ? 'Complete previous lesson to unlock' : '';
+        }
+      } else {
+        // If no subscription, lock lessons beyond free limit or if previous isn't completed
+        if (index >= freeLessonCount) {
+          isLocked = true;
+          lockReason = 'Subscribe to unlock';
+        } else if (index > 0) {
+          const previousLesson = sortedLessons[index - 1];
+          isLocked = !previousLesson.isCompleted;
+          lockReason = isLocked ? 'Complete previous lesson to unlock' : '';
+        }
       }
 
-      const previousLesson = sortedLessons[index - 1];
-      const isLocked = !previousLesson.isCompleted;
-
-      return { ...lesson, isLocked };
+      return { ...lesson, isLocked, lockReason };
     });
+  };
+
+  const handleLockedLessonClick = (lesson: Lesson) => {
+    if (lesson.lockReason === 'Subscribe to unlock') {
+      setShowSubscriptionModal(true);
+    }
   };
 
   const LessonSidebar = () => {
@@ -838,7 +891,8 @@ export const ClassroomPage: React.FC = () => {
             <List sx={{ p: 0 }}>
               {lessons.map((lesson, index) => {
                 const isDisabled =
-                  !isEnrolled(selectedCourse?.id || "") || lesson.isLocked;
+                  !isEnrolled(selectedCourse?.id || "") || 
+                  (lesson.isLocked && lesson.lockReason !== 'Subscribe to unlock');
                 const isSelected = selectedLesson?.id === lesson.id;
 
                 return (
@@ -852,12 +906,20 @@ export const ClassroomPage: React.FC = () => {
                       <ListItemButton
                         selected={isSelected}
                         disabled={isDisabled}
-                        onClick={() => !isDisabled && setSelectedLesson(lesson)}
+                        onClick={() => {
+                          if (!isDisabled && !lesson.isLocked) {
+                            setSelectedLesson(lesson);
+                          } else if (lesson.lockReason === 'Subscribe to unlock') {
+                            navigate("/subscription");
+                          }
+                        }}
                         sx={{
                           borderRadius: 3,
-                          opacity: lesson.isLocked ? 0.5 : 1,
+                          opacity: lesson.isLocked ? 0.7 : 1,
                           minHeight: 72,
                           transition: "all 0.2s ease-in-out",
+                          position: 'relative',
+                          overflow: 'hidden',
                           "&.Mui-selected": {
                             background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
                             color: "white",
@@ -868,12 +930,30 @@ export const ClassroomPage: React.FC = () => {
                               color: "white",
                             },
                           },
-                          "&:hover:not(.Mui-selected)": {
+                          "&:hover:not(.Mui-selected)": lesson.lockReason === 'Subscribe to unlock' ? {
+                            bgcolor: "action.hover",
+                            cursor: 'pointer',
+                          } : {
                             bgcolor: "action.hover",
                           },
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 40 }}>
+                        {lesson.lockReason === 'Subscribe to unlock' && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              backdropFilter: 'blur(2px)',
+                              zIndex: 1,
+                            }}
+                          />
+                        )}
+
+                        <ListItemIcon sx={{ minWidth: 40, zIndex: 2 }}>
                           {lesson.isCompleted ? (
                             <CheckCircle
                               color={isSelected ? "inherit" : "success"}
@@ -912,6 +992,7 @@ export const ClassroomPage: React.FC = () => {
                         </ListItemIcon>
 
                         <ListItemText
+                          sx={{ zIndex: 2 }}
                           primary={
                             <Stack
                               direction="row"
@@ -929,12 +1010,13 @@ export const ClassroomPage: React.FC = () => {
                               {lesson.isLocked && (
                                 <Chip
                                   size="small"
-                                  label="Locked"
+                                  label={lesson.lockReason === 'Subscribe to unlock' ? 'Pro' : 'Locked'}
+                                  icon={lesson.lockReason === 'Subscribe to unlock' ? <LockOutlined /> : undefined}
                                   sx={{
                                     height: 20,
                                     fontSize: "0.65rem",
-                                    bgcolor: "grey.300",
-                                    color: "grey.600",
+                                    bgcolor: lesson.lockReason === 'Subscribe to unlock' ? 'primary.main' : 'grey.300',
+                                    color: lesson.lockReason === 'Subscribe to unlock' ? 'white' : 'grey.600',
                                   }}
                                 />
                               )}
@@ -968,7 +1050,7 @@ export const ClassroomPage: React.FC = () => {
                               sx={{ opacity: isSelected ? 0.8 : 0.7 }}
                             >
                               {lesson.isLocked
-                                ? "Complete previous lesson to unlock"
+                                ? lesson.lockReason || "Complete previous lesson to unlock"
                                 : `Lesson ${lesson.order} • ${
                                     lesson.lessonType.charAt(0) +
                                     lesson.lessonType.slice(1).toLowerCase()
@@ -989,7 +1071,7 @@ export const ClassroomPage: React.FC = () => {
   };
 
   // Loading state with improved skeletons
-  if (loading) {
+  if (loading || checkingSubscription) {
     return (
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Stack spacing={4}>
@@ -1116,11 +1198,17 @@ export const ClassroomPage: React.FC = () => {
         >
           <DialogTitle sx={{ pb: 1 }}>
             <Stack direction="row" alignItems="center" spacing={2}>
-              <Avatar 
-                sx={{ 
-                  width: 48, 
+              <Avatar
+                sx={{
+                  width: 48,
                   height: 48,
-                  background: enrollDialog ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary} 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)` : 'primary.main'
+                  background: enrollDialog
+                    ? `linear-gradient(135deg, ${
+                        getCourseColors(enrollDialog.type).primary
+                      } 0%, ${
+                        getCourseColors(enrollDialog.type).secondary
+                      } 100%)`
+                    : "primary.main",
                 }}
               >
                 {enrollDialog?.icon}
@@ -1205,9 +1293,19 @@ export const ClassroomPage: React.FC = () => {
               sx={{
                 borderRadius: 2,
                 px: 4,
-                background: enrollDialog ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary} 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)` : "linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)",
+                background: enrollDialog
+                  ? `linear-gradient(135deg, ${
+                      getCourseColors(enrollDialog.type).primary
+                    } 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)`
+                  : "linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)",
                 "&:hover": {
-                  background: enrollDialog ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary} 20%, ${getCourseColors(enrollDialog.type).secondary} 120%)` : "linear-gradient(135deg, #FF6B6B 20%, #FFB7C5 120%)",
+                  background: enrollDialog
+                    ? `linear-gradient(135deg, ${
+                        getCourseColors(enrollDialog.type).primary
+                      } 20%, ${
+                        getCourseColors(enrollDialog.type).secondary
+                      } 120%)`
+                    : "linear-gradient(135deg, #FF6B6B 20%, #FFB7C5 120%)",
                 },
               }}
             >
@@ -1222,7 +1320,11 @@ export const ClassroomPage: React.FC = () => {
   // Course lesson view
   return (
     <Box
-      sx={{ display: "flex", height: "calc(100vh - 64px)", bgcolor: "background.default" }}
+      sx={{
+        display: "flex",
+        height: "calc(100vh - 64px)",
+        bgcolor: "background.default",
+      }}
     >
       {/* Desktop Sidebar */}
       {!isMobile && (
@@ -1395,7 +1497,64 @@ export const ClassroomPage: React.FC = () => {
                 </Paper>
 
                 {/* Lesson Content */}
-                {selectedLesson.isLocked ? (
+                {selectedLesson.isLocked && selectedLesson.lockReason === 'Subscribe to unlock' ? (
+                  <Paper
+                    elevation={0}
+                    sx={{ textAlign: "center", py: 8, borderRadius: 4 }}
+                  >
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Paper
+                        sx={{
+                          p: 6,
+                          maxWidth: 500,
+                          mx: 'auto',
+                          background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                          color: 'white',
+                          borderRadius: 4,
+                        }}
+                      >
+                        <LockOutlined sx={{ fontSize: 64, mb: 2 }} />
+                        <Typography variant="h5" fontWeight={600} gutterBottom>
+                          This Lesson is Locked
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 4, opacity: 0.9 }}>
+                          Subscribe to unlock all lessons and continue your learning journey
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          onClick={() => {
+                            navigate('/subscription', {
+                              state: {
+                                courseId: selectedCourse?.id,
+                                returnUrl: `/classroom`
+                              }
+                            });
+                          }}
+                          sx={{
+                            backgroundColor: 'white',
+                            color: '#FF6B6B',
+                            fontWeight: 600,
+                            px: 4,
+                            py: 1.5,
+                            '&:hover': {
+                              backgroundColor: 'grey.100',
+                            },
+                          }}
+                        >
+                          Unlock with Subscription
+                        </Button>
+                        <Typography variant="body2" sx={{ mt: 2, opacity: 0.8 }}>
+                          Starting at ¥19,980/month
+                        </Typography>
+                      </Paper>
+                    </motion.div>
+                  </Paper>
+                ) : selectedLesson.isLocked ? (
                   <Paper
                     elevation={0}
                     sx={{ textAlign: "center", py: 8, borderRadius: 4 }}
@@ -1635,6 +1794,80 @@ export const ClassroomPage: React.FC = () => {
           )}
         </Container>
       </Box>
+
+      {/* Subscription Modal */}
+      <Dialog
+        open={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <LockOutlined color="primary" />
+            <Typography variant="h6">Unlock All Lessons</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3}>
+            <Typography variant="body1">
+              You've reached the free lesson limit for this course. Subscribe to
+              unlock all lessons and features!
+            </Typography>
+
+            <Box sx={{ bgcolor: "grey.50", p: 2, borderRadius: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                With a subscription, you'll get:
+              </Typography>
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CheckCircle color="success" fontSize="small" />
+                  <Typography variant="body2">
+                    Unlimited access to all lessons
+                  </Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CheckCircle color="success" fontSize="small" />
+                  <Typography variant="body2">
+                    Live speaking practice sessions
+                  </Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CheckCircle color="success" fontSize="small" />
+                  <Typography variant="body2">
+                    Downloadable resources
+                  </Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CheckCircle color="success" fontSize="small" />
+                  <Typography variant="body2">
+                    Certificate of completion
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowSubscriptionModal(false)}>
+            Maybe Later
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              navigate("/subscription", {
+                state: {
+                  courseId: selectedCourse?.id,
+                  returnUrl: `/classroom`,
+                },
+              });
+            }}
+            sx={{ color: "white" }}
+          >
+            View Subscription Plans
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

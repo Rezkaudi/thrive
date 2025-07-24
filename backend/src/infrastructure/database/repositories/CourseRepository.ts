@@ -1,3 +1,4 @@
+// backend/src/infrastructure/database/repositories/CourseRepository.ts
 import { Repository } from 'typeorm';
 import { AppDataSource } from '../config/database.config';
 import { CourseEntity } from '../entities/Course.entity';
@@ -47,6 +48,7 @@ export class CourseRepository implements ICourseRepository {
       entity.type,
       entity.icon,
       entity.isActive,
+      entity.freeLessonCount, // NEW FIELD
       entity.createdAt,
       entity.updatedAt
     );
@@ -60,6 +62,7 @@ export class CourseRepository implements ICourseRepository {
     entity.type = course.type;
     entity.icon = course.icon;
     entity.isActive = course.isActive;
+    entity.freeLessonCount = course.freeLessonCount; // NEW FIELD
     entity.createdAt = course.createdAt;
     entity.updatedAt = course.updatedAt;
     return entity;

@@ -29,8 +29,8 @@ export const RegistrationSuccessPage: React.FC = () => {
 
         // Auto-redirect after 5 seconds
         const timer = setTimeout(() => {
-            navigate('/profile');
-        }, 5000);
+            navigate('/dashboard');
+        }, 10000);
 
         return () => clearTimeout(timer);
     }, [navigate]);
@@ -174,13 +174,13 @@ export const RegistrationSuccessPage: React.FC = () => {
                                                 fullWidth
                                                 variant="contained"
                                                 size="large"
-                                                onClick={() => navigate('/profile')}
+                                                onClick={() => navigate('/dashboard')}
                                                 sx={{ py: 1.5 }}
                                             >
-                                                Go to My Profile
+                                                Go to My Dashboard
                                             </Button>
                                             <Typography variant="caption" color="text.secondary">
-                                                Redirecting automatically in 5 seconds...
+                                                Redirecting automatically in 10 seconds...
                                             </Typography>
                                         </Stack>
                                     </Stack>
