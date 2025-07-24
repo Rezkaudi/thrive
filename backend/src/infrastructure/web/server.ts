@@ -16,6 +16,8 @@ import { paymentRouter } from './routes/payment.routes';
 import { calendarRouter } from './routes/calendar.routes';
 import { sessionRouter } from './routes/session.routes';
 import { subscriptionRouter } from './routes/subscription.routes';
+import { dashboardRouter } from './routes/dashboard.routes';
+
 import { setupSwagger } from './swagger/swagger.setup';
 
 export class Server {
@@ -80,7 +82,7 @@ export class Server {
     this.app.use('/api/calendar', calendarRouter);
     this.app.use('/api/sessions', sessionRouter);
     this.app.use('/api/subscriptions', subscriptionRouter);
-
+    this.app.use('/api/dashboard', dashboardRouter);
 
     // Health check
     this.app.get('/', (_, res) => {

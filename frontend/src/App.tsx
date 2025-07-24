@@ -42,6 +42,7 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
 import { SubscriptionSuccessPage } from './pages/SubscriptionSuccessPage';
+import { fetchDashboardData } from './store/slices/dashboardSlice';
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>();
@@ -50,6 +51,7 @@ function AppContent() {
   useEffect(() => {
     // Check auth status on app load
     dispatch(checkAuth());
+    dispatch(fetchDashboardData());
   }, [dispatch]);
 
   if (authChecking) {
