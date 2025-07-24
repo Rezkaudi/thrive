@@ -1,5 +1,5 @@
 // frontend/src/pages/ClassroomPage.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Container,
@@ -27,7 +27,13 @@ import {
   DialogActions,
   Skeleton,
   Alert,
-} from '@mui/material';
+  Avatar,
+  Divider,
+  Tooltip,
+  Fade,
+  Badge,
+  CircularProgress,
+} from "@mui/material";
 import {
   PlayCircle,
   CheckCircle,
@@ -42,12 +48,19 @@ import {
   Translate,
   Quiz as QuizIcon,
   Slideshow,
-} from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
-import api from '../services/api';
-import { KeywordFlashcards } from '../components/classroom/KeywordFlashcards';
-import { Quiz } from '../components/classroom/Quiz';
-import { InteractiveSlides } from '../components/classroom/InteractiveSlides';
+  Star,
+  AccessTime,
+  TrendingUp,
+  PersonOutline,
+  BookmarkBorder,
+  Bookmark,
+  AutoAwesome,
+} from "@mui/icons-material";
+import { motion, AnimatePresence } from "framer-motion";
+import api from "../services/api";
+import { KeywordFlashcards } from "../components/classroom/KeywordFlashcards";
+import { Quiz } from "../components/classroom/Quiz";
+import { InteractiveSlides } from "../components/classroom/InteractiveSlides";
 
 interface Course {
   id: string;
@@ -64,7 +77,7 @@ interface Lesson {
   title: string;
   description: string;
   order: number;
-  lessonType: 'VIDEO' | 'PDF' | 'KEYWORDS' | 'QUIZ' | 'SLIDES';
+  lessonType: "VIDEO" | "PDF" | "KEYWORDS" | "QUIZ" | "SLIDES";
   contentUrl?: string;
   contentData?: any;
   pointsReward: number;
@@ -89,96 +102,343 @@ interface Enrollment {
   course?: Course;
 }
 
+interface CourseProgress {
+  courseId: string;
+  completedLessons: number;
+  totalLessons: number;
+  completionPercentage: number;
+}
+
+// Global color scheme definitions
+const gradientColors = {
+  JAPAN_IN_CONTEXT: {
+    primary: "#FF6B6B",
+    secondary: "#FFB7C5",
+    accent: "#FF8E8E",
+  },
+  JLPT_IN_CONTEXT: {
+    primary: "#4ECDC4",
+    secondary: "#7ED4D0",
+    accent: "#6DD6CE",
+  },
+};
+
+// Helper function to get colors for a course type
+const getCourseColors = (courseType: string) => {
+  return gradientColors[courseType as keyof typeof gradientColors] || gradientColors.JAPAN_IN_CONTEXT;
+};
+
 const CourseCard = ({
   course,
   onClick,
   isEnrolled,
-  progress = 0
+  progress = 0,
+  lessonCount = 0,
+  completedCount = 0,
 }: {
   course: Course;
   onClick: () => void;
   isEnrolled: boolean;
   progress?: number;
-}) => (
-  <motion.div whileHover={{ y: -8 }} whileTap={{ scale: 0.98 }}>
-    <Card
-      sx={{
-        cursor: 'pointer',
-        height: '100%',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-      onClick={onClick}
+  lessonCount?: number;
+  completedCount?: number;
+}) => {
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const isCompleted = progress === 100;
+  const theme = useTheme();
+
+  const colors = getCourseColors(course.type);
+
+  return (
+    <motion.div
+      whileHover={{ y: -12, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <Box
+      <Card
         sx={{
-          height: 200,
-          background: `linear-gradient(135deg, ${course.type === 'JAPAN_IN_CONTEXT' ? '#FF6B6B' : '#4ECDC4'
-            } 0%, ${course.type === 'JAPAN_IN_CONTEXT' ? '#FFB7C5' : '#7ED4D0'} 100%)`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
+          cursor: "pointer",
+          height: "100%",
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: 4,
+          boxShadow: isEnrolled
+            ? `0 8px 32px ${colors.primary}20`
+            : "0 4px 20px rgba(0,0,0,0.08)",
+          border: isCompleted ? `2px solid ${colors.primary}` : "none",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          "&:hover": {
+            boxShadow: `0 12px 40px ${colors.primary}30`,
+          },
         }}
+        onClick={onClick}
       >
-        <Typography variant="h1" sx={{ fontSize: '4rem', opacity: 0.8 }}>
-          {course.icon}
-        </Typography>
-        {isEnrolled && (
-          <Chip
-            label="Enrolled"
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-              bgcolor: 'rgba(255, 255, 255, 0.9)',
-            }}
-          />
-        )}
-        {isEnrolled && (
+        {/* Header with gradient and course icon */}
+        <Box
+          sx={{
+            height: 180,
+            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Decorative background pattern */}
           <Box
             sx={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 4,
-              bgcolor: 'background.paper',
+              position: "absolute",
+              top: -20,
+              right: -20,
+              width: 100,
+              height: 100,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.1)",
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: -30,
+              left: -30,
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.08)",
+            }}
+          />
+
+          {/* Course Icon */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Typography
+              variant="h1"
+              sx={{ fontSize: "4rem", opacity: 0.9, zIndex: 2 }}
+            >
+              {course.icon}
+            </Typography>
+          </motion.div>
+
+          {/* Status badges */}
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ position: "absolute", top: 16, right: 16 }}
+          >
+            {isCompleted && (
+              <Tooltip title="Course Completed!" arrow>
+                <Chip
+                  icon={<AutoAwesome />}
+                  label="Completed"
+                  size="small"
+                  sx={{
+                    bgcolor: "rgba(255, 255, 255, 0.95)",
+                    color: colors.primary,
+                    fontWeight: 600,
+                    "& .MuiChip-icon": { color: colors.primary },
+                  }}
+                />
+              </Tooltip>
+            )}
+            {isEnrolled && !isCompleted && (
+              <Chip
+                label="In Progress"
+                size="small"
+                sx={{
+                  bgcolor: "rgba(255, 255, 255, 0.9)",
+                  color: colors.primary,
+                  fontWeight: 500,
+                }}
+              />
+            )}
+          </Stack>
+
+          {/* Progress indicator at bottom */}
+          {isEnrolled && (
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 6,
+                bgcolor: "rgba(255, 255, 255, 0.3)",
+              }}
+            >
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 1, delay: 0.5 }}
+                style={{
+                  height: "100%",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  borderRadius: "0 3px 3px 0",
+                }}
+              />
+            </Box>
+          )}
+        </Box>
+
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mb: 1 }}>
+            {course.title}
+          </Typography>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mb: 3,
+              lineHeight: 1.6,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              sx={{ height: '100%' }}
-            />
-          </Box>
-        )}
-      </Box>
-      <CardContent>
-        <Typography variant="h5" gutterBottom fontWeight={600}>
-          {course.title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {course.description}
-        </Typography>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          {isEnrolled ? (
-            <>
-              <Chip label={`${progress}% Complete`} size="small" />
-              <Button endIcon={<PlayCircle />}>Continue</Button>
-            </>
-          ) : (
-            <Button fullWidth variant="contained">
-              Preview Course
-            </Button>
-          )}
-        </Stack>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+            {course.description}
+          </Typography>
 
+          {/* Progress Information - Enhanced Layout */}
+          {isEnrolled && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                mb: 3,
+                bgcolor: `${colors.primary}08`,
+                borderRadius: 2,
+                border: `1px solid ${colors.primary}20`,
+              }}
+            >
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={1}
+              >
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  fontWeight={500}
+                >
+                  Learning Progress
+                </Typography>
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <TrendingUp sx={{ fontSize: 16, color: colors.primary }} />
+                  <Typography
+                    variant="body2"
+                    fontWeight={700}
+                    color={colors.primary}
+                  >
+                    {progress}%
+                  </Typography>
+                </Stack>
+              </Stack>
+
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                sx={{
+                  height: 8,
+                  borderRadius: 4,
+                  bgcolor: `${colors.primary}20`,
+                  "& .MuiLinearProgress-bar": {
+                    bgcolor: colors.primary,
+                    borderRadius: 4,
+                  },
+                }}
+              />
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mt={1}
+              >
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <CheckCircle sx={{ fontSize: 16, color: "success.main" }} />
+                  <Typography variant="caption" color="text.secondary">
+                    {completedCount} completed
+                  </Typography>
+                </Stack>
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <School sx={{ fontSize: 16, color: "text.secondary" }} />
+                  <Typography variant="caption" color="text.secondary">
+                    {lessonCount} total lessons
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Action Button */}
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            {isEnrolled ? (
+              <>
+                <Stack direction="row" spacing={1}>
+                  <Chip
+                    label={isCompleted ? "Complete" : "In Progress"}
+                    size="small"
+                    color={isCompleted ? "success" : "primary"}
+                    variant={isCompleted ? "filled" : "outlined"}
+                    icon={isCompleted ? <Star /> : <AccessTime />}
+                  />
+                </Stack>
+                <Button
+                  endIcon={isCompleted ? <Star /> : <PlayCircle />}
+                  variant={isCompleted ? "outlined" : "contained"}
+                  sx={{
+                    borderRadius: 3,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 3,
+                    ...(!isCompleted && {
+                      color: "white",
+                      background: `linear-gradient(45deg, ${colors.primary} 30%, ${colors.accent} 90%)`,
+                      "&:hover": {
+                        background: `linear-gradient(45deg, ${colors.primary} 60%, ${colors.accent} 100%)`,
+                      },
+                    }),
+                  }}
+                >
+                  {isCompleted ? "Review Course" : "Continue Learning"}
+                </Button>
+              </>
+            ) : (
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                sx={{
+                  borderRadius: 3,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  py: 1.5,
+                  color: "white",
+                  background: `linear-gradient(45deg, ${colors.primary} 30%, ${colors.accent} 90%)`,
+                  "&:hover": {
+                    background: `linear-gradient(45deg, ${colors.primary} 60%, ${colors.accent} 100%)`,
+                  },
+                }}
+              >
+                Explore Course
+              </Button>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
 
 const VideoPlayer = ({ url }: { url: string }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -187,60 +447,53 @@ const VideoPlayer = ({ url }: { url: string }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Disable right-click context menu
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       return false;
     };
 
-    // Disable keyboard shortcuts that might allow saving
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Disable Ctrl+S, Ctrl+A, F12, etc.
       if (
-        (e.ctrlKey && (e.key === 's' || e.key === 'a')) ||
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-        (e.ctrlKey && e.shiftKey && e.key === 'C') ||
-        (e.ctrlKey && e.key === 'u')
+        (e.ctrlKey && (e.key === "s" || e.key === "a")) ||
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && e.key === "I") ||
+        (e.ctrlKey && e.shiftKey && e.key === "C") ||
+        (e.ctrlKey && e.key === "u")
       ) {
         e.preventDefault();
         return false;
       }
     };
 
-    // Disable drag and drop
     const handleDragStart = (e: DragEvent) => {
       e.preventDefault();
       return false;
     };
 
-    // Add event listeners
-    video.addEventListener('contextmenu', handleContextMenu);
-    video.addEventListener('dragstart', handleDragStart);
-    document.addEventListener('keydown', handleKeyDown);
+    video.addEventListener("contextmenu", handleContextMenu);
+    video.addEventListener("dragstart", handleDragStart);
+    document.addEventListener("keydown", handleKeyDown);
 
-    // Cleanup
     return () => {
-      video.removeEventListener('contextmenu', handleContextMenu);
-      video.removeEventListener('dragstart', handleDragStart);
-      document.removeEventListener('keydown', handleKeyDown);
+      video.removeEventListener("contextmenu", handleContextMenu);
+      video.removeEventListener("dragstart", handleDragStart);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
   return (
-    <Box
+    <Paper
+      elevation={3}
       sx={{
-        position: 'relative',
-        paddingTop: '56.25%', // 16:9 aspect ratio
-        bgcolor: 'black',
-        borderRadius: 2,
-        overflow: 'hidden',
-        // Disable text selection
-        userSelect: 'none',
-        // Disable highlighting
-        WebkitUserSelect: 'none',
-        MozUserSelect: 'none',
-        msUserSelect: 'none',
+        position: "relative",
+        paddingTop: "56.25%",
+        bgcolor: "black",
+        borderRadius: 3,
+        overflow: "hidden",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        MozUserSelect: "none",
+        msUserSelect: "none",
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -250,72 +503,57 @@ const VideoPlayer = ({ url }: { url: string }) => {
         controlsList="nodownload noremoteplayback"
         disablePictureInPicture
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
-          // Disable drag
-          pointerEvents: 'auto',
+          width: "100%",
+          height: "100%",
+          pointerEvents: "auto",
         }}
         src={url}
         onLoadStart={() => {
-          // Additional protection: remove download attribute if somehow added
           if (videoRef.current) {
-            videoRef.current.removeAttribute('download');
+            videoRef.current.removeAttribute("download");
           }
         }}
-        // Disable right-click and drag
         onContextMenu={(e) => e.preventDefault()}
         onDragStart={(e) => e.preventDefault()}
       />
-
-      {/* Invisible overlay to prevent direct video access */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      />
-    </Box>
+    </Paper>
   );
 };
 
-
 const PDFViewer = ({ url }: { url: string }) => {
   return (
-    <Box
+    <Paper
+      elevation={3}
       sx={{
-        position: 'relative',
-        height: '80vh',
-        bgcolor: 'grey.100',
-        borderRadius: 2,
-        overflow: 'hidden',
+        position: "relative",
+        height: "80vh",
+        bgcolor: "grey.100",
+        borderRadius: 3,
+        overflow: "hidden",
       }}
     >
       <iframe
         src={`${url}#toolbar=0`}
         style={{
-          width: '100%',
-          height: '100%',
-          border: 'none',
+          width: "100%",
+          height: "100%",
+          border: "none",
         }}
         title="PDF Viewer"
       />
-    </Box>
+    </Paper>
   );
 };
 
 export const ClassroomPage: React.FC = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [courseProgress, setCourseProgress] = useState<CourseProgress[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -325,6 +563,9 @@ export const ClassroomPage: React.FC = () => {
   const [lessonLoading, setLessonLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Get dynamic colors based on selected course
+  const selectedCourseColors = selectedCourse ? getCourseColors(selectedCourse.type) : getCourseColors('JAPAN_IN_CONTEXT');
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -333,23 +574,55 @@ export const ClassroomPage: React.FC = () => {
     if (selectedCourse) {
       fetchLessons(selectedCourse.id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCourse]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [coursesRes, enrollmentsRes] = await Promise.all([
-        api.get('/courses'),
-        api.get('/courses/my-enrollments'),
+        api.get("/courses"),
+        api.get("/courses/my-enrollments"),
       ]);
       setCourses(coursesRes.data);
       setEnrollments(enrollmentsRes.data);
+
+      await fetchCourseProgress(enrollmentsRes.data);
     } catch (error) {
-      console.error('Failed to fetch courses:', error);
-      setError('Failed to load courses');
+      console.error("Failed to fetch courses:", error);
+      setError("Failed to load courses");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCourseProgress = async (enrollments: Enrollment[]) => {
+    try {
+      const progressPromises = enrollments.map(async (enrollment) => {
+        const response = await api.get(
+          `/courses/${enrollment.courseId}/lessons`
+        );
+        const lessons = response.data;
+        const completedLessons = lessons.filter(
+          (l: Lesson) => l.isCompleted
+        ).length;
+        const totalLessons = lessons.length;
+        const completionPercentage =
+          totalLessons > 0
+            ? Math.round((completedLessons / totalLessons) * 100)
+            : 0;
+
+        return {
+          courseId: enrollment.courseId,
+          completedLessons,
+          totalLessons,
+          completionPercentage,
+        };
+      });
+
+      const progressData = await Promise.all(progressPromises);
+      setCourseProgress(progressData);
+    } catch (error) {
+      console.error("Failed to fetch course progress:", error);
     }
   };
 
@@ -357,29 +630,23 @@ export const ClassroomPage: React.FC = () => {
     try {
       setLessonLoading(true);
       const response = await api.get(`/courses/${courseId}/lessons`);
-      console.log('Lessons response:', response.data);
 
-      // Apply locking logic to lessons
       const lessonsWithLocks = calculateLessonLocks(response.data);
       setLessons(lessonsWithLocks);
 
-      // Auto-select first incomplete and unlocked lesson
       const firstIncompleteUnlocked = lessonsWithLocks.find(
         (l: Lesson) => !l.isCompleted && !l.isLocked
       );
       if (firstIncompleteUnlocked) {
-        console.log('Selected lesson:', firstIncompleteUnlocked);
         setSelectedLesson(firstIncompleteUnlocked);
       } else {
-        // If no incomplete unlocked lessons, select the first lesson
         const firstLesson = lessonsWithLocks.find((l: Lesson) => l.order === 1);
         if (firstLesson) {
-          console.log('Selected first lesson:', firstLesson);
           setSelectedLesson(firstLesson);
         }
       }
     } catch (error) {
-      console.error('Failed to fetch lessons:', error);
+      console.error("Failed to fetch lessons:", error);
     } finally {
       setLessonLoading(false);
     }
@@ -393,7 +660,6 @@ export const ClassroomPage: React.FC = () => {
       setSelectedCourse(course);
     } catch (error: any) {
       if (error.response?.status === 409) {
-        // Already enrolled
         setSelectedCourse(course);
       }
     }
@@ -404,54 +670,56 @@ export const ClassroomPage: React.FC = () => {
 
     try {
       const requestData: any = {};
-      
-      if (selectedLesson.lessonType === 'QUIZ' && quizScore !== undefined) {
+
+      if (selectedLesson.lessonType === "QUIZ" && quizScore !== undefined) {
         requestData.quizScore = quizScore;
       }
-      
-      await api.post(`/courses/lessons/${selectedLesson.id}/complete`, requestData);
 
-      // Refresh lessons to get updated completion status and recalculate locks
+      await api.post(
+        `/courses/lessons/${selectedLesson.id}/complete`,
+        requestData
+      );
+
       await fetchLessons(selectedCourse!.id);
+      await fetchCourseProgress(enrollments);
 
-      // Move to next available lesson (unlocked and incomplete)
-      const currentIndex = lessons.findIndex(l => l.id === selectedLesson.id);
+      const currentIndex = lessons.findIndex((l) => l.id === selectedLesson.id);
       const nextLessons = lessons.slice(currentIndex + 1);
-      const nextAvailableLesson = nextLessons.find(l => !l.isLocked);
+      const nextAvailableLesson = nextLessons.find((l) => !l.isLocked);
 
       if (nextAvailableLesson) {
         setSelectedLesson(nextAvailableLesson);
       }
     } catch (error) {
-      console.error('Failed to complete lesson:', error);
+      console.error("Failed to complete lesson:", error);
     }
   };
 
   const isEnrolled = (courseId: string) => {
-    return enrollments.some(e => e.courseId === courseId);
+    return enrollments.some((e) => e.courseId === courseId);
   };
 
-  const calculateProgress = (courseId: string) => {
-    const courseLessons = lessons.filter(l => l.courseId === courseId);
-    if (courseLessons.length === 0) return 0;
-
-    const completed = courseLessons.filter(l => l.isCompleted).length;
-    return Math.round((completed / courseLessons.length) * 100);
+  const getCourseProgress = (courseId: string) => {
+    const progress = courseProgress.find((p) => p.courseId === courseId);
+    return (
+      progress || {
+        completedLessons: 0,
+        totalLessons: 0,
+        completionPercentage: 0,
+      }
+    );
   };
 
   const calculateLessonLocks = (lessons: Lesson[]): Lesson[] => {
     if (!lessons.length) return lessons;
 
-    // Sort lessons by order to ensure proper sequence
     const sortedLessons = [...lessons].sort((a, b) => a.order - b.order);
 
     return sortedLessons.map((lesson, index) => {
-      // First lesson is never locked
       if (index === 0) {
         return { ...lesson, isLocked: false };
       }
 
-      // Check if previous lesson is completed
       const previousLesson = sortedLessons[index - 1];
       const isLocked = !previousLesson.isCompleted;
 
@@ -459,136 +727,299 @@ export const ClassroomPage: React.FC = () => {
     });
   };
 
-  const LessonSidebar = () => (
-    <Box sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6" fontWeight={600}>
-          {selectedCourse?.title || 'Select a Course'}
-        </Typography>
-        {isMobile && (
-          <IconButton onClick={() => setDrawerOpen(false)}>
-            <Close />
-          </IconButton>
-        )}
-      </Stack>
+  const LessonSidebar = () => {
+    const currentProgress = selectedCourse
+      ? getCourseProgress(selectedCourse.id)
+      : null;
 
-      {lessonLoading ? (
-        <Stack spacing={2}>
-          {[1, 2, 3].map(i => (
-            <Skeleton key={i} variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
-          ))}
-        </Stack>
-      ) : (
-        <List>
-          {lessons.map((lesson, index) => {
-            const isDisabled = !isEnrolled(selectedCourse?.id || '') || lesson.isLocked;
+    return (
+      <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={2}
+          >
+            <Typography variant="h6" fontWeight={700}>
+              {selectedCourse?.title || "Select a Course"}
+            </Typography>
+            {isMobile && (
+              <IconButton onClick={() => setDrawerOpen(false)}>
+                <Close />
+              </IconButton>
+            )}
+          </Stack>
 
-            return (
-              <motion.div
-                key={lesson.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
+          {/* Enhanced Course Progress with dynamic colors */}
+          {selectedCourse &&
+            isEnrolled(selectedCourse.id) &&
+            currentProgress && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                  borderRadius: 3,
+                  color: "white",
+                }}
               >
-                <ListItem disablePadding sx={{ mb: 1 }}>
-                  <ListItemButton
-                    selected={selectedLesson?.id === lesson.id}
-                    disabled={isDisabled}
-                    onClick={() => !isDisabled && setSelectedLesson(lesson)}
-                    sx={{
-                      borderRadius: 2,
-                      opacity: lesson.isLocked ? 0.5 : 1,
-                      '&.Mui-selected': {
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        '&:hover': {
-                          bgcolor: 'primary.dark',
-                        },
-                        '& .MuiListItemIcon-root': {
-                          color: 'white',
-                        },
-                      },
-                    }}
+                <Stack spacing={2}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
                   >
-                    <ListItemIcon>
-                      {lesson.isCompleted ? (
-                        <CheckCircle color={selectedLesson?.id === lesson.id ? 'inherit' : 'success'} />
-                      ) : lesson.isLocked ? (
-                        <Lock color="disabled" />
-                      ) : !isEnrolled(selectedCourse?.id || '') ? (
-                        <Lock color="disabled" />
-                      ) : lesson.lessonType === 'VIDEO' ? (
-                        <VideoLibrary color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
-                      ) : lesson.lessonType === 'PDF' ? (
-                        <PictureAsPdf color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
-                      ) : lesson.lessonType === 'QUIZ' ? (
-                        <QuizIcon color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
-                      ) : lesson.lessonType === 'SLIDES' ? (
-                        <Slideshow color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
-                      ) : (
-                        <Translate color={selectedLesson?.id === lesson.id ? 'inherit' : 'action'} />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="body1">{lesson.title}</Typography>
-                          {lesson.isLocked && (
-                            <Chip
-                              size="small"
-                              label="Locked"
-                              sx={{
-                                height: 20,
-                                fontSize: '0.6rem',
-                                bgcolor: 'grey.300',
-                                color: 'grey.600',
-                              }}
-                            />
-                          )}
-                          {lesson.pointsReward > 0 && !lesson.isLocked && (
-                            <Chip
-                              size="small"
-                              icon={<EmojiEvents />}
-                              label={`+${lesson.pointsReward}`}
-                              sx={{
-                                height: 20,
-                                fontSize: '0.7rem',
-                                bgcolor: selectedLesson?.id === lesson.id ? 'rgba(255,255,255,0.2)' : 'primary.light',
-                                color: selectedLesson?.id === lesson.id ? 'inherit' : 'primary.dark',
-                              }}
-                            />
-                          )}
-                        </Stack>
-                      }
-                      secondary={
-                        lesson.isLocked
-                          ? "Complete previous lesson to unlock"
-                          : lesson.lessonType
-                      }
-                      secondaryTypographyProps={{
-                        color: selectedLesson?.id === lesson.id ? 'inherit' : 'text.secondary',
-                        fontSize: '0.75rem',
+                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                      Course Progress
+                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <TrendingUp sx={{ fontSize: 18 }} />
+                      <Typography variant="h6" fontWeight={700}>
+                        {currentProgress.completionPercentage}%
+                      </Typography>
+                    </Stack>
+                  </Stack>
+
+                  <Box sx={{ position: "relative" }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={currentProgress.completionPercentage}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        bgcolor: "rgba(255,255,255,0.2)",
+                        "& .MuiLinearProgress-bar": {
+                          bgcolor: "white",
+                          borderRadius: 4,
+                        },
                       }}
                     />
-                  </ListItemButton>
-                </ListItem>
-              </motion.div>
-            );
-          })}
-        </List>
-      )}
-    </Box>
-  );
+                  </Box>
 
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <CheckCircle sx={{ fontSize: 18 }} />
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        {currentProgress.completedLessons} completed
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <School sx={{ fontSize: 18 }} />
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        {currentProgress.totalLessons} total
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Stack>
+              </Paper>
+            )}
+        </Box>
+
+        {/* Lessons List */}
+        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
+          {lessonLoading ? (
+            <Stack spacing={2}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton
+                  key={i}
+                  variant="rectangular"
+                  height={72}
+                  sx={{ borderRadius: 2 }}
+                />
+              ))}
+            </Stack>
+          ) : (
+            <List sx={{ p: 0 }}>
+              {lessons.map((lesson, index) => {
+                const isDisabled =
+                  !isEnrolled(selectedCourse?.id || "") || lesson.isLocked;
+                const isSelected = selectedLesson?.id === lesson.id;
+
+                return (
+                  <motion.div
+                    key={lesson.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <ListItem disablePadding sx={{ mb: 1 }}>
+                      <ListItemButton
+                        selected={isSelected}
+                        disabled={isDisabled}
+                        onClick={() => !isDisabled && setSelectedLesson(lesson)}
+                        sx={{
+                          borderRadius: 3,
+                          opacity: lesson.isLocked ? 0.5 : 1,
+                          minHeight: 72,
+                          transition: "all 0.2s ease-in-out",
+                          "&.Mui-selected": {
+                            background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                            color: "white",
+                            "&:hover": {
+                              background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                            },
+                            "& .MuiListItemIcon-root": {
+                              color: "white",
+                            },
+                          },
+                          "&:hover:not(.Mui-selected)": {
+                            bgcolor: "action.hover",
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 40 }}>
+                          {lesson.isCompleted ? (
+                            <CheckCircle
+                              color={isSelected ? "inherit" : "success"}
+                              sx={{ fontSize: 24 }}
+                            />
+                          ) : lesson.isLocked ? (
+                            <Lock color="disabled" sx={{ fontSize: 24 }} />
+                          ) : !isEnrolled(selectedCourse?.id || "") ? (
+                            <Lock color="disabled" sx={{ fontSize: 24 }} />
+                          ) : lesson.lessonType === "VIDEO" ? (
+                            <VideoLibrary
+                              color={isSelected ? "inherit" : "action"}
+                              sx={{ fontSize: 24 }}
+                            />
+                          ) : lesson.lessonType === "PDF" ? (
+                            <PictureAsPdf
+                              color={isSelected ? "inherit" : "action"}
+                              sx={{ fontSize: 24 }}
+                            />
+                          ) : lesson.lessonType === "QUIZ" ? (
+                            <QuizIcon
+                              color={isSelected ? "inherit" : "action"}
+                              sx={{ fontSize: 24 }}
+                            />
+                          ) : lesson.lessonType === "SLIDES" ? (
+                            <Slideshow
+                              color={isSelected ? "inherit" : "action"}
+                              sx={{ fontSize: 24 }}
+                            />
+                          ) : (
+                            <Translate
+                              color={isSelected ? "inherit" : "action"}
+                              sx={{ fontSize: 24 }}
+                            />
+                          )}
+                        </ListItemIcon>
+
+                        <ListItemText
+                          primary={
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={1}
+                              flexWrap="wrap"
+                            >
+                              <Typography
+                                variant="body1"
+                                fontWeight={isSelected ? 600 : 500}
+                                sx={{ flexGrow: 1 }}
+                              >
+                                {lesson.title}
+                              </Typography>
+                              {lesson.isLocked && (
+                                <Chip
+                                  size="small"
+                                  label="Locked"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: "0.65rem",
+                                    bgcolor: "grey.300",
+                                    color: "grey.600",
+                                  }}
+                                />
+                              )}
+                              {lesson.pointsReward > 0 && !lesson.isLocked && (
+                                <Chip
+                                  size="small"
+                                  icon={
+                                    <EmojiEvents
+                                      sx={{ fontSize: "14px !important" }}
+                                    />
+                                  }
+                                  label={`+${lesson.pointsReward}`}
+                                  sx={{
+                                    height: 20,
+                                    fontSize: "0.65rem",
+                                    bgcolor: isSelected
+                                      ? "rgba(255,255,255,0.2)"
+                                      : `${selectedCourseColors.primary}20`,
+                                    color: isSelected
+                                      ? "inherit"
+                                      : selectedCourseColors.primary,
+                                  }}
+                                />
+                              )}
+                            </Stack>
+                          }
+                          secondary={
+                            <Typography
+                              variant="caption"
+                              color={isSelected ? "inherit" : "text.secondary"}
+                              sx={{ opacity: isSelected ? 0.8 : 0.7 }}
+                            >
+                              {lesson.isLocked
+                                ? "Complete previous lesson to unlock"
+                                : `Lesson ${lesson.order} • ${
+                                    lesson.lessonType.charAt(0) +
+                                    lesson.lessonType.slice(1).toLowerCase()
+                                  }`}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  </motion.div>
+                );
+              })}
+            </List>
+          )}
+        </Box>
+      </Box>
+    );
+  };
+
+  // Loading state with improved skeletons
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Stack spacing={2}>
-          <Skeleton variant="text" width={200} height={40} />
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Stack spacing={4}>
+          <Box>
+            <Skeleton variant="text" width={300} height={50} sx={{ mb: 2 }} />
+            <Skeleton variant="text" width={500} height={30} />
+          </Box>
           <Grid container spacing={4}>
-            {[1, 2].map(i => (
+            {[1, 2].map((i) => (
               <Grid size={{ xs: 12, md: 6 }} key={i}>
-                <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
+                <Card sx={{ height: 400, borderRadius: 4 }}>
+                  <Skeleton variant="rectangular" height={180} />
+                  <CardContent>
+                    <Skeleton variant="text" width="80%" height={32} />
+                    <Skeleton
+                      variant="text"
+                      width="100%"
+                      height={20}
+                      sx={{ mt: 1 }}
+                    />
+                    <Skeleton variant="text" width="100%" height={20} />
+                    <Box sx={{ mt: 3 }}>
+                      <Skeleton
+                        variant="rectangular"
+                        height={40}
+                        sx={{ borderRadius: 2 }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
               </Grid>
             ))}
           </Grid>
@@ -597,57 +1028,189 @@ export const ClassroomPage: React.FC = () => {
     );
   }
 
+  // Course selection view
   if (!selectedCourse) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h3" gutterBottom fontWeight={700}>
-          My Classroom
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Choose a course to begin your learning journey
-        </Typography>
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        {/* Header with improved typography and spacing */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Box sx={{ textAlign: "center", mb: 6 }}>
+            <Typography
+              variant="h2"
+              gutterBottom
+              fontWeight={800}
+              sx={{
+                background: "linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                mb: 2,
+              }}
+            >
+              Welcome to Your Classroom
+            </Typography>
+            <Typography
+              variant="h6"
+              color="text.secondary"
+              sx={{
+                mb: 4,
+                maxWidth: 600,
+                mx: "auto",
+                lineHeight: 1.6,
+              }}
+            >
+              Choose a course to begin your learning journey
+            </Typography>
+          </Box>
+        </motion.div>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 4, borderRadius: 3 }}>
             {error}
           </Alert>
         )}
 
         <Grid container spacing={4}>
-          {courses.map((course) => (
-            <Grid size={{ xs: 12, md: 6 }} key={course.id}>
-              <CourseCard
-                course={course}
-                isEnrolled={isEnrolled(course.id)}
-                progress={calculateProgress(course.id)}
-                onClick={() => {
-                  if (isEnrolled(course.id)) {
-                    setSelectedCourse(course);
-                  } else {
-                    setEnrollDialog(course);
-                  }
-                }}
-              />
-            </Grid>
-          ))}
+          {courses.map((course, index) => {
+            const progress = getCourseProgress(course.id);
+            return (
+              <Grid size={{ xs: 12, md: 6 }} key={course.id}>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                >
+                  <CourseCard
+                    course={course}
+                    isEnrolled={isEnrolled(course.id)}
+                    progress={progress.completionPercentage}
+                    lessonCount={progress.totalLessons}
+                    completedCount={progress.completedLessons}
+                    onClick={() => {
+                      if (isEnrolled(course.id)) {
+                        setSelectedCourse(course);
+                      } else {
+                        setEnrollDialog(course);
+                      }
+                    }}
+                  />
+                </motion.div>
+              </Grid>
+            );
+          })}
         </Grid>
 
-        {/* Enrollment Dialog */}
-        <Dialog open={!!enrollDialog} onClose={() => setEnrollDialog(null)} maxWidth="sm" fullWidth>
-          <DialogTitle>Enroll in {enrollDialog?.title}</DialogTitle>
-          <DialogContent>
-            <Stack spacing={2}>
-              <Typography variant="body1">
+        {/* Enhanced Enrollment Dialog */}
+        <Dialog
+          open={!!enrollDialog}
+          onClose={() => setEnrollDialog(null)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 4 },
+          }}
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Avatar 
+                sx={{ 
+                  width: 48, 
+                  height: 48,
+                  background: enrollDialog ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary} 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)` : 'primary.main'
+                }}
+              >
+                {enrollDialog?.icon}
+              </Avatar>
+              <Box>
+                <Typography variant="h5" fontWeight={600}>
+                  Enroll in {enrollDialog?.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Start your learning journey today
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogTitle>
+
+          <DialogContent sx={{ pt: 2 }}>
+            <Stack spacing={3}>
+              <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
                 {enrollDialog?.description}
               </Typography>
-              <Alert severity="info">
-                This course is free! Enroll now to start learning and earning points.
+
+              <Alert
+                severity="success"
+                sx={{
+                  borderRadius: 2,
+                  "& .MuiAlert-icon": {
+                    fontSize: 24,
+                  },
+                }}
+              >
+                <Typography variant="body2" fontWeight={500}>
+                  🎉 This course is completely free! Enroll now to start
+                  learning and earning points.
+                </Typography>
               </Alert>
+
+              <Paper
+                elevation={0}
+                sx={{ p: 3, bgcolor: "background.default", borderRadius: 2 }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  color="text.secondary"
+                >
+                  What you'll get:
+                </Typography>
+                <Stack spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <CheckCircle color="success" sx={{ fontSize: 20 }} />
+                    <Typography variant="body2">
+                      Interactive lessons and quizzes
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <CheckCircle color="success" sx={{ fontSize: 20 }} />
+                    <Typography variant="body2">
+                      Track your learning progress
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <CheckCircle color="success" sx={{ fontSize: 20 }} />
+                    <Typography variant="body2">
+                      Earn points and achievements
+                    </Typography>
+                  </Stack>
+                </Stack>
+              </Paper>
             </Stack>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setEnrollDialog(null)}>Cancel</Button>
-            <Button variant="contained" onClick={() => enrollDialog && handleEnroll(enrollDialog)}>
+
+          <DialogActions sx={{ p: 3, pt: 1 }}>
+            <Button
+              onClick={() => setEnrollDialog(null)}
+              sx={{ borderRadius: 2 }}
+            >
+              Maybe Later
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => enrollDialog && handleEnroll(enrollDialog)}
+              sx={{
+                borderRadius: 2,
+                px: 4,
+                background: enrollDialog ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary} 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)` : "linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)",
+                "&:hover": {
+                  background: enrollDialog ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary} 20%, ${getCourseColors(enrollDialog.type).secondary} 120%)` : "linear-gradient(135deg, #FF6B6B 20%, #FFB7C5 120%)",
+                },
+              }}
+            >
               Enroll Now
             </Button>
           </DialogActions>
@@ -656,26 +1219,35 @@ export const ClassroomPage: React.FC = () => {
     );
   }
 
+  // Course lesson view
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 64px)' }}>
-      {/* Sidebar for desktop */}
+    <Box
+      sx={{ display: "flex", height: "calc(100vh - 64px)", bgcolor: "background.default" }}
+    >
+      {/* Desktop Sidebar */}
       {!isMobile && (
         <Paper
+          elevation={2}
           sx={{
-            width: 320,
+            width: 380,
             borderRadius: 0,
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            overflowY: 'auto',
+            borderRight: "1px solid",
+            borderColor: "divider",
+            overflowY: "auto",
           }}
         >
-          <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
             <Button
               startIcon={<ArrowBack />}
               onClick={() => {
                 setSelectedCourse(null);
                 setLessons([]);
                 setSelectedLesson(null);
+              }}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 500,
               }}
             >
               Back to Courses
@@ -685,17 +1257,17 @@ export const ClassroomPage: React.FC = () => {
         </Paper>
       )}
 
-      {/* Mobile drawer */}
+      {/* Mobile Drawer */}
       <Drawer
         anchor="left"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         sx={{
-          display: { md: 'none' },
-          '& .MuiDrawer-paper': { width: 320 },
+          display: { md: "none" },
+          "& .MuiDrawer-paper": { width: 380 },
         }}
       >
-        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
           <Button
             startIcon={<ArrowBack />}
             onClick={() => {
@@ -704,6 +1276,11 @@ export const ClassroomPage: React.FC = () => {
               setSelectedLesson(null);
               setDrawerOpen(false);
             }}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+            }}
           >
             Back to Courses
           </Button>
@@ -711,14 +1288,11 @@ export const ClassroomPage: React.FC = () => {
         <LessonSidebar />
       </Drawer>
 
-      {/* Main content */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
-        <Container maxWidth="md" sx={{ py: 4 }}>
+      {/* Main Content Area */}
+      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
           {isMobile && (
-            <IconButton
-              onClick={() => setDrawerOpen(true)}
-              sx={{ mb: 2 }}
-            >
+            <IconButton onClick={() => setDrawerOpen(true)} sx={{ mb: 3 }}>
               <MenuIcon />
             </IconButton>
           )}
@@ -727,83 +1301,168 @@ export const ClassroomPage: React.FC = () => {
             <AnimatePresence mode="wait">
               <motion.div
                 key={selectedLesson.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.4 }}
               >
-                <Typography variant="h4" gutterBottom fontWeight={600}>
-                  {selectedLesson.title}
-                </Typography>
-                <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-                  <Chip
-                    icon={
-                      selectedLesson.lessonType === 'VIDEO' ? <VideoLibrary /> :
-                      selectedLesson.lessonType === 'PDF' ? <PictureAsPdf /> :
-                      selectedLesson.lessonType === 'QUIZ' ? <QuizIcon /> :
-                      selectedLesson.lessonType === 'SLIDES' ? <Slideshow /> :
-                      <Translate />
-                    }
-                    label={
-                      selectedLesson.lessonType === 'VIDEO' ? 'Video Lesson' :
-                      selectedLesson.lessonType === 'PDF' ? 'PDF Resource' :
-                      selectedLesson.lessonType === 'QUIZ' ? 'Quiz' :
-                      selectedLesson.lessonType === 'SLIDES' ? 'Interactive Slides' :
-                      'Keywords Practice'
-                    }
-                  />
-                  {selectedLesson.pointsReward > 0 && (
-                    <Chip
-                      icon={<EmojiEvents />}
-                      label={`+${selectedLesson.pointsReward} points`}
-                      color="primary"
-                    />
-                  )}
-                  {selectedLesson.isLocked && (
-                    <Chip
-                      icon={<Lock />}
-                      label="Locked"
-                      color="error"
-                    />
-                  )}
-                </Stack>
+                {/* Lesson Header with dynamic gradient */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    mb: 4,
+                    borderRadius: 4,
+                    background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                    color: "white",
+                  }}
+                >
+                  <Stack spacing={2}>
+                    <Typography variant="h3" fontWeight={700}>
+                      {selectedLesson.title}
+                    </Typography>
 
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                  {selectedLesson.description}
-                </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      alignItems="center"
+                      flexWrap="wrap"
+                    >
+                      <Chip
+                        icon={
+                          selectedLesson.lessonType === "VIDEO" ? (
+                            <VideoLibrary />
+                          ) : selectedLesson.lessonType === "PDF" ? (
+                            <PictureAsPdf />
+                          ) : selectedLesson.lessonType === "QUIZ" ? (
+                            <QuizIcon />
+                          ) : selectedLesson.lessonType === "SLIDES" ? (
+                            <Slideshow />
+                          ) : (
+                            <Translate />
+                          )
+                        }
+                        label={
+                          selectedLesson.lessonType === "VIDEO"
+                            ? "Video Lesson"
+                            : selectedLesson.lessonType === "PDF"
+                            ? "PDF Resource"
+                            : selectedLesson.lessonType === "QUIZ"
+                            ? "Interactive Quiz"
+                            : selectedLesson.lessonType === "SLIDES"
+                            ? "Interactive Slides"
+                            : "Keywords Practice"
+                        }
+                        sx={{
+                          bgcolor: "rgba(255,255,255,0.2)",
+                          color: "white",
+                          "& .MuiChip-icon": { color: "white" },
+                        }}
+                      />
 
-                {/* Content Display */}
+                      {selectedLesson.pointsReward > 0 && (
+                        <Chip
+                          icon={<EmojiEvents />}
+                          label={`+${selectedLesson.pointsReward} points`}
+                          sx={{
+                            bgcolor: "rgba(255,255,255,0.2)",
+                            color: "white",
+                            "& .MuiChip-icon": { color: "white" },
+                          }}
+                        />
+                      )}
+
+                      {selectedLesson.isCompleted && (
+                        <Chip
+                          icon={<CheckCircle />}
+                          label="Completed"
+                          sx={{
+                            bgcolor: "rgba(76, 175, 80, 0.2)",
+                            color: "white",
+                            "& .MuiChip-icon": { color: "white" },
+                          }}
+                        />
+                      )}
+                    </Stack>
+
+                    <Typography
+                      variant="body1"
+                      sx={{ opacity: 0.9, lineHeight: 1.6 }}
+                    >
+                      {selectedLesson.description}
+                    </Typography>
+                  </Stack>
+                </Paper>
+
+                {/* Lesson Content */}
                 {selectedLesson.isLocked ? (
-                  <Box sx={{ textAlign: 'center', py: 8 }}>
-                    <Lock sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                  <Paper
+                    elevation={0}
+                    sx={{ textAlign: "center", py: 8, borderRadius: 4 }}
+                  >
+                    <Lock
+                      sx={{ fontSize: 80, color: "text.secondary", mb: 3 }}
+                    />
+                    <Typography
+                      variant="h5"
+                      color="text.secondary"
+                      gutterBottom
+                      fontWeight={600}
+                    >
                       This lesson is locked
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                      Complete the previous lesson to unlock this content
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      sx={{ mb: 4, maxWidth: 400, mx: "auto" }}
+                    >
+                      Complete the previous lesson to unlock this content and
+                      continue your learning journey
                     </Typography>
-                  </Box>
+                  </Paper>
                 ) : !isEnrolled(selectedCourse.id) ? (
-                  <Box sx={{ textAlign: 'center', py: 8 }}>
-                    <Lock sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                      This content is locked
+                  <Paper
+                    elevation={0}
+                    sx={{ textAlign: "center", py: 8, borderRadius: 4 }}
+                  >
+                    <Lock
+                      sx={{ fontSize: 80, color: "text.secondary", mb: 3 }}
+                    />
+                    <Typography
+                      variant="h5"
+                      color="text.secondary"
+                      gutterBottom
+                      fontWeight={600}
+                    >
+                      Enroll to access this content
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                      Enroll in this course to access all lessons
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      sx={{ mb: 4, maxWidth: 400, mx: "auto" }}
+                    >
+                      Join this course to unlock all lessons and start your
+                      learning journey
                     </Typography>
                     <Button
                       variant="contained"
+                      size="large"
                       onClick={() => setEnrollDialog(selectedCourse)}
+                      sx={{
+                        borderRadius: 3,
+                        px: 4,
+                        background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                      }}
                     >
                       Enroll Now
                     </Button>
-                  </Box>
+                  </Paper>
                 ) : (
                   <>
                     {/* Keywords Lesson */}
-                    {selectedLesson.lessonType === 'KEYWORDS' && (
-                      selectedLesson.keywords && selectedLesson.keywords.length > 0 ? (
+                    {selectedLesson.lessonType === "KEYWORDS" &&
+                      (selectedLesson.keywords &&
+                      selectedLesson.keywords.length > 0 ? (
                         <KeywordFlashcards
                           keywords={selectedLesson.keywords}
                           pointsReward={selectedLesson.pointsReward}
@@ -811,15 +1470,18 @@ export const ClassroomPage: React.FC = () => {
                           isLessonCompleted={!!selectedLesson.isCompleted}
                         />
                       ) : (
-                        <Alert severity="warning" sx={{ mb: 4 }}>
-                          No keywords available for this lesson. Please contact support.
+                        <Alert
+                          severity="warning"
+                          sx={{ mb: 4, borderRadius: 3 }}
+                        >
+                          No keywords available for this lesson. Please contact
+                          support.
                         </Alert>
-                      )
-                    )}
-                    
+                      ))}
+
                     {/* Quiz Lesson */}
-                    {selectedLesson.lessonType === 'QUIZ' && (
-                      selectedLesson.contentData?.questions ? (
+                    {selectedLesson.lessonType === "QUIZ" &&
+                      (selectedLesson.contentData?.questions ? (
                         <Quiz
                           questions={selectedLesson.contentData.questions}
                           passingScore={selectedLesson.passingScore || 70}
@@ -833,15 +1495,18 @@ export const ClassroomPage: React.FC = () => {
                           isLessonCompleted={!!selectedLesson.isCompleted}
                         />
                       ) : (
-                        <Alert severity="warning" sx={{ mb: 4 }}>
-                          No quiz data available for this lesson. Please contact support.
+                        <Alert
+                          severity="warning"
+                          sx={{ mb: 4, borderRadius: 3 }}
+                        >
+                          No quiz data available for this lesson. Please contact
+                          support.
                         </Alert>
-                      )
-                    )}
-                    
+                      ))}
+
                     {/* Slides Lesson */}
-                    {selectedLesson.lessonType === 'SLIDES' && (
-                      selectedLesson.contentData?.slides ? (
+                    {selectedLesson.lessonType === "SLIDES" &&
+                      (selectedLesson.contentData?.slides ? (
                         <InteractiveSlides
                           slides={selectedLesson.contentData.slides}
                           pointsReward={selectedLesson.pointsReward}
@@ -849,66 +1514,124 @@ export const ClassroomPage: React.FC = () => {
                           isLessonCompleted={!!selectedLesson.isCompleted}
                         />
                       ) : (
-                        <Alert severity="warning" sx={{ mb: 4 }}>
-                          No slides data available for this lesson. Please contact support.
-                        </Alert>
-                      )
-                    )}
-                    
-                    {/* Video/PDF Lesson */}
-                    {(selectedLesson.lessonType === 'VIDEO' || selectedLesson.lessonType === 'PDF') && (
-                      selectedLesson.contentUrl ? (
-                        selectedLesson.lessonType === 'VIDEO' ? (
-                          <VideoPlayer url={selectedLesson.contentUrl} />
-                        ) : (
-                          <PDFViewer url={selectedLesson.contentUrl} />
-                        )
-                      ) : (
-                        <Alert severity="warning" sx={{ mb: 4 }}>
-                          Content URL not available. Please contact support.
-                        </Alert>
-                      )
-                    )}
-
-                    {/* Action buttons for Video/PDF only */}
-                    {(selectedLesson.lessonType === 'VIDEO' || selectedLesson.lessonType === 'PDF') && (
-                      <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 4 }}>
-                        {selectedLesson.lessonType === 'PDF' && selectedLesson.contentUrl && (
-                          <Button
-                            variant="outlined"
-                            href={selectedLesson.contentUrl}
-                            download
-                            target="_blank"
-                          >
-                            Download PDF
-                          </Button>
-                        )}
-                        <Button
-                          variant="contained"
-                          disabled={selectedLesson.isCompleted}
-                          onClick={() => handleCompleteLesson()}
+                        <Alert
+                          severity="warning"
+                          sx={{ mb: 4, borderRadius: 3 }}
                         >
-                          {selectedLesson.isCompleted ? 'Completed' : 'Mark as Complete'}
-                        </Button>
-                      </Stack>
-                    )}
+                          No slides data available for this lesson. Please
+                          contact support.
+                        </Alert>
+                      ))}
 
-                    {selectedLesson.requiresReflection && !selectedLesson.isCompleted && (
-                      <Alert severity="info" sx={{ mt: 2 }}>
-                        This lesson requires a reflection. You'll be prompted to write one after marking it complete.
-                      </Alert>
+                    {/* Video/PDF Lesson */}
+                    {(selectedLesson.lessonType === "VIDEO" ||
+                      selectedLesson.lessonType === "PDF") && (
+                      <>
+                        {selectedLesson.contentUrl ? (
+                          selectedLesson.lessonType === "VIDEO" ? (
+                            <VideoPlayer url={selectedLesson.contentUrl} />
+                          ) : (
+                            <PDFViewer url={selectedLesson.contentUrl} />
+                          )
+                        ) : (
+                          <Alert
+                            severity="warning"
+                            sx={{ mb: 4, borderRadius: 3 }}
+                          >
+                            Content URL not available. Please contact support.
+                          </Alert>
+                        )}
+
+                        {/* Action buttons for Video/PDF only */}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            mt: 4,
+                            borderRadius: 3,
+                            bgcolor: "background.default",
+                          }}
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            justifyContent="flex-end"
+                            alignItems="center"
+                          >
+                            {selectedLesson.lessonType === "PDF" &&
+                              selectedLesson.contentUrl && (
+                                <Button
+                                  variant="outlined"
+                                  href={selectedLesson.contentUrl}
+                                  download
+                                  target="_blank"
+                                  sx={{ borderRadius: 2 }}
+                                >
+                                  Download PDF
+                                </Button>
+                              )}
+
+                            <Button
+                              variant="contained"
+                              size="large"
+                              disabled={selectedLesson.isCompleted}
+                              onClick={() => handleCompleteLesson()}
+                              startIcon={
+                                selectedLesson.isCompleted ? (
+                                  <CheckCircle />
+                                ) : (
+                                  <EmojiEvents />
+                                )
+                              }
+                              sx={{
+                                borderRadius: 2,
+                                px: 4,
+                                background: selectedLesson.isCompleted
+                                  ? "linear-gradient(135deg, #4caf50 0%, #8bc34a 100%)"
+                                  : `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                              }}
+                            >
+                              {selectedLesson.isCompleted
+                                ? "Lesson Completed"
+                                : "Mark as Complete"}
+                            </Button>
+                          </Stack>
+
+                          {selectedLesson.requiresReflection &&
+                            !selectedLesson.isCompleted && (
+                              <Alert
+                                severity="info"
+                                sx={{ mt: 3, borderRadius: 2 }}
+                              >
+                                💭 This lesson requires a reflection. You'll be
+                                prompted to write one after marking it complete.
+                              </Alert>
+                            )}
+                        </Paper>
+                      </>
                     )}
                   </>
                 )}
               </motion.div>
             </AnimatePresence>
           ) : (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-              <School sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
+            <Paper
+              elevation={0}
+              sx={{ textAlign: "center", py: 12, borderRadius: 4 }}
+            >
+              <School sx={{ fontSize: 100, color: "text.secondary", mb: 3 }} />
+              <Typography
+                variant="h4"
+                color="text.secondary"
+                gutterBottom
+                fontWeight={600}
+              >
                 Select a lesson to begin
               </Typography>
-            </Box>
+              <Typography variant="body1" color="text.secondary">
+                Choose from the lessons in the sidebar to start learning
+              </Typography>
+            </Paper>
           )}
         </Container>
       </Box>
