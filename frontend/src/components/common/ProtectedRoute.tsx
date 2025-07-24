@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/store';
 import { checkAuth } from '../../store/slices/authSlice';
+import { fetchDashboardData } from '../../store/slices/dashboardSlice';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -18,6 +19,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     // Re-check auth if needed
     if (!isAuthenticated && !authChecking) {
       dispatch(checkAuth());
+      dispatch(fetchDashboardData());
     }
   }, [dispatch, isAuthenticated, authChecking]);
 

@@ -28,11 +28,7 @@ import {
   Skeleton,
   Alert,
   Avatar,
-  Divider,
   Tooltip,
-  Fade,
-  Badge,
-  CircularProgress,
 } from "@mui/material";
 import {
   PlayCircle,
@@ -52,9 +48,6 @@ import {
   Star,
   AccessTime,
   TrendingUp,
-  PersonOutline,
-  BookmarkBorder,
-  Bookmark,
   AutoAwesome,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
@@ -64,6 +57,9 @@ import { subscriptionService } from "../services/subscriptionService";
 import { KeywordFlashcards } from "../components/classroom/KeywordFlashcards";
 import { Quiz } from "../components/classroom/Quiz";
 import { InteractiveSlides } from "../components/classroom/InteractiveSlides";
+import { fetchDashboardData } from "../store/slices/dashboardSlice";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../store/store";
 
 interface Course {
   id: string;
@@ -574,6 +570,7 @@ export const ClassroomPage: React.FC = () => {
   const [hasSubscription, setHasSubscription] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
 
   // Get dynamic colors based on selected course
   const selectedCourseColors = selectedCourse
@@ -710,6 +707,7 @@ export const ClassroomPage: React.FC = () => {
 
       await fetchLessons(selectedCourse!.id);
       await fetchCourseProgress(enrollments);
+      dispatch(fetchDashboardData());
 
       const currentIndex = lessons.findIndex((l) => l.id === selectedLesson.id);
       const nextLessons = lessons.slice(currentIndex + 1);
@@ -891,7 +889,7 @@ export const ClassroomPage: React.FC = () => {
             <List sx={{ p: 0 }}>
               {lessons.map((lesson, index) => {
                 const isDisabled =
-                  !isEnrolled(selectedCourse?.id || "") || 
+                  !isEnrolled(selectedCourse?.id || "") ||
                   (lesson.isLocked && lesson.lockReason !== 'Subscribe to unlock');
                 const isSelected = selectedLesson?.id === lesson.id;
 
@@ -1051,10 +1049,9 @@ export const ClassroomPage: React.FC = () => {
                             >
                               {lesson.isLocked
                                 ? lesson.lockReason || "Complete previous lesson to unlock"
-                                : `Lesson ${lesson.order} • ${
-                                    lesson.lessonType.charAt(0) +
-                                    lesson.lessonType.slice(1).toLowerCase()
-                                  }`}
+                                : `Lesson ${lesson.order} • ${lesson.lessonType.charAt(0) +
+                                lesson.lessonType.slice(1).toLowerCase()
+                                }`}
                             </Typography>
                           }
                         />
@@ -1203,11 +1200,9 @@ export const ClassroomPage: React.FC = () => {
                   width: 48,
                   height: 48,
                   background: enrollDialog
-                    ? `linear-gradient(135deg, ${
-                        getCourseColors(enrollDialog.type).primary
-                      } 0%, ${
-                        getCourseColors(enrollDialog.type).secondary
-                      } 100%)`
+                    ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary
+                    } 0%, ${getCourseColors(enrollDialog.type).secondary
+                    } 100%)`
                     : "primary.main",
                 }}
               >
@@ -1294,17 +1289,14 @@ export const ClassroomPage: React.FC = () => {
                 borderRadius: 2,
                 px: 4,
                 background: enrollDialog
-                  ? `linear-gradient(135deg, ${
-                      getCourseColors(enrollDialog.type).primary
-                    } 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)`
+                  ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary
+                  } 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)`
                   : "linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)",
                 "&:hover": {
                   background: enrollDialog
-                    ? `linear-gradient(135deg, ${
-                        getCourseColors(enrollDialog.type).primary
-                      } 20%, ${
-                        getCourseColors(enrollDialog.type).secondary
-                      } 120%)`
+                    ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary
+                    } 20%, ${getCourseColors(enrollDialog.type).secondary
+                    } 120%)`
                     : "linear-gradient(135deg, #FF6B6B 20%, #FFB7C5 120%)",
                 },
               }}
@@ -1448,12 +1440,12 @@ export const ClassroomPage: React.FC = () => {
                           selectedLesson.lessonType === "VIDEO"
                             ? "Video Lesson"
                             : selectedLesson.lessonType === "PDF"
-                            ? "PDF Resource"
-                            : selectedLesson.lessonType === "QUIZ"
-                            ? "Interactive Quiz"
-                            : selectedLesson.lessonType === "SLIDES"
-                            ? "Interactive Slides"
-                            : "Keywords Practice"
+                              ? "PDF Resource"
+                              : selectedLesson.lessonType === "QUIZ"
+                                ? "Interactive Quiz"
+                                : selectedLesson.lessonType === "SLIDES"
+                                  ? "Interactive Slides"
+                                  : "Keywords Practice"
                         }
                         sx={{
                           bgcolor: "rgba(255,255,255,0.2)",
@@ -1537,7 +1529,7 @@ export const ClassroomPage: React.FC = () => {
                           }}
                           sx={{
                             backgroundColor: 'white',
-                            color: '#FF6B6B',
+                            color: 'white',
                             fontWeight: 600,
                             px: 4,
                             py: 1.5,
@@ -1621,7 +1613,7 @@ export const ClassroomPage: React.FC = () => {
                     {/* Keywords Lesson */}
                     {selectedLesson.lessonType === "KEYWORDS" &&
                       (selectedLesson.keywords &&
-                      selectedLesson.keywords.length > 0 ? (
+                        selectedLesson.keywords.length > 0 ? (
                         <KeywordFlashcards
                           keywords={selectedLesson.keywords}
                           pointsReward={selectedLesson.pointsReward}
@@ -1685,90 +1677,90 @@ export const ClassroomPage: React.FC = () => {
                     {/* Video/PDF Lesson */}
                     {(selectedLesson.lessonType === "VIDEO" ||
                       selectedLesson.lessonType === "PDF") && (
-                      <>
-                        {selectedLesson.contentUrl ? (
-                          selectedLesson.lessonType === "VIDEO" ? (
-                            <VideoPlayer url={selectedLesson.contentUrl} />
+                        <>
+                          {selectedLesson.contentUrl ? (
+                            selectedLesson.lessonType === "VIDEO" ? (
+                              <VideoPlayer url={selectedLesson.contentUrl} />
+                            ) : (
+                              <PDFViewer url={selectedLesson.contentUrl} />
+                            )
                           ) : (
-                            <PDFViewer url={selectedLesson.contentUrl} />
-                          )
-                        ) : (
-                          <Alert
-                            severity="warning"
-                            sx={{ mb: 4, borderRadius: 3 }}
-                          >
-                            Content URL not available. Please contact support.
-                          </Alert>
-                        )}
-
-                        {/* Action buttons for Video/PDF only */}
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 3,
-                            mt: 4,
-                            borderRadius: 3,
-                            bgcolor: "background.default",
-                          }}
-                        >
-                          <Stack
-                            direction="row"
-                            spacing={2}
-                            justifyContent="flex-end"
-                            alignItems="center"
-                          >
-                            {selectedLesson.lessonType === "PDF" &&
-                              selectedLesson.contentUrl && (
-                                <Button
-                                  variant="outlined"
-                                  href={selectedLesson.contentUrl}
-                                  download
-                                  target="_blank"
-                                  sx={{ borderRadius: 2 }}
-                                >
-                                  Download PDF
-                                </Button>
-                              )}
-
-                            <Button
-                              variant="contained"
-                              size="large"
-                              disabled={selectedLesson.isCompleted}
-                              onClick={() => handleCompleteLesson()}
-                              startIcon={
-                                selectedLesson.isCompleted ? (
-                                  <CheckCircle />
-                                ) : (
-                                  <EmojiEvents />
-                                )
-                              }
-                              sx={{
-                                borderRadius: 2,
-                                px: 4,
-                                background: selectedLesson.isCompleted
-                                  ? "linear-gradient(135deg, #4caf50 0%, #8bc34a 100%)"
-                                  : `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
-                              }}
+                            <Alert
+                              severity="warning"
+                              sx={{ mb: 4, borderRadius: 3 }}
                             >
-                              {selectedLesson.isCompleted
-                                ? "Lesson Completed"
-                                : "Mark as Complete"}
-                            </Button>
-                          </Stack>
+                              Content URL not available. Please contact support.
+                            </Alert>
+                          )}
 
-                          {selectedLesson.requiresReflection &&
-                            !selectedLesson.isCompleted && (
-                              <Alert
-                                severity="info"
-                                sx={{ mt: 3, borderRadius: 2 }}
+                          {/* Action buttons for Video/PDF only */}
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: 3,
+                              mt: 4,
+                              borderRadius: 3,
+                              bgcolor: "background.default",
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              justifyContent="flex-end"
+                              alignItems="center"
+                            >
+                              {selectedLesson.lessonType === "PDF" &&
+                                selectedLesson.contentUrl && (
+                                  <Button
+                                    variant="outlined"
+                                    href={selectedLesson.contentUrl}
+                                    download
+                                    target="_blank"
+                                    sx={{ borderRadius: 2 }}
+                                  >
+                                    Download PDF
+                                  </Button>
+                                )}
+
+                              <Button
+                                variant="contained"
+                                size="large"
+                                disabled={selectedLesson.isCompleted}
+                                onClick={() => handleCompleteLesson()}
+                                startIcon={
+                                  selectedLesson.isCompleted ? (
+                                    <CheckCircle />
+                                  ) : (
+                                    <EmojiEvents />
+                                  )
+                                }
+                                sx={{
+                                  borderRadius: 2,
+                                  px: 4,
+                                  background: selectedLesson.isCompleted
+                                    ? "linear-gradient(135deg, #4caf50 0%, #8bc34a 100%)"
+                                    : `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                                }}
                               >
-                                💭 This lesson requires a reflection. You'll be
-                                prompted to write one after marking it complete.
-                              </Alert>
-                            )}
-                        </Paper>
-                      </>
-                    )}
+                                {selectedLesson.isCompleted
+                                  ? "Lesson Completed"
+                                  : "Mark as Complete"}
+                              </Button>
+                            </Stack>
+
+                            {selectedLesson.requiresReflection &&
+                              !selectedLesson.isCompleted && (
+                                <Alert
+                                  severity="info"
+                                  sx={{ mt: 3, borderRadius: 2 }}
+                                >
+                                  💭 This lesson requires a reflection. You'll be
+                                  prompted to write one after marking it complete.
+                                </Alert>
+                              )}
+                          </Paper>
+                        </>
+                      )}
                   </>
                 )}
               </motion.div>
