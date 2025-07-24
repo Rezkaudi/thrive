@@ -192,7 +192,7 @@ export const LoginPage: React.FC = () => {
                 </Typography>
                 <Button
                   component={Link}
-                  to="/"
+                  to="/register"
                   variant="outlined"
                   fullWidth
                   sx={{ mt: 1 }}
