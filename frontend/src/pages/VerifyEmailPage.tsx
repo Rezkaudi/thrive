@@ -23,7 +23,7 @@ export const VerifyEmailPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [email, setEmail] = useState('');
-    const [resendTimer, setResendTimer] = useState(0);
+    const [resendTimer, setResendTimer] = useState(60);
     const [resendLoading, setResendLoading] = useState(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 

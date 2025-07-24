@@ -512,7 +512,8 @@ export const ClassroomPage: React.FC = () => {
                       if (!isDisabled && !lesson.isLocked) {
                         setSelectedLesson(lesson);
                       } else if (lesson.lockReason === 'Subscribe to unlock') {
-                        handleLockedLessonClick(lesson);
+                        // handleLockedLessonClick(lesson);
+                        navigate("/subscription")
                       }
                     }}
                     sx={{
