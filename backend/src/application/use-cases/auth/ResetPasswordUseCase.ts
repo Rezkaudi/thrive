@@ -19,13 +19,13 @@ export class ResetPasswordUseCase {
         // Verify token
         const payload = this.tokenService.verifyAccessToken(dto.token);
         if (!payload) {
-            throw new AuthenticationError('Invalid or expired reset token');
+            throw new AuthenticationError('Invalid or expired reset token', 400);
         }
 
         // Check if user exists
         const user = await this.userRepository.findById(payload.userId);
         if (!user) {
-            throw new AuthenticationError('Invalid reset token');
+            throw new AuthenticationError('Invalid reset token', 400);
         }
 
         // Validate password strength
