@@ -147,7 +147,7 @@ export class AuthController {
 
       res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, {
         ...accessTokenConfig,
-        maxAge: 15 * 60 * 1000, // 15 minutes
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
       });
 
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, {
@@ -198,7 +198,7 @@ export class AuthController {
 
       res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, {
         ...accessTokenConfig,
-        maxAge: 15 * 60 * 1000, // 15 minutes
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
       });
 
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, {
@@ -238,7 +238,7 @@ export class AuthController {
 
       res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, {
         ...accessTokenConfig,
-        maxAge: 15 * 60 * 1000,
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, {
@@ -422,7 +422,7 @@ export class AuthController {
 
       res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, {
         ...accessTokenConfig,
-        maxAge: 15 * 60 * 1000,
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, {

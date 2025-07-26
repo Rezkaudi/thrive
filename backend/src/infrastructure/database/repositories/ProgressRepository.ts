@@ -28,7 +28,8 @@ export class ProgressRepository implements IProgressRepository {
   }
 
   async findByUserAndCourse(userId: string, courseId: string): Promise<Progress[]> {
-    const entities = await this.repository.find({ where: { userId, courseId } });
+    const where = courseId ? { userId, courseId } : { userId }
+    const entities = await this.repository.find({ where });
     return entities.map(e => this.toDomain(e));
   }
 
@@ -51,9 +52,9 @@ export class ProgressRepository implements IProgressRepository {
       entity.lessonId,
       entity.courseId,
       entity.isCompleted,
-      entity.completedAt ?? undefined,         
-      entity.reflectionSubmitted ?? undefined, 
-      entity.quizScore ?? undefined,           
+      entity.completedAt ?? undefined,
+      entity.reflectionSubmitted ?? undefined,
+      entity.quizScore ?? undefined,
       entity.createdAt,
       entity.updatedAt
     );

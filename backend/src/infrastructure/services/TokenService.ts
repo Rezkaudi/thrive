@@ -14,7 +14,7 @@ export class TokenService implements ITokenService {
     this.accessTokenSecret = process.env.JWT_SECRET || 'default-secret';
     this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET || 'refresh-secret';
     this.csrfSecret = process.env.CSRF_SECRET || 'csrf-secret';
-    this.accessTokenExpiresIn = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
+    this.accessTokenExpiresIn = process.env.ACCESS_TOKEN_EXPIRES_IN || '1d';
     this.refreshTokenExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
   }
 

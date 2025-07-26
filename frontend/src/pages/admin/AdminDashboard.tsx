@@ -12,6 +12,7 @@ import {
   IconButton,
   Tooltip,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import {
   People,
@@ -107,7 +108,7 @@ export const AdminDashboard: React.FC = () => {
     userGrowth: 0,
     revenueGrowth: 0,
   });
-  // const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -115,12 +116,13 @@ export const AdminDashboard: React.FC = () => {
 
   const fetchDashboardStats = async () => {
     try {
+      setLoading(true);
       const response = await api.get('/admin/analytics/overview');
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
     } finally {
-      // setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -155,6 +157,19 @@ export const AdminDashboard: React.FC = () => {
     },
   ];
 
+  if (loading) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <Stack spacing={2} alignItems="center">
+            <CircularProgress />
+            {/* <Typography variant="h6">Loading dashboard...</Typography> */}
+          </Stack>
+        </Box>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Stack
@@ -180,7 +195,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <Grid container spacing={3} mb={4}>
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={<People />}
             title="Total Users"
@@ -191,7 +206,7 @@ export const AdminDashboard: React.FC = () => {
             onClick={() => navigate('/admin/users')}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={<AttachMoney />}
             title="Monthly Revenue"
@@ -201,7 +216,7 @@ export const AdminDashboard: React.FC = () => {
             onClick={() => navigate('/admin/analytics')}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={<School />}
             title="Completion Rate"
@@ -211,7 +226,7 @@ export const AdminDashboard: React.FC = () => {
             onClick={() => navigate('/admin/courses')}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={<Warning />}
             title="Pending Reviews"
@@ -229,7 +244,7 @@ export const AdminDashboard: React.FC = () => {
       </Typography>
       <Grid container spacing={3} mb={4}>
         {quickActions.map((action, index) => (
-        <Grid size={{ xs: 12, sm:6, md: 3 }} key={index}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -316,15 +331,15 @@ export const AdminDashboard: React.FC = () => {
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Database</Typography>
-                  <Chip label="Healthy" color="success" size="small" sx={{color: "white"}}/>
+                  <Chip label="Healthy" color="success" size="small" sx={{ color: "white" }} />
                 </Stack>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Payment Gateway</Typography>
-                  <Chip label="Active" color="success" size="small" sx={{color: "white"}}/>
+                  <Chip label="Active" color="success" size="small" sx={{ color: "white" }} />
                 </Stack>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Email Service</Typography>
-                  <Chip label="Active" color="success" size="small" sx={{color: "white"}} />
+                  <Chip label="Active" color="success" size="small" sx={{ color: "white" }} />
                 </Stack>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2">Storage</Typography>

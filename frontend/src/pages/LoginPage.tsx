@@ -53,7 +53,8 @@ export const LoginPage: React.FC = () => {
     if (isAuthenticated) {
       navigate('/profile');
     }
-  }, [isAuthenticated, navigate]);
+    dispatch(clearError());
+  }, [isAuthenticated, navigate, dispatch]);
 
   return (
     <Box
@@ -109,10 +110,7 @@ export const LoginPage: React.FC = () => {
 
               {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
-                  {error === 'Request failed with status code 400'
-                    ? 'Invalid email or password. Please check your credentials and try again.'
-                    : error === "Request failed with status code 500" ? "Internal Server Error" : error
-                  }
+                  {error}
                 </Alert>
               )}
 

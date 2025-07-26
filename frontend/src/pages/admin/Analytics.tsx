@@ -150,7 +150,7 @@
 //             </CardContent>
 //           </Card>
 //         </Grid>
-        
+
 //         <Grid size={{ xs: 12, sm:6, md: 3 }}>
 //           <Card>
 //             <CardContent>
@@ -353,6 +353,15 @@ import {
 } from 'recharts';
 import api from '../../services/api';
 
+interface AnalyticsOverview {
+  totalUsers: number;
+  activeUsers: number;
+  monthlyRevenue: number;
+  completionRate: number;
+  userGrowth: number;
+  revenueGrowth: number;
+}
+
 interface AnalyticsData {
   revenue: Array<{ month: string; revenue: number }>;
   engagement: Array<{ day: string; lessons: number; posts: number }>;
@@ -372,16 +381,16 @@ const currencyFormatter = (value: any) => {
 // Validate and clean data
 const validateRevenueData = (data: any[]): Array<{ month: string; revenue: number }> => {
   if (!Array.isArray(data)) return [];
-  
+
   return data.map(item => ({
     month: String(item.month || ''),
-    revenue: Number(item.revenue) || 0, // Convert to number, default to 0 if invalid
+    revenue: Number(item.revenue) || 0,
   })).filter(item => item.month && !isNaN(item.revenue));
 };
 
 const validateEngagementData = (data: any[]): Array<{ day: string; lessons: number; posts: number }> => {
   if (!Array.isArray(data)) return [];
-  
+
   return data.map(item => ({
     day: String(item.day || ''),
     lessons: Number(item.lessons) || 0,
@@ -393,6 +402,14 @@ export const Analytics: React.FC = () => {
   const [timeRange, setTimeRange] = useState('30days');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [overview, setOverview] = useState<AnalyticsOverview>({
+    totalUsers: 0,
+    activeUsers: 0,
+    monthlyRevenue: 0,
+    completionRate: 0,
+    userGrowth: 0,
+    revenueGrowth: 0,
+  });
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     revenue: [],
     engagement: [],
@@ -409,12 +426,20 @@ export const Analytics: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Fetch data from API
-      const [revenueResponse, engagementResponse] = await Promise.all([
+
+      // Fetch overview data and detailed analytics
+      const [
+        overviewResponse,
+        revenueResponse,
+        engagementResponse
+      ] = await Promise.all([
+        api.get('/admin/analytics/overview'),
         api.get('/admin/analytics/revenue'),
         api.get('/admin/analytics/engagement'),
       ]);
+
+      // Set overview data
+      setOverview(overviewResponse.data);
 
       // Validate and clean the data
       const revenueData = validateRevenueData(revenueResponse.data);
@@ -427,22 +452,22 @@ export const Analytics: React.FC = () => {
         { month: 'Mar', users: 1050 },
         { month: 'Apr', users: 1120 },
         { month: 'May', users: 1200 },
-        { month: 'Jun', users: 1247 },
+        { month: 'Jun', users: overview.totalUsers || 1247 },
       ];
 
       const mockCourseCompletion = [
-        { course: 'Japan in Context', rate: 68 },
+        { course: 'Japan in Context', rate: overview.completionRate || 68 },
         { course: 'JLPT N5', rate: 75 },
         { course: 'JLPT N4', rate: 62 },
         { course: 'JLPT N3', rate: 45 },
       ];
 
       const mockDemographics = [
-        { level: 'N5', count: 450 },
-        { level: 'N4', count: 320 },
-        { level: 'N3', count: 250 },
-        { level: 'N2', count: 150 },
-        { level: 'N1', count: 77 },
+        { level: 'N5', count: Math.floor((overview.totalUsers || 1247) * 0.36) },
+        { level: 'N4', count: Math.floor((overview.totalUsers || 1247) * 0.26) },
+        { level: 'N3', count: Math.floor((overview.totalUsers || 1247) * 0.20) },
+        { level: 'N2', count: Math.floor((overview.totalUsers || 1247) * 0.12) },
+        { level: 'N1', count: Math.floor((overview.totalUsers || 1247) * 0.06) },
       ];
 
       setAnalyticsData({
@@ -452,9 +477,9 @@ export const Analytics: React.FC = () => {
         courseCompletion: mockCourseCompletion,
         demographics: mockDemographics,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch analytics:', error);
-      setError('Failed to load analytics data. Please try again later.');
+      setError(error.response?.data?.error || 'Failed to load analytics data. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -466,19 +491,14 @@ export const Analytics: React.FC = () => {
     return sum + revenue;
   }, 0);
 
-  const averageRevenue = analyticsData.revenue.length > 0 
-    ? totalRevenue / analyticsData.revenue.length 
-    : 0;
-
-  const revenueGrowth = analyticsData.revenue.length > 1
-    ? ((analyticsData.revenue[analyticsData.revenue.length - 1].revenue - analyticsData.revenue[0].revenue) / analyticsData.revenue[0].revenue) * 100
-    : 0;
-
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <CircularProgress />
+          <Stack spacing={2} alignItems="center">
+            <CircularProgress />
+            <Typography variant="h6">Loading analytics...</Typography>
+          </Stack>
         </Box>
       </Container>
     );
@@ -487,9 +507,12 @@ export const Analytics: React.FC = () => {
   if (error) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Alert severity="error" sx={{ mb: 4 }}>
+        <Alert severity="error" sx={{ mb: 4 }} onClose={() => setError(null)}>
           {error}
         </Alert>
+        <Box sx={{ textAlign: 'center' }}>
+          <button onClick={fetchAnalyticsData}>Retry</button>
+        </Box>
       </Container>
     );
   }
@@ -513,41 +536,53 @@ export const Analytics: React.FC = () => {
 
       {/* Key Metrics */}
       <Grid container spacing={3} mb={4}>
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <AttachMoney color="action" />
                   <Stack direction="row" alignItems="center" spacing={0.5}>
-                    {revenueGrowth > 0 ? (
+                    {overview.revenueGrowth > 0 ? (
                       <TrendingUp sx={{ fontSize: 16, color: 'success.main' }} />
                     ) : (
                       <TrendingDown sx={{ fontSize: 16, color: 'error.main' }} />
                     )}
-                    <Typography variant="caption" color={revenueGrowth > 0 ? 'success.main' : 'error.main'}>
-                      {Math.abs(revenueGrowth).toFixed(1)}%
+                    <Typography variant="caption" color={overview.revenueGrowth > 0 ? 'success.main' : 'error.main'}>
+                      {Math.abs(overview.revenueGrowth).toFixed(1)}%
                     </Typography>
                   </Stack>
                 </Stack>
                 <Typography variant="h4" fontWeight={700}>
-                  ¥{totalRevenue.toLocaleString()}
+                  ¥{overview.monthlyRevenue.toLocaleString()}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Total Revenue
+                  Monthly Revenue
                 </Typography>
               </Stack>
             </CardContent>
           </Card>
         </Grid>
-        
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
-                <People color="action" />
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <People color="action" />
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    {overview.userGrowth > 0 ? (
+                      <TrendingUp sx={{ fontSize: 16, color: 'success.main' }} />
+                    ) : (
+                      <TrendingDown sx={{ fontSize: 16, color: 'error.main' }} />
+                    )}
+                    <Typography variant="caption" color={overview.userGrowth > 0 ? 'success.main' : 'error.main'}>
+                      {Math.abs(overview.userGrowth)}%
+                    </Typography>
+                  </Stack>
+                </Stack>
                 <Typography variant="h4" fontWeight={700}>
-                  1,247
+                  {overview.totalUsers.toLocaleString()}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Total Users
@@ -557,13 +592,13 @@ export const Analytics: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
                 <School color="action" />
                 <Typography variant="h4" fontWeight={700}>
-                  68%
+                  {overview.completionRate}%
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Avg. Completion Rate
@@ -573,13 +608,13 @@ export const Analytics: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm:6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
                 <CalendarMonth color="action" />
                 <Typography variant="h4" fontWeight={700}>
-                  892
+                  {overview.activeUsers.toLocaleString()}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Active Users (30d)
@@ -593,7 +628,7 @@ export const Analytics: React.FC = () => {
       {/* Charts */}
       <Grid container spacing={3}>
         {/* Revenue Chart */}
-          <Grid size={{ xs: 12, md: 8 }}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -604,7 +639,7 @@ export const Analytics: React.FC = () => {
                   <LineChart data={analyticsData.revenue}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis 
+                    <YAxis
                       tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}k`}
                       domain={['dataMin', 'dataMax']}
                     />

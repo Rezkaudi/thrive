@@ -27,10 +27,21 @@ export class PaymentRepository implements IPaymentRepository {
   }
 
   async findByEmail(email: string): Promise<Payment[]> {
-    const entities = await this.repository.find({
-      where: { email },
-      order: { createdAt: 'DESC' }
-    });
+    let entities: PaymentEntity[];
+
+    if (email && email.trim() !== '') {
+      // Find payments for specific email
+      entities = await this.repository.find({
+        where: { email },
+        order: { createdAt: 'DESC' }
+      });
+    } else {
+      // Find all payments when no email provided (for admin analytics)
+      entities = await this.repository.find({
+        order: { createdAt: 'DESC' }
+      });
+    }
+
     return entities.map(e => this.toDomain(e));
   }
 

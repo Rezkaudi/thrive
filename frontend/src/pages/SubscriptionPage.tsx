@@ -454,7 +454,7 @@ export const SubscriptionPage: React.FC = () => {
                 </Stack>
 
                 {/* Additional Info */}
-                <Box sx={{ mt: 6, textAlign: 'center' }}>
+                {/* <Box sx={{ mt: 6, textAlign: 'center' }}>
                     <Paper
                         sx={{
                             p: 3,
@@ -481,7 +481,7 @@ export const SubscriptionPage: React.FC = () => {
                             </Button>
                         </Stack>
                     </Paper>
-                </Box>
+                </Box> */}
             </Container>
         </Box>
     );
