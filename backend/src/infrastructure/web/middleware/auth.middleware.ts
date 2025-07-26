@@ -14,6 +14,12 @@ export interface AuthRequest extends Request {
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
   try {
     const accessToken = req.cookies[COOKIE_NAMES.ACCESS_TOKEN];
+    const refreshToken = req.cookies[COOKIE_NAMES.REFRESH_TOKEN];
+
+    if (!refreshToken) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
 
     if (!accessToken) {
       res.status(401).json({ error: 'No token provided' });
