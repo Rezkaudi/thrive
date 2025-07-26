@@ -1220,7 +1220,14 @@ export const CourseManagement: React.FC = () => {
                     alignItems="start"
                     mb={2}
                   >
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" fontWeight={600}
+                      sx={{
+                        lineHeight: 1.6,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}>
                       {course.title}
                     </Typography>
                     <Chip
@@ -1233,7 +1240,15 @@ export const CourseManagement: React.FC = () => {
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ mb: 2 }}
+                    sx={{
+                      mb: 2,
+                      lineHeight: 1.6,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+
                   >
                     {course.description}
                   </Typography>

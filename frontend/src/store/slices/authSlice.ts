@@ -28,9 +28,18 @@ const initialState: AuthState = {
 
 export const login = createAsyncThunk(
   'auth/login',
-  async ({ email, password }: { email: string; password: string }) => {
-    const response = await authService.login(email, password);
-    return response;
+  async (
+    { email, password }: { email: string; password: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await authService.login(email, password);
+      return response;
+    } catch (error: any) {
+      // Assuming the error response is like: { error: 'Account is inactive' }
+      const errorMsg = error?.response?.data?.error || 'Login failed';
+      return rejectWithValue({ error: errorMsg });
+    }
   }
 );
 
@@ -76,8 +85,9 @@ const authSlice = createSlice({
         state.csrfToken = action.payload.csrfToken;
       })
       .addCase(login.rejected, (state, action) => {
+        console.log(action)
         state.loading = false;
-        state.error = action.error.message || 'Login failed';
+        state.error = (action.payload as { error: string })?.error || 'Login failed';
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {

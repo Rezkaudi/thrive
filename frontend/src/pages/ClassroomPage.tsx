@@ -288,7 +288,18 @@ const CourseCard = ({
         </Box>
 
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mb: 1 }}>
+          <Typography variant="h5" gutterBottom fontWeight={700}
+            sx={{
+              mb: 1,
+              lineHeight: 1.6,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+
+
+          >
             {course.title}
           </Typography>
 
@@ -1221,9 +1232,11 @@ export const ClassroomPage: React.FC = () => {
 
           <DialogContent sx={{ pt: 2 }}>
             <Stack spacing={3}>
-              <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
-                {enrollDialog?.description}
-              </Typography>
+              {enrollDialog?.description.split('\n').map((item, index) =>
+                <Typography key={index} variant="body1" sx={{ lineHeight: 1.6 }}>
+                  {item}
+                </Typography>
+              )}
 
               <Alert
                 severity="success"
