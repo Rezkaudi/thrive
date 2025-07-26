@@ -52,7 +52,7 @@ interface User {
 }
 
 export const UserManagement: React.FC = () => {
-  const { showConfirm, showSuccess, showError } = useSweetAlert();
+  const { showConfirm, showSuccessToast, showError } = useSweetAlert();
   const [users, setUsers] = useState<User[]>([]);
   // const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -113,7 +113,7 @@ export const UserManagement: React.FC = () => {
         await api.put(`/admin/users/${user.id}/status`, {
           isActive: !user.isActive,
         });
-        showSuccess('Success', `User ${action}d successfully`);
+        showSuccessToast('Success', `User ${action}d successfully`);
         fetchUsers();
       } catch (error) {
         console.error('Failed to update user status:', error);
@@ -133,31 +133,22 @@ export const UserManagement: React.FC = () => {
       return;
     }
 
-    const result = await showConfirm({
-      title: 'Adjust Points',
-      text: `${pointsData.points > 0 ? 'Add' : 'Remove'} ${Math.abs(pointsData.points)} points ${pointsData.points > 0 ? 'to' : 'from'} ${selectedUser?.profile?.name || selectedUser?.email}?`,
-      icon: 'question',
-      confirmButtonText: 'Yes, adjust points',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await api.post(`/admin/users/${selectedUser.id}/points`, pointsData);
-        showSuccess('Success', 'Points adjusted successfully');
-        setPointsDialog(false);
-        setPointsData({ points: 0, reason: '' });
-        fetchUsers();
-      } catch (error) {
-        console.error('Failed to adjust points:', error);
-        showError('Error', 'Failed to adjust points');
-      }
+    try {
+      await api.post(`/admin/users/${selectedUser.id}/points`, pointsData);
+      // showSuccessToast("Points adjusted successfully");
+      setPointsDialog(false);
+      setPointsData({ points: 0, reason: "" });
+      fetchUsers();
+    } catch (error) {
+      console.error("Failed to adjust points:", error);
+      showError("Error", "Failed to adjust points");
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.profile?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.profile?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

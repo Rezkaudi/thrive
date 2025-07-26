@@ -51,7 +51,7 @@ interface Post {
 }
 
 export const CommunityModeration: React.FC = () => {
-  const { showConfirm, showSuccess, showError } = useSweetAlert();
+  const { showConfirm, showSuccessToast, showError } = useSweetAlert();
   const [posts, setPosts] = useState<Post[]>([]);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -103,7 +103,7 @@ export const CommunityModeration: React.FC = () => {
             successMessage = 'Post deleted successfully';
             errorMessage = 'Failed to delete post';
             fetchPosts();
-            showSuccess('Deleted', successMessage);
+            showSuccessToast('Deleted', successMessage);
           } catch (error) {
             console.error(`Failed to ${action} post:`, error);
             showError('Error', errorMessage);
@@ -126,7 +126,7 @@ export const CommunityModeration: React.FC = () => {
             successMessage = 'Post unflagged successfully';
             errorMessage = 'Failed to unflag post';
             fetchPosts();
-            showSuccess('Unflagged', successMessage);
+            showSuccessToast('Unflagged', successMessage);
           } catch (error) {
             console.error(`Failed to ${action} post:`, error);
             showError('Error', errorMessage);
@@ -149,7 +149,7 @@ export const CommunityModeration: React.FC = () => {
             successMessage = 'User blocked successfully';
             errorMessage = 'Failed to block user';
             fetchPosts();
-            showSuccess('User Blocked', successMessage);
+            showSuccessToast('User Blocked', successMessage);
           } catch (error) {
             console.error(`Failed to ${action} post:`, error);
             showError('Error', errorMessage);
@@ -176,7 +176,7 @@ export const CommunityModeration: React.FC = () => {
     if (result.isConfirmed) {
       try {
         await api.post('/admin/announcements', { content: announcementContent });
-        showSuccess('Success', 'Announcement posted successfully');
+        showSuccessToast('Success', 'Announcement posted successfully');
         setAnnouncementDialog(false);
         setAnnouncementContent('');
         fetchPosts();

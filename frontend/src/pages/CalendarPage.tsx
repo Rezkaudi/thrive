@@ -67,7 +67,7 @@ import {
 import { useSweetAlert } from "../utils/sweetAlert";
 
 export const CalendarPage: React.FC = () => {
-  const { showConfirm, showSuccess, showError } = useSweetAlert();
+  const { showConfirm, showSuccessToast, showError } = useSweetAlert();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
@@ -135,7 +135,7 @@ export const CalendarPage: React.FC = () => {
 
     try {
       await calendarService.createBooking(bookingDialog.id);
-      showSuccess("Success", "Session booked successfully!");
+      showSuccessToast("Success", "Session booked successfully!");
       setBookingDialog(null);
       fetchCalendarData();
     } catch (error) {
@@ -155,7 +155,7 @@ export const CalendarPage: React.FC = () => {
     if (result.isConfirmed) {
       try {
         await calendarService.cancelBooking(booking.id);
-        showSuccess("Cancelled", "Booking cancelled successfully");
+        showSuccessToast("Cancelled", "Booking cancelled successfully");
         fetchCalendarData();
       } catch (error) {
         showError("Error", "Failed to cancel booking");

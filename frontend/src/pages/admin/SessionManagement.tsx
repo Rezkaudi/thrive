@@ -74,7 +74,7 @@ interface Session {
 }
 
 export const SessionManagement: React.FC = () => {
-  const { showConfirm, showSuccess, showError } = useSweetAlert();
+  const { showConfirm, showSuccessToast, showError } = useSweetAlert();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionDialog, setSessionDialog] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -145,10 +145,10 @@ export const SessionManagement: React.FC = () => {
 
       if (editingSession) {
         await api.put(`/admin/sessions/${editingSession.id}`, payload);
-        showSuccess('Success', 'Session updated successfully');
+        showSuccessToast('Success', 'Session updated successfully');
       } else {
         await api.post('/admin/sessions', payload);
-        showSuccess('Success', 'Session created successfully');
+        showSuccessToast('Success', 'Session created successfully');
       }
 
       setSessionDialog(false);
@@ -173,7 +173,7 @@ export const SessionManagement: React.FC = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/admin/sessions/${sessionId}`);
-        showSuccess('Deleted', 'Session has been deleted successfully');
+        showSuccessToast('Deleted', 'Session has been deleted successfully');
         fetchSessions();
       } catch (error: any) {
         console.error('Failed to delete session:', error);
