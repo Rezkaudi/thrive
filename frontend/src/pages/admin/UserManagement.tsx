@@ -26,6 +26,7 @@ import {
   DialogContent,
   DialogActions,
   Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Search,
@@ -52,7 +53,7 @@ interface User {
 }
 
 export const UserManagement: React.FC = () => {
-  const { showConfirm, showSuccessToast, showError } = useSweetAlert();
+  const { showConfirm, showError } = useSweetAlert();
   const [users, setUsers] = useState<User[]>([]);
   // const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -62,6 +63,11 @@ export const UserManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [pointsDialog, setPointsDialog] = useState(false);
   const [pointsData, setPointsData] = useState({ points: 0, reason: '' });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -113,7 +119,11 @@ export const UserManagement: React.FC = () => {
         await api.put(`/admin/users/${user.id}/status`, {
           isActive: !user.isActive,
         });
-        showSuccessToast('Success', `User ${action}d successfully`);
+        setSnackbar({
+          open: true,
+          message: `User ${action}d successfully!`,
+          severity: 'success'
+        });
         fetchUsers();
       } catch (error) {
         console.error('Failed to update user status:', error);
@@ -135,7 +145,11 @@ export const UserManagement: React.FC = () => {
 
     try {
       await api.post(`/admin/users/${selectedUser.id}/points`, pointsData);
-      // showSuccessToast("Points adjusted successfully");
+      setSnackbar({
+        open: true,
+        message: 'Points adjusted successfully!',
+        severity: 'success'
+      });
       setPointsDialog(false);
       setPointsData({ points: 0, reason: "" });
       fetchUsers();
@@ -315,6 +329,21 @@ export const UserManagement: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

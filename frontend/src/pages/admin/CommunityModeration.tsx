@@ -21,6 +21,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Snackbar,
 } from '@mui/material';
 import {
   Search,
@@ -51,7 +52,7 @@ interface Post {
 }
 
 export const CommunityModeration: React.FC = () => {
-  const { showConfirm, showSuccessToast, showError } = useSweetAlert();
+  const { showConfirm, showError } = useSweetAlert();
   const [posts, setPosts] = useState<Post[]>([]);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,11 @@ export const CommunityModeration: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [announcementDialog, setAnnouncementDialog] = useState(false);
   const [announcementContent, setAnnouncementContent] = useState('');
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+  });
 
   useEffect(() => {
     fetchPosts();
@@ -103,7 +109,11 @@ export const CommunityModeration: React.FC = () => {
             successMessage = 'Post deleted successfully';
             errorMessage = 'Failed to delete post';
             fetchPosts();
-            showSuccessToast('Deleted', successMessage);
+            setSnackbar({
+              open: true,
+              message: successMessage,
+              severity: 'success'
+            });
           } catch (error) {
             console.error(`Failed to ${action} post:`, error);
             showError('Error', errorMessage);
@@ -126,7 +136,11 @@ export const CommunityModeration: React.FC = () => {
             successMessage = 'Post unflagged successfully';
             errorMessage = 'Failed to unflag post';
             fetchPosts();
-            showSuccessToast('Unflagged', successMessage);
+            setSnackbar({
+              open: true,
+              message: successMessage,
+              severity: 'success'
+            });
           } catch (error) {
             console.error(`Failed to ${action} post:`, error);
             showError('Error', errorMessage);
@@ -149,7 +163,11 @@ export const CommunityModeration: React.FC = () => {
             successMessage = 'User blocked successfully';
             errorMessage = 'Failed to block user';
             fetchPosts();
-            showSuccessToast('User Blocked', successMessage);
+            setSnackbar({
+              open: true,
+              message: successMessage,
+              severity: 'success'
+            });
           } catch (error) {
             console.error(`Failed to ${action} post:`, error);
             showError('Error', errorMessage);
@@ -176,7 +194,11 @@ export const CommunityModeration: React.FC = () => {
     if (result.isConfirmed) {
       try {
         await api.post('/admin/announcements', { content: announcementContent });
-        showSuccessToast('Success', 'Announcement posted successfully');
+        setSnackbar({
+          open: true,
+          message: 'Announcement posted successfully!',
+          severity: 'success'
+        });
         setAnnouncementDialog(false);
         setAnnouncementContent('');
         fetchPosts();
@@ -368,8 +390,6 @@ export const CommunityModeration: React.FC = () => {
         </CardContent>
       </Card>
 
-
-
       {/* Announcement Dialog */}
       <Dialog
         open={announcementDialog}
@@ -400,6 +420,21 @@ export const CommunityModeration: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
