@@ -17,6 +17,7 @@ import { calendarRouter } from './routes/calendar.routes';
 import { sessionRouter } from './routes/session.routes';
 import { subscriptionRouter } from './routes/subscription.routes';
 import { dashboardRouter } from './routes/dashboard.routes';
+import { publicProfileRouter } from './routes/publicProfile.routes'; // Add this import
 
 import { setupSwagger } from './swagger/swagger.setup';
 
@@ -67,6 +68,9 @@ export class Server {
 
   private configureRoutes(): void {
     this.app.use('/uploads', express.static('uploads'));
+
+    // Public routes (no authentication required)
+    this.app.use('/api/public/profile', publicProfileRouter); // Add this line
 
     // API routes
     this.app.use('/api/auth', authRouter);
