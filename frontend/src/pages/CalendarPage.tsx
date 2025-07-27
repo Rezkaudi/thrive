@@ -67,7 +67,7 @@ import {
 import { useSweetAlert } from "../utils/sweetAlert";
 
 export const CalendarPage: React.FC = () => {
-  const { showConfirm, showSuccess, showError } = useSweetAlert();
+  const { showConfirm, showError } = useSweetAlert();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
@@ -84,7 +84,7 @@ export const CalendarPage: React.FC = () => {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "success" as any,
+    severity: "success" as 'success' | 'error' | 'warning' | 'info',
   });
 
   const profile = useSelector((state: RootState) => state.profile.data);
@@ -135,7 +135,11 @@ export const CalendarPage: React.FC = () => {
 
     try {
       await calendarService.createBooking(bookingDialog.id);
-      showSuccess("Success", "Session booked successfully!");
+      setSnackbar({
+        open: true,
+        message: "Session booked successfully!",
+        severity: "success"
+      });
       setBookingDialog(null);
       fetchCalendarData();
     } catch (error) {
@@ -155,7 +159,11 @@ export const CalendarPage: React.FC = () => {
     if (result.isConfirmed) {
       try {
         await calendarService.cancelBooking(booking.id);
-        showSuccess("Cancelled", "Booking cancelled successfully");
+        setSnackbar({
+          open: true,
+          message: "Booking cancelled successfully!",
+          severity: "success"
+        });
         fetchCalendarData();
       } catch (error) {
         showError("Error", "Failed to cancel booking");
@@ -173,7 +181,7 @@ export const CalendarPage: React.FC = () => {
     }
   };
 
-  const showSnackbar = (message: string, severity: string) => {
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info') => {
     setSnackbar({ open: true, message, severity });
   };
 
@@ -826,6 +834,7 @@ export const CalendarPage: React.FC = () => {
         <Alert
           severity={snackbar.severity}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>

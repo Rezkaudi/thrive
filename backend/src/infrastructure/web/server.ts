@@ -40,7 +40,7 @@ export class Server {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'"],
-          imgSrc: ["'self'", "data:", "blob:"],
+          imgSrc: ["'self'", "data:", "blob:", "https://*.amazonaws.com"], // Allow S3 images
         },
       },
     }));
@@ -60,14 +60,12 @@ export class Server {
       if (req.originalUrl === "/api/payment/webhook") {
         next();
       } else {
-        express.json()(req, res, next);
+        express.json({ limit: '10mb' })(req, res, next); // Increased limit for file uploads
       }
     });
   }
 
   private configureRoutes(): void {
-
-    // Static files
     this.app.use('/uploads', express.static('uploads'));
 
     // API routes
@@ -102,6 +100,13 @@ export class Server {
     this.app.listen(this.port, () => {
       console.log(`Server running on port ${this.port}`);
       console.log(`API Documentation available at http://localhost:${this.port}/docs`);
+      
+      // Log S3 configuration status
+      if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+        console.log(`✅ AWS S3 configured for bucket: ${process.env.AWS_S3_BUCKET_NAME || 'thrive-in-japan'}`);
+      } else {
+        console.log(`⚠️  AWS S3 not configured - using local storage`);
+      }
     });
   }
 

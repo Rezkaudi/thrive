@@ -33,6 +33,7 @@ import {
   Avatar,
   Tooltip,
   Badge,
+  Snackbar,
 } from '@mui/material';
 import {
   Add,
@@ -49,6 +50,7 @@ import {
   Schedule,
   PersonAdd,
   Visibility,
+  Close,
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -74,13 +76,20 @@ interface Session {
 }
 
 export const SessionManagement: React.FC = () => {
-  const { showConfirm, showSuccess, showError } = useSweetAlert();
+  const { showConfirm, showError } = useSweetAlert();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionDialog, setSessionDialog] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  
+  // Add Snackbar state
+  const [snackbar, setSnackbar] = useState({ 
+    open: false, 
+    message: '', 
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info' 
+  });
   
   type SessionType = 'SPEAKING' | 'EVENT';
   
@@ -145,10 +154,18 @@ export const SessionManagement: React.FC = () => {
 
       if (editingSession) {
         await api.put(`/admin/sessions/${editingSession.id}`, payload);
-        showSuccess('Success', 'Session updated successfully');
+        setSnackbar({ 
+          open: true, 
+          message: 'Session updated successfully!', 
+          severity: 'success' 
+        });
       } else {
         await api.post('/admin/sessions', payload);
-        showSuccess('Success', 'Session created successfully');
+        setSnackbar({ 
+          open: true, 
+          message: 'Session created successfully!', 
+          severity: 'success' 
+        });
       }
 
       setSessionDialog(false);
@@ -157,7 +174,11 @@ export const SessionManagement: React.FC = () => {
       fetchSessions();
     } catch (error: any) {
       console.error('Failed to save session:', error);
-      showError('Error', error.response?.data?.error || 'Failed to save session');
+      setSnackbar({ 
+        open: true, 
+        message: error.response?.data?.error || 'Failed to save session', 
+        severity: 'error' 
+      });
     }
   };
 
@@ -173,11 +194,19 @@ export const SessionManagement: React.FC = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/admin/sessions/${sessionId}`);
-        showSuccess('Deleted', 'Session has been deleted successfully');
+        setSnackbar({ 
+          open: true, 
+          message: 'Session has been deleted successfully!', 
+          severity: 'success' 
+        });
         fetchSessions();
       } catch (error: any) {
         console.error('Failed to delete session:', error);
-        showError('Error', error.response?.data?.error || 'Failed to delete session');
+        setSnackbar({ 
+          open: true, 
+          message: error.response?.data?.error || 'Failed to delete session', 
+          severity: 'error' 
+        });
       }
     }
   };
@@ -859,6 +888,21 @@ export const SessionManagement: React.FC = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Container>
     </LocalizationProvider>
   );
