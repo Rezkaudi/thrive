@@ -1,4 +1,4 @@
-// frontend/src/services/profileService.ts
+// frontend/src/services/profileService.ts (Complete updated version)
 import api from './api';
 
 export interface Profile {
@@ -13,6 +13,51 @@ export interface Profile {
   level: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PublicProfile {
+  id: string;
+  name: string;
+  bio?: string;
+  profilePhoto?: string;
+  languageLevel?: string;
+  level: number;
+  badges: string[];
+  createdAt: string;
+  totalLessonsCompleted: number;
+  totalLessonsAvailable: number;
+  totalPoints: number;
+  joinedDaysAgo: number;
+  totalCourses: number;
+  enrolledCourses: number;
+  completedCourses: number;
+  communityPosts: number;
+  sessionsAttended: number;
+  publicAchievements: Array<{
+    id: string;
+    title: string;
+    icon: string;
+    description: string;
+    unlockedAt: string;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  }>;
+  learningStats: Array<{
+    skill: string;
+    level: number;
+    color: string;
+  }>;
+  recentMilestones: Array<{
+    title: string;
+    date: string;
+    type: 'lesson' | 'level' | 'achievement' | 'community' | 'course';
+    details?: string;
+  }>;
+  courseProgress: Array<{
+    courseTitle: string;
+    totalLessons: number;
+    completedLessons: number;
+    progressPercentage: number;
+  }>;
 }
 
 export interface UpdateProfileData {
@@ -53,10 +98,31 @@ export const profileService = {
     return response.data;
   },
 
-  // Get any user's public profile
+  // Get any user's public profile (old method for authenticated users)
   async getUserProfile(userId: string): Promise<Partial<Profile>> {
     const response = await api.get(`/profile/${userId}`);
     return response.data;
+  },
+
+  // Get public profile with full details (no authentication required)
+  async getPublicProfile(userId: string): Promise<PublicProfile> {
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    
+    const response = await fetch(`${API_URL}/public/profile/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Profile not found');
+      }
+      throw new Error(`Failed to fetch profile: ${response.statusText}`);
+    }
+    
+    return response.json();
   },
 
   // Validate file before upload

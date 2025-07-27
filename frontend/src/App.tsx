@@ -15,6 +15,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ClassroomPage } from './pages/ClassroomPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { PublicProfilePage } from './pages/PublicProfilePage'; // Add this import
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 
@@ -74,6 +75,9 @@ function AppContent() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+
+        {/* Public Routes (no authentication required) */}
+        <Route path="/profile/:userId" element={<PublicProfilePage />} /> {/* Add this route */}
 
         {/* <Route path="/register/email" element={<EmailVerificationPage />} />
         <Route path="/register/payment" element={<PaymentPlanPage />} />

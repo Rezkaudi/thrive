@@ -204,8 +204,8 @@ export const ProfilePage: React.FC = () => {
 
   // Generate share URL
   useEffect(() => {
-    if (profile?.id) {
-      setShareUrl(`${window.location.origin}/profile/${profile.id}`);
+    if (profile?.userId) {
+      setShareUrl(`${window.location.origin}/profile/${profile.userId}`);
     }
   }, [profile]);
 
