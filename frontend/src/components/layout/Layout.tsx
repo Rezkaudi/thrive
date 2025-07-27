@@ -52,6 +52,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const user = useSelector((state: RootState) => state.auth.user);
   const profile = useSelector((state: RootState) => state.dashboard.data);
+  const profilePhoto = useSelector((state: RootState) => state.profile.data?.profilePhoto);
 
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -178,8 +179,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  {profile?.user.name?.[0] || user?.email[0].toUpperCase()}
+                <Avatar 
+                  src={profilePhoto || undefined}
+                  sx={{ 
+                    bgcolor: 'primary.main',
+                    width: 40,
+                    height: 40,
+                    border: '2px solid',
+                    borderColor: 'primary.light',
+                  }}
+                >
+                  {!profilePhoto && (profile?.user.name?.[0] || user?.email[0].toUpperCase())}
                 </Avatar>
               </IconButton>
             </Tooltip>

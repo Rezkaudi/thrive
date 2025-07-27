@@ -745,7 +745,7 @@ export const ProfilePage: React.FC = () => {
                 >
                   <MenuItem onClick={triggerFileInput}>
                     <CloudUpload sx={{ mr: 1 }} />
-                    Upload Photo
+                    {profile?.profilePhoto ? "Update Photo" : "Upload Photo"}
                   </MenuItem>
                   {profile?.profilePhoto && (
                     <MenuItem onClick={handlePhotoDelete} sx={{ color: 'error.main' }}>
