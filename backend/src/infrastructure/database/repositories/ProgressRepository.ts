@@ -1,4 +1,5 @@
-import { Repository } from 'typeorm';
+// backend/src/infrastructure/database/repositories/ProgressRepository.ts (Enhanced version)
+import { Repository, In } from 'typeorm';
 import { AppDataSource } from '../config/database.config';
 import { ProgressEntity } from '../entities/Progress.entity';
 import { IProgressRepository } from '../../../domain/repositories/IProgressRepository';
@@ -33,6 +34,39 @@ export class ProgressRepository implements IProgressRepository {
     return entities.map(e => this.toDomain(e));
   }
 
+  // New method: Find progress for user in multiple courses (enrolled courses only)
+  async findByUserAndCourses(userId: string, courseIds: string[]): Promise<Progress[]> {
+    if (courseIds.length === 0) {
+      return [];
+    }
+
+    const entities = await this.repository.find({
+      where: {
+        userId,
+        courseId: In(courseIds)
+      },
+      order: {
+        completedAt: 'DESC'
+      }
+    });
+    return entities.map(e => this.toDomain(e));
+  }
+
+  // Enhanced method: Get completed lessons count with course filtering
+  async getCompletedLessonCountForCourses(userId: string, courseIds: string[]): Promise<number> {
+    if (courseIds.length === 0) {
+      return 0;
+    }
+
+    return await this.repository.count({
+      where: { 
+        userId, 
+        courseId: In(courseIds), 
+        isCompleted: true 
+      }
+    });
+  }
+
   async update(progress: Progress): Promise<Progress> {
     const entity = this.toEntity(progress);
     const saved = await this.repository.save(entity);
@@ -43,6 +77,27 @@ export class ProgressRepository implements IProgressRepository {
     return await this.repository.count({
       where: { userId, courseId, isCompleted: true }
     });
+  }
+
+  // New method: Get recent completed lessons from enrolled courses only
+  async getRecentCompletedLessons(userId: string, courseIds: string[], limit: number = 10): Promise<Progress[]> {
+    if (courseIds.length === 0) {
+      return [];
+    }
+
+    const entities = await this.repository.find({
+      where: {
+        userId,
+        courseId: In(courseIds),
+        isCompleted: true
+      },
+      order: {
+        completedAt: 'DESC'
+      },
+      take: limit
+    });
+
+    return entities.map(e => this.toDomain(e));
   }
 
   private toDomain(entity: ProgressEntity): Progress {

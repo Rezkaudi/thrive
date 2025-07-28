@@ -1,4 +1,3 @@
-// frontend/src/services/profileService.ts (Complete updated version)
 import api from './api';
 
 export interface Profile {
@@ -106,23 +105,28 @@ export const profileService = {
 
   // Get public profile with full details (no authentication required)
   async getPublicProfile(userId: string): Promise<PublicProfile> {
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-    
-    const response = await fetch(`${API_URL}/public/profile/${userId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Profile not found');
+    try {
+      // Use the same API instance but make a direct call to the public endpoint
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/public/profile/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'omit', // Don't send cookies for public endpoints
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Profile not found');
+        }
+        throw new Error(`Failed to fetch profile: ${response.statusText}`);
       }
-      throw new Error(`Failed to fetch profile: ${response.statusText}`);
+      
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching public profile:', error);
+      throw error;
     }
-    
-    return response.json();
   },
 
   // Validate file before upload

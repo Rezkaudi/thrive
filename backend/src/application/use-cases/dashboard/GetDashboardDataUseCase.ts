@@ -1,4 +1,4 @@
-// backend/src/application/use-cases/dashboard/GetDashboardDataUseCase.ts
+// backend/src/application/use-cases/dashboard/GetDashboardDataUseCase.ts (Fixed version)
 import { IUserRepository } from '../../../domain/repositories/IUserRepository';
 import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
 import { IProgressRepository } from '../../../domain/repositories/IProgressRepository';
@@ -87,10 +87,10 @@ export class GetDashboardDataUseCase {
 
         const profile = await this.profileRepository.findByUserId(dto.userId);
 
-        // Get user's enrollments
+        // Get user's enrollments FIRST
         const enrollments = await this.enrollmentRepository.findByUserId(dto.userId);
 
-        // Calculate course progress for enrolled courses
+        // Calculate course progress for enrolled courses ONLY
         const courseProgress: CourseProgress[] = [];
         let totalLessonsCompleted = 0;
         let totalLessonsAvailable = 0;
@@ -139,8 +139,8 @@ export class GetDashboardDataUseCase {
             }
         }
 
-        // Get recent activity (last 10 activities)
-        const recentActivity: RecentActivity[] = await this.getRecentActivity(dto.userId);
+        // Get recent activity (only from enrolled courses)
+        const recentActivity: RecentActivity[] = await this.getRecentActivity(dto.userId, enrollments);
 
         // Get achievements
         const achievements = this.calculateAchievements(
@@ -178,35 +178,39 @@ export class GetDashboardDataUseCase {
         return dashboardData;
     }
 
-    private async getRecentActivity(userId: string): Promise<RecentActivity[]> {
+    private async getRecentActivity(userId: string, enrollments: any[]): Promise<RecentActivity[]> {
         const activities: RecentActivity[] = [];
 
-        // Get recent completed lessons
-        const recentProgress = await this.progressRepository.findByUserAndCourse(userId, '');
-        const completedProgress = recentProgress
-            .filter(p => p.isCompleted && p.completedAt)
-            .sort((a, b) => {
-                const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-                const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-                return dateB - dateA;
-            })
-            .slice(0, 5);
+        // Get recent completed lessons from ENROLLED COURSES ONLY
+        const enrolledCourseIds = enrollments.map(e => e.courseId);
+        
+        for (const courseId of enrolledCourseIds) {
+            const courseProgress = await this.progressRepository.findByUserAndCourse(userId, courseId);
+            const completedProgress = courseProgress
+                .filter(p => p.isCompleted && p.completedAt)
+                .sort((a, b) => {
+                    const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+                    const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+                    return dateB - dateA;
+                })
+                .slice(0, 3); // Get top 3 recent lessons per course
 
-        for (const progress of completedProgress) {
-            const lesson = await this.lessonRepository.findById(progress.lessonId);
-            if (lesson) {
-                activities.push({
-                    type: 'lesson_completed',
-                    title: `Completed ${lesson.title}`,
-                    timestamp: progress.completedAt!,
-                });
-
-                if (lesson.pointsReward > 0) {
+            for (const progress of completedProgress) {
+                const lesson = await this.lessonRepository.findById(progress.lessonId);
+                if (lesson) {
                     activities.push({
-                        type: 'points_earned',
-                        title: `Earned ${lesson.pointsReward} points`,
+                        type: 'lesson_completed',
+                        title: `Completed ${lesson.title}`,
                         timestamp: progress.completedAt!,
                     });
+
+                    if (lesson.pointsReward > 0) {
+                        activities.push({
+                            type: 'points_earned',
+                            title: `Earned ${lesson.pointsReward} points`,
+                            timestamp: progress.completedAt!,
+                        });
+                    }
                 }
             }
         }

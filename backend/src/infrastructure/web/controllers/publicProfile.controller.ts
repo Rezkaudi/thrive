@@ -1,4 +1,4 @@
-// backend/src/infrastructure/web/controllers/publicProfile.controller.ts
+// backend/src/infrastructure/web/controllers/publicProfile.controller.ts (Fixed version)
 import { Request, Response, NextFunction } from 'express';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
 import { UserRepository } from '../../database/repositories/UserRepository';
@@ -9,6 +9,9 @@ import { CourseRepository } from '../../database/repositories/CourseRepository';
 import { EnrollmentRepository } from '../../database/repositories/EnrollmentRepository';
 import { BookingRepository } from '../../database/repositories/BookingRepository';
 import { SessionRepository } from '../../database/repositories/SessionRepository';
+import { Progress } from '../../../domain/entities/Progress';
+import { Post } from '../../../domain/entities/Post';
+import { Booking } from '../../../domain/repositories/IBookingRepository';
 
 export interface PublicProfileData {
   id: string;
@@ -104,22 +107,13 @@ export class PublicProfileController {
       const joinedDate = new Date(user.createdAt);
       const joinedDaysAgo = Math.floor((Date.now() - joinedDate.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Get all user progress
-      const userProgress = await this.progressRepository.findByUserAndCourse(userId, '');
-      const totalLessonsCompleted = userProgress.filter(p => p.isCompleted).length;
-
-      // Get total available lessons
-      const allCourses = await this.courseRepository.findAll(true);
-      let totalLessonsAvailable = 0;
-      for (const course of allCourses) {
-        const lessons = await this.lessonRepository.findByCourseId(course.id);
-        totalLessonsAvailable += lessons.length;
-      }
-
-      // Get user enrollments and course progress
+      // Get user enrollments FIRST
       const enrollments = await this.enrollmentRepository.findByUserId(userId);
       const enrolledCourses = enrollments.length;
-      
+
+      // Get total lessons available and completed ONLY from enrolled courses
+      let totalLessonsAvailable = 0;
+      let totalLessonsCompleted = 0;
       const courseProgress = [];
       let completedCourses = 0;
 
@@ -128,6 +122,10 @@ export class PublicProfileController {
         if (course && course.isActive) {
           const lessons = await this.lessonRepository.findByCourseId(course.id);
           const completedLessons = await this.progressRepository.getCompletedLessonCount(userId, course.id);
+          
+          // Add to totals
+          totalLessonsAvailable += lessons.length;
+          totalLessonsCompleted += completedLessons;
           
           const progressPercentage = lessons.length > 0 ? Math.round((completedLessons / lessons.length) * 100) : 0;
           
@@ -143,6 +141,18 @@ export class PublicProfileController {
           });
         }
       }
+
+      // Get user progress ONLY from enrolled courses with proper typing
+      const enrolledCourseIds = enrollments.map(e => e.courseId);
+      let userProgress: Progress[] = [];
+      
+      for (const courseId of enrolledCourseIds) {
+        const courseProgress = await this.progressRepository.findByUserAndCourse(userId, courseId);
+        userProgress.push(...courseProgress);
+      }
+
+      // Get total courses count (all available courses)
+      const allCourses = await this.courseRepository.findAll(true);
 
       // Get community activity
       const userPosts = await this.postRepository.findByUserId(userId);
@@ -194,7 +204,7 @@ export class PublicProfileController {
         badges: profile.badges,
         createdAt: user.createdAt.toISOString(),
         totalLessonsCompleted,
-        totalLessonsAvailable,
+        totalLessonsAvailable, // Now only from enrolled courses
         totalPoints: profile.points,
         joinedDaysAgo,
         totalCourses: allCourses.length,
@@ -473,82 +483,120 @@ export class PublicProfileController {
 
   private async generateRealMilestones(
     userId: string,
-    userProgress: any[],
-    userPosts: any[],
-    userBookings: any[],
+    userProgress: Progress[],
+    userPosts: Post[],
+    userBookings: Booking[],
     completedCourses: number
   ) {
     const milestones = [];
 
-    // Get recent completed lessons
-    const recentCompletedLessons = userProgress
-      .filter(p => p.isCompleted && p.completedAt)
-      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-      .slice(0, 3);
+    try {
+      // Get recent completed lessons
+      const recentCompletedLessons = userProgress
+        .filter(p => p.isCompleted && p.completedAt)
+        .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
+        .slice(0, 3);
 
-    for (const progress of recentCompletedLessons) {
-      try {
-        const lesson = await this.lessonRepository.findById(progress.lessonId);
-        if (lesson) {
+      for (const progress of recentCompletedLessons) {
+        try {
+          const lesson = await this.lessonRepository.findById(progress.lessonId);
+          if (lesson) {
+            milestones.push({
+              title: `Completed "${lesson.title}"`,
+              date: this.getRelativeTime(new Date(progress.completedAt!)),
+              type: 'lesson' as const,
+              details: `Earned ${lesson.pointsReward} points`,
+            });
+          }
+        } catch (error) {
+          console.warn(`Could not fetch lesson ${progress.lessonId}:`, error);
+          // Skip if lesson not found
+        }
+      }
+
+      // Get recent posts
+      const recentPosts = userPosts
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 2);
+
+      for (const post of recentPosts) {
+        milestones.push({
+          title: 'Posted in Community',
+          date: this.getRelativeTime(new Date(post.createdAt)),
+          type: 'community' as const,
+          details: post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content,
+        });
+      }
+
+      // Get recent session attendance (from completed bookings)
+      const completedSessions = userBookings
+        .filter(b => b.status === 'COMPLETED')
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 2);
+
+      for (const booking of completedSessions) {
+        try {
+          const session = await this.sessionRepository.findById(booking.sessionId);
+          if (session) {
+            milestones.push({
+              title: `Attended "${session.title}"`,
+              date: this.getRelativeTime(new Date(booking.updatedAt)),
+              type: 'achievement' as const,
+              details: `${session.type} session`,
+            });
+          }
+        } catch (error) {
+          console.warn(`Could not fetch session ${booking.sessionId}:`, error);
+          // Skip if session not found
+        }
+      }
+
+      // Add course completion milestones (if any)
+      if (completedCourses > 0) {
+        // Estimate completion date based on most recent lesson completion
+        let completionDate = new Date();
+        if (recentCompletedLessons.length > 0) {
+          completionDate = new Date(recentCompletedLessons[0].completedAt!);
+        } else {
+          // Fallback to a week ago
+          completionDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        }
+
+        milestones.push({
+          title: `Completed ${completedCourses} Course${completedCourses > 1 ? 's' : ''}`,
+          date: this.getRelativeTime(completionDate),
+          type: 'course' as const,
+          details: 'Course mastery achieved',
+        });
+      }
+
+      // Add level up milestones (estimate based on recent activity)
+      if (recentCompletedLessons.length > 0) {
+        const profile = await this.profileRepository.findByUserId(userId);
+        if (profile && profile.level > 1) {
+          // Estimate when they might have leveled up
+          const levelUpDate = new Date(Date.now() - (profile.level - 1) * 7 * 24 * 60 * 60 * 1000);
           milestones.push({
-            title: `Completed "${lesson.title}"`,
-            date: this.getRelativeTime(new Date(progress.completedAt)),
-            type: 'lesson' as const,
-            details: `Earned ${lesson.pointsReward} points`,
+            title: `Reached Level ${profile.level}`,
+            date: this.getRelativeTime(levelUpDate),
+            type: 'level' as const,
+            details: 'Level up achieved!',
           });
         }
-      } catch (error) {
-        // Skip if lesson not found
       }
-    }
 
-    // Get recent posts
-    const recentPosts = userPosts
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 2);
-
-    for (const post of recentPosts) {
+    } catch (error) {
+      console.error('Error generating milestones:', error);
+      // Return fallback milestones
       milestones.push({
-        title: 'Posted in Community',
-        date: this.getRelativeTime(new Date(post.createdAt)),
-        type: 'community' as const,
-        details: post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content,
+        title: 'Started Learning Journey',
+        date: '1 week ago',
+        type: 'achievement' as const,
+        details: 'Welcome to Japanese learning!',
       });
     }
 
-    // Get recent session attendance
-    const completedSessions = userBookings
-      .filter(b => b.status === 'COMPLETED')
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 2);
-
-    for (const booking of completedSessions) {
-      try {
-        const session = await this.sessionRepository.findById(booking.sessionId);
-        if (session) {
-          milestones.push({
-            title: `Attended "${session.title}"`,
-            date: this.getRelativeTime(new Date(booking.updatedAt)),
-            type: 'achievement' as const,
-            details: `${session.type} session`,
-          });
-        }
-      } catch (error) {
-        // Skip if session not found
-      }
-    }
-
-    // Add course completion milestones
-    if (completedCourses > 0) {
-      milestones.push({
-        title: `Completed ${completedCourses} Course${completedCourses > 1 ? 's' : ''}`,
-        date: this.getRelativeTime(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)), // Approximate
-        type: 'course' as const,
-        details: 'Course mastery achieved',
-      });
-    }
-
-    // Sort by most recent and return top 4
+    // Sort by most recent first and return top 4
     return milestones
       .sort((a, b) => {
         const dateA = this.parseDateFromRelativeTime(a.date);
@@ -559,46 +607,63 @@ export class PublicProfileController {
   }
 
   private getRelativeTime(date: Date): string {
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    try {
+      const now = new Date();
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-    if (diffInDays === 1) return '1 day ago';
-    if (diffInDays < 7) return `${diffInDays} days ago`;
-    if (diffInDays < 14) return '1 week ago';
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
-    if (diffInDays < 60) return '1 month ago';
-    return `${Math.floor(diffInDays / 30)} months ago`;
+      if (diffInMinutes < 1) return 'just now';
+      if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+      if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+      if (diffInDays === 1) return '1 day ago';
+      if (diffInDays < 7) return `${diffInDays} days ago`;
+      if (diffInDays < 14) return '1 week ago';
+      if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} week${Math.floor(diffInDays / 7) > 1 ? 's' : ''} ago`;
+      if (diffInDays < 60) return '1 month ago';
+      return `${Math.floor(diffInDays / 30)} month${Math.floor(diffInDays / 30) > 1 ? 's' : ''} ago`;
+    } catch (error) {
+      console.error('Error calculating relative time:', error);
+      return 'recently';
+    }
   }
 
   private parseDateFromRelativeTime(relativeTime: string): Date {
-    const now = new Date();
-    
-    if (relativeTime.includes('minutes ago')) {
-      const minutes = parseInt(relativeTime.match(/(\d+) minutes ago/)?.[1] || '0');
-      return new Date(now.getTime() - minutes * 60 * 1000);
+    try {
+      const now = new Date();
+      
+      if (relativeTime === 'just now') {
+        return now;
+      }
+      
+      // Extract number and unit from strings like "5 minutes ago", "2 days ago", etc.
+      const match = relativeTime.match(/(\d+)\s+(minute|hour|day|week|month)s?\s+ago/);
+      if (!match) {
+        // Fallback for unmatched patterns
+        return new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day ago
+      }
+      
+      const [, numberStr, unit] = match;
+      const number = parseInt(numberStr, 10);
+      
+      switch (unit) {
+        case 'minute':
+          return new Date(now.getTime() - number * 60 * 1000);
+        case 'hour':
+          return new Date(now.getTime() - number * 60 * 60 * 1000);
+        case 'day':
+          return new Date(now.getTime() - number * 24 * 60 * 60 * 1000);
+        case 'week':
+          return new Date(now.getTime() - number * 7 * 24 * 60 * 60 * 1000);
+        case 'month':
+          return new Date(now.getTime() - number * 30 * 24 * 60 * 60 * 1000);
+        default:
+          return new Date(now.getTime() - 24 * 60 * 60 * 1000); // Default to 1 day ago
+      }
+    } catch (error) {
+      console.error('Error parsing relative time:', error);
+      return new Date(); // Return current time as fallback
     }
-    if (relativeTime.includes('hours ago')) {
-      const hours = parseInt(relativeTime.match(/(\d+) hours ago/)?.[1] || '0');
-      return new Date(now.getTime() - hours * 60 * 60 * 1000);
-    }
-    if (relativeTime.includes('day ago')) {
-      const days = relativeTime.includes('1 day ago') ? 1 : parseInt(relativeTime.match(/(\d+) days ago/)?.[1] || '0');
-      return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    }
-    if (relativeTime.includes('week ago')) {
-      const weeks = relativeTime.includes('1 week ago') ? 1 : parseInt(relativeTime.match(/(\d+) weeks ago/)?.[1] || '0');
-      return new Date(now.getTime() - weeks * 7 * 24 * 60 * 60 * 1000);
-    }
-    if (relativeTime.includes('month ago')) {
-      const months = relativeTime.includes('1 month ago') ? 1 : parseInt(relativeTime.match(/(\d+) months ago/)?.[1] || '0');
-      return new Date(now.getTime() - months * 30 * 24 * 60 * 60 * 1000);
-    }
-    
-    return now;
   }
 }
