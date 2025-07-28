@@ -90,7 +90,7 @@ import {
   deleteProfilePhoto,
   clearError
 } from '../store/slices/profileSlice';
-import { UpdateProfileData } from '../services/profileService';
+import { UpdateProfileData, profileService } from '../services/profileService';
 
 interface Achievement {
   id: string;
@@ -98,8 +98,6 @@ interface Achievement {
   title: string;
   description: string;
   unlockedAt?: string;
-  progress?: number;
-  total?: number;
   rarity?: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
@@ -149,8 +147,6 @@ export const ProfilePage: React.FC = () => {
   // Redux state
   const { data: profile, loading, updateLoading, photoUploadLoading, error } = useSelector((state: RootState) => state.profile);
   const user = useSelector((state: RootState) => state.auth.user);
-  const totalLessonsCompleted = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsCompleted)
-  const totalLessonsAvailable = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsAvailable)
 
   // Local state
   const [tabValue, setTabValue] = useState(0);
@@ -158,6 +154,10 @@ export const ProfilePage: React.FC = () => {
   const [coverImageDialog, setCoverImageDialog] = useState(false);
   const [photoMenuAnchor, setPhotoMenuAnchor] = useState<null | HTMLElement>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  
+  // Real profile data state
+  const [publicProfileData, setPublicProfileData] = useState<any>(null);
+  const [loadingPublicData, setLoadingPublicData] = useState(false);
   
   // New state for button functionalities
   const [shareDialog, setShareDialog] = useState(false);
@@ -213,6 +213,25 @@ export const ProfilePage: React.FC = () => {
   useEffect(() => {
     dispatch(fetchMyProfile());
   }, [dispatch]);
+
+  // Fetch real profile data
+  useEffect(() => {
+    const fetchRealProfileData = async () => {
+      if (profile?.userId) {
+        setLoadingPublicData(true);
+        try {
+          const realData = await profileService.getPublicProfile(profile.userId);
+          setPublicProfileData(realData);
+        } catch (error) {
+          console.error('Failed to fetch real profile data:', error);
+        } finally {
+          setLoadingPublicData(false);
+        }
+      }
+    };
+
+    fetchRealProfileData();
+  }, [profile?.userId]);
 
   // Handle errors
   useEffect(() => {
@@ -366,7 +385,7 @@ export const ProfilePage: React.FC = () => {
         ctx.fillStyle = '#2c3e50';
         ctx.font = '20px Arial';
         ctx.fillText('has successfully completed', 400, 300);
-        ctx.fillText(`${totalLessonsCompleted || 0} lessons in Japanese language learning`, 400, 330);
+        ctx.fillText(`${publicProfileData?.totalLessonsCompleted || 0} lessons in Japanese language learning`, 400, 330);
         
         // Level
         ctx.font = 'bold 24px Arial';
@@ -375,7 +394,7 @@ export const ProfilePage: React.FC = () => {
         
         // Points
         ctx.fillStyle = '#FFD700';
-        ctx.fillText(`Total Points Earned: ${profile?.points || 0}`, 400, 420);
+        ctx.fillText(`Total Points Earned: ${publicProfileData?.totalPoints || profile?.points || 0}`, 400, 420);
         
         // Date
         ctx.fillStyle = '#2c3e50';
@@ -427,107 +446,28 @@ export const ProfilePage: React.FC = () => {
     }));
   };
 
-  const achievements: Achievement[] = [
-    {
-      id: '1',
-      icon: '🔥',
-      title: '7-Day Streak',
-      description: 'Study for 7 days in a row',
-      unlockedAt: '2024-01-15',
-      rarity: 'common'
-    },
-    {
-      id: '2',
-      icon: '🌸',
-      title: 'First Steps',
-      description: 'Complete your first lesson',
-      unlockedAt: '2024-01-10',
-      rarity: 'common'
-    },
-    {
-      id: '3',
-      icon: '💬',
-      title: 'Community Champion',
-      description: 'Make 50 posts in the community',
-      unlockedAt: '2024-01-20',
-      progress: 35,
-      total: 50,
-      rarity: 'rare'
-    },
-    {
-      id: '4',
-      icon: '🎯',
-      title: 'Quiz Master',
-      description: 'Score 100% on 10 quizzes',
-      progress: 3,
-      total: 10,
-      rarity: 'epic'
-    },
-    {
-      id: '5',
-      icon: '🗣️',
-      title: 'Conversation Expert',
-      description: 'Complete 25 speaking sessions',
-      progress: 5,
-      total: 25,
-      rarity: 'rare'
-    },
-    {
-      id: '6',
-      icon: '📚',
-      title: 'Course Completionist',
-      description: 'Finish all available courses',
-      progress: 1,
-      total: 4,
-      rarity: 'legendary'
-    },
-  ];
+  // Use real data for achievements
+  const achievements: Achievement[] = publicProfileData?.publicAchievements || [];
 
-  const milestones: Milestone[] = [
-    {
-      id: '1',
-      title: 'Started Journey',
-      icon: <Star />,
-      achieved: true,
-      date: '2024-01-10',
-      description: 'Joined Thrive in Japan',
-    },
-    {
-      id: '2',
-      title: 'First Lesson',
-      icon: <School />,
-      achieved: true,
-      date: '2024-01-11',
-      description: 'Completed first lesson',
-    },
-    {
-      id: '3',
-      title: 'Community Active',
-      icon: <Forum />,
-      achieved: true,
-      date: '2024-01-15',
-      description: 'Made first community post',
-    },
-    {
-      id: '4',
-      title: 'Speaking Practice',
-      icon: <VideoCall />,
-      achieved: false,
-      description: 'Complete first speaking session',
-    },
-    {
-      id: '5',
-      title: 'JLPT Ready',
-      icon: <WorkspacePremium />,
-      achieved: false,
-      description: 'Complete JLPT N5 course',
-    },
-  ];
+  // Use real data for milestones
+  const milestones: Milestone[] = publicProfileData?.recentMilestones?.map((milestone: any) => ({
+    id: milestone.title,
+    title: milestone.title,
+    icon: milestone.type === 'lesson' ? <School /> :
+          milestone.type === 'level' ? <Star /> :
+          milestone.type === 'community' ? <Forum /> :
+          milestone.type === 'achievement' ? <EmojiEvents /> :
+          <WorkspacePremium />,
+    achieved: true,
+    date: milestone.date,
+    description: milestone.details || milestone.title,
+  })) || [];
 
+  // Use real data for stats
   const stats = [
     {
       label: 'Total Points',
-      value: profile?.points || 0,
+      value: publicProfileData?.totalPoints || profile?.points || 0,
       icon: <EmojiEvents sx={{ color: '#FFD700' }} />,
       color: '#FFD700',
       description: 'Lifetime earnings'
@@ -541,17 +481,17 @@ export const ProfilePage: React.FC = () => {
     },
     {
       label: 'Lessons Completed',
-      value: totalLessonsCompleted,
+      value: publicProfileData?.totalLessonsCompleted || 0,
       icon: <School sx={{ color: '#4ECDC4' }} />,
       color: '#4ECDC4',
-      description: `Out of ${totalLessonsAvailable} total`
+      description: `Out of ${publicProfileData?.totalLessonsAvailable || 0} total`
     },
     {
       label: 'Study Streak',
-      value: '7 days',
+      value: `${publicProfileData?.joinedDaysAgo || 0} days`,
       icon: <Star sx={{ color: '#FFB7C5' }} />,
       color: '#FFB7C5',
-      description: 'Your best: 7 days'
+      description: 'Days since joining'
     },
   ];
 
@@ -610,34 +550,9 @@ export const ProfilePage: React.FC = () => {
                   {achievement.description}
                 </Typography>
               </Box>
-              {achievement.progress !== undefined && achievement.total && (
-                <Box>
-                  <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                    <Typography variant="caption" color="text.secondary">
-                      Progress
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {achievement.progress}/{achievement.total}
-                    </Typography>
-                  </Stack>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(achievement.progress / achievement.total) * 100}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: 'action.hover',
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 3,
-                        backgroundColor: rarityColors[achievement.rarity || 'common'],
-                      },
-                    }}
-                  />
-                </Box>
-              )}
               {isUnlocked && achievement.unlockedAt && (
                 <Typography variant="caption" color="primary" sx={{ textAlign: 'center' }}>
-                  Unlocked {achievement.unlockedAt}
+                  Unlocked {new Date(achievement.unlockedAt).toLocaleDateString()}
                 </Typography>
               )}
             </Stack>
@@ -647,7 +562,7 @@ export const ProfilePage: React.FC = () => {
     );
   };
 
-  if (loading) {
+  if (loading || loadingPublicData) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <CircularProgress />
@@ -676,20 +591,6 @@ export const ProfilePage: React.FC = () => {
             background: 'rgba(0,0,0,0.2)',
           }}
         />
-        {/* <Container maxWidth="lg" sx={{ height: '100%', position: 'relative' }}>
-          <IconButton
-            sx={{
-              position: 'absolute',
-              top: 20,
-              right: 20,
-              bgcolor: 'rgba(255,255,255,0.9)',
-              '&:hover': { bgcolor: 'white' },
-            }}
-            onClick={() => setCoverImageDialog(true)}
-          >
-            <CameraAlt />
-          </IconButton>
-        </Container> */}
       </Box>
 
       <Container maxWidth="lg" sx={{ mt: -8, mb: 4, position: 'relative', zIndex: 1 }}>
@@ -1042,7 +943,32 @@ export const ProfilePage: React.FC = () => {
                         Skills Overview
                       </Typography>
                       <Stack spacing={3}>
-                        {[
+                        {publicProfileData?.learningStats?.map((skill: any) => (
+                          <Box key={skill.skill}>
+                            <Stack direction="row" justifyContent="space-between" mb={1}>
+                              <Typography variant="body2" fontWeight={500}>
+                                {skill.skill}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {skill.level}%
+                              </Typography>
+                            </Stack>
+                            <LinearProgress
+                              variant="determinate"
+                              value={skill.level}
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: 'action.hover',
+                                '& .MuiLinearProgress-bar': {
+                                  borderRadius: 4,
+                                  backgroundColor: skill.color,
+                                },
+                              }}
+                            />
+                          </Box>
+                        )) || [
+                          // Fallback data if no real data available
                           { skill: 'Vocabulary', level: 60, color: '#FF6B6B' },
                           { skill: 'Grammar', level: 45, color: '#4ECDC4' },
                           { skill: 'Listening', level: 30, color: '#FFB7C5' },
@@ -1138,11 +1064,40 @@ export const ProfilePage: React.FC = () => {
                         Course Progress
                       </Typography>
                       <Stack spacing={3}>
-                        {[
+                        {publicProfileData?.courseProgress?.map((course: any) => (
+                          <Paper key={course.courseTitle} sx={{ p: 3 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                              <Box>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                  {course.courseTitle}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {course.completedLessons}/{course.totalLessons} lessons completed
+                                </Typography>
+                              </Box>
+                            </Stack>
+                            <LinearProgress
+                              variant="determinate"
+                              value={course.progressPercentage}
+                              sx={{
+                                height: 10,
+                                borderRadius: 5,
+                                backgroundColor: 'action.hover',
+                                '& .MuiLinearProgress-bar': {
+                                  borderRadius: 5,
+                                  backgroundColor: '#4ECDC4',
+                                },
+                              }}
+                            />
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                              {course.progressPercentage}% Complete
+                            </Typography>
+                          </Paper>
+                        )) || 
+                        // Fallback if no real data
+                        [
                           { course: 'Japan in Context', progress: 40, lessons: '4/10', color: '#FF6B6B' },
                           { course: 'JLPT N5 Preparation', progress: 25, lessons: '3/12', color: '#4ECDC4' },
-                          { course: 'Business Japanese', progress: 0, lessons: '0/8', color: '#FFB7C5', locked: true },
-                          { course: 'Cultural Immersion', progress: 0, lessons: '0/6', color: '#00B894', locked: true },
                         ].map((course) => (
                           <Paper key={course.course} sx={{ p: 3 }}>
                             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -1154,9 +1109,6 @@ export const ProfilePage: React.FC = () => {
                                   {course.lessons} lessons completed
                                 </Typography>
                               </Box>
-                              {course.locked && (
-                                <Chip icon={<Lock />} label="Locked" size="small" />
-                              )}
                             </Stack>
                             <LinearProgress
                               variant="determinate"
