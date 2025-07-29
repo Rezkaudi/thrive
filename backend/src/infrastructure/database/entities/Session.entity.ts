@@ -48,6 +48,15 @@ export class SessionEntity {
   @Column({ default: true })
   isActive!: boolean;
 
+  @Column({ default: false })
+  isRecurring!: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  recurringParentId!: string | null;
+
+  @Column({ type: 'integer', nullable: true })
+  recurringWeeks!: number | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 
