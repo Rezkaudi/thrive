@@ -15,6 +15,7 @@ import { Lesson, LessonType } from '../../../domain/entities/Lesson';
 import { Keyword } from '../../../domain/entities/Keyword';
 import { ProgressRepository } from '../../database/repositories/ProgressRepository';
 import { PaymentRepository } from '../../database/repositories/PaymentRepository';
+import { CreateRecurringSessionUseCase } from '../../../application/use-cases/admin/CreateRecurringSessionUseCase';
 
 export class AdminController {
   async getUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -328,28 +329,78 @@ export class AdminController {
 
   async createSession(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { title, description, type, hostId, meetingUrl, scheduledAt, duration, maxParticipants, pointsRequired } = req.body;
-      const sessionRepository = new SessionRepository();
+      const { 
+        title, 
+        description, 
+        type, 
+        hostId, 
+        meetingUrl, 
+        scheduledAt, 
+        duration, 
+        maxParticipants, 
+        pointsRequired,
+        isRecurring,
+        recurringWeeks
+      } = req.body;
 
-      const session = new Session(
-        `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-        title,
-        description,
-        type as SessionType,
-        hostId || req.user!.userId,
-        meetingUrl,
-        new Date(scheduledAt),
-        duration,
-        maxParticipants,
-        0,
-        pointsRequired || 0,
-        true,
-        new Date(),
-        new Date()
-      );
+      // If it's a recurring session, use the new use case
+      if (isRecurring && recurringWeeks && recurringWeeks > 1) {
+        const createRecurringSessionUseCase = new CreateRecurringSessionUseCase(
+          new SessionRepository(),
+          new UserRepository()
+        );
 
-      const saved = await sessionRepository.create(session);
-      res.status(201).json(saved);
+        const sessions = await createRecurringSessionUseCase.execute({
+          adminId: req.user!.userId,
+          title,
+          description,
+          type: type as SessionType,
+          hostId,
+          meetingUrl,
+          scheduledAt: new Date(scheduledAt),
+          duration,
+          maxParticipants,
+          pointsRequired: pointsRequired || 0,
+          isActive: true,
+          recurringWeeks
+        });
+
+        res.status(201).json({
+          message: `Created ${sessions.length} recurring sessions`,
+          sessions: sessions,
+          recurringInfo: {
+            parentId: sessions[0].id,
+            totalSessions: sessions.length,
+            weeksCovered: recurringWeeks
+          }
+        });
+      } else {
+        // Create single session
+        const sessionRepository = new SessionRepository();
+
+        const session = new Session(
+          `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+          title,
+          description,
+          type as SessionType,
+          hostId || req.user!.userId,
+          meetingUrl,
+          new Date(scheduledAt),
+          duration,
+          maxParticipants,
+          0,
+          pointsRequired || 0,
+          true,
+          false, // isRecurring
+          undefined, // recurringParentId
+          undefined, // recurringWeeks
+          new Date(),
+          new Date()
+        );
+
+        const saved = await sessionRepository.create(session);
+        res.status(201).json(saved);
+      }
     } catch (error) {
       next(error);
     }
@@ -368,11 +419,45 @@ export class AdminController {
         return;
       }
 
-      Object.assign(session, updates);
-      session.updatedAt = new Date();
+      // If updating a recurring session parent, ask if user wants to update all
+      if (session.isRecurring && !session.recurringParentId && updates.updateAllRecurring) {
+        const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.id);
+        
+        // Update parent session
+        Object.assign(session, updates);
+        session.updatedAt = new Date();
+        await sessionRepository.update(session);
 
-      const updated = await sessionRepository.update(session);
-      res.json(updated);
+        // Update all recurring sessions
+        for (const recurringSession of allRecurringSessions) {
+          // Only update certain fields for recurring sessions
+          const recurringUpdates = {
+            title: updates.title || recurringSession.title,
+            description: updates.description || recurringSession.description,
+            duration: updates.duration || recurringSession.duration,
+            maxParticipants: updates.maxParticipants || recurringSession.maxParticipants,
+            pointsRequired: updates.pointsRequired !== undefined ? updates.pointsRequired : recurringSession.pointsRequired,
+            isActive: updates.isActive !== undefined ? updates.isActive : recurringSession.isActive,
+            meetingUrl: updates.meetingUrl || recurringSession.meetingUrl,
+            updatedAt: new Date()
+          };
+
+          Object.assign(recurringSession, recurringUpdates);
+          await sessionRepository.update(recurringSession);
+        }
+
+        res.json({ 
+          message: `Updated ${allRecurringSessions.length + 1} sessions in the recurring series`,
+          updatedCount: allRecurringSessions.length + 1
+        });
+      } else {
+        // Update single session
+        Object.assign(session, updates);
+        session.updatedAt = new Date();
+
+        const updated = await sessionRepository.update(session);
+        res.json(updated);
+      }
     } catch (error) {
       next(error);
     }
@@ -381,19 +466,168 @@ export class AdminController {
   async deleteSession(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const sessionRepository = new SessionRepository();
+      const { deleteAllRecurring } = req.query;
 
-      const deleted = await sessionRepository.delete(sessionId);
-      if (!deleted) {
+      const sessionRepository = new SessionRepository();
+      const session = await sessionRepository.findById(sessionId);
+
+      if (!session) {
         res.status(404).json({ error: 'Session not found' });
         return;
       }
 
-      res.json({ message: 'Session deleted successfully' });
+      // If deleting a recurring session parent and user wants to delete all
+      if (session.isRecurring && !session.recurringParentId && deleteAllRecurring === 'true') {
+        // Delete all recurring sessions first
+        await sessionRepository.deleteByRecurringParentId(session.id);
+        
+        // Delete parent session
+        await sessionRepository.delete(sessionId);
+
+        res.json({ 
+          message: 'Deleted entire recurring session series',
+          deletedRecurringSeries: true
+        });
+      } else {
+        // Delete single session
+        const deleted = await sessionRepository.delete(sessionId);
+        if (!deleted) {
+          res.status(404).json({ error: 'Session not found' });
+          return;
+        }
+
+        res.json({ message: 'Session deleted successfully' });
+      }
     } catch (error) {
       next(error);
     }
   }
+
+  async getSessionsWithPagination(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { 
+        page = 1, 
+        limit = 10, 
+        type, 
+        isActive, 
+        isRecurring 
+      } = req.query;
+
+      const sessionRepository = new SessionRepository();
+      
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      const filters: any = {};
+      
+      if (type && (type === 'SPEAKING' || type === 'EVENT')) {
+        filters.type = type;
+      }
+      
+      if (isActive !== undefined) {
+        filters.isActive = isActive === 'true';
+      }
+
+      if (isRecurring !== undefined) {
+        filters.isRecurring = isRecurring === 'true';
+      }
+
+      const { sessions, total } = await sessionRepository.findAllWithPagination({
+        offset,
+        limit: limitNum,
+        filters
+      });
+
+      // Enhance sessions with host information
+      const userRepository = new UserRepository();
+      const profileRepository = new ProfileRepository();
+
+      const enhancedSessions = await Promise.all(
+        sessions.map(async (session) => {
+          const host = await userRepository.findById(session.hostId);
+          const hostProfile = await profileRepository.findByUserId(session.hostId);
+
+          return {
+            ...session,
+            hostName: hostProfile?.name || host?.email || 'Unknown Host',
+            hostEmail: host?.email,
+          };
+        })
+      );
+
+      res.json({
+        sessions: enhancedSessions,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+          hasNextPage: pageNum * limitNum < total,
+          hasPrevPage: pageNum > 1,
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getRecurringSessionDetails(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const sessionRepository = new SessionRepository();
+      
+      const session = await sessionRepository.findById(sessionId);
+      
+      if (!session) {
+        res.status(404).json({ error: 'Session not found' });
+        return;
+      }
+
+      if (!session.isRecurring) {
+        res.json({
+          session,
+          isRecurring: false,
+          recurringDetails: null
+        });
+        return;
+      }
+
+      let recurringDetails;
+      
+      if (session.recurringParentId) {
+        // This is a child session, get parent and all siblings
+        const parentSession = await sessionRepository.findById(session.recurringParentId);
+        const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.recurringParentId);
+        
+        recurringDetails = {
+          parentSession,
+          allSessions: [parentSession, ...allRecurringSessions].filter(Boolean),
+          totalSessions: allRecurringSessions.length + 1,
+          currentSessionIndex: allRecurringSessions.findIndex(s => s.id === session.id) + 1
+        };
+      } else {
+        // This is the parent session
+        const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.id);
+        
+        recurringDetails = {
+          parentSession: session,
+          allSessions: [session, ...allRecurringSessions],
+          totalSessions: allRecurringSessions.length + 1,
+          currentSessionIndex: 0 // Parent is index 0
+        };
+      }
+
+      res.json({
+        session,
+        isRecurring: true,
+        recurringDetails
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
 
 
   async getAnalyticsOverview(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

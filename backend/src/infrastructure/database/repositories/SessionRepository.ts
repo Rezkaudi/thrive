@@ -10,6 +10,7 @@ interface PaginationOptions {
   filters?: {
     type?: 'SPEAKING' | 'EVENT';
     isActive?: boolean;
+    isRecurring?: boolean;
   };
 }
 
@@ -29,6 +30,12 @@ export class SessionRepository implements ISessionRepository {
     const entity = this.toEntity(session);
     const saved = await this.repository.save(entity);
     return this.toDomain(saved);
+  }
+
+  async createMany(sessions: Session[]): Promise<Session[]> {
+    const entities = sessions.map(s => this.toEntity(s));
+    const saved = await this.repository.save(entities);
+    return saved.map(e => this.toDomain(e));
   }
 
   async findById(id: string): Promise<Session | null> {
@@ -71,6 +78,10 @@ export class SessionRepository implements ISessionRepository {
       queryBuilder.andWhere('session.isActive = :isActive', { isActive: options.filters.isActive });
     }
 
+    if (options.filters?.isRecurring !== undefined) {
+      queryBuilder.andWhere('session.isRecurring = :isRecurring', { isRecurring: options.filters.isRecurring });
+    }
+
     // Order by scheduled date (most recent first for admin view)
     queryBuilder.orderBy('session.scheduledAt', 'DESC');
 
@@ -86,6 +97,14 @@ export class SessionRepository implements ISessionRepository {
     };
   }
 
+  async findByRecurringParentId(parentId: string): Promise<Session[]> {
+    const entities = await this.repository.find({
+      where: { recurringParentId: parentId },
+      order: { scheduledAt: 'ASC' }
+    });
+    return entities.map(e => this.toDomain(e));
+  }
+
   async update(session: Session): Promise<Session> {
     const entity = this.toEntity(session);
     const saved = await this.repository.save(entity);
@@ -94,6 +113,11 @@ export class SessionRepository implements ISessionRepository {
 
   async delete(id: string): Promise<boolean> {
     const result = await this.repository.delete(id);
+    return result.affected !== 0;
+  }
+
+  async deleteByRecurringParentId(parentId: string): Promise<boolean> {
+    const result = await this.repository.delete({ recurringParentId: parentId });
     return result.affected !== 0;
   }
 
@@ -148,6 +172,9 @@ export class SessionRepository implements ISessionRepository {
       entity.currentParticipants,
       entity.pointsRequired,
       entity.isActive,
+      entity.isRecurring,
+      entity.recurringParentId ?? undefined,
+      entity.recurringWeeks ?? undefined,
       entity.createdAt,
       entity.updatedAt
     );
@@ -167,6 +194,9 @@ export class SessionRepository implements ISessionRepository {
     entity.currentParticipants = session.currentParticipants;
     entity.pointsRequired = session.pointsRequired;
     entity.isActive = session.isActive;
+    entity.isRecurring = session.isRecurring;
+    entity.recurringParentId = session.recurringParentId || null;
+    entity.recurringWeeks = session.recurringWeeks || null;
     entity.createdAt = session.createdAt;
     entity.updatedAt = session.updatedAt;
     return entity;

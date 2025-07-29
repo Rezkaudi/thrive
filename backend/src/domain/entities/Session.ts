@@ -16,6 +16,9 @@ export interface ISession {
   currentParticipants: number;
   pointsRequired: number;
   isActive: boolean;
+  isRecurring: boolean;
+  recurringParentId?: string;
+  recurringWeeks?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +37,9 @@ export class Session implements ISession {
     public currentParticipants: number,
     public pointsRequired: number,
     public isActive: boolean,
+    public isRecurring: boolean,
+    public recurringParentId: string | undefined,
+    public recurringWeeks: number | undefined,
     public createdAt: Date,
     public updatedAt: Date
   ) {}

@@ -68,13 +68,21 @@ router.post(
     body('type').isIn(['SPEAKING', 'EVENT']),
     body('scheduledAt').isISO8601(),
     body('duration').isInt({ min: 15 }),
-    body('maxParticipants').isInt({ min: 1 })
+    body('maxParticipants').isInt({ min: 1 }),
+    body('isRecurring').optional().isBoolean(),
+    body('recurringWeeks').optional().isInt({ min: 2, max: 52 })
   ],
   validateRequest,
   adminController.createSession
 );
 router.put('/sessions/:sessionId', adminController.updateSession);
 router.delete('/sessions/:sessionId', adminController.deleteSession);
+
+// NEW: Paginated sessions endpoint
+router.get('/sessions/paginated', adminController.getSessionsWithPagination);
+
+// NEW: Recurring session details
+router.get('/sessions/:sessionId/recurring-details', adminController.getRecurringSessionDetails);
 
 // Analytics
 router.get('/analytics/overview', adminController.getAnalyticsOverview);

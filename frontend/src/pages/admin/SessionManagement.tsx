@@ -1,3 +1,4 @@
+// File: frontend/src/pages/admin/SessionManagement.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -34,6 +35,11 @@ import {
   Tooltip,
   Badge,
   Snackbar,
+  Pagination,
+  FormGroup,
+  Checkbox,
+  Divider,
+  TablePagination,
 } from '@mui/material';
 import {
   Add,
@@ -51,6 +57,9 @@ import {
   PersonAdd,
   Visibility,
   Close,
+  Repeat,
+  Loop,
+  Timeline,
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -73,6 +82,18 @@ interface Session {
   currentParticipants: number;
   pointsRequired: number;
   isActive: boolean;
+  isRecurring: boolean;
+  recurringParentId?: string;
+  recurringWeeks?: number;
+}
+
+interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 export const SessionManagement: React.FC = () => {
@@ -83,6 +104,21 @@ export const SessionManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+  
+  // Filters
+  const [filters, setFilters] = useState({
+    type: '',
+    isActive: '',
+    isRecurring: '',
+  });
   
   // Add Snackbar state
   const [snackbar, setSnackbar] = useState({ 
@@ -104,6 +140,9 @@ export const SessionManagement: React.FC = () => {
     maxParticipants: number;
     pointsRequired: number;
     isActive: boolean;
+    isRecurring: boolean;
+    recurringWeeks: number;
+    updateAllRecurring: boolean;
     }>({
     title: '',
     description: '',
@@ -115,27 +154,35 @@ export const SessionManagement: React.FC = () => {
     maxParticipants: 8,
     pointsRequired: 0,
     isActive: true,
+    isRecurring: false,
+    recurringWeeks: 4,
+    updateAllRecurring: false,
   });
 
   useEffect(() => {
     fetchSessions();
-  }, []);
+  }, [pagination.page, pagination.limit, filters]);
 
   const fetchSessions = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch all sessions for admin view
-      const response = await api.get('/sessions', { 
-        params: { 
-          limit: 100,
-          isActive: undefined // Get all sessions regardless of status
-        } 
-      });
+      const params: any = { 
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+
+      // Add filters if they are set
+      if (filters.type) params.type = filters.type;
+      if (filters.isActive !== '') params.isActive = filters.isActive;
+      if (filters.isRecurring !== '') params.isRecurring = filters.isRecurring;
       
-      const sessionsData = response.data.sessions || response.data;
+      const response = await api.get('/admin/sessions/paginated', { params });
+      
+      const { sessions: sessionsData, pagination: paginationData } = response.data;
       setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setPagination(paginationData);
     } catch (error: any) {
       console.error('Failed to fetch sessions:', error);
       setError(error.response?.data?.error || 'Failed to load sessions');
@@ -153,19 +200,34 @@ export const SessionManagement: React.FC = () => {
       };
 
       if (editingSession) {
+        if (editingSession.isRecurring && sessionForm.updateAllRecurring) {
+          payload.updateAllRecurring = true;
+        }
+        
         await api.put(`/admin/sessions/${editingSession.id}`, payload);
         setSnackbar({ 
           open: true, 
-          message: 'Session updated successfully!', 
+          message: editingSession.isRecurring && sessionForm.updateAllRecurring 
+            ? 'All recurring sessions updated successfully!' 
+            : 'Session updated successfully!', 
           severity: 'success' 
         });
       } else {
-        await api.post('/admin/sessions', payload);
-        setSnackbar({ 
-          open: true, 
-          message: 'Session created successfully!', 
-          severity: 'success' 
-        });
+        const response = await api.post('/admin/sessions', payload);
+        
+        if (response.data.sessions && response.data.sessions.length > 1) {
+          setSnackbar({ 
+            open: true, 
+            message: `Created ${response.data.sessions.length} recurring sessions successfully!`, 
+            severity: 'success' 
+          });
+        } else {
+          setSnackbar({ 
+            open: true, 
+            message: 'Session created successfully!', 
+            severity: 'success' 
+          });
+        }
       }
 
       setSessionDialog(false);
@@ -182,21 +244,44 @@ export const SessionManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteSession = async (sessionId: string) => {
-    const result = await showConfirm({
+  const handleDeleteSession = async (sessionId: string, session: Session) => {
+    let confirmOptions = {
       title: 'Delete Session',
       text: 'Are you sure you want to delete this session? This action cannot be undone.',
-      icon: 'warning',
+      icon: 'warning' as const,
       confirmButtonText: 'Yes, delete it',
       cancelButtonText: 'Cancel',
-    });
+    };
+
+    // If it's a recurring session parent, ask about deleting all
+    if (session.isRecurring && !session.recurringParentId) {
+      confirmOptions = {
+        title: 'Delete Recurring Session Series',
+        text: `This is a recurring session with ${session.recurringWeeks || 'multiple'} sessions. Do you want to delete the entire series or just this session?`,
+        icon: 'warning' as const,
+        confirmButtonText: 'Delete Series',
+        cancelButtonText: 'Cancel',
+      };
+    }
+
+    const result = await showConfirm(confirmOptions);
 
     if (result.isConfirmed) {
       try {
-        await api.delete(`/admin/sessions/${sessionId}`);
+        const deleteParams: any = {};
+        
+        // If it's a recurring parent and user confirmed, delete all
+        if (session.isRecurring && !session.recurringParentId) {
+          deleteParams.deleteAllRecurring = 'true';
+        }
+
+        await api.delete(`/admin/sessions/${sessionId}`, { params: deleteParams });
+        
         setSnackbar({ 
           open: true, 
-          message: 'Session has been deleted successfully!', 
+          message: session.isRecurring && !session.recurringParentId 
+            ? 'Recurring session series deleted successfully!' 
+            : 'Session deleted successfully!', 
           severity: 'success' 
         });
         fetchSessions();
@@ -223,7 +308,33 @@ export const SessionManagement: React.FC = () => {
       maxParticipants: 8,
       pointsRequired: 0,
       isActive: true,
+      isRecurring: false,
+      recurringWeeks: 4,
+      updateAllRecurring: false,
     });
+  };
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newLimit = parseInt(event.target.value, 10);
+    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+  };
+
+  const handleFilterChange = (filterName: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterName]: value }));
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when filtering
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      type: '',
+      isActive: '',
+      isRecurring: '',
+    });
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   // Function to format date without seconds
@@ -260,7 +371,7 @@ export const SessionManagement: React.FC = () => {
   const getSessionStatus = (session: Session) => {
     const now = new Date();
     const sessionDateTime = new Date(session.scheduledAt);
-    const isPast = sessionDateTime <= now; // Changed to include exact time comparison
+    const isPast = sessionDateTime <= now;
     const isToday = sessionDateTime.toDateString() === now.toDateString();
     const isFull = session.currentParticipants >= session.maxParticipants;
     const isUpcoming = sessionDateTime > now;
@@ -283,18 +394,6 @@ export const SessionManagement: React.FC = () => {
     return { color: 'default', text: 'Completed', icon: <Schedule /> };
   };
 
-  // Filter sessions based on tab with proper datetime comparison
-  const now = new Date();
-  const upcomingSessions = sessions.filter(s => {
-    const sessionDateTime = new Date(s.scheduledAt);
-    return sessionDateTime > now;
-  });
-  const pastSessions = sessions.filter(s => {
-    const sessionDateTime = new Date(s.scheduledAt);
-    return sessionDateTime <= now;
-  });
-  const displayedSessions = tabValue === 0 ? sessions : tabValue === 1 ? upcomingSessions : pastSessions;
-
   // Calculate enhanced stats
   const totalBookings = sessions.reduce((sum, s) => sum + s.currentParticipants, 0);
   const averageFillRate = sessions.length > 0
@@ -303,13 +402,8 @@ export const SessionManagement: React.FC = () => {
         sessions.length
       )
     : 0;
-  const eventCount = sessions.filter(s => s.type === 'EVENT').length;
-  const speakingCount = sessions.filter(s => s.type === 'SPEAKING').length;
-  const todaySessions = sessions.filter(s => {
-    const sessionDate = new Date(s.scheduledAt);
-    const sessionDateTime = new Date(s.scheduledAt);
-    return sessionDate.toDateString() === now.toDateString() && sessionDateTime > now;
-  }).length;
+  const recurringCount = sessions.filter(s => s.isRecurring).length;
+  const activeFiltersCount = Object.values(filters).filter(f => f !== '').length;
 
   if (loading) {
     return (
@@ -330,7 +424,7 @@ export const SessionManagement: React.FC = () => {
               Session Management
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Manage speaking sessions and special events
+              Manage speaking sessions and special events with pagination and recurring options
             </Typography>
           </Box>
           <Stack direction="row" spacing={2}>
@@ -372,23 +466,18 @@ export const SessionManagement: React.FC = () => {
                 <Stack spacing={1}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="h4" fontWeight={700} color="primary">
-                      {upcomingSessions.length}
+                      {pagination.total}
                     </Typography>
                     <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
                       <Schedule />
                     </Avatar>
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
-                    Upcoming Sessions
+                    Total Sessions
                   </Typography>
-                  {todaySessions > 0 && (
-                    <Chip 
-                      label={`${todaySessions} today`} 
-                      size="small" 
-                      color="success"
-                      sx={{ alignSelf: 'flex-start' }}
-                    />
-                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    Across all pages
+                  </Typography>
                 </Stack>
               </CardContent>
             </Card>
@@ -406,10 +495,10 @@ export const SessionManagement: React.FC = () => {
                     </Avatar>
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
-                    Total Bookings
+                    Current Page Bookings
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Across all sessions
+                    From displayed sessions
                   </Typography>
                 </Stack>
               </CardContent>
@@ -428,10 +517,10 @@ export const SessionManagement: React.FC = () => {
                     </Avatar>
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
-                    Average Fill Rate
+                    Fill Rate
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Participation rate
+                    Current page average
                   </Typography>
                 </Stack>
               </CardContent>
@@ -443,17 +532,17 @@ export const SessionManagement: React.FC = () => {
                 <Stack spacing={1}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="h4" fontWeight={700} color="warning.main">
-                      {eventCount}
+                      {recurringCount}
                     </Typography>
                     <Avatar sx={{ bgcolor: 'warning.main', width: 40, height: 40 }}>
-                      <Event />
+                      <Repeat />
                     </Avatar>
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
-                    Special Events
+                    Recurring Sessions
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    vs {speakingCount} speaking
+                    On current page
                   </Typography>
                 </Stack>
               </CardContent>
@@ -465,17 +554,17 @@ export const SessionManagement: React.FC = () => {
                 <Stack spacing={1}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="h4" fontWeight={700} color="info.main">
-                      {sessions.length}
+                      {pagination.page}
                     </Typography>
                     <Avatar sx={{ bgcolor: 'info.main', width: 40, height: 40 }}>
                       <CalendarMonth />
                     </Avatar>
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
-                    Total Sessions
+                    Current Page
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    All time
+                    of {pagination.totalPages} pages
                   </Typography>
                 </Stack>
               </CardContent>
@@ -483,222 +572,335 @@ export const SessionManagement: React.FC = () => {
           </Grid>
         </Grid>
 
+        {/* Filters and Pagination Controls */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Stack spacing={3}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6" fontWeight={600}>
+                  Filter & Pagination
+                </Typography>
+                {activeFiltersCount > 0 && (
+                  <Button size="small" onClick={clearFilters}>
+                    Clear Filters ({activeFiltersCount})
+                  </Button>
+                )}
+              </Stack>
+              
+              <Grid container spacing={2} alignItems="center">
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Session Type</InputLabel>
+                    <Select
+                      value={filters.type}
+                      label="Session Type"
+                      onChange={(e) => handleFilterChange('type', e.target.value)}
+                    >
+                      <MenuItem value="">All Types</MenuItem>
+                      <MenuItem value="SPEAKING">Speaking Sessions</MenuItem>
+                      <MenuItem value="EVENT">Special Events</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={filters.isActive}
+                      label="Status"
+                      onChange={(e) => handleFilterChange('isActive', e.target.value)}
+                    >
+                      <MenuItem value="">All Status</MenuItem>
+                      <MenuItem value="true">Active</MenuItem>
+                      <MenuItem value="false">Inactive</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Recurring</InputLabel>
+                    <Select
+                      value={filters.isRecurring}
+                      label="Recurring"
+                      onChange={(e) => handleFilterChange('isRecurring', e.target.value)}
+                    >
+                      <MenuItem value="">All Sessions</MenuItem>
+                      <MenuItem value="true">Recurring Only</MenuItem>
+                      <MenuItem value="false">One-time Only</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    label="Items per page"
+                    value={pagination.limit}
+                    onChange={handleLimitChange}
+                    inputProps={{ min: 5, max: 50 }}
+                  />
+                </Grid>
+              </Grid>
+            </Stack>
+          </CardContent>
+        </Card>
+
         {/* Sessions Table */}
         <Card>
           <CardContent>
-            <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }}>
-              <Tab label={`All Sessions (${sessions.length})`} />
-              <Tab label={`Upcoming (${upcomingSessions.length})`} />
-              <Tab label={`Past (${pastSessions.length})`} />
-            </Tabs>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h6" fontWeight={600}>
+                Sessions ({pagination.total} total)
+              </Typography>
+              <Pagination
+                count={pagination.totalPages}
+                page={pagination.page}
+                onChange={handlePageChange}
+                color="primary"
+                showFirstButton
+                showLastButton
+              />
+            </Stack>
 
-            {displayedSessions.length === 0 ? (
+            {sessions.length === 0 ? (
               <Alert severity="info" sx={{ textAlign: 'center', py: 4 }}>
                 <Typography variant="h6" gutterBottom>
                   No sessions found
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {tabValue === 0 ? 'Create your first session to get started!' : 
-                   tabValue === 1 ? 'No upcoming sessions scheduled.' : 
-                   'No past sessions found.'}
+                  {activeFiltersCount > 0 
+                    ? 'Try adjusting your filters or create a new session.'
+                    : 'Create your first session to get started!'
+                  }
                 </Typography>
-                {tabValue !== 2 && (
-                  <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={() => setSessionDialog(true)}
-                    sx={{ color: "white" }}
-                  >
-                    Create Session
-                  </Button>
-                )}
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={() => setSessionDialog(true)}
+                  sx={{ color: "white" }}
+                >
+                  Create Session
+                </Button>
               </Alert>
             ) : (
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Session Details</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Date & Time</TableCell>
-                      <TableCell>Duration</TableCell>
-                      <TableCell>Participants</TableCell>
-                      <TableCell>Points</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {displayedSessions.map((session) => {
-                      const isPast = new Date(session.scheduledAt) < now;
-                      const status = getSessionStatus(session);
-                      const fillPercentage = (session.currentParticipants / session.maxParticipants) * 100;
-                      
-                      return (
-                        <TableRow key={session.id} sx={{ opacity: isPast ? 0.8 : 1 }}>
-                          <TableCell>
-                            <Stack spacing={1}>
-                              <Stack direction="row" alignItems="center" spacing={1}>
-                                <Typography variant="body2" fontWeight={600}>
-                                  {session.title}
-                                </Typography>
-                              </Stack>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                {session.type === 'SPEAKING' ? (
-                                  <>
-                                    <VideoCall sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                    <Typography variant="caption" color="text.secondary">
-                                      Online Meeting
-                                    </Typography>
-                                  </>
-                                ) : session.location ? (
-                                  <>
-                                    <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                    <Typography variant="caption" color="text.secondary">
-                                      {session.location}
-                                    </Typography>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Event sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                    <Typography variant="caption" color="text.secondary">
-                                      Special Event
-                                    </Typography>
-                                  </>
+              <>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Session Details</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell>Date & Time</TableCell>
+                        <TableCell>Duration</TableCell>
+                        <TableCell>Participants</TableCell>
+                        <TableCell>Points</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {sessions.map((session) => {
+                        const isPast = new Date(session.scheduledAt) < new Date();
+                        const status = getSessionStatus(session);
+                        const fillPercentage = (session.currentParticipants / session.maxParticipants) * 100;
+                        
+                        return (
+                          <TableRow key={session.id} sx={{ opacity: isPast ? 0.8 : 1 }}>
+                            <TableCell>
+                              <Stack spacing={1}>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {session.title}
+                                  </Typography>
+                                  {session.isRecurring && (
+                                    <Tooltip title={session.recurringParentId ? "Part of recurring series" : "Recurring session parent"}>
+                                      <Chip
+                                        icon={<Repeat />}
+                                        label={session.recurringParentId ? "Series" : `${session.recurringWeeks}w`}
+                                        size="small"
+                                        color="info"
+                                        variant="outlined"
+                                      />
+                                    </Tooltip>
+                                  )}
+                                </Stack>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  {session.type === 'SPEAKING' ? (
+                                    <>
+                                      <VideoCall sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                      <Typography variant="caption" color="text.secondary">
+                                        Online Meeting
+                                      </Typography>
+                                    </>
+                                  ) : session.location ? (
+                                    <>
+                                      <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                      <Typography variant="caption" color="text.secondary">
+                                        {session.location}
+                                      </Typography>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Event sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                      <Typography variant="caption" color="text.secondary">
+                                        Special Event
+                                      </Typography>
+                                    </>
+                                  )}
+                                </Stack>
+                                {session.hostName && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Host: {session.hostName}
+                                  </Typography>
                                 )}
+                                <Tooltip title={getRelativeTime(session.scheduledAt)}>
+                                  <Typography variant="caption" color="primary.main" sx={{ cursor: 'help' }}>
+                                    {getRelativeTime(session.scheduledAt)}
+                                  </Typography>
+                                </Tooltip>
                               </Stack>
-                              {session.hostName && (
-                                <Typography variant="caption" color="text.secondary">
-                                  Host: {session.hostName}
-                                </Typography>
-                              )}
-                              <Tooltip title={getRelativeTime(session.scheduledAt)}>
-                                <Typography variant="caption" color="primary.main" sx={{ cursor: 'help' }}>
-                                  {getRelativeTime(session.scheduledAt)}
-                                </Typography>
-                              </Tooltip>
-                            </Stack>
-                          </TableCell>
-                          <TableCell>
-                            <Stack direction="row" spacing={0.5} alignItems="center">
-                              {session.type === 'SPEAKING' ? <Mic sx={{ fontSize: 16 }} /> : <Event sx={{ fontSize: 16 }} />}
-                              <Chip
-                                label={session.type === 'SPEAKING' ? 'Speaking' : 'Event'}
-                                size="small"
-                                color={session.type === 'SPEAKING' ? 'primary' : 'secondary'}
-                                sx={{ color: "white" }}
-                              />
-                            </Stack>
-                          </TableCell>
-                          <TableCell>
-                            <Stack spacing={0.5}>
-                              <Typography variant="body2" fontWeight={500}>
-                                {formatDateTime(session.scheduledAt)}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {new Date(session.scheduledAt).toLocaleDateString('en-US', { weekday: 'long' })}
-                              </Typography>
-                            </Stack>
-                          </TableCell>
-                          <TableCell>
-                            <Stack direction="row" spacing={0.5} alignItems="center">
-                              <AccessTime sx={{ fontSize: 14, color: 'text.secondary' }} />
-                              <Typography variant="body2">{session.duration} min</Typography>
-                            </Stack>
-                          </TableCell>
-                          <TableCell>
-                            <Stack spacing={1}>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <People sx={{ fontSize: 16 }} />
-                                <Typography variant="body2" fontWeight={500}>
-                                  {session.currentParticipants}/{session.maxParticipants}
-                                </Typography>
-                              </Stack>
-                              <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, height: 4 }}>
-                                <Box
-                                  sx={{
-                                    width: `${Math.min(fillPercentage, 100)}%`,
-                                    bgcolor: fillPercentage >= 100 ? 'error.main' : fillPercentage >= 80 ? 'warning.main' : 'success.main',
-                                    height: '100%',
-                                    borderRadius: 1,
-                                    transition: 'width 0.3s ease',
-                                  }}
+                            </TableCell>
+                            <TableCell>
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                {session.type === 'SPEAKING' ? <Mic sx={{ fontSize: 16 }} /> : <Event sx={{ fontSize: 16 }} />}
+                                <Chip
+                                  label={session.type === 'SPEAKING' ? 'Speaking' : 'Event'}
+                                  size="small"
+                                  color={session.type === 'SPEAKING' ? 'primary' : 'secondary'}
+                                  sx={{ color: "white" }}
                                 />
-                              </Box>
-                              <Typography variant="caption" color="text.secondary">
-                                {Math.round(fillPercentage)}% filled
-                              </Typography>
-                            </Stack>
-                          </TableCell>
-                          <TableCell>
-                            {session.pointsRequired > 0 ? (
-                              <Stack direction="row" spacing={0.5} alignItems="center">
-                                <Star sx={{ fontSize: 16, color: 'warning.main' }} />
+                              </Stack>
+                            </TableCell>
+                            <TableCell>
+                              <Stack spacing={0.5}>
                                 <Typography variant="body2" fontWeight={500}>
-                                  {session.pointsRequired}
+                                  {formatDateTime(session.scheduledAt)}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {new Date(session.scheduledAt).toLocaleDateString('en-US', { weekday: 'long' })}
                                 </Typography>
                               </Stack>
-                            ) : (
+                            </TableCell>
+                            <TableCell>
                               <Stack direction="row" spacing={0.5} alignItems="center">
-                                <Typography variant="body2" color="success.main" fontWeight={500}>
-                                  FREE
+                                <AccessTime sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                <Typography variant="body2">{session.duration} min</Typography>
+                              </Stack>
+                            </TableCell>
+                            <TableCell>
+                              <Stack spacing={1}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <People sx={{ fontSize: 16 }} />
+                                  <Typography variant="body2" fontWeight={500}>
+                                    {session.currentParticipants}/{session.maxParticipants}
+                                  </Typography>
+                                </Stack>
+                                <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, height: 4 }}>
+                                  <Box
+                                    sx={{
+                                      width: `${Math.min(fillPercentage, 100)}%`,
+                                      bgcolor: fillPercentage >= 100 ? 'error.main' : fillPercentage >= 80 ? 'warning.main' : 'success.main',
+                                      height: '100%',
+                                      borderRadius: 1,
+                                      transition: 'width 0.3s ease',
+                                    }}
+                                  />
+                                </Box>
+                                <Typography variant="caption" color="text.secondary">
+                                  {Math.round(fillPercentage)}% filled
                                 </Typography>
                               </Stack>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Stack spacing={0.5} alignItems="flex-start">
-                              <Chip
-                                label={status.text}
-                                size="small"
-                                color={status.color as any}
-                                icon={status.icon}
-                                sx={{ color: 'white' }}
-                              />
-                            </Stack>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Stack direction="row" spacing={0.5}>
-                              <Tooltip title="Edit session">
-                                <IconButton
+                            </TableCell>
+                            <TableCell>
+                              {session.pointsRequired > 0 ? (
+                                <Stack direction="row" spacing={0.5} alignItems="center">
+                                  <Star sx={{ fontSize: 16, color: 'warning.main' }} />
+                                  <Typography variant="body2" fontWeight={500}>
+                                    {session.pointsRequired}
+                                  </Typography>
+                                </Stack>
+                              ) : (
+                                <Stack direction="row" spacing={0.5} alignItems="center">
+                                  <Typography variant="body2" color="success.main" fontWeight={500}>
+                                    FREE
+                                  </Typography>
+                                </Stack>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Stack spacing={0.5} alignItems="flex-start">
+                                <Chip
+                                  label={status.text}
                                   size="small"
-                                  onClick={() => {
-                                    setEditingSession(session);
-                                    setSessionForm({
-                                      title: session.title,
-                                      description: session.description,
-                                      type: session.type,
-                                      meetingUrl: session.meetingUrl || '',
-                                      location: session.location || '',
-                                      scheduledAt: new Date(session.scheduledAt),
-                                      duration: session.duration,
-                                      maxParticipants: session.maxParticipants,
-                                      pointsRequired: session.pointsRequired,
-                                      isActive: session.isActive,
-                                    });
-                                    setSessionDialog(true);
-                                  }}
-                                >
-                                  <Edit />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Delete session">
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleDeleteSession(session.id)}
-                                >
-                                  <Delete />
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                                  color={status.color as any}
+                                  icon={status.icon}
+                                  sx={{ color: 'white' }}
+                                />
+                              </Stack>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Stack direction="row" spacing={0.5}>
+                                <Tooltip title="Edit session">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                      setEditingSession(session);
+                                      setSessionForm({
+                                        title: session.title,
+                                        description: session.description,
+                                        type: session.type,
+                                        meetingUrl: session.meetingUrl || '',
+                                        location: session.location || '',
+                                        scheduledAt: new Date(session.scheduledAt),
+                                        duration: session.duration,
+                                        maxParticipants: session.maxParticipants,
+                                        pointsRequired: session.pointsRequired,
+                                        isActive: session.isActive,
+                                        isRecurring: session.isRecurring,
+                                        recurringWeeks: session.recurringWeeks || 4,
+                                        updateAllRecurring: false,
+                                      });
+                                      setSessionDialog(true);
+                                    }}
+                                  >
+                                    <Edit />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete session">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleDeleteSession(session.id, session)}
+                                  >
+                                    <Delete />
+                                  </IconButton>
+                                </Tooltip>
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                
+                {/* Bottom Pagination */}
+                <Stack direction="row" justifyContent="center" mt={3}>
+                  <Pagination
+                    count={pagination.totalPages}
+                    page={pagination.page}
+                    onChange={handlePageChange}
+                    color="primary"
+                    showFirstButton
+                    showLastButton
+                    size="large"
+                  />
+                </Stack>
+              </>
             )}
           </CardContent>
         </Card>
@@ -723,6 +925,15 @@ export const SessionManagement: React.FC = () => {
                   : `Create New ${sessionForm.type === 'SPEAKING' ? 'Speaking Session' : 'Special Event'}`
                 }
               </Typography>
+              {editingSession?.isRecurring && (
+                <Chip
+                  icon={<Repeat />}
+                  label="Recurring"
+                  size="small"
+                  color="info"
+                  variant="outlined"
+                />
+              )}
             </Stack>
           </DialogTitle>
           <DialogContent>
@@ -738,7 +949,7 @@ export const SessionManagement: React.FC = () => {
                   'e.g., Cultural Exchange Workshop'
                 }
               />
-              <TextField
+                              <TextField
                 fullWidth
                 multiline
                 rows={3}
@@ -841,6 +1052,70 @@ export const SessionManagement: React.FC = () => {
                 inputProps={{ min: 0 }}
               />
 
+              {/* Recurring Session Options */}
+              {!editingSession && (
+                <>
+                  <Divider />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={sessionForm.isRecurring}
+                        onChange={(e) => setSessionForm({ ...sessionForm, isRecurring: e.target.checked })}
+                      />
+                    }
+                    label={
+                      <Stack>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Repeat />
+                          <Typography variant="body2">Recurring Session</Typography>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary">
+                          Create multiple sessions repeating weekly
+                        </Typography>
+                      </Stack>
+                    }
+                  />
+
+                  {sessionForm.isRecurring && (
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Number of Weeks"
+                      value={sessionForm.recurringWeeks}
+                      onChange={(e) => setSessionForm({ ...sessionForm, recurringWeeks: parseInt(e.target.value) || 4 })}
+                      inputProps={{ min: 2, max: 52 }}
+                      helperText={`Will create ${sessionForm.recurringWeeks} sessions, one each week starting from the selected date`}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Update All Recurring Option for Existing Sessions */}
+              {editingSession?.isRecurring && !editingSession.recurringParentId && (
+                <>
+                  <Divider />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={sessionForm.updateAllRecurring}
+                        onChange={(e) => setSessionForm({ ...sessionForm, updateAllRecurring: e.target.checked })}
+                      />
+                    }
+                    label={
+                      <Stack>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Timeline />
+                          <Typography variant="body2">Update All in Series</Typography>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary">
+                          Apply changes to all sessions in this recurring series
+                        </Typography>
+                      </Stack>
+                    }
+                  />
+                </>
+              )}
+
               <FormControlLabel
                 control={
                   <Switch
@@ -876,7 +1151,10 @@ export const SessionManagement: React.FC = () => {
               sx={{ color: "white" }}
               startIcon={editingSession ? <Edit /> : <Add />}
             >
-              {editingSession ? 'Update Session' : 'Create Session'}
+              {editingSession 
+                ? (editingSession.isRecurring && sessionForm.updateAllRecurring ? 'Update Series' : 'Update Session')
+                : (sessionForm.isRecurring ? `Create ${sessionForm.recurringWeeks} Sessions` : 'Create Session')
+              }
             </Button>
           </DialogActions>
         </Dialog>
