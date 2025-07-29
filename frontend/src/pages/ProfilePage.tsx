@@ -40,7 +40,6 @@ import {
   Switch,
   FormControlLabel,
   Divider,
-  Link,
 } from '@mui/material';
 import {
   Edit,
@@ -61,7 +60,6 @@ import {
   Settings,
   Share,
   Download,
-  CameraAlt,
   Delete,
   CloudUpload,
   SaveAlt,
@@ -69,8 +67,6 @@ import {
   Notifications,
   Security,
   Palette,
-  Email,
-  Phone,
   Visibility,
   VisibilityOff,
   Facebook,
@@ -79,18 +75,21 @@ import {
   WhatsApp,
   ContentCopy,
   Close,
+  CreditCard
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
-import { 
-  fetchMyProfile, 
-  updateProfile, 
-  uploadProfilePhoto, 
+import {
+  fetchMyProfile,
+  updateProfile,
+  uploadProfilePhoto,
   deleteProfilePhoto,
   clearError
 } from '../store/slices/profileSlice';
 import { UpdateProfileData, profileService } from '../services/profileService';
+import { subscriptionService } from '../services/subscriptionService';
+import { chackPayment } from '../store/slices/authSlice';
 
 interface Achievement {
   id: string;
@@ -143,10 +142,12 @@ export const ProfilePage: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Redux state
   const { data: profile, loading, updateLoading, photoUploadLoading, error } = useSelector((state: RootState) => state.profile);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { user, status } = useSelector((state: RootState) => state.auth);
+  const totalLessonsCompleted = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsCompleted)
+  const totalLessonsAvailable = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsAvailable)
 
   // Local state
   const [tabValue, setTabValue] = useState(0);
@@ -154,11 +155,13 @@ export const ProfilePage: React.FC = () => {
   const [coverImageDialog, setCoverImageDialog] = useState(false);
   const [photoMenuAnchor, setPhotoMenuAnchor] = useState<null | HTMLElement>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  
+  const [loadingManage, setLoadingManage] = useState(false);
+  const [loadingStart, setLoadingStart] = useState(false);
+
   // Real profile data state
   const [publicProfileData, setPublicProfileData] = useState<any>(null);
   const [loadingPublicData, setLoadingPublicData] = useState(false);
-  
+
   // New state for button functionalities
   const [shareDialog, setShareDialog] = useState(false);
   const [settingsDialog, setSettingsDialog] = useState(false);
@@ -321,9 +324,9 @@ export const ProfilePage: React.FC = () => {
     const message = `Check out my Japanese learning progress on Thrive in Japan!`;
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedMessage = encodeURIComponent(message);
-    
+
     let shareUrl_platform = '';
-    
+
     switch (platform) {
       case 'facebook':
         shareUrl_platform = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
@@ -338,70 +341,70 @@ export const ProfilePage: React.FC = () => {
         shareUrl_platform = `https://wa.me/?text=${encodedMessage} ${encodedUrl}`;
         break;
     }
-    
+
     window.open(shareUrl_platform, '_blank', 'width=600,height=400');
   };
 
   // Download Certificate Functionality
   const handleDownloadCertificate = async () => {
     setCertificateLoading(true);
-    
+
     try {
       // Simulate certificate generation
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Create a mock certificate download
       const canvas = document.createElement('canvas');
       canvas.width = 800;
       canvas.height = 600;
       const ctx = canvas.getContext('2d');
-      
+
       if (ctx) {
         // Background
         ctx.fillStyle = '#f8f9fa';
         ctx.fillRect(0, 0, 800, 600);
-        
+
         // Border
         ctx.strokeStyle = '#FF6B6B';
         ctx.lineWidth = 10;
         ctx.strokeRect(20, 20, 760, 560);
-        
+
         // Title
         ctx.fillStyle = '#2c3e50';
         ctx.font = 'bold 36px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('Certificate of Achievement', 400, 120);
-        
+
         // Subtitle
         ctx.font = '24px Arial';
         ctx.fillText('Thrive in Japan', 400, 160);
-        
+
         // Name
         ctx.font = 'bold 32px Arial';
         ctx.fillStyle = '#FF6B6B';
         ctx.fillText(profile?.name || 'Student', 400, 250);
-        
+
         // Description
         ctx.fillStyle = '#2c3e50';
         ctx.font = '20px Arial';
         ctx.fillText('has successfully completed', 400, 300);
         ctx.fillText(`${publicProfileData?.totalLessonsCompleted || 0} lessons in Japanese language learning`, 400, 330);
-        
+
         // Level
         ctx.font = 'bold 24px Arial';
         ctx.fillStyle = '#4ECDC4';
         ctx.fillText(`Current Level: JLPT ${profile?.languageLevel || 'N5'}`, 400, 380);
-        
+
         // Points
         ctx.fillStyle = '#FFD700';
         ctx.fillText(`Total Points Earned: ${publicProfileData?.totalPoints || profile?.points || 0}`, 400, 420);
-        
+
         // Date
         ctx.fillStyle = '#2c3e50';
         ctx.font = '16px Arial';
         ctx.fillText(`Issued on: ${new Date().toLocaleDateString()}`, 400, 500);
       }
-      
+
       // Download the certificate
       canvas.toBlob((blob) => {
         if (blob) {
@@ -413,11 +416,11 @@ export const ProfilePage: React.FC = () => {
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          
+
           setSnackbar({ open: true, message: 'Certificate downloaded successfully!', severity: 'success' });
         }
       });
-      
+
     } catch (error) {
       setSnackbar({ open: true, message: 'Failed to generate certificate. Please try again.', severity: 'error' });
     } finally {
@@ -446,6 +449,30 @@ export const ProfilePage: React.FC = () => {
     }));
   };
 
+  const handleSubscriptionManagement = async () => {
+    setLoadingManage(true);
+    try {
+      const data = await subscriptionService.createCustomerPortal();
+      window.location.href = data.session.url;
+    } catch (error) {
+      console.error('Error during subscription management:', error);
+    } finally {
+      setLoadingManage(false);
+    }
+  };
+
+  const handleStartSubscription = async () => {
+    setLoadingStart(true);
+    try {
+      await subscriptionService.endTrial();
+      await dispatch(chackPayment());
+    } catch (error) {
+      console.error('Error starting subscription:', error);
+    } finally {
+      setLoadingStart(false);
+    }
+  };
+
   // Use real data for achievements
   const achievements: Achievement[] = publicProfileData?.publicAchievements || [];
 
@@ -454,10 +481,10 @@ export const ProfilePage: React.FC = () => {
     id: milestone.title,
     title: milestone.title,
     icon: milestone.type === 'lesson' ? <School /> :
-          milestone.type === 'level' ? <Star /> :
-          milestone.type === 'community' ? <Forum /> :
+      milestone.type === 'level' ? <Star /> :
+        milestone.type === 'community' ? <Forum /> :
           milestone.type === 'achievement' ? <EmojiEvents /> :
-          <WorkspacePremium />,
+            <WorkspacePremium />,
     achieved: true,
     date: milestone.date,
     description: milestone.details || milestone.title,
@@ -769,7 +796,7 @@ export const ProfilePage: React.FC = () => {
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Download Certificate">
-                          <IconButton 
+                          <IconButton
                             onClick={handleDownloadCertificate}
                             disabled={certificateLoading}
                           >
@@ -1093,41 +1120,41 @@ export const ProfilePage: React.FC = () => {
                               {course.progressPercentage}% Complete
                             </Typography>
                           </Paper>
-                        )) || 
-                        // Fallback if no real data
-                        [
-                          { course: 'Japan in Context', progress: 40, lessons: '4/10', color: '#FF6B6B' },
-                          { course: 'JLPT N5 Preparation', progress: 25, lessons: '3/12', color: '#4ECDC4' },
-                        ].map((course) => (
-                          <Paper key={course.course} sx={{ p: 3 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                              <Box>
-                                <Typography variant="subtitle1" fontWeight={600}>
-                                  {course.course}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {course.lessons} lessons completed
-                                </Typography>
-                              </Box>
-                            </Stack>
-                            <LinearProgress
-                              variant="determinate"
-                              value={course.progress}
-                              sx={{
-                                height: 10,
-                                borderRadius: 5,
-                                backgroundColor: 'action.hover',
-                                '& .MuiLinearProgress-bar': {
+                        )) ||
+                          // Fallback if no real data
+                          [
+                            { course: 'Japan in Context', progress: 40, lessons: '4/10', color: '#FF6B6B' },
+                            { course: 'JLPT N5 Preparation', progress: 25, lessons: '3/12', color: '#4ECDC4' },
+                          ].map((course) => (
+                            <Paper key={course.course} sx={{ p: 3 }}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                                <Box>
+                                  <Typography variant="subtitle1" fontWeight={600}>
+                                    {course.course}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {course.lessons} lessons completed
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                              <LinearProgress
+                                variant="determinate"
+                                value={course.progress}
+                                sx={{
+                                  height: 10,
                                   borderRadius: 5,
-                                  backgroundColor: course.color,
-                                },
-                              }}
-                            />
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                              {course.progress}% Complete
-                            </Typography>
-                          </Paper>
-                        ))}
+                                  backgroundColor: 'action.hover',
+                                  '& .MuiLinearProgress-bar': {
+                                    borderRadius: 5,
+                                    backgroundColor: course.color,
+                                  },
+                                }}
+                              />
+                              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                {course.progress}% Complete
+                              </Typography>
+                            </Paper>
+                          ))}
                       </Stack>
                     </Box>
 
@@ -1259,8 +1286,8 @@ export const ProfilePage: React.FC = () => {
       </Container>
 
       {/* Share Profile Dialog */}
-      <Dialog 
-        open={shareDialog} 
+      <Dialog
+        open={shareDialog}
         onClose={() => setShareDialog(false)}
         maxWidth="sm"
         fullWidth
@@ -1290,33 +1317,33 @@ export const ProfilePage: React.FC = () => {
                 </Stack>
               </Paper>
             </Box>
-            
+
             <Divider />
-            
+
             <Box>
               <Typography variant="subtitle2" gutterBottom>
                 Share on Social Media
               </Typography>
               <Stack direction="row" spacing={2}>
-                <IconButton 
+                <IconButton
                   onClick={() => shareToSocial('facebook')}
                   sx={{ bgcolor: '#1877F2', color: 'white', '&:hover': { bgcolor: '#166FE5' } }}
                 >
                   <Facebook />
                 </IconButton>
-                <IconButton 
+                <IconButton
                   onClick={() => shareToSocial('twitter')}
                   sx={{ bgcolor: '#1DA1F2', color: 'white', '&:hover': { bgcolor: '#1A91DA' } }}
                 >
                   <Twitter />
                 </IconButton>
-                <IconButton 
+                <IconButton
                   onClick={() => shareToSocial('linkedin')}
                   sx={{ bgcolor: '#0A66C2', color: 'white', '&:hover': { bgcolor: '#095BA8' } }}
                 >
                   <LinkedIn />
                 </IconButton>
-                <IconButton 
+                <IconButton
                   onClick={() => shareToSocial('whatsapp')}
                   sx={{ bgcolor: '#25D366', color: 'white', '&:hover': { bgcolor: '#22C75D' } }}
                 >
@@ -1329,8 +1356,8 @@ export const ProfilePage: React.FC = () => {
       </Dialog>
 
       {/* Settings Dialog */}
-      <Dialog 
-        open={settingsDialog} 
+      <Dialog
+        open={settingsDialog}
         onClose={() => setSettingsDialog(false)}
         maxWidth="md"
         fullWidth
@@ -1513,6 +1540,44 @@ export const ProfilePage: React.FC = () => {
                 </FormControl>
               </Stack>
             </Box>
+
+            <Divider />
+
+            {/* Payment Settings */}
+            <Box>
+              <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+                <CreditCard color="primary" />
+                <Typography variant="h6">Payment Settings</Typography>
+              </Stack>
+              <Stack spacing={2}>
+                <Typography variant="body2" color="text.secondary">
+                  Manage your subscription and billing preferences.
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleSubscriptionManagement}
+                    disabled={loadingManage}
+                    startIcon={loadingManage && <CircularProgress size={20} />}
+                  >
+                    {'Subscription Management'}
+                  </Button>
+                  {status === "trialing" && <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleStartSubscription}
+                    disabled={loadingStart}
+                    startIcon={loadingStart && <CircularProgress size={20} />}
+                  >
+                    {'Start Subscription'}
+                  </Button>}
+                </Stack>
+              </Stack>
+            </Box>
+
+
+
           </Stack>
         </DialogContent>
         <DialogActions>

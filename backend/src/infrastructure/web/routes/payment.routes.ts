@@ -16,5 +16,8 @@ router.use(authenticate);
 router.post('/create-payment-intent', paymentController.createPaymentIntent);
 router.post('/create-checkout-session', paymentController.createCheckoutSession);
 router.post('/verify-checkout-session', paymentController.verifyCheckoutSession);
+router.get('/create-customer-portal', paymentController.createCustomerPortal);
+router.post('/end-trial', paymentController.endTrial);
+
 
 export { router as paymentRouter };
