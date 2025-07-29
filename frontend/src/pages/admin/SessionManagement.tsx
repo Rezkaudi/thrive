@@ -655,14 +655,6 @@ export const SessionManagement: React.FC = () => {
                                 icon={status.icon}
                                 sx={{ color: 'white' }}
                               />
-                              {!session.isActive && (
-                                <Chip
-                                  label="Disabled"
-                                  size="small"
-                                  color="error"
-                                  sx={{ fontSize: '0.65rem' }}
-                                />
-                              )}
                             </Stack>
                           </TableCell>
                           <TableCell align="right">
