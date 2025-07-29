@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
+  MenuOpen as MenuOpenIcon,
   Dashboard,
   School,
   Groups,
@@ -35,6 +36,8 @@ import {
   EmojiEvents,
   Notifications,
   AdminPanelSettings,
+  ChevronLeft,
+  ChevronRight,
 } from '@mui/icons-material';
 import { logout } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
@@ -56,6 +59,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopDrawerOpen, setDesktopDrawerOpen] = useState(true);
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -70,70 +74,112 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate('/');
   };
 
+  const handleDrawerToggle = () => {
+    if (isMobile) {
+      setMobileOpen(!mobileOpen);
+    } else {
+      setDesktopDrawerOpen(!desktopDrawerOpen);
+    }
+  };
+
   const menuItems = [
-    { title: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-    { title: 'Classroom', icon: <School />, path: '/classroom' },
-    { title: 'Community', icon: <Groups />, path: '/community' },
-    { title: 'Calendar', icon: <CalendarMonth />, path: '/calendar' },
-    { title: 'Profile', icon: <Person />, path: '/profile' },
+    { title: 'Dashboard', icon: <Dashboard sx={{ fontSize: 20 }} />, path: '/dashboard' },
+    { title: 'Classroom', icon: <School sx={{ fontSize: 20 }} />, path: '/classroom' },
+    { title: 'Community', icon: <Groups sx={{ fontSize: 20 }} />, path: '/community' },
+    { title: 'Calendar', icon: <CalendarMonth sx={{ fontSize: 20 }} />, path: '/calendar' },
+    { title: 'Profile', icon: <Person sx={{ fontSize: 20 }} />, path: '/profile' },
   ];
 
   if (user?.role === 'ADMIN') {
-    menuItems.push({ title: 'Admin', icon: <AdminPanelSettings />, path: '/admin' });
+    menuItems.push({ title: 'Admin', icon: <AdminPanelSettings sx={{ fontSize: 20 }} />, path: '/admin' });
   }
 
+  const drawerWidth = desktopDrawerOpen ? 240 : 72;
+
   const drawer = (
-    <Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Toolbar>
-        <Typography variant="h6" fontWeight={700} color="primary">
-          Thrive in Japan
-        </Typography>
+        {(isMobile || desktopDrawerOpen) && (
+          <Typography variant="h6" fontWeight={700} color="primary">
+            Thrive in Japan
+          </Typography>
+        )}
+        {!isMobile && (
+          <IconButton
+            onClick={handleDrawerToggle}
+            sx={{
+              ml: 'auto',
+              ...(desktopDrawerOpen && { ml: 'auto' }),
+              ...(!desktopDrawerOpen && { mx: 'auto' }),
+            }}
+          >
+            {desktopDrawerOpen ? <ChevronLeft /> : <ChevronRight />}
+          </IconButton>
+        )}
       </Toolbar>
       <Divider />
-      <List>
+      <List sx={{ flexGrow: 1 }}>
         {menuItems.map((item) => (
           <ListItem key={item.title} disablePadding>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => {
-                navigate(item.path);
-                setMobileOpen(false);
-              }}
-              sx={{
-                '&.Mui-selected': {
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                  '& .MuiListItemIcon-root': {
+            <Tooltip title={!desktopDrawerOpen && !isMobile ? item.title : ''} placement="right">
+              <ListItemButton
+                selected={location.pathname === item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  if (isMobile) setMobileOpen(false);
+                }}
+                sx={{
+                  minHeight: 48,
+                  justifyContent: desktopDrawerOpen || isMobile ? 'initial' : 'center',
+                  px: 2.5,
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
                     color: 'white',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'white',
+                    },
                   },
-                },
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.title} />
-            </ListItemButton>
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: desktopDrawerOpen || isMobile ? 3 : 'auto',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                {(desktopDrawerOpen || isMobile) && (
+                  <ListItemText primary={item.title} />
+                )}
+              </ListItemButton>
+            </Tooltip>
           </ListItem>
         ))}
       </List>
       <Divider sx={{ mt: 'auto' }} />
-      <Box sx={{ p: 2 }}>
-        <Stack spacing={1}>
-          <Chip
-            icon={<EmojiEvents />}
-            label={`${profile?.stats.totalPoints || "0"} Points`}
-            color="primary"
-            variant="outlined"
-          />
-          <Chip
-            label={`Level ${profile?.user.level || "1"}`}
-            color="secondary"
-            size="small"
-          />
-        </Stack>
-      </Box>
+      {(desktopDrawerOpen || isMobile) && (
+        <Box sx={{ p: 2 }}>
+          <Stack spacing={1}>
+            <Chip
+              icon={<EmojiEvents sx={{ fontSize: 16 }} />}
+              label={`${profile?.stats.totalPoints || "0"} Points`}
+              color="primary"
+              variant="outlined"
+              size="small"
+            />
+            <Chip
+              label={`Level ${profile?.user.level || "1"}`}
+              color="secondary"
+              size="small"
+            />
+          </Stack>
+        </Box>
+      )}
     </Box>
   );
 
@@ -149,16 +195,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         }}
       >
         <Toolbar>
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              sx={{ mr: 2 }}
-            >
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2 }}
+          >
+            {(isMobile && mobileOpen) || (!isMobile && desktopDrawerOpen) ? (
+              <MenuOpenIcon />
+            ) : (
               <MenuIcon />
-            </IconButton>
-          )}
+            )}
+          </IconButton>
 
           <Typography
             variant="h6"
@@ -173,7 +221,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Stack direction="row" spacing={2} alignItems="center">
             <IconButton color="inherit">
               <Badge badgeContent={3} color="error">
-                <Notifications />
+                <Notifications sx={{ fontSize: 20 }} />
               </Badge>
             </IconButton>
 
@@ -212,14 +260,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuItem onClick={() => { navigate('/profile'); handleCloseUserMenu(); }}>
               <ListItemIcon>
-                <Person fontSize="small" />
+                <Person sx={{ fontSize: 20 }} />
               </ListItemIcon>
               Profile
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
-                <Logout fontSize="small" />
+                <Logout sx={{ fontSize: 20 }} />
               </ListItemIcon>
               Logout
             </MenuItem>
@@ -227,15 +275,25 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Toolbar>
       </AppBar>
 
+      {/* Desktop Drawer */}
       {!isMobile && (
         <Drawer
           variant="permanent"
           sx={{
-            width: 240,
+            width: drawerWidth,
             flexShrink: 0,
+            transition: theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
             '& .MuiDrawer-paper': {
-              width: 240,
+              width: drawerWidth,
               boxSizing: 'border-box',
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+              overflowX: 'hidden',
             },
           }}
         >
@@ -243,6 +301,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Drawer>
       )}
 
+      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -269,6 +328,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           p: 0,
           minHeight: 'calc(100vh - 64px)',
           mt: '64px',
+          ml: isMobile ? 0 : 0, // Remove left margin as drawer is now collapsible
+          transition: theme.transitions.create('margin', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
         }}
       >
         {children}

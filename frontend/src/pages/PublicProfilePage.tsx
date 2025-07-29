@@ -131,6 +131,7 @@ export const PublicProfilePage: React.FC = () => {
         setLoading(true);
         const profileData = await profileService.getPublicProfile(userId);
         setProfile(profileData);
+        console.log(profileData)
       } catch (err: any) {
         setError(err.message || 'Failed to load profile');
       } finally {
@@ -304,7 +305,7 @@ export const PublicProfilePage: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Header */}
-      <Box
+      {/* <Box
         sx={{
           background: `linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 50%, #4ECDC4 100%)`,
           color: 'white',
@@ -329,7 +330,7 @@ export const PublicProfilePage: React.FC = () => {
             </Stack>
           </Stack>
         </Container>
-      </Box>
+      </Box> */}
 
       {/* Cover Image Section */}
       <Box
