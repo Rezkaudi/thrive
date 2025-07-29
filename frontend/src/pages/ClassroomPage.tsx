@@ -1,4 +1,4 @@
-// frontend/src/pages/ClassroomPage.tsx - Enhanced version with subscription logic
+// frontend/src/pages/ClassroomPage.tsx - Enhanced version with menu toggle and small icons
 import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
@@ -29,6 +29,7 @@ import {
   Alert,
   Avatar,
   Tooltip,
+  Collapse,
 } from "@mui/material";
 import {
   PlayCircle,
@@ -49,6 +50,10 @@ import {
   AccessTime,
   TrendingUp,
   AutoAwesome,
+  ExpandLess,
+  ExpandMore,
+  ChevronLeft,
+  ChevronRight,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -130,6 +135,26 @@ const getCourseColors = (courseType: string) => {
     gradientColors[courseType as keyof typeof gradientColors] ||
     gradientColors.JAPAN_IN_CONTEXT
   );
+};
+
+// Helper function to get lesson type icon
+const getLessonTypeIcon = (lessonType: string, size: "small" | "medium" = "medium") => {
+  const iconSize = size === "small" ? 18 : 24;
+  
+  switch (lessonType) {
+    case "VIDEO":
+      return <VideoLibrary sx={{ fontSize: iconSize }} />;
+    case "PDF":
+      return <PictureAsPdf sx={{ fontSize: iconSize }} />;
+    case "QUIZ":
+      return <QuizIcon sx={{ fontSize: iconSize }} />;
+    case "SLIDES":
+      return <Slideshow sx={{ fontSize: iconSize }} />;
+    case "KEYWORDS":
+      return <Translate sx={{ fontSize: iconSize }} />;
+    default:
+      return <School sx={{ fontSize: iconSize }} />;
+  }
 };
 
 const CourseCard = ({
@@ -405,7 +430,7 @@ const CourseCard = ({
                     size="small"
                     color={isCompleted ? "success" : "primary"}
                     variant={isCompleted ? "filled" : "outlined"}
-                    icon={isCompleted ? <Star /> : <AccessTime />}
+                    icon={isCompleted ? <Star sx={{ fontSize: 16 }} /> : <AccessTime sx={{ fontSize: 16 }} />}
                   />
                 </Stack>
                 <Button
@@ -581,6 +606,8 @@ export const ClassroomPage: React.FC = () => {
   const [hasSubscription, setHasSubscription] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [progressExpanded, setProgressExpanded] = useState(true);
   const dispatch = useDispatch<AppDispatch>();
 
   // Get dynamic colors based on selected course
@@ -796,103 +823,233 @@ export const ClassroomPage: React.FC = () => {
 
     return (
       <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        {/* Header */}
-        <Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
+        {/* Header with collapse toggle */}
+        <Box sx={{ 
+          p: sidebarCollapsed ? 1 : 2, 
+          borderBottom: "1px solid", 
+          borderColor: "divider",
+          transition: 'padding 0.3s ease-in-out'
+        }}>
           <Stack
-            direction="row"
+            direction={sidebarCollapsed ? "column" : "row"}
             justifyContent="space-between"
             alignItems="center"
-            mb={2}
+            spacing={sidebarCollapsed ? 1 : 0}
+            mb={sidebarCollapsed ? 0 : 1}
           >
-            <Typography variant="h6" fontWeight={700}>
-              {selectedCourse?.title || "Select a Course"}
-            </Typography>
-            {isMobile && (
-              <IconButton onClick={() => setDrawerOpen(false)}>
-                <Close />
-              </IconButton>
+            {/* Course Avatar/Icon for collapsed state */}
+            {sidebarCollapsed && selectedCourse && (
+              <Tooltip title={selectedCourse.title} placement="right" arrow>
+                <Avatar
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                    fontSize: '1.2rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                      boxShadow: `0 4px 12px ${selectedCourseColors.primary}40`
+                    }
+                  }}
+                  onClick={() => setSidebarCollapsed(false)}
+                >
+                  {selectedCourse.icon}
+                </Avatar>
+              </Tooltip>
             )}
+
+            {!sidebarCollapsed && (
+              <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1.1rem' }}>
+                {selectedCourse?.title || "Select a Course"}
+              </Typography>
+            )}
+
+            <Stack direction={sidebarCollapsed ? "column" : "row"} spacing={0.5}>
+              {!isMobile && (
+                <Tooltip 
+                  title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"} 
+                  placement={sidebarCollapsed ? "right" : "top"}
+                  arrow
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    sx={{
+                      bgcolor: selectedCourseColors.primary + '20',
+                      color: selectedCourseColors.primary,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        bgcolor: selectedCourseColors.primary + '30',
+                        transform: 'scale(1.05)',
+                      }
+                    }}
+                  >
+                    {sidebarCollapsed ? <ChevronRight /> : <ChevronLeft />}
+                  </IconButton>
+                </Tooltip>
+              )}
+              {isMobile && (
+                <IconButton size="small" onClick={() => setDrawerOpen(false)}>
+                  <Close />
+                </IconButton>
+              )}
+            </Stack>
           </Stack>
 
-          {/* Enhanced Course Progress with dynamic colors */}
-          {selectedCourse &&
-            isEnrolled(selectedCourse.id) &&
-            currentProgress && (
+          {/* Collapsed Progress Indicator */}
+          {sidebarCollapsed && selectedCourse && isEnrolled(selectedCourse.id) && currentProgress && (
+            <Tooltip 
+              title={`${currentProgress.completionPercentage}% Complete (${currentProgress.completedLessons}/${currentProgress.totalLessons})`}
+              placement="right"
+              arrow
+            >
               <Paper
                 elevation={0}
                 sx={{
-                  p: 3,
+                  p: 1,
+                  marginTop: "10px",
+                  borderRadius: 2,
                   background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
-                  borderRadius: 3,
                   color: "white",
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                    boxShadow: `0 4px 12px ${selectedCourseColors.primary}40`
+                  }
                 }}
+                onClick={() => setSidebarCollapsed(false)}
               >
-                <Stack spacing={2}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Course Progress
-                    </Typography>
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <TrendingUp sx={{ fontSize: 18 }} />
-                      <Typography variant="h6" fontWeight={700}>
-                        {currentProgress.completionPercentage}%
-                      </Typography>
-                    </Stack>
-                  </Stack>
-
-                  <Box sx={{ position: "relative" }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={currentProgress.completionPercentage}
+                <Stack alignItems="center" spacing={0.5}>
+                  <TrendingUp sx={{ fontSize: 16 }} />
+                  <Typography variant="caption" fontWeight={700} sx={{ fontSize: '0.7rem' }}>
+                    {currentProgress.completionPercentage}%
+                  </Typography>
+                  <Box sx={{ width: '100%', height: 3, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.3)' }}>
+                    <Box
                       sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        bgcolor: "rgba(255,255,255,0.2)",
-                        "& .MuiLinearProgress-bar": {
-                          bgcolor: "white",
-                          borderRadius: 4,
-                        },
+                        width: `${currentProgress.completionPercentage}%`,
+                        height: '100%',
+                        borderRadius: 1.5,
+                        bgcolor: 'white',
+                        transition: 'width 0.3s ease-in-out'
                       }}
                     />
                   </Box>
+                </Stack>
+              </Paper>
+            </Tooltip>
+          )}
 
+          {/* Expanded Course Progress */}
+          {selectedCourse &&
+            isEnrolled(selectedCourse.id) &&
+            currentProgress && !sidebarCollapsed && (
+              <Paper
+                elevation={0}
+                sx={{
+                  overflow: 'hidden',
+                  borderRadius: 3,
+                  background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                  color: "white",
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.1)'
+                    },
+                  }}
+                  onClick={() => setProgressExpanded(!progressExpanded)}
+                >
                   <Stack
                     direction="row"
                     justifyContent="space-between"
                     alignItems="center"
                   >
                     <Stack direction="row" alignItems="center" spacing={1}>
-                      <CheckCircle sx={{ fontSize: 18 }} />
+                      <TrendingUp sx={{ fontSize: 18 }} />
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                        {currentProgress.completedLessons} completed
+                        Progress
                       </Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
-                      <School sx={{ fontSize: 18 }} />
-                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                        {currentProgress.totalLessons} total
+                      <Typography variant="h6" fontWeight={700}>
+                        {currentProgress.completionPercentage}%
                       </Typography>
+                      <Box
+                        sx={{
+                          transition: 'transform 0.2s ease-in-out',
+                          transform: progressExpanded ? 'rotate(0deg)' : 'rotate(-90deg)'
+                        }}
+                      >
+                        <ExpandLess />
+                      </Box>
                     </Stack>
                   </Stack>
-                </Stack>
+                </Box>
+
+                <Collapse in={progressExpanded}>
+                  <Box sx={{ px: 2, pb: 2 }}>
+                    <Box sx={{ position: "relative", mb: 2 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={currentProgress.completionPercentage}
+                        sx={{
+                          height: 8,
+                          borderRadius: 4,
+                          bgcolor: "rgba(255,255,255,0.2)",
+                          "& .MuiLinearProgress-bar": {
+                            bgcolor: "white",
+                            borderRadius: 4,
+                            transition: 'width 0.3s ease-in-out'
+                          },
+                        }}
+                      />
+                    </Box>
+
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <CheckCircle sx={{ fontSize: 16 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                          {currentProgress.completedLessons} done
+                        </Typography>
+                      </Stack>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <School sx={{ fontSize: 16 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                          {currentProgress.totalLessons} total
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </Box>
+                </Collapse>
               </Paper>
             )}
         </Box>
 
         {/* Lessons List */}
-        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
+        <Box sx={{ flexGrow: 1, overflowY: "auto", p: sidebarCollapsed ? 0.5 : 2  }}>
           {lessonLoading ? (
-            <Stack spacing={2}>
+            <Stack spacing={sidebarCollapsed ? 1 : 2}>
               {[1, 2, 3, 4, 5].map((i) => (
                 <Skeleton
                   key={i}
                   variant="rectangular"
-                  height={72}
-                  sx={{ borderRadius: 2 }}
+                  height={sidebarCollapsed ? 48 : 72}
+                  sx={{ 
+                    borderRadius: sidebarCollapsed ? 3 : 2,
+                    mx: sidebarCollapsed ? 0.5 : 0
+                  }}
                 />
               ))}
             </Stack>
@@ -911,162 +1068,303 @@ export const ClassroomPage: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <ListItem disablePadding sx={{ mb: 1 }}>
-                      <ListItemButton
-                        selected={isSelected}
-                        disabled={isDisabled}
-                        onClick={() => {
-                          if (!isDisabled && !lesson.isLocked) {
-                            setSelectedLesson(lesson);
-                          } else if (lesson.lockReason === 'Subscribe to unlock') {
-                            navigate("/subscription");
+                    <ListItem 
+                      disablePadding 
+                      sx={{ 
+                        mb: sidebarCollapsed ? 0.5 : 1,
+                        px: sidebarCollapsed ? 0.5 : 0
+                      }}
+                    >
+                      <Tooltip 
+                        title={sidebarCollapsed ? (
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {lesson.title}
+                            </Typography>
+                            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                              {lesson.lessonType.charAt(0) + lesson.lessonType.slice(1).toLowerCase()}
+                              {lesson.pointsReward > 0 && ` • +${lesson.pointsReward} pts`}
+                            </Typography>
+                            {lesson.isLocked && (
+                              <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+                                {lesson.lockReason}
+                              </Typography>
+                            )}
+                          </Box>
+                        ) : ""} 
+                        placement="right"
+                        arrow
+                        PopperProps={{
+                          sx: {
+                            '& .MuiTooltip-tooltip': {
+                              bgcolor: 'grey.900',
+                              color: 'white',
+                              fontSize: '0.75rem',
+                              maxWidth: 200
+                            }
                           }
-                        }}
-                        sx={{
-                          borderRadius: 3,
-                          opacity: lesson.isLocked ? 0.7 : 1,
-                          minHeight: 72,
-                          transition: "all 0.2s ease-in-out",
-                          position: 'relative',
-                          overflow: 'hidden',
-                          "&.Mui-selected": {
-                            background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
-                            color: "white",
-                            "&:hover": {
-                              background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
-                            },
-                            "& .MuiListItemIcon-root": {
-                              color: "white",
-                            },
-                          },
-                          "&:hover:not(.Mui-selected)": lesson.lockReason === 'Subscribe to unlock' ? {
-                            bgcolor: "action.hover",
-                            cursor: 'pointer',
-                          } : {
-                            bgcolor: "action.hover",
-                          },
                         }}
                       >
-                        {lesson.lockReason === 'Subscribe to unlock' && (
-                          <Box
-                            sx={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              background: 'rgba(255, 255, 255, 0.1)',
-                              backdropFilter: 'blur(2px)',
-                              zIndex: 1,
-                            }}
-                          />
-                        )}
-
-                        <ListItemIcon sx={{ minWidth: 40, zIndex: 2 }}>
-                          {lesson.isCompleted ? (
-                            <CheckCircle
-                              color={isSelected ? "inherit" : "success"}
-                              sx={{ fontSize: 24 }}
-                            />
-                          ) : lesson.isLocked ? (
-                            <Lock color="disabled" sx={{ fontSize: 24 }} />
-                          ) : !isEnrolled(selectedCourse?.id || "") ? (
-                            <Lock color="disabled" sx={{ fontSize: 24 }} />
-                          ) : lesson.lessonType === "VIDEO" ? (
-                            <VideoLibrary
-                              color={isSelected ? "inherit" : "action"}
-                              sx={{ fontSize: 24 }}
-                            />
-                          ) : lesson.lessonType === "PDF" ? (
-                            <PictureAsPdf
-                              color={isSelected ? "inherit" : "action"}
-                              sx={{ fontSize: 24 }}
-                            />
-                          ) : lesson.lessonType === "QUIZ" ? (
-                            <QuizIcon
-                              color={isSelected ? "inherit" : "action"}
-                              sx={{ fontSize: 24 }}
-                            />
-                          ) : lesson.lessonType === "SLIDES" ? (
-                            <Slideshow
-                              color={isSelected ? "inherit" : "action"}
-                              sx={{ fontSize: 24 }}
-                            />
-                          ) : (
-                            <Translate
-                              color={isSelected ? "inherit" : "action"}
-                              sx={{ fontSize: 24 }}
+                        <ListItemButton
+                          selected={isSelected}
+                          disabled={isDisabled}
+                          onClick={() => {
+                            if (!isDisabled && !lesson.isLocked) {
+                              setSelectedLesson(lesson);
+                            } else if (lesson.lockReason === 'Subscribe to unlock') {
+                              navigate("/subscription");
+                            }
+                          }}
+                          sx={{
+                            borderRadius: sidebarCollapsed ? 3 : 2,
+                            opacity: lesson.isLocked ? 0.7 : 1,
+                            minHeight: sidebarCollapsed ? 48 : 72,
+                            px: sidebarCollapsed ? 1 : 2,
+                            py: sidebarCollapsed ? 1 : 1.5,
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            position: 'relative',
+                            overflow: 'hidden',
+                            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                            
+                            "&.Mui-selected": {
+                              background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                              color: "white",
+                              transform: sidebarCollapsed ? 'scale(1.05)' : 'translateX(4px)',
+                              boxShadow: sidebarCollapsed 
+                                ? `0 4px 12px ${selectedCourseColors.primary}40`
+                                : `4px 0 12px ${selectedCourseColors.primary}30`,
+                              "&:hover": {
+                                background: `linear-gradient(135deg, ${selectedCourseColors.primary} 0%, ${selectedCourseColors.secondary} 100%)`,
+                                transform: sidebarCollapsed ? 'scale(1.08)' : 'translateX(6px)',
+                              },
+                              "& .MuiListItemIcon-root": {
+                                color: "white",
+                              },
+                              
+                              // Glowing border effect for collapsed selected items
+                              ...(sidebarCollapsed && {
+                                '&::before': {
+                                  content: '""',
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  borderRadius: 3,
+                                  border: `2px solid ${selectedCourseColors.primary}60`,
+                                  pointerEvents: 'none',
+                                }
+                              })
+                            },
+                            
+                            "&:hover:not(.Mui-selected)": lesson.lockReason === 'Subscribe to unlock' ? {
+                              bgcolor: "action.hover",
+                              cursor: 'pointer',
+                              transform: sidebarCollapsed ? 'scale(1.02)' : 'translateX(2px)',
+                            } : {
+                              bgcolor: "action.hover",
+                              transform: sidebarCollapsed ? 'scale(1.02)' : 'translateX(2px)',
+                            },
+                            
+                            // Lesson number indicator for collapsed state
+                            ...(sidebarCollapsed && {
+                              '&::after': {
+                                content: `"${lesson.order}"`,
+                                position: 'absolute',
+                                top: 2,
+                                right: 2,
+                                fontSize: '0.6rem',
+                                fontWeight: 700,
+                                color: isSelected ? 'rgba(255,255,255,0.7)' : 'text.secondary',
+                                backgroundColor: isSelected ? 'rgba(255,255,255,0.1)' : 'action.hover',
+                                borderRadius: '50%',
+                                width: 16,
+                                height: 16,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                lineHeight: 1,
+                              }
+                            })
+                          }}
+                        >
+                          {lesson.lockReason === 'Subscribe to unlock' && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(2px)',
+                                zIndex: 1,
+                              }}
                             />
                           )}
-                        </ListItemIcon>
 
-                        <ListItemText
-                          sx={{ zIndex: 2 }}
-                          primary={
-                            <Stack
-                              direction="row"
-                              alignItems="center"
-                              spacing={1}
-                              flexWrap="wrap"
-                            >
-                              <Typography
-                                variant="body1"
-                                fontWeight={isSelected ? 600 : 500}
-                                sx={{ flexGrow: 1 }}
-                              >
-                                {lesson.title}
-                              </Typography>
-                              {lesson.isLocked && (
-                                <Chip
-                                  size="small"
-                                  label={lesson.lockReason === 'Subscribe to unlock' ? 'Pro' : 'Locked'}
-                                  icon={lesson.lockReason === 'Subscribe to unlock' ? <LockOutlined /> : undefined}
-                                  sx={{
-                                    height: 20,
-                                    fontSize: "0.65rem",
-                                    bgcolor: lesson.lockReason === 'Subscribe to unlock' ? 'primary.main' : 'grey.300',
-                                    color: lesson.lockReason === 'Subscribe to unlock' ? 'white' : 'grey.600',
-                                  }}
-                                />
-                              )}
-                              {lesson.pointsReward > 0 && !lesson.isLocked && (
-                                <Chip
-                                  size="small"
-                                  icon={
-                                    <EmojiEvents
-                                      sx={{ fontSize: "14px !important" }}
+                          <ListItemIcon sx={{ 
+                            minWidth: sidebarCollapsed ? 0 : 40, 
+                            zIndex: 2,
+                            justifyContent: 'center',
+                            position: 'relative'
+                          }}>
+                            {lesson.isCompleted ? (
+                              <CheckCircle
+                                color={isSelected ? "inherit" : "success"}
+                                sx={{ 
+                                  fontSize: sidebarCollapsed ? 22 : 24,
+                                  filter: sidebarCollapsed && isSelected ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' : 'none'
+                                }}
+                              />
+                            ) : lesson.isLocked ? (
+                              <Lock 
+                                color="disabled" 
+                                sx={{ 
+                                  fontSize: sidebarCollapsed ? 20 : 24,
+                                  filter: sidebarCollapsed ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' : 'none'
+                                }}
+                              />
+                            ) : !isEnrolled(selectedCourse?.id || "") ? (
+                              <Lock 
+                                color="disabled" 
+                                sx={{ 
+                                  fontSize: sidebarCollapsed ? 20 : 24,
+                                  filter: sidebarCollapsed ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' : 'none'
+                                }}
+                              />
+                            ) : (
+                              <Box sx={{ 
+                                color: isSelected ? "inherit" : "action.active",
+                                filter: sidebarCollapsed && isSelected ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' : 'none'
+                              }}>
+                                {getLessonTypeIcon(lesson.lessonType, sidebarCollapsed ? "small" : "medium")}
+                              </Box>
+                            )}
+                            
+                            {/* Completion indicator dot for collapsed state */}
+                            {sidebarCollapsed && lesson.isCompleted && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  top: -2,
+                                  right: -2,
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: '50%',
+                                  bgcolor: 'success.main',
+                                  border: '2px solid white',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}
+                              />
+                            )}
+                            
+                            {/* Points indicator for collapsed state */}
+                            {sidebarCollapsed && lesson.pointsReward > 0 && !lesson.isLocked && !lesson.isCompleted && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  bottom: -2,
+                                  right: -2,
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: '50%',
+                                  bgcolor: selectedCourseColors.primary,
+                                  border: '2px solid white',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}
+                              />
+                            )}
+                          </ListItemIcon>
+
+                          {!sidebarCollapsed && (
+                            <ListItemText
+                              sx={{ zIndex: 2 }}
+                              primary={
+                                <Stack
+                                  direction="row"
+                                  alignItems="center"
+                                  spacing={1}
+                                  flexWrap="wrap"
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={isSelected ? 600 : 500}
+                                    sx={{ 
+                                      flexGrow: 1,
+                                      lineHeight: 1.3,
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: "vertical",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {lesson.title}
+                                  </Typography>
+                                  {lesson.isLocked && (
+                                    <Chip
+                                      size="small"
+                                      label={lesson.lockReason === 'Subscribe to unlock' ? 'Pro' : 'Locked'}
+                                      icon={lesson.lockReason === 'Subscribe to unlock' ? 
+                                        <LockOutlined sx={{ fontSize: '12px !important' }} /> : undefined
+                                      }
+                                      sx={{
+                                        height: 18,
+                                        fontSize: "0.6rem",
+                                        bgcolor: lesson.lockReason === 'Subscribe to unlock' ? 'primary.main' : 'grey.300',
+                                        color: lesson.lockReason === 'Subscribe to unlock' ? 'white' : 'grey.600',
+                                        '& .MuiChip-label': {
+                                          px: 1
+                                        }
+                                      }}
                                     />
-                                  }
-                                  label={`+${lesson.pointsReward}`}
-                                  sx={{
-                                    height: 20,
-                                    fontSize: "0.65rem",
-                                    bgcolor: isSelected
-                                      ? "rgba(255,255,255,0.2)"
-                                      : `${selectedCourseColors.primary}20`,
-                                    color: isSelected
-                                      ? "inherit"
-                                      : selectedCourseColors.primary,
+                                  )}
+                                  {lesson.pointsReward > 0 && !lesson.isLocked && (
+                                    <Chip
+                                      size="small"
+                                      icon={
+                                        <EmojiEvents
+                                          sx={{ fontSize: "12px !important" }}
+                                        />
+                                      }
+                                      label={`+${lesson.pointsReward}`}
+                                      sx={{
+                                        height: 18,
+                                        fontSize: "0.6rem",
+                                        bgcolor: isSelected
+                                          ? "rgba(255,255,255,0.2)"
+                                          : `${selectedCourseColors.primary}20`,
+                                        color: isSelected
+                                          ? "inherit"
+                                          : selectedCourseColors.primary,
+                                        '& .MuiChip-label': {
+                                          px: 1
+                                        }
+                                      }}
+                                    />
+                                  )}
+                                </Stack>
+                              }
+                              secondary={
+                                <Typography
+                                  variant="caption"
+                                  color={isSelected ? "inherit" : "text.secondary"}
+                                  sx={{ 
+                                    opacity: isSelected ? 0.8 : 0.7,
+                                    fontSize: '0.7rem'
                                   }}
-                                />
-                              )}
-                            </Stack>
-                          }
-                          secondary={
-                            <Typography
-                              variant="caption"
-                              color={isSelected ? "inherit" : "text.secondary"}
-                              sx={{ opacity: isSelected ? 0.8 : 0.7 }}
-                            >
-                              {lesson.isLocked
-                                ? lesson.lockReason || "Complete previous lesson to unlock"
-                                : `Lesson ${lesson.order} • ${lesson.lessonType.charAt(0) +
-                                lesson.lessonType.slice(1).toLowerCase()
-                                }`}
-                            </Typography>
-                          }
-                        />
-                      </ListItemButton>
+                                >
+                                  {lesson.isLocked
+                                    ? lesson.lockReason || "Complete previous lesson"
+                                    : `Lesson ${lesson.order} • ${lesson.lessonType.charAt(0) +
+                                    lesson.lessonType.slice(1).toLowerCase()
+                                    }`}
+                                </Typography>
+                              }
+                            />
+                          )}
+                        </ListItemButton>
+                      </Tooltip>
                     </ListItem>
                   </motion.div>
                 );
@@ -1336,28 +1634,37 @@ export const ClassroomPage: React.FC = () => {
         <Paper
           elevation={2}
           sx={{
-            width: 380,
+            width: sidebarCollapsed ? 80 : 380,
             borderRadius: 0,
             borderRight: "1px solid",
             borderColor: "divider",
             overflowY: "auto",
+            transition: 'width 0.3s ease-in-out',
           }}
         >
-          <Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
             <Button
               startIcon={<ArrowBack />}
               onClick={() => {
                 setSelectedCourse(null);
                 setLessons([]);
                 setSelectedLesson(null);
+                setSidebarCollapsed(false);
               }}
               sx={{
                 borderRadius: 2,
                 textTransform: "none",
                 fontWeight: 500,
+                ...(sidebarCollapsed && {
+                  minWidth: 'auto',
+                  px: 1,
+                  '& .MuiButton-startIcon': {
+                    mr: 0
+                  }
+                })
               }}
             >
-              Back to Courses
+              {!sidebarCollapsed && "Back to Courses"}
             </Button>
           </Box>
           <LessonSidebar />
@@ -1399,9 +1706,22 @@ export const ClassroomPage: React.FC = () => {
       <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
         <Container maxWidth="lg" sx={{ py: 4 }}>
           {isMobile && (
-            <IconButton onClick={() => setDrawerOpen(true)} sx={{ mb: 3 }}>
-              <MenuIcon />
-            </IconButton>
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+              <IconButton 
+                onClick={() => setDrawerOpen(true)} 
+                sx={{ 
+                  bgcolor: 'action.hover',
+                  '&:hover': {
+                    bgcolor: 'action.selected'
+                  }
+                }}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Typography variant="h6" fontWeight={600}>
+                {selectedCourse?.title}
+              </Typography>
+            </Stack>
           )}
 
           {selectedLesson ? (
@@ -1436,19 +1756,7 @@ export const ClassroomPage: React.FC = () => {
                       flexWrap="wrap"
                     >
                       <Chip
-                        icon={
-                          selectedLesson.lessonType === "VIDEO" ? (
-                            <VideoLibrary />
-                          ) : selectedLesson.lessonType === "PDF" ? (
-                            <PictureAsPdf />
-                          ) : selectedLesson.lessonType === "QUIZ" ? (
-                            <QuizIcon />
-                          ) : selectedLesson.lessonType === "SLIDES" ? (
-                            <Slideshow />
-                          ) : (
-                            <Translate />
-                          )
-                        }
+                        icon={getLessonTypeIcon(selectedLesson.lessonType)}
                         label={
                           selectedLesson.lessonType === "VIDEO"
                             ? "Video Lesson"
