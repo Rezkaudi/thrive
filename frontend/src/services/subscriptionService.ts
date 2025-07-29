@@ -3,7 +3,9 @@ import api from './api';
 
 export interface SubscriptionStatus {
     hasActiveSubscription: boolean;
+    hasTrailingSubscription: boolean;
     hasAccessToCourse: boolean;
+    status: string | null
     subscriptions: {
         id: string;
         plan: string;
@@ -38,11 +40,14 @@ export const subscriptionService = {
         return response.data;
     },
 
-    // async cancelSubscription(subscriptionId: string): Promise<void> {
-    //     await api.post(`/subscriptions/${subscriptionId}/cancel`);
-    // },
+    async createCustomerPortal(): Promise<any> {
+        const response = await api.get(`/payment/create-customer-portal`);
+        return response.data;
 
-    // async reactivateSubscription(subscriptionId: string): Promise<void> {
-    //     await api.post(`/subscriptions/${subscriptionId}/reactivate`);
-    // },
+    },
+
+    async endTrial(): Promise<void> {
+        const response = await api.post(`/payment/end-trial`);
+        return response.data;
+    },
 };

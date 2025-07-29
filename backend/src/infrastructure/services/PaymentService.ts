@@ -84,6 +84,9 @@ export class PaymentService implements IPaymentService {
       // locale: "ja",
       metadata: params.metadata,
       customer_email: params.metadata.email,
+      subscription_data: {
+        trial_end: 2 * 24 * 60 * 60 + 60 + Math.floor(Date.now() / 1000)
+      }
     });
 
     return session;
@@ -137,4 +140,35 @@ export class PaymentService implements IPaymentService {
       return null;
     }
   }
+
+  async createCustomerPortalSession(customerId: string, returnUrl: string): Promise<Stripe.BillingPortal.Session | undefined> {
+
+    try {
+      const session = await this.stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+      });
+      return session;
+
+    } catch (error) {
+      console.log("error", error)
+    }
+
+  }
+
+  async cancelTrialAndActivatePayment(subscriptionId: string): Promise<Stripe.Subscription | null> {
+    try {
+      const updatedSubscription = await this.stripe.subscriptions.update(subscriptionId, {
+        trial_end: 'now',
+        proration_behavior: 'create_prorations', // Optional: adjust billing for unused trial time
+      });
+
+      return updatedSubscription;
+    } catch (error) {
+      console.error('Error ending trial:', error);
+      return null;
+    }
+  }
+
+
 }

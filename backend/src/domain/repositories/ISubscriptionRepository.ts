@@ -6,8 +6,11 @@ export interface ISubscriptionRepository {
     findById(id: string): Promise<Subscription | null>;
     findByUserId(userId: string): Promise<Subscription[]>;
     findActiveByUserId(userId: string): Promise<Subscription[]>;
+    findByTrailingUserId(userId: string): Promise<Subscription[]>;
     findByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription | null>;
     findByStripeCustomerId(stripeCustomerId: string): Promise<Subscription[]>;
     update(subscription: Subscription): Promise<Subscription>;
     delete(id: string): Promise<boolean>;
 }
+
+

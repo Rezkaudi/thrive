@@ -43,22 +43,22 @@ interface PlanOption {
 }
 
 const plans: PlanOption[] = [
-    {
-        id: 'one-time',
-        name: 'Japan in Context Premiere',
-        price: 220000,
-        currency: '¥',
-        period: 'one-time',
-        stripePriceId: process.env.REACT_APP_STRIPE_ONE_TIME_PRICE_ID || 'price_one-time',
-        features: [
-            { title: 'Thrive in Japan Platform', included: true },
-            { title: 'Speaking Sessions', included: false },
-            { title: '"Japan in Context" Curriculum', included: true },
-            { title: '"JLPT in Context" Curriculum', included: false },
-            { title: 'Access to Exclusive Events and Meet Ups', included: true },
-            { title: '1-on-1 JCT Certified Personal Coaching', included: true },
-        ],
-    },
+    // {
+    //     id: 'one-time',
+    //     name: 'Japan in Context Premiere',
+    //     price: 220000,
+    //     currency: '¥',
+    //     period: 'one-time',
+    //     stripePriceId: process.env.REACT_APP_STRIPE_ONE_TIME_PRICE_ID || 'price_one-time',
+    //     features: [
+    //         { title: 'Thrive in Japan Platform', included: true },
+    //         { title: 'Speaking Sessions', included: false },
+    //         { title: '"Japan in Context" Curriculum', included: true },
+    //         { title: '"JLPT in Context" Curriculum', included: false },
+    //         { title: 'Access to Exclusive Events and Meet Ups', included: true },
+    //         { title: '1-on-1 JCT Certified Personal Coaching', included: true },
+    //     ],
+    // },
     {
         id: 'monthly',
         name: 'Monthly Subscription',
@@ -303,13 +303,15 @@ export const SubscriptionPage: React.FC = () => {
                                     position: 'relative',
                                     overflow: 'visible',
                                     borderRadius: "20px",
-                                    border: plan.recommended ? '2px solid' : 'none',
                                     borderColor: 'primary.main',
-                                    boxShadow: plan.recommended ? 8 : 2,
+                                    border: 'none',
+                                    boxShadow: 2,
+                                    // border: plan.recommended ? '2px solid' : 'none',
+                                    // boxShadow: plan.recommended ? 8 : 2,
                                 }}
                             >
                                 {/* Recommended Badge */}
-                                {plan.recommended && (
+                                {/* {plan.recommended && (
                                     <motion.div
                                         // initial={{ scale: 0 }}
                                         // animate={{ scale: 1 }}
@@ -330,7 +332,7 @@ export const SubscriptionPage: React.FC = () => {
                                             }}
                                         />
                                     </motion.div>
-                                )}
+                                )} */}
 
                                 {/* Plan Header */}
                                 <Box
@@ -444,7 +446,7 @@ export const SubscriptionPage: React.FC = () => {
                                         {loading && selectedPlan === plan.id ? (
                                             <CircularProgress size={24} color="inherit" />
                                         ) : (
-                                            'Enroll Now'
+                                            '14-Day Free Trial'
                                         )}
                                     </Button>
                                 </CardContent>

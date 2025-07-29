@@ -58,8 +58,8 @@ import { KeywordFlashcards } from "../components/classroom/KeywordFlashcards";
 import { Quiz } from "../components/classroom/Quiz";
 import { InteractiveSlides } from "../components/classroom/InteractiveSlides";
 import { fetchDashboardData } from "../store/slices/dashboardSlice";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../store/store";
 
 interface Course {
   id: string;
@@ -578,9 +578,9 @@ export const ClassroomPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [lessonLoading, setLessonLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasSubscription, setHasSubscription] = useState(false);
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const { hasActiveSubscription } = useSelector((state: RootState) => state.auth);
+
   const dispatch = useDispatch<AppDispatch>();
 
   // Get dynamic colors based on selected course
@@ -590,27 +590,14 @@ export const ClassroomPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    checkSubscriptionStatus();
   }, []);
 
   useEffect(() => {
     if (selectedCourse) {
       fetchLessons(selectedCourse.id);
     }
-  }, [selectedCourse, hasSubscription]);
+  }, [selectedCourse]);
 
-  const checkSubscriptionStatus = async () => {
-    try {
-      setCheckingSubscription(true);
-      const response = await subscriptionService.checkSubscriptionStatus();
-      setHasSubscription(response.hasActiveSubscription);
-    } catch (error) {
-      console.error("Failed to check subscription:", error);
-      setHasSubscription(false);
-    } finally {
-      setCheckingSubscription(false);
-    }
-  };
 
   const fetchData = async () => {
     try {
@@ -760,7 +747,7 @@ export const ClassroomPage: React.FC = () => {
       let isLocked = false;
       let lockReason = '';
 
-      if (hasSubscription) {
+      if (hasActiveSubscription) {
         // If user has subscription, only lock if previous lesson isn't completed
         if (index > 0) {
           const previousLesson = sortedLessons[index - 1];
@@ -1079,7 +1066,7 @@ export const ClassroomPage: React.FC = () => {
   };
 
   // Loading state with improved skeletons
-  if (loading || checkingSubscription) {
+  if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Stack spacing={4}>

@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store, RootState, AppDispatch } from './store/store';
 import { theme } from './theme/theme';
-import { checkAuth } from './store/slices/authSlice';
+import { chackPayment, checkAuth } from './store/slices/authSlice';
 import { CircularProgress, Box } from '@mui/material';
 
 // Pages
@@ -52,6 +52,7 @@ function AppContent() {
   useEffect(() => {
     // Check auth status on app load
     dispatch(checkAuth());
+    dispatch(chackPayment());
     dispatch(fetchDashboardData());
   }, [dispatch]);
 
@@ -91,18 +92,14 @@ function AppContent() {
         <Route
           path="/subscription"
           element={
-            <ProtectedRoute>
-              <SubscriptionPage />
-            </ProtectedRoute>
+            <SubscriptionPage />
           }
         />
 
         <Route
           path="/subscription/success"
           element={
-            <ProtectedRoute>
-              <SubscriptionSuccessPage />
-            </ProtectedRoute>
+            <SubscriptionSuccessPage />
           }
         />
 
@@ -110,6 +107,7 @@ function AppContent() {
           path="/login"
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
         />
+
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 

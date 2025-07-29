@@ -13,11 +13,15 @@ export class PaymentController {
   private paymentRepository: PaymentRepository;
   private userRepository: UserRepository;
   private paymentService: PaymentService;
+  private subscriptionRepository: SubscriptionRepository;
+
 
   constructor() {
     this.paymentRepository = new PaymentRepository();
     this.userRepository = new UserRepository();
     this.paymentService = new PaymentService();
+    this.subscriptionRepository = new SubscriptionRepository();
+
   }
 
   createPaymentIntent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -349,5 +353,66 @@ export class PaymentController {
 
   private generatePaymentId(): string {
     return `pay_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  endTrial = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    const userId = req.user!.userId
+    if (!userId) {
+      res.status(400).json({ error: 'User Not Found' });
+      return;
+    }
+
+    try {
+      const subscription = await this.subscriptionRepository.findByUserId(userId)
+      const subscriptionId = subscription[0].stripeSubscriptionId
+
+      if (!subscriptionId) {
+        res.status(400).json({ error: 'subscriptionId Not Found' });
+        return;
+      }
+
+
+      const data = await this.paymentService.cancelTrialAndActivatePayment(subscriptionId);
+
+      if (!data) {
+        res.status(500).json({ error: 'Failed to cancel trial' });
+        return;
+      }
+
+      res.status(200).json({ message: 'Trial ended and payment activated', data });
+    }
+    catch (error) {
+      next(error);
+    }
+  }
+
+  createCustomerPortal = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+
+    const userId = req.user!.userId
+    if (!userId) {
+      res.status(400).json({ error: 'User Not Found' });
+      return;
+    }
+    try {
+      const subscription = await this.subscriptionRepository.findByUserId(userId)
+      const stripeCustomerId = subscription[0].stripeCustomerId
+
+      if (!stripeCustomerId) {
+        res.status(400).json({ error: 'stripeCustomerId Not Found' });
+        return;
+      }
+
+      const session = await this.paymentService.createCustomerPortalSession(stripeCustomerId, `${process.env.FRONTEND_URL}/dashboard`);
+
+      if (!session) {
+        res.status(500).json({ error: 'Failed to createCustomerPortalSession' });
+        return;
+      }
+
+      res.status(200).json({ message: 'Create Customer Portal Session  Succsessfull', session });
+    }
+    catch (error) {
+      next(error);
+    }
   }
 }

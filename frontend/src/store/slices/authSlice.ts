@@ -1,6 +1,9 @@
 // frontend/src/store/slices/authSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+
 import { authService } from '../../services/authService';
+import { subscriptionService } from '../../services/subscriptionService';
+
 
 interface User {
   id: string;
@@ -12,6 +15,9 @@ interface AuthState {
   user: User | null;
   csrfToken: string | null;
   isAuthenticated: boolean;
+  hasActiveSubscription: boolean;
+  hasTrailingSubscription: boolean;
+  status: string | null,
   loading: boolean;
   authChecking: boolean;
   error: string | null;
@@ -22,6 +28,9 @@ const initialState: AuthState = {
   csrfToken: null,
   isAuthenticated: false,
   loading: false,
+  hasActiveSubscription: false,
+  hasTrailingSubscription: false,
+  status: null,
   authChecking: true,
   error: null,
 };
@@ -54,6 +63,11 @@ export const checkAuth = createAsyncThunk('auth/checkAuth', async () => {
 
 export const refreshToken = createAsyncThunk('auth/refresh', async () => {
   const response = await authService.refresh();
+  return response;
+});
+
+export const chackPayment = createAsyncThunk('subscriptions/check', async () => {
+  const response = await subscriptionService.checkSubscriptionStatus();
   return response;
 });
 
@@ -118,7 +132,22 @@ const authSlice = createSlice({
       .addCase(refreshToken.fulfilled, (state, action) => {
         state.csrfToken = action.payload.csrfToken;
         state.user = action.payload.user;
-      });
+      })
+      // Check Subscription
+      .addCase(chackPayment.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(chackPayment.fulfilled, (state, action) => {
+        state.loading = false;
+        state.status = action.payload.status;
+        state.hasActiveSubscription = action.payload.hasActiveSubscription;
+        state.hasTrailingSubscription = action.payload.hasTrailingSubscription;
+      })
+      .addCase(chackPayment.rejected, (state) => {
+        state.loading = false;
+        state.hasActiveSubscription = false
+        state.hasTrailingSubscription = false
+      })
   },
 });
 

@@ -56,8 +56,8 @@ import {
   isToday,
 } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSelector } from "react-redux";
-import { RootState } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../store/store";
 import {
   calendarService,
   CalendarSession,
@@ -65,6 +65,8 @@ import {
   BookingEligibility,
 } from "../services/calendarService";
 import { useSweetAlert } from "../utils/sweetAlert";
+import { subscriptionService } from "../services/subscriptionService";
+import { chackPayment } from "../store/slices/authSlice";
 
 export const CalendarPage: React.FC = () => {
   const { showConfirm, showError } = useSweetAlert();
@@ -72,6 +74,9 @@ export const CalendarPage: React.FC = () => {
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingStart, setLoadingStart] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+
   const [bookingDialog, setBookingDialog] = useState<CalendarSession | null>(
     null
   );
@@ -88,7 +93,7 @@ export const CalendarPage: React.FC = () => {
   });
 
   const profile = useSelector((state: RootState) => state.profile.data);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { user, status } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     fetchCalendarData();
@@ -146,6 +151,23 @@ export const CalendarPage: React.FC = () => {
       showError("Error", "Failed to book session");
     }
   };
+
+  const handleSubscription = async () => {
+    setLoadingStart(true);
+    try {
+      await subscriptionService.endTrial();
+      await dispatch(chackPayment());
+      setSnackbar({
+        open: true,
+        message: "Starting Subscription successfully!",
+        severity: "success"
+      });
+    } catch (error) {
+      console.error('Error starting subscription:', error);
+    } finally {
+      setLoadingStart(false);
+    }
+  }
 
   const handleCancelBooking = async (booking: Booking) => {
     const result = await showConfirm({
@@ -380,8 +402,8 @@ export const CalendarPage: React.FC = () => {
                     {isPast
                       ? "Session Ended"
                       : isFull
-                      ? "Session Full"
-                      : "Book Session"}
+                        ? "Session Full"
+                        : "Book Session"}
                   </Button>
                 )}
               </Stack>
@@ -490,15 +512,15 @@ export const CalendarPage: React.FC = () => {
                           bgcolor: isSelected
                             ? "primary.main"
                             : isCurrentDay
-                            ? "primary.light"
-                            : "background.paper",
+                              ? "primary.light"
+                              : "background.paper",
                           color: isSelected
                             ? "white"
                             : isCurrentDay
-                            ? "primary.contrastText"
-                            : isCurrentMonth
-                            ? "text.primary"
-                            : "text.disabled",
+                              ? "primary.contrastText"
+                              : isCurrentMonth
+                                ? "text.primary"
+                                : "text.disabled",
                           border: hasBooking ? "2px solid" : "1px solid",
                           borderColor: hasBooking ? "primary.main" : "divider",
                           opacity: isCurrentMonth ? 1 : 0.5,
@@ -506,8 +528,8 @@ export const CalendarPage: React.FC = () => {
                             bgcolor: isSelected
                               ? "primary.dark"
                               : isCurrentDay
-                              ? "primary.main"
-                              : "action.hover",
+                                ? "primary.main"
+                                : "action.hover",
                             transform: "scale(1.02)",
                           },
                           transition: "all 0.2s ease-in-out",
@@ -546,8 +568,8 @@ export const CalendarPage: React.FC = () => {
                                       ? "white"
                                       : "primary.main"
                                     : isSelected
-                                    ? "white"
-                                    : "secondary.main",
+                                      ? "white"
+                                      : "secondary.main",
                                 opacity: 0.8,
                               }}
                             />
@@ -745,7 +767,7 @@ export const CalendarPage: React.FC = () => {
               </Typography>
             </Stack>
 
-            {eligibility && !eligibility.canBook && (
+            {status === "active" && eligibility && !eligibility.canBook && (
               <Alert severity="warning">
                 <Typography variant="body2" fontWeight={600} gutterBottom>
                   Cannot book this session:
@@ -760,22 +782,37 @@ export const CalendarPage: React.FC = () => {
               </Alert>
             )}
 
-            {eligibility?.canBook && (
+            {status === "active" && eligibility?.canBook && (
               <Alert severity="success">
                 You're eligible to book this session!
+              </Alert>
+            )}
+
+            {status !== "active" && (
+              <Alert severity="warning">
+                Subscribe to access this Booking
               </Alert>
             )}
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBookingDialog(null)}>Cancel</Button>
-          <Button
+          {status === "active" ? <Button
             variant="contained"
             onClick={handleBookSession}
             disabled={!eligibility?.canBook}
           >
             Confirm Booking
-          </Button>
+          </Button> :
+            <Button
+              variant="contained"
+              onClick={handleSubscription}
+              disabled={loadingStart}
+              startIcon={loadingStart && <CircularProgress size={20} />}
+            >
+              Subscripe Now
+            </Button>
+          }
         </DialogActions>
       </Dialog>
 

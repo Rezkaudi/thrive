@@ -8,6 +8,8 @@ export interface CheckUserSubscriptionDTO {
 
 export interface SubscriptionStatusResponse {
     hasActiveSubscription: boolean;
+    hasTrailingSubscription: boolean;
+    status: string | null
     subscriptions: Array<{
         id: string;
         plan: string;
@@ -31,12 +33,20 @@ export class CheckUserSubscriptionUseCase {
 
         // Get all active subscriptions for the user
         const activeSubscriptions = await this.subscriptionRepository.findActiveByUserId(dto.userId);
+        const trailingSubscriptions = await this.subscriptionRepository.findByUserId(dto.userId);
+
+        console.log(activeSubscriptions)
+        console.log(trailingSubscriptions)
 
         // Check if user has any active subscription
-        const hasActiveSubscription = activeSubscriptions.length > 0;
+        const hasActiveSubscription = user.role === "ADMIN" ? true : activeSubscriptions.length > 0;
+        const hasTrailingSubscription = user.role === "ADMIN" ? true : trailingSubscriptions.length > 0;
+        const status = user.role === "ADMIN" ? "active" : trailingSubscriptions ? trailingSubscriptions[0]?.status : null
 
         return {
             hasActiveSubscription,
+            hasTrailingSubscription,
+            status,
             subscriptions: activeSubscriptions.map(sub => ({
                 id: sub.id,
                 plan: sub.subscriptionPlan,

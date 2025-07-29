@@ -111,10 +111,9 @@ export class HandleSubscriptionWebhookUseCase {
     }
 
     private async handleSubscriptionCreated(stripeSubscription: Stripe.Subscription): Promise<void> {
-        console.log('🔔 Processing customer.subscription.created:', stripeSubscription);
+        console.log('🔔test Processing customer.subscription.created:', stripeSubscription);
 
         const email = await this.getEmailFromCustomer(stripeSubscription.customer as string);
-
         if (!email) {
             console.error('❌ Missing email in subscription metadata');
             return;
@@ -155,6 +154,7 @@ export class HandleSubscriptionWebhookUseCase {
 
         await this.subscriptionRepository.create(subscription);
         console.log('✅ Subscription created:', subscription.id);
+
     }
 
     private async getEmailFromCustomer(customerId: string): Promise<string | null> {
@@ -168,7 +168,7 @@ export class HandleSubscriptionWebhookUseCase {
     }
 
     private async handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription): Promise<void> {
-        console.log('🔄 Processing customer.subscription.updated:', stripeSubscription.id);
+        console.log('🔄 Processing customer.subscription.updated:', stripeSubscription);
 
         const subscription = await this.subscriptionRepository.findByStripeSubscriptionId(stripeSubscription.id);
         if (!subscription) {

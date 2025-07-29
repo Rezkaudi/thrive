@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { login, clearError } from '../store/slices/authSlice';
+import { login, clearError, chackPayment } from '../store/slices/authSlice';
 import { AppDispatch, RootState } from '../store/store';
 
 export const LoginPage: React.FC = () => {
@@ -37,6 +37,7 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const result = await dispatch(login(formData));
+    await dispatch(chackPayment());
     if (login.fulfilled.match(result)) {
       navigate('/dashboard');
     }
@@ -51,7 +52,7 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/profile');
+      navigate('/dashboard');
     }
     dispatch(clearError());
   }, [isAuthenticated, navigate, dispatch]);
