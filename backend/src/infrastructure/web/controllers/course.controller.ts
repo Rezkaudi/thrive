@@ -18,7 +18,7 @@ export class CourseController {
       const courseRepository = new CourseRepository();
       const getOnlyActive = req.user?.role !== "ADMIN" ? true : undefined
 
-      const courses = await courseRepository.findAll(getOnlyActive);
+      const courses = await courseRepository.findAllWithLessonCounts(getOnlyActive);
       res.json(courses);
     } catch (error) {
       next(error);

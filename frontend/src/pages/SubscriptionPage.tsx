@@ -211,7 +211,7 @@ export const SubscriptionPage: React.FC = () => {
             <Container maxWidth="xl">
                 <Button
                     startIcon={<ArrowBack />}
-                    onClick={() => navigate('/classroom')}
+                    onClick={() => navigate('/')}
                     sx={{
                         mb: 3,
                         '&:hover': {
@@ -219,7 +219,7 @@ export const SubscriptionPage: React.FC = () => {
                         },
                     }}
                 >
-                    Back to Classroom
+                    Back to Home
                 </Button>
 
                 {/* Header Section */}

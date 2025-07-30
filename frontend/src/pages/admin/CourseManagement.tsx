@@ -264,7 +264,7 @@ export const CourseManagement: React.FC = () => {
       setLessonDialog(false);
       resetLessonForm();
     }
-  }, [selectedCourse,]);
+  }, [selectedCourse]);
 
   const fetchCourses = async () => {
     try {
@@ -396,6 +396,7 @@ export const CourseManagement: React.FC = () => {
       setLessonDialog(false);
       resetLessonForm();
       fetchLessons(selectedCourse!.id);
+      fetchCourses()
     } catch (error) {
       console.error("Failed to save lesson:", error);
       alert("Failed to save lesson. Please try again.");

@@ -29,6 +29,21 @@ export class CourseRepository implements ICourseRepository {
     return entities.map(e => this.toDomain(e));
   }
 
+  async findAllWithLessonCounts(isActive?: boolean): Promise<(Course & { lessonCount: number })[]> {
+    const where = isActive !== undefined ? { isActive } : {};
+
+    const entities = await this.repository.find({
+      where,
+      order: { createdAt: 'ASC' },
+      relations: ['lessons'] // Include lessons in the result
+    });
+
+    return entities.map(e => ({
+      ...this.toDomain(e),
+      lessonCount: e.lessons?.length || 0
+    }));
+  }
+
   async update(course: Course): Promise<Course> {
     const entity = this.toEntity(course);
     const saved = await this.repository.save(entity);
