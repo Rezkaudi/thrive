@@ -157,7 +157,10 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
                 {content.subtitle}
               </Typography>
             )}
-            <Typography variant="body1" sx={{ mt: 3, fontSize: '1.2rem', lineHeight: 1.8 }}>
+            <Typography
+              variant="body1"
+              sx={{ mt: 3, fontSize: '1.2rem', lineHeight: 1.8, whiteSpace: 'pre-line' }}
+            >
               {content.content}
             </Typography>
           </Box>
