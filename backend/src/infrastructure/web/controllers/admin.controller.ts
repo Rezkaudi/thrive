@@ -329,15 +329,15 @@ export class AdminController {
 
   async createSession(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { 
-        title, 
-        description, 
-        type, 
-        hostId, 
-        meetingUrl, 
-        scheduledAt, 
-        duration, 
-        maxParticipants, 
+      const {
+        title,
+        description,
+        type,
+        hostId,
+        meetingUrl,
+        scheduledAt,
+        duration,
+        maxParticipants,
         pointsRequired,
         isRecurring,
         recurringWeeks
@@ -422,7 +422,7 @@ export class AdminController {
       // If updating a recurring session parent, ask if user wants to update all
       if (session.isRecurring && !session.recurringParentId && updates.updateAllRecurring) {
         const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.id);
-        
+
         // Update parent session
         Object.assign(session, updates);
         session.updatedAt = new Date();
@@ -446,7 +446,7 @@ export class AdminController {
           await sessionRepository.update(recurringSession);
         }
 
-        res.json({ 
+        res.json({
           message: `Updated ${allRecurringSessions.length + 1} sessions in the recurring series`,
           updatedCount: allRecurringSessions.length + 1
         });
@@ -480,11 +480,11 @@ export class AdminController {
       if (session.isRecurring && !session.recurringParentId && deleteAllRecurring === 'true') {
         // Delete all recurring sessions first
         await sessionRepository.deleteByRecurringParentId(session.id);
-        
+
         // Delete parent session
         await sessionRepository.delete(sessionId);
 
-        res.json({ 
+        res.json({
           message: 'Deleted entire recurring session series',
           deletedRecurringSeries: true
         });
@@ -505,26 +505,26 @@ export class AdminController {
 
   async getSessionsWithPagination(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        type, 
-        isActive, 
-        isRecurring 
+      const {
+        page = 1,
+        limit = 10,
+        type,
+        isActive,
+        isRecurring
       } = req.query;
 
       const sessionRepository = new SessionRepository();
-      
+
       const pageNum = Number(page);
       const limitNum = Number(limit);
       const offset = (pageNum - 1) * limitNum;
 
       const filters: any = {};
-      
+
       if (type && (type === 'SPEAKING' || type === 'EVENT')) {
         filters.type = type;
       }
-      
+
       if (isActive !== undefined) {
         filters.isActive = isActive === 'true';
       }
@@ -576,9 +576,9 @@ export class AdminController {
     try {
       const { sessionId } = req.params;
       const sessionRepository = new SessionRepository();
-      
+
       const session = await sessionRepository.findById(sessionId);
-      
+
       if (!session) {
         res.status(404).json({ error: 'Session not found' });
         return;
@@ -594,12 +594,12 @@ export class AdminController {
       }
 
       let recurringDetails;
-      
+
       if (session.recurringParentId) {
         // This is a child session, get parent and all siblings
         const parentSession = await sessionRepository.findById(session.recurringParentId);
         const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.recurringParentId);
-        
+
         recurringDetails = {
           parentSession,
           allSessions: [parentSession, ...allRecurringSessions].filter(Boolean),
@@ -609,7 +609,7 @@ export class AdminController {
       } else {
         // This is the parent session
         const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.id);
-        
+
         recurringDetails = {
           parentSession: session,
           allSessions: [session, ...allRecurringSessions],
@@ -647,7 +647,7 @@ export class AdminController {
 
       // For now, we'll estimate active users as 70% of total users
       // In a real implementation, you'd track last login dates
-      const activeUsers = Math.floor(totalUsers * 0.7);
+      const activeUsers = allUsers.filter(item => item.isActive).length
 
       // Calculate user growth (new users in last 30 days vs previous 30 days)
       const recentUsers = allUsers.filter(user =>
@@ -665,7 +665,7 @@ export class AdminController {
         : 0;
 
       // Calculate completion rate
-      let totalCompletionRate = 68; // Default fallback
+      let totalCompletionRate = 0; // Default fallback
       try {
         // Get all progress records and calculate average completion
         const allProfiles = await profileRepository.findAll();
@@ -750,8 +750,11 @@ export class AdminController {
         monthlyRevenue,
         completionRate: totalCompletionRate,
         userGrowth,
-        revenueGrowth
+        revenueGrowth,
+        pendingReviews: 0
       };
+
+
 
       res.json(analyticsData);
     } catch (error) {
@@ -764,7 +767,8 @@ export class AdminController {
         monthlyRevenue: 623500,
         completionRate: 68,
         userGrowth: 15,
-        revenueGrowth: 12
+        revenueGrowth: 12,
+        pendingReviews: 0
       };
 
       res.json(fallbackData);

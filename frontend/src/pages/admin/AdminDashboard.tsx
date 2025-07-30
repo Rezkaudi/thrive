@@ -36,6 +36,7 @@ interface DashboardStats {
   completionRate: number;
   userGrowth: number;
   revenueGrowth: number;
+  pendingReviews: number
 }
 
 const StatCard = ({ icon, title, value, subtitle, trend, color, onClick }: any) => (
@@ -107,6 +108,7 @@ export const AdminDashboard: React.FC = () => {
     completionRate: 0,
     userGrowth: 0,
     revenueGrowth: 0,
+    pendingReviews: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -230,7 +232,7 @@ export const AdminDashboard: React.FC = () => {
           <StatCard
             icon={<Warning />}
             title="Pending Reviews"
-            value="12"
+            value={`${stats.pendingReviews}`}
             subtitle="Flagged content"
             color="#FFA502"
             onClick={() => navigate('/admin/community')}
@@ -322,7 +324,7 @@ export const AdminDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }}>
+        {/* <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -351,7 +353,7 @@ export const AdminDashboard: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
-        </Grid>
+        </Grid> */}
       </Grid>
     </Container>
   );

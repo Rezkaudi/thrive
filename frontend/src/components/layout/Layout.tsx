@@ -219,17 +219,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Typography>
 
           <Stack direction="row" spacing={2} alignItems="center">
-            <IconButton color="inherit">
+            {/* <IconButton color="inherit">
               <Badge badgeContent={3} color="error">
                 <Notifications sx={{ fontSize: 20 }} />
               </Badge>
-            </IconButton>
+            </IconButton> */}
 
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar 
+                <Avatar
                   src={profilePhoto || undefined}
-                  sx={{ 
+                  sx={{
                     bgcolor: 'primary.main',
                     width: 40,
                     height: 40,
