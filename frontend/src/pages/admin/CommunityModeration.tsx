@@ -213,8 +213,17 @@ export const CommunityModeration: React.FC = () => {
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="start">
             <Stack direction="row" spacing={2}>
-              <Avatar sx={{ bgcolor: 'primary.main' }}>
-                {post.author?.name?.[0] || 'U'}
+              <Avatar
+                src={post.author?.avatar || undefined}
+                sx={{
+                  bgcolor: 'primary.main',
+                  width: 40,
+                  height: 40,
+                  border: '2px solid',
+                  borderColor: 'primary.light',
+                }}
+              >
+                {!post.author?.avatar && (post.author?.name?.[0] || post.author?.email[0].toUpperCase())}
               </Avatar>
               <Box>
                 <Stack direction="row" alignItems="center" spacing={1}>
@@ -229,7 +238,11 @@ export const CommunityModeration: React.FC = () => {
                   )}
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  {post.author?.email} • {new Date(post.createdAt).toLocaleString()}
+                  {post.author?.email} • {new Date(post.createdAt).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit'
+                  })} {new Date(post.createdAt).toLocaleTimeString("en-US", {minute: "2-digit", hour: "2-digit"})}
                 </Typography>
               </Box>
             </Stack>

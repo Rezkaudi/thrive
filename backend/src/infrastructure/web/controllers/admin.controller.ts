@@ -956,7 +956,8 @@ export class AdminController {
 
       const createPostUseCase = new CreatePostUseCase(
         new PostRepository(),
-        new UserRepository()
+        new UserRepository(),
+        new ProfileRepository()
       );
 
       const post = await createPostUseCase.execute({

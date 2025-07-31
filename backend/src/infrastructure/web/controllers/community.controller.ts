@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { CreatePostUseCase } from '../../../application/use-cases/community/CreatePostUseCase';
 import { PostRepository } from '../../database/repositories/PostRepository';
 import { UserRepository } from '../../database/repositories/UserRepository';
+import { ProfileRepository } from '../../database/repositories/ProfileRepository';
 
 export class CommunityController {
   async createPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -11,7 +12,8 @@ export class CommunityController {
 
       const createPostUseCase = new CreatePostUseCase(
         new PostRepository(),
-        new UserRepository()
+        new UserRepository(),
+        new ProfileRepository()
       );
 
       const post = await createPostUseCase.execute({
