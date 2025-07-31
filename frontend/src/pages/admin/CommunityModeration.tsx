@@ -182,16 +182,7 @@ export const CommunityModeration: React.FC = () => {
       showError('Validation Error', 'Please enter announcement content');
       return;
     }
-
-    const result = await showConfirm({
-      title: 'Create Announcement',
-      text: 'Are you sure you want to post this announcement to the community?',
-      icon: 'question',
-      confirmButtonText: 'Yes, post it',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (result.isConfirmed) {
+    
       try {
         await api.post('/admin/announcements', { content: announcementContent });
         setSnackbar({
@@ -206,7 +197,7 @@ export const CommunityModeration: React.FC = () => {
         console.error('Failed to create announcement:', error);
         showError('Error', 'Failed to create announcement');
       }
-    }
+    
   };
 
   const filteredPosts = posts.filter(post =>
