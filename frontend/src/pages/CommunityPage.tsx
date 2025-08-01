@@ -266,8 +266,20 @@ const PostCard = ({
             </Badge>
             <Box flexGrow={1}>
               <Stack direction="row" alignItems="center" spacing={1}>
-                <Link to={`/profile/${post.author?.userId}`} target='_blank' style={{textDecoration: 'none', color: "#2D3436"}}>
-                  <Typography variant="subtitle1" fontWeight={600}>
+                <Link 
+                  to={`/profile/${post.author?.userId}`} 
+                  target='_blank' 
+                  style={{textDecoration: 'none'}}
+                  
+                >
+                  <Typography variant="subtitle1" fontWeight={600}
+                  sx={{
+                    color: "#2D3436",
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
+                    transition: 'color 0.2s ease-in-out',
+                  }}>
                     {post.author?.name || 'Unknown User'}
                   </Typography>
                 </Link>
