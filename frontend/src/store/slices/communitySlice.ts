@@ -62,6 +62,11 @@ export const toggleLike = createAsyncThunk(
   }
 );
 
+export const deletePost = createAsyncThunk(`community/deletePost`, async (postId: string) => {
+  const response = await api.delete(`community/posts/${postId}`);
+  return { ...response.data }
+})
+
 const communitySlice = createSlice({
   name: 'community',
   initialState,
@@ -99,7 +104,13 @@ const communitySlice = createSlice({
           state.posts[postIndex].likesCount = action.payload.likesCount;
           state.posts[postIndex].isLiked = action.payload.isLiked;
         }
-      });
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        // Remove the deleted post from the posts array
+        state.posts = state.posts.filter(post => post.id !== action.meta.arg);
+        // Decrease the total posts count
+        state.totalPosts = Math.max(0, state.totalPosts - 1);
+      })
   },
 });
 

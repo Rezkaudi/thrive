@@ -19,6 +19,15 @@ import {
   Badge,
   CircularProgress,
   Alert,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
 import {
   ThumbUp,
@@ -28,14 +37,27 @@ import {
   VideoCall,
   Campaign,
   TrendingUp,
+  MoreVert,
+  Edit,
+  Delete,
+  Report,
+  Save,
+  Cancel,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
-import { fetchPosts, createPost, toggleLike } from '../store/slices/communitySlice';
+import { 
+  fetchPosts, 
+  createPost, 
+  toggleLike,
+  deletePost, 
+  // updatePost, 
+  // deletePost, 
+  // reportPost 
+} from '../store/slices/communitySlice';
 import { Link } from 'react-router-dom';
 
-// Use the Post type from your Redux state or make level optional
 interface ComponentPost {
   id: string;
   author?: {
@@ -43,7 +65,7 @@ interface ComponentPost {
     name: string;
     email: string;
     avatar: string;
-    level?: number; // Make level optional
+    level?: number;
   };
   content: string;
   mediaUrls: string[];
@@ -74,137 +96,351 @@ const formatPostTime = (timeString: string) : string => {
 
 const PostCard = ({ 
   post, 
-  onToggleLike 
+  onToggleLike,
+  onEdit,
+  onDelete,
+  onReport,
+  currentUserId
 }: { 
   post: ComponentPost;
   onToggleLike: (postId: string) => void;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    layout
-  >
-    <Card
-      sx={{
-        mb: 3,
-        ...(post.isAnnouncement && {
-          border: '2px solid',
-          borderColor: 'primary.main',
-        }),
-      }}
+  onEdit: (postId: string, newContent: string) => void;
+  onDelete: (postId: string) => void;
+  onReport: (postId: string, reason: string) => void;
+  currentUserId?: string;
+}) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+
+  const menuOpen = Boolean(anchorEl);
+  const isOwnPost = currentUserId === post.author?.userId;
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditContent(post.content);
+    handleMenuClose();
+  };
+
+  const handleSaveEdit = () => {
+    if (editContent.trim() && editContent !== post.content) {
+      onEdit(post.id, editContent);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditContent(post.content);
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDeleteConfirm = () => {
+    onDelete(post.id);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleReportClick = () => {
+    setReportDialogOpen(true);
+    setReportReason('');
+    handleMenuClose();
+  };
+
+  const handleReportSubmit = () => {
+    if (reportReason.trim()) {
+      onReport(post.id, reportReason);
+      setReportDialogOpen(false);
+      setReportReason('');
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      layout
     >
-      <CardContent>
-        <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
-          <Badge
-            badgeContent={post.author?.level ? `L${post.author.level}` : undefined}
-            color="primary"
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-            <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
-              {!post.author?.avatar && post.author?.name?.[0]}
-            </Avatar>
-          </Badge>
-          <Box flexGrow={1}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Link to={`/profile/${post.author?.userId}`} target='_blank' style={{textDecoration: 'none', color: "#2D3436"}}>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  {post.author?.name || 'Unknown User'}
-                </Typography>
-              </Link>
-              {post.isAnnouncement && (
-                <Chip
-                  icon={<Campaign />}
-                  label="Announcement"
-                  size="small"
-                  color="primary"
-                  />
-              )}
-            </Stack>
-            <Typography variant="caption" color="text.secondary">
-              {post.author?.email} • {formatPostDate(post.createdAt)} {formatPostTime(post.createdAt)}
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
-          {post.content}
-        </Typography>
-
-        {post.mediaUrls.length > 0 && (
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: post.mediaUrls.length === 1 ? '1fr' : 'repeat(2, 1fr)',
-              gap: 1,
-              mb: 2,
-            }}
-          >
-            {post.mediaUrls.map((url, index) => (
-              <Paper
-                key={index}
-                sx={{
-                  paddingTop: '56.25%',
-                  position: 'relative',
-                  bgcolor: 'grey.100',
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                }}
+      <Card
+        sx={{
+          mb: 3,
+          ...(post.isAnnouncement && {
+            border: '2px solid',
+            borderColor: 'primary.main',
+          }),
+        }}
+      >
+        <CardContent>
+          <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
+            <Badge
+              badgeContent={post.author?.level ? `L${post.author.level}` : undefined}
+              color="primary"
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               >
-                <Box
+              <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
+                {!post.author?.avatar && post.author?.name?.[0]}
+              </Avatar>
+            </Badge>
+            <Box flexGrow={1}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Link to={`/profile/${post.author?.userId}`} target='_blank' style={{textDecoration: 'none', color: "#2D3436"}}>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {post.author?.name || 'Unknown User'}
+                  </Typography>
+                </Link>
+                {post.isAnnouncement && (
+                  <Chip
+                    icon={<Campaign />}
+                    label="Announcement"
+                    size="small"
+                    color="primary"
+                    />
+                )}
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                {post.author?.email} • {formatPostDate(post.createdAt)} {formatPostTime(post.createdAt)}
+              </Typography>
+            </Box>
+            
+            <IconButton
+              size="small"
+              onClick={handleMenuClick}
+              sx={{ 
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'text.primary',
+                  bgcolor: 'action.hover'
+                }
+              }}
+            >
+              <MoreVert />
+            </IconButton>
+            
+            {/* Options Menu */}
+            <Menu
+              anchorEl={anchorEl}
+              open={menuOpen}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+            >
+              {isOwnPost && (
+                <MenuItem onClick={handleEdit}>
+                  <ListItemIcon>
+                    <Edit fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Edit</ListItemText>
+                </MenuItem>
+              )}
+              
+              {isOwnPost && (
+                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+                  <ListItemIcon>
+                    <Delete fontSize="small" color="error" />
+                  </ListItemIcon>
+                  <ListItemText>Delete</ListItemText>
+                </MenuItem>
+              )}
+              
+              {!isOwnPost && (
+                <MenuItem onClick={handleReportClick} sx={{ color: 'warning.main' }}>
+                  <ListItemIcon>
+                    <Report fontSize="small" color="warning" />
+                  </ListItemIcon>
+                  <ListItemText>Report</ListItemText>
+                </MenuItem>
+              )}
+            </Menu>
+          </Stack>
+
+          {/* Post Content - Editable or Display */}
+          {isEditing ? (
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                variant="outlined"
+                sx={{ mb: 2 }}
+              />
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<Save />}
+                  onClick={handleSaveEdit}
+                  disabled={!editContent.trim()}
+                >
+                  Save
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Cancel />}
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Box>
+          ) : (
+            <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+              {post.content}
+            </Typography>
+          )}
+
+          {post.mediaUrls.length > 0 && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: post.mediaUrls.length === 1 ? '1fr' : 'repeat(2, 1fr)',
+                gap: 1,
+                mb: 2,
+              }}
+            >
+              {post.mediaUrls.map((url, index) => (
+                <Paper
+                  key={index}
                   sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    paddingTop: '56.25%',
+                    position: 'relative',
+                    bgcolor: 'grey.100',
+                    borderRadius: 2,
+                    overflow: 'hidden',
                   }}
                 >
-                  <Typography variant="caption" color="text.secondary">
-                    Media {index + 1}
-                  </Typography>
-                </Box>
-              </Paper>
-            ))}
-          </Box>
-        )}
-      </CardContent>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      Media {index + 1}
+                    </Typography>
+                  </Box>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </CardContent>
 
-      <Divider />
+        <Divider />
 
-      <CardActions sx={{ px: 2 }}>
-        <Stack direction="row" spacing={2} flexGrow={1}>
-          <Button
-            startIcon={<ThumbUp />}
-            size="small"
-            color={post.isLiked ? 'primary' : 'inherit'}
-            sx={{ textTransform: 'none' }}
-            onClick={() => onToggleLike(post.id)}
-          >
-            {post.likesCount} Likes
+        <CardActions sx={{ px: 2 }}>
+          <Stack direction="row" spacing={2} flexGrow={1}>
+            <Button
+              startIcon={<ThumbUp />}
+              size="small"
+              color={post.isLiked ? 'primary' : 'inherit'}
+              sx={{ textTransform: 'none' }}
+              onClick={() => onToggleLike(post.id)}
+            >
+              {post.likesCount} Likes
+            </Button>
+            <Button
+              startIcon={<Comment />}
+              size="small"
+              sx={{ textTransform: 'none' }}
+            >
+              Comments
+            </Button>
+            <Button
+              startIcon={<Share />}
+              size="small"
+              sx={{ textTransform: 'none' }}
+            >
+              Share
+            </Button>
+          </Stack>
+        </CardActions>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Post</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this post? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
           </Button>
-          <Button
-            startIcon={<Comment />}
-            size="small"
-            sx={{ textTransform: 'none' }}
+        </DialogActions>
+      </Dialog>
+
+      {/* Report Dialog */}
+      <Dialog
+        open={reportDialogOpen}
+        onClose={() => setReportDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Report Post</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Please provide a reason for reporting this post:
+          </DialogContentText>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            placeholder="Describe why you're reporting this post..."
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReportDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleReportSubmit} 
+            color="warning" 
+            variant="contained"
+            disabled={!reportReason.trim()}
           >
-            Comments
+            Report
           </Button>
-          <Button
-            startIcon={<Share />}
-            size="small"
-            sx={{ textTransform: 'none' }}
-          >
-            Share
-          </Button>
-        </Stack>
-      </CardActions>
-    </Card>
-  </motion.div>
-);
+        </DialogActions>
+      </Dialog>
+    </motion.div>
+  );
+};
 
 export const CommunityPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -218,6 +454,7 @@ export const CommunityPage: React.FC = () => {
 
   const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto)
   const name = useSelector((state: RootState) => state.dashboard.data?.user.name)
+  const currentUserId = useSelector((state: RootState) => state.auth.user?.id)
 
   // Fetch posts when component mounts
   useEffect(() => {
@@ -240,6 +477,31 @@ export const CommunityPage: React.FC = () => {
 
   const handleToggleLike = (postId: string) => {
     dispatch(toggleLike(postId));
+  };
+
+  const handleEditPost = async (postId: string, newContent: string) => {
+    try {
+      // await dispatch(updatePost({ postId, content: newContent })).unwrap();
+    } catch (error) {
+      console.error('Failed to update post:', error);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await dispatch(deletePost(postId)).unwrap();
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+    }
+  };
+
+  const handleReportPost = async (postId: string, reason: string) => {
+    try {
+      // await dispatch(reportPost({ postId, reason })).unwrap();
+      // You might want to show a success message here
+    } catch (error) {
+      console.error('Failed to report post:', error);
+    }
   };
 
   const filteredPosts = posts.filter(post => {
@@ -322,6 +584,10 @@ export const CommunityPage: React.FC = () => {
             key={post.id} 
             post={post} 
             onToggleLike={handleToggleLike}
+            onEdit={handleEditPost}
+            onDelete={handleDeletePost}
+            onReport={handleReportPost}
+            currentUserId={currentUserId}
           />
         ))}
       </AnimatePresence>

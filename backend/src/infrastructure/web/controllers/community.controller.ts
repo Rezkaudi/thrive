@@ -35,7 +35,7 @@ export class CommunityController {
     try {
       const { page = 1, limit = 20 } = req.query;
       const postRepository = new PostRepository();
-      
+
       const offset = (Number(page) - 1) * Number(limit);
       const result = await postRepository.findAll(Number(limit), offset, req.user!.userId);
 
@@ -73,4 +73,34 @@ export class CommunityController {
       next(error);
     }
   }
+
+  async deletePost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { postId } = req.params;
+
+    const postRepository = new PostRepository();
+    const post = await postRepository.findById(postId);
+
+    if (!post) {
+      res.status(404).json({ error: "Post not found" });
+      return;
+    }
+
+    // Fix: Use post.userId instead of post.author.userId
+    if (post.author?.userId !== req.user?.userId && req.user?.role !== "ADMIN") {
+      res.status(403).json({ error: "Not authorized to delete this post" });
+      return;
+    }
+
+    const deleted = await postRepository.delete(postId);
+    if (!deleted) {
+      res.status(500).json({ error: 'Failed to delete post' });
+      return;
+    }
+
+    res.json({ message: 'Post deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
 }
