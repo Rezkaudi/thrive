@@ -37,6 +37,7 @@ export class CreatePostUseCase {
       name: profile?.name || user.email.split('@')[0] || 'Unknown User',
       email: user.email,
       avatar: profile?.profilePhoto || '',
+      level: profile?.level || 0
     };
 
     const post = new Post(
@@ -46,6 +47,7 @@ export class CreatePostUseCase {
       dto.mediaUrls || [],
       dto.isAnnouncement || false,
       0,
+      false,
       new Date(),
       new Date()
     );

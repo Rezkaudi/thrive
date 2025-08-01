@@ -1,7 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { CreatePostUseCase } from '../../../application/use-cases/community/CreatePostUseCase';
+import { ToggleLikeUseCase } from '../../../application/use-cases/community/ToggleLikeUseCase';
 import { PostRepository } from '../../database/repositories/PostRepository';
+import { PostLikeRepository } from '../../database/repositories/PostLikeRepository';
 import { UserRepository } from '../../database/repositories/UserRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
 
@@ -35,7 +37,7 @@ export class CommunityController {
       const postRepository = new PostRepository();
       
       const offset = (Number(page) - 1) * Number(limit);
-      const result = await postRepository.findAll(Number(limit), offset);
+      const result = await postRepository.findAll(Number(limit), offset, req.user!.userId);
 
       res.json({
         posts: result.posts,
@@ -48,18 +50,25 @@ export class CommunityController {
     }
   }
 
-  async likePost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  async toggleLike(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { postId } = req.params;
-      const postRepository = new PostRepository();
-      
-      const post = await postRepository.incrementLikes(postId);
-      if (!post) {
-        res.status(404).json({ error: 'Post not found' });
-        return;
-      }
 
-      res.json({ message: 'Post liked', likesCount: post.likesCount });
+      const toggleLikeUseCase = new ToggleLikeUseCase(
+        new PostRepository(),
+        new PostLikeRepository()
+      );
+
+      const result = await toggleLikeUseCase.execute({
+        userId: req.user!.userId,
+        postId
+      });
+
+      res.json({
+        message: result.isLiked ? 'Post liked' : 'Post dislike',
+        isLiked: result.isLiked,
+        likesCount: result.likesCount
+      });
     } catch (error) {
       next(error);
     }

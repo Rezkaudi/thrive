@@ -3,17 +3,19 @@ import api from '../../services/api';
 
 interface Post {
   id: string;
-  userId: string;
+  author?: {
+    userId: string;
+    name: string;
+    email: string;
+    avatar: string;
+    level: number;
+  };
   content: string;
   mediaUrls: string[];
   isAnnouncement: boolean;
   likesCount: number;
+  isLiked: boolean;
   createdAt: string;
-  updatedAt: string;
-  author?: {
-    name: string;
-    avatar: string;
-  };
 }
 
 interface CommunityState {
@@ -52,10 +54,10 @@ export const createPost = createAsyncThunk(
   }
 );
 
-export const likePost = createAsyncThunk(
-  'community/likePost',
+export const toggleLike = createAsyncThunk(
+  'community/toggleLike',
   async (postId: string) => {
-    const response = await api.post(`/community/posts/${postId}/like`);
+    const response = await api.post(`/community/posts/${postId}/toggle-like`);
     return { postId, ...response.data };
   }
 );
@@ -91,10 +93,11 @@ const communitySlice = createSlice({
         state.posts.unshift(action.payload);
         state.totalPosts++;
       })
-      .addCase(likePost.fulfilled, (state, action) => {
+      .addCase(toggleLike.fulfilled, (state, action) => {
         const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
         if (postIndex !== -1) {
           state.posts[postIndex].likesCount = action.payload.likesCount;
+          state.posts[postIndex].isLiked = action.payload.isLiked;
         }
       });
   },

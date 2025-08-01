@@ -5,16 +5,19 @@ import { UserEntity } from '../entities/User.entity';
 import { ProfileEntity } from '../entities/Profile.entity';
 import { IPostRepository } from '../../../domain/repositories/IPostRepository';
 import { Post, IAuthor } from '../../../domain/entities/Post';
+import { PostLikeRepository } from './PostLikeRepository';
 
 export class PostRepository implements IPostRepository {
   private repository: Repository<PostEntity>;
   private userRepository: Repository<UserEntity>;
   private profileRepository: Repository<ProfileEntity>;
+  private postLikeRepository: PostLikeRepository;
 
   constructor() {
     this.repository = AppDataSource.getRepository(PostEntity);
     this.userRepository = AppDataSource.getRepository(UserEntity);
     this.profileRepository = AppDataSource.getRepository(ProfileEntity);
+    this.postLikeRepository = new PostLikeRepository();
   }
 
   async create(post: Post): Promise<Post> {
@@ -23,55 +26,71 @@ export class PostRepository implements IPostRepository {
     
     // Fetch author info for the created post
     const author = await this.getAuthorInfo(saved.userId);
-    return this.toDomain(saved, author);
+    return this.toDomain(saved, author, false); // New posts are not liked by default
   }
 
-  async findById(id: string): Promise<Post | null> {
+  async findById(id: string, currentUserId?: string): Promise<Post | null> {
     const entity = await this.repository.findOne({ where: { id } });
     if (!entity) return null;
     
     const author = await this.getAuthorInfo(entity.userId);
-    return this.toDomain(entity, author);
+    const isLiked = currentUserId ? await this.checkIfLiked(id, currentUserId) : false;
+    return this.toDomain(entity, author, isLiked);
   }
 
-  async findAll(limit?: number, offset?: number): Promise<{ posts: Post[]; total: number }> {
+  async findAll(limit?: number, offset?: number, currentUserId?: string): Promise<{ posts: Post[]; total: number }> {
     const [entities, total] = await this.repository.findAndCount({
       order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,
     });
     
+    // Get liked posts for current user
+    const postIds = entities.map(e => e.id);
+    const likedPostIds = currentUserId ? 
+      await this.postLikeRepository.findLikedPostsByUser(currentUserId, postIds) : [];
+    
     // Get author info for all posts
     const posts = await Promise.all(
       entities.map(async (entity) => {
         const author = await this.getAuthorInfo(entity.userId);
-        return this.toDomain(entity, author);
+        const isLiked = likedPostIds.includes(entity.id);
+        return this.toDomain(entity, author, isLiked);
       })
     );
     
     return { posts, total };
   }
 
-  async findByUserId(userId: string): Promise<Post[]> {
+  async findByUserId(userId: string, currentUserId?: string): Promise<Post[]> {
     const entities = await this.repository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
     
+    const postIds = entities.map(e => e.id);
+    const likedPostIds = currentUserId ? 
+      await this.postLikeRepository.findLikedPostsByUser(currentUserId, postIds) : [];
+    
     const author = await this.getAuthorInfo(userId);
-    return entities.map(e => this.toDomain(e, author));
+    return entities.map(e => this.toDomain(e, author, likedPostIds.includes(e.id)));
   }
 
-  async findAnnouncements(): Promise<Post[]> {
+  async findAnnouncements(currentUserId?: string): Promise<Post[]> {
     const entities = await this.repository.find({
       where: { isAnnouncement: true },
       order: { createdAt: 'DESC' },
     });
     
+    const postIds = entities.map(e => e.id);
+    const likedPostIds = currentUserId ? 
+      await this.postLikeRepository.findLikedPostsByUser(currentUserId, postIds) : [];
+    
     const posts = await Promise.all(
       entities.map(async (entity) => {
         const author = await this.getAuthorInfo(entity.userId);
-        return this.toDomain(entity, author);
+        const isLiked = likedPostIds.includes(entity.id);
+        return this.toDomain(entity, author, isLiked);
       })
     );
     
@@ -81,7 +100,7 @@ export class PostRepository implements IPostRepository {
   async update(post: Post): Promise<Post> {
     const entity = this.toEntity(post);
     const saved = await this.repository.save(entity);
-    return this.toDomain(saved, post.author);
+    return this.toDomain(saved, post.author, post.isLiked);
   }
 
   async delete(id: string): Promise<boolean> {
@@ -99,6 +118,11 @@ export class PostRepository implements IPostRepository {
     return this.findById(id);
   }
 
+  private async checkIfLiked(postId: string, userId: string): Promise<boolean> {
+    const like = await this.postLikeRepository.findByUserAndPost(userId, postId);
+    return !!like;
+  }
+
   private async getAuthorInfo(userId: string): Promise<IAuthor> {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -109,6 +133,7 @@ export class PostRepository implements IPostRepository {
         name: profile?.name || user?.email?.split('@')[0] || 'Unknown User',
         email: user?.email || '',
         avatar: profile?.profilePhoto || '',
+        level: profile?.level || 1,
       };
     } catch (error) {
       console.error('Error fetching author info:', error);
@@ -117,11 +142,12 @@ export class PostRepository implements IPostRepository {
         name: 'Unknown User',
         email: '',
         avatar: '',
+        level: 1,
       };
     }
   }
 
-  private toDomain(entity: PostEntity, author: IAuthor): Post {
+  private toDomain(entity: PostEntity, author: IAuthor, isLiked: boolean): Post {
     return new Post(
       entity.id,
       author,
@@ -129,6 +155,7 @@ export class PostRepository implements IPostRepository {
       entity.mediaUrls.split(',').filter(url => url),
       entity.isAnnouncement,
       entity.likesCount,
+      isLiked, // Add isLiked property
       entity.createdAt,
       entity.updatedAt
     );

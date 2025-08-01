@@ -21,6 +21,6 @@ router.post(
 );
 
 router.get('/posts', communityController.getPosts);
-router.post('/posts/:postId/like', communityController.likePost);
 
+router.post('/posts/:postId/toggle-like', communityController.toggleLike);
 export { router as communityRouter };

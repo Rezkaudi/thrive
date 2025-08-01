@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -17,6 +17,8 @@ import {
   Tab,
   Divider,
   Badge,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   ThumbUp,
@@ -28,24 +30,54 @@ import {
   TrendingUp,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../store/store';
+import { fetchPosts, createPost, toggleLike } from '../store/slices/communitySlice';
 
-interface Post {
+// Use the Post type from your Redux state or make level optional
+interface ComponentPost {
   id: string;
-  author: {
+  author?: {
+    userId: string;
     name: string;
+    email: string;
     avatar: string;
-    level: number;
+    level?: number; // Make level optional
   };
   content: string;
   mediaUrls: string[];
   isAnnouncement: boolean;
   likesCount: number;
-  commentsCount: number;
   createdAt: string;
   isLiked: boolean;
 }
 
-const PostCard = ({ post }: { post: Post }) => (
+// Format date utility
+const formatPostDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
+// Format Time utility
+const formatPostTime = (timeString: string) : string => {
+  const time = new Date(timeString);
+  return time.toLocaleTimeString("en-US", {
+    minute: "2-digit",
+    hour: "2-digit"
+  })
+}
+
+const PostCard = ({ 
+  post, 
+  onToggleLike 
+}: { 
+  post: ComponentPost;
+  onToggleLike: (postId: string) => void;
+}) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -64,18 +96,18 @@ const PostCard = ({ post }: { post: Post }) => (
       <CardContent>
         <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
           <Badge
-            badgeContent={`L${post.author.level}`}
+            badgeContent={post.author?.level ? `L${post.author.level}` : undefined}
             color="primary"
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           >
-            <Avatar src={post.author.avatar} sx={{ width: 48, height: 48 }}>
-              {post.author.name[0]}
+            <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
+              {post.author?.name?.[0] || '?'}
             </Avatar>
           </Badge>
           <Box flexGrow={1}>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Typography variant="subtitle1" fontWeight={600}>
-                {post.author.name}
+                {post.author?.name || 'Unknown User'}
               </Typography>
               {post.isAnnouncement && (
                 <Chip
@@ -87,7 +119,7 @@ const PostCard = ({ post }: { post: Post }) => (
               )}
             </Stack>
             <Typography variant="caption" color="text.secondary">
-              {post.createdAt}
+              {post.author?.email} • {formatPostDate(post.createdAt)} {formatPostTime(post.createdAt)}
             </Typography>
           </Box>
         </Stack>
@@ -147,6 +179,7 @@ const PostCard = ({ post }: { post: Post }) => (
             size="small"
             color={post.isLiked ? 'primary' : 'inherit'}
             sx={{ textTransform: 'none' }}
+            onClick={() => onToggleLike(post.id)}
           >
             {post.likesCount} Likes
           </Button>
@@ -155,7 +188,7 @@ const PostCard = ({ post }: { post: Post }) => (
             size="small"
             sx={{ textTransform: 'none' }}
           >
-            {post.commentsCount} Comments
+            Comments
           </Button>
           <Button
             startIcon={<Share />}
@@ -173,47 +206,61 @@ const PostCard = ({ post }: { post: Post }) => (
 export const CommunityPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [newPost, setNewPost] = useState('');
-  const [posts] = useState<Post[]>([
-    {
-      id: '1',
-      author: { name: 'Admin', avatar: '', level: 99 },
-      content: '🎉 Welcome to our community! This is a place to share your learning journey, ask questions, and connect with fellow learners. Be respectful and supportive!',
-      mediaUrls: [],
-      isAnnouncement: true,
-      likesCount: 24,
-      commentsCount: 5,
-      createdAt: '2 hours ago',
-      isLiked: false,
-    },
-    {
-      id: '2',
-      author: { name: 'Sarah Chen', avatar: '', level: 3 },
-      content: 'Just completed my first week of lessons! The cultural context really helps understand why certain phrases are used. Anyone else finding the business etiquette section particularly interesting? 🏢',
-      mediaUrls: [],
-      isAnnouncement: false,
-      likesCount: 12,
-      commentsCount: 3,
-      createdAt: '5 hours ago',
-      isLiked: true,
-    },
-    {
-      id: '3',
-      author: { name: 'Mike Johnson', avatar: '', level: 2 },
-      content: 'Finally mastered hiragana! 🎊 Here\'s my practice sheet. What helped you remember the characters?',
-      mediaUrls: ['practice-sheet.jpg'],
-      isAnnouncement: false,
-      likesCount: 18,
-      commentsCount: 7,
-      createdAt: '1 day ago',
-      isLiked: false,
-    },
-  ]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { posts, loading, error, currentPage, totalPosts } = useSelector(
+    (state: RootState) => state.community
+  );
+
+  // Fetch posts when component mounts
+  useEffect(() => {
+    dispatch(fetchPosts({ page: 1, limit: 20 }));
+  }, [dispatch]);
+
+  const handleCreatePost = async () => {
+    if (!newPost.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      await dispatch(createPost({ content: newPost })).unwrap();
+      setNewPost('');
+    } catch (error) {
+      console.error('Failed to create post:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleLike = (postId: string) => {
+    dispatch(toggleLike(postId));
+  };
+
+  const filteredPosts = posts.filter(post => {
+    if (tabValue === 1) return post.isAnnouncement;
+    if (tabValue === 2) return post.likesCount > 15;
+    return true;
+  });
+
+  if (loading && posts.length === 0) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h3" gutterBottom fontWeight={700}>
         Community
       </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Create Post */}
       <Card sx={{ mb: 4 }}>
@@ -228,25 +275,27 @@ export const CommunityPage: React.FC = () => {
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
               variant="outlined"
+              disabled={isSubmitting}
             />
           </Stack>
         </CardContent>
         <Divider />
         <CardActions sx={{ px: 3, py: 1.5 }}>
           <Stack direction="row" spacing={1} flexGrow={1}>
-            <IconButton size="small" color="primary">
+            <IconButton size="small" color="primary" disabled={isSubmitting}>
               <PhotoCamera />
             </IconButton>
-            <IconButton size="small" color="primary">
+            <IconButton size="small" color="primary" disabled={isSubmitting}>
               <VideoCall />
             </IconButton>
           </Stack>
           <Button
             variant="contained"
-            disabled={!newPost.trim()}
+            disabled={!newPost.trim() || isSubmitting}
             sx={{ borderRadius: 8 }}
+            onClick={handleCreatePost}
           >
-            Post
+            {isSubmitting ? <CircularProgress size={20} /> : 'Post'}
           </Button>
         </CardActions>
       </Card>
@@ -260,16 +309,31 @@ export const CommunityPage: React.FC = () => {
 
       {/* Posts */}
       <AnimatePresence>
-        {posts
-          .filter(post => {
-            if (tabValue === 1) return post.isAnnouncement;
-            if (tabValue === 2) return post.likesCount > 15;
-            return true;
-          })
-          .map(post => (
-            <PostCard key={post.id} post={post} />
-          ))}
+        {filteredPosts.map(post => (
+          <PostCard 
+            key={post.id} 
+            post={post} 
+            onToggleLike={handleToggleLike}
+          />
+        ))}
       </AnimatePresence>
+
+      {filteredPosts.length === 0 && !loading && (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="h6" color="text.secondary">
+            No posts found
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Be the first to share something!
+          </Typography>
+        </Box>
+      )}
+
+      {loading && posts.length > 0 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+          <CircularProgress />
+        </Box>
+      )}
     </Container>
   );
 };
