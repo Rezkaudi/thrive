@@ -28,6 +28,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Snackbar,
+  Backdrop,
 } from '@mui/material';
 import {
   ThumbUp,
@@ -51,10 +53,9 @@ import {
   fetchPosts, 
   createPost, 
   toggleLike,
-  deletePost, 
-  // updatePost, 
-  // deletePost, 
-  // reportPost 
+  deletePost,
+  editPost,
+  clearError,
 } from '../store/slices/communitySlice';
 import { Link } from 'react-router-dom';
 
@@ -73,6 +74,8 @@ interface ComponentPost {
   likesCount: number;
   createdAt: string;
   isLiked: boolean;
+  isEditing?: boolean;
+  isDeleting?: boolean;
 }
 
 // Format date utility
@@ -86,12 +89,21 @@ const formatPostDate = (dateString: string): string => {
 };
 
 // Format Time utility
-const formatPostTime = (timeString: string) : string => {
+const formatPostTime = (timeString: string): string => {
   const time = new Date(timeString);
   return time.toLocaleTimeString("en-US", {
     minute: "2-digit",
     hour: "2-digit"
-  })
+  });
+};
+
+interface PostCardProps {
+  post: ComponentPost;
+  onToggleLike: (postId: string) => void;
+  onEdit: (postId: string, newContent: string, mediaUrls?: string[]) => void;
+  onDelete: (postId: string) => void;
+  onReport: (postId: string, reason: string) => void;
+  currentUserId?: string;
 }
 
 const PostCard = ({ 
@@ -101,23 +113,32 @@ const PostCard = ({
   onDelete,
   onReport,
   currentUserId
-}: { 
-  post: ComponentPost;
-  onToggleLike: (postId: string) => void;
-  onEdit: (postId: string, newContent: string) => void;
-  onDelete: (postId: string) => void;
-  onReport: (postId: string, reason: string) => void;
-  currentUserId?: string;
-}) => {
+}: PostCardProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
+  const [editMediaUrls, setEditMediaUrls] = useState<string[]>(post.mediaUrls);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
 
   const menuOpen = Boolean(anchorEl);
   const isOwnPost = currentUserId === post.author?.userId;
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditContent(post.content);
+      setEditMediaUrls(post.mediaUrls);
+    }
+  }, [post.content, post.mediaUrls, isEditing]);
+
+  
+  useEffect(() => {
+    if (!post.isEditing && !isEditing) {
+      setEditContent(post.content);
+      setEditMediaUrls(post.mediaUrls);
+    }
+  }, [post.isEditing, post.content, post.mediaUrls, isEditing]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -130,19 +151,30 @@ const PostCard = ({
   const handleEdit = () => {
     setIsEditing(true);
     setEditContent(post.content);
+    setEditMediaUrls(post.mediaUrls);
     handleMenuClose();
   };
 
-  const handleSaveEdit = () => {
-    if (editContent.trim() && editContent !== post.content) {
-      onEdit(post.id, editContent);
+  const handleSaveEdit = async () => {
+    if (editContent.trim() && 
+        (editContent !== post.content || 
+          JSON.stringify(editMediaUrls) !== JSON.stringify(post.mediaUrls))) {
+      
+      try {
+        await onEdit(post.id, editContent, editMediaUrls);
+        setIsEditing(false);
+      } catch (error) {
+        setEditContent(post.content);
+        setEditMediaUrls(post.mediaUrls);
+        console.error('Failed to save edit:', error);
+      }
     }
-    setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditContent(post.content);
+    setEditMediaUrls(post.mediaUrls);
   };
 
   const handleDeleteClick = () => {
@@ -150,9 +182,13 @@ const PostCard = ({
     handleMenuClose();
   };
 
-  const handleDeleteConfirm = () => {
-    onDelete(post.id);
-    setDeleteDialogOpen(false);
+  const handleDeleteConfirm = async () => {
+    try {
+      await onDelete(post.id);
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+    }
   };
 
   const handleReportClick = () => {
@@ -169,6 +205,21 @@ const PostCard = ({
     }
   };
 
+  const handleRemoveMediaUrl = (index: number) => {
+    const newUrls = editMediaUrls.filter((_, i) => i !== index);
+    setEditMediaUrls(newUrls);
+  };
+
+  const handleMediaUrlChange = (index: number, value: string) => {
+    const newUrls = [...editMediaUrls];
+    newUrls[index] = value;
+    setEditMediaUrls(newUrls);
+  };
+
+  const handleAddMediaUrl = () => {
+    setEditMediaUrls([...editMediaUrls, '']);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -179,19 +230,36 @@ const PostCard = ({
       <Card
         sx={{
           mb: 3,
+          position: 'relative',
+          opacity: post.isDeleting ? 0.5 : 1,
           ...(post.isAnnouncement && {
             border: '2px solid',
             borderColor: 'primary.main',
           }),
         }}
       >
+        {/* Loading overlay for deleting */}
+        {post.isDeleting && (
+          <Backdrop
+            sx={{ 
+              position: 'absolute', 
+              zIndex: 1, 
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              borderRadius: 1
+            }}
+            open={true}
+          >
+            <CircularProgress />
+          </Backdrop>
+        )}
+
         <CardContent>
           <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
             <Badge
               badgeContent={post.author?.level ? `L${post.author.level}` : undefined}
               color="primary"
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              >
+            >
               <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
                 {!post.author?.avatar && post.author?.name?.[0]}
               </Avatar>
@@ -209,7 +277,15 @@ const PostCard = ({
                     label="Announcement"
                     size="small"
                     color="primary"
-                    />
+                  />
+                )}
+                {(post.isEditing || isEditing) && (
+                  <Chip
+                    label="Editing..."
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                  />
                 )}
               </Stack>
               <Typography variant="caption" color="text.secondary">
@@ -220,6 +296,7 @@ const PostCard = ({
             <IconButton
               size="small"
               onClick={handleMenuClick}
+              disabled={post.isDeleting}
               sx={{ 
                 color: 'text.secondary',
                 '&:hover': {
@@ -246,7 +323,7 @@ const PostCard = ({
               }}
             >
               {isOwnPost && (
-                <MenuItem onClick={handleEdit}>
+                <MenuItem onClick={handleEdit} disabled={post.isEditing || isEditing}>
                   <ListItemIcon>
                     <Edit fontSize="small" />
                   </ListItemIcon>
@@ -255,7 +332,7 @@ const PostCard = ({
               )}
               
               {isOwnPost && (
-                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }} disabled={post.isDeleting}>
                   <ListItemIcon>
                     <Delete fontSize="small" color="error" />
                   </ListItemIcon>
@@ -285,22 +362,65 @@ const PostCard = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 variant="outlined"
                 sx={{ mb: 2 }}
+                disabled={post.isEditing}
+                placeholder="Edit your post content..."
               />
+              
+              {/* Media URLs editing */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                  Media URLs:
+                </Typography>
+                {editMediaUrls.map((url, index) => (
+                  <TextField
+                    key={index}
+                    fullWidth
+                    size="small"
+                    value={url}
+                    onChange={(e) => handleMediaUrlChange(index, e.target.value)}
+                    sx={{ mb: 1 }}
+                    disabled={post.isEditing}
+                    placeholder={`Media URL ${index + 1}`}
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveMediaUrl(index)}
+                          disabled={post.isEditing}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      )
+                    }}
+                  />
+                ))}
+                <Button
+                  size="small"
+                  onClick={handleAddMediaUrl}
+                  disabled={post.isEditing}
+                  sx={{ mt: 1 }}
+                >
+                  Add Media URL
+                </Button>
+              </Box>
+
               <Stack direction="row" spacing={1}>
                 <Button
                   size="small"
                   variant="contained"
-                  startIcon={<Save />}
+                  startIcon={post.isEditing ? <CircularProgress size={16} /> : <Save />}
                   onClick={handleSaveEdit}
-                  disabled={!editContent.trim()}
+                  disabled={!editContent.trim() || post.isEditing}
                 >
-                  Save
+                  {post.isEditing ? 'Saving...' : 'Save'}
                 </Button>
                 <Button
                   size="small"
                   variant="outlined"
                   startIcon={<Cancel />}
                   onClick={handleCancelEdit}
+                  disabled={post.isEditing}
                 >
                   Cancel
                 </Button>
@@ -312,7 +432,7 @@ const PostCard = ({
             </Typography>
           )}
 
-          {post.mediaUrls.length > 0 && (
+          {post.mediaUrls.length > 0 && !isEditing && (
             <Box
               sx={{
                 display: 'grid',
@@ -364,6 +484,7 @@ const PostCard = ({
               color={post.isLiked ? 'primary' : 'inherit'}
               sx={{ textTransform: 'none' }}
               onClick={() => onToggleLike(post.id)}
+              disabled={post.isDeleting}
             >
               {post.likesCount} Likes
             </Button>
@@ -371,6 +492,7 @@ const PostCard = ({
               startIcon={<Comment />}
               size="small"
               sx={{ textTransform: 'none' }}
+              disabled={post.isDeleting}
             >
               Comments
             </Button>
@@ -378,6 +500,7 @@ const PostCard = ({
               startIcon={<Share />}
               size="small"
               sx={{ textTransform: 'none' }}
+              disabled={post.isDeleting}
             >
               Share
             </Button>
@@ -398,8 +521,14 @@ const PostCard = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Delete
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={post.isDeleting}
+            startIcon={post.isDeleting ? <CircularProgress size={16} /> : undefined}
+          >
+            {post.isDeleting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -446,20 +575,40 @@ export const CommunityPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [newPost, setNewPost] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [snackbar, setSnackbar] = useState({ 
+    open: false, 
+    message: '', 
+    severity: 'success' as 'success' | 'error' | 'info' | 'warning' 
+  });
 
   const dispatch = useDispatch<AppDispatch>();
-  const { posts, loading, error, currentPage, totalPosts } = useSelector(
+  const { posts, loading, error, editError, deleteError, currentPage, totalPosts } = useSelector(
     (state: RootState) => state.community
   );
 
-  const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto)
-  const name = useSelector((state: RootState) => state.dashboard.data?.user.name)
-  const currentUserId = useSelector((state: RootState) => state.auth.user?.id)
+  const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
+  const name = useSelector((state: RootState) => state.dashboard.data?.user.name);
+  const currentUserId = useSelector((state: RootState) => state.auth.user?.id);
 
   // Fetch posts when component mounts
   useEffect(() => {
     dispatch(fetchPosts({ page: 1, limit: 20 }));
   }, [dispatch]);
+
+  // Handle errors with snackbar
+  useEffect(() => {
+    if (editError) {
+      setSnackbar({ open: true, message: editError, severity: 'error' });
+      dispatch(clearError());
+    }
+  }, [editError, dispatch]);
+
+  useEffect(() => {
+    if (deleteError) {
+      setSnackbar({ open: true, message: deleteError, severity: 'error' });
+      dispatch(clearError());
+    }
+  }, [deleteError, dispatch]);
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
@@ -468,8 +617,10 @@ export const CommunityPage: React.FC = () => {
     try {
       await dispatch(createPost({ content: newPost })).unwrap();
       setNewPost('');
+      setSnackbar({ open: true, message: 'Post created successfully!', severity: 'success' });
     } catch (error) {
       console.error('Failed to create post:', error);
+      setSnackbar({ open: true, message: 'Failed to create post', severity: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -479,29 +630,36 @@ export const CommunityPage: React.FC = () => {
     dispatch(toggleLike(postId));
   };
 
-  const handleEditPost = async (postId: string, newContent: string) => {
+  const handleEditPost = async (postId: string, newContent: string, mediaUrls?: string[]) => {
     try {
-      // await dispatch(updatePost({ postId, content: newContent })).unwrap();
-    } catch (error) {
-      console.error('Failed to update post:', error);
+      await dispatch(editPost({ postId, content: newContent, mediaUrls })).unwrap();
+      setSnackbar({ open: true, message: 'Post updated successfully!', severity: 'success' });
+    } catch (error: any) {
+      setSnackbar({ open: true, message: error || 'Failed to edit post', severity: 'error' });
     }
   };
 
   const handleDeletePost = async (postId: string) => {
     try {
       await dispatch(deletePost(postId)).unwrap();
-    } catch (error) {
-      console.error('Failed to delete post:', error);
+      setSnackbar({ open: true, message: 'Post deleted successfully!', severity: 'success' });
+    } catch (error: any) {
+      setSnackbar({ open: true, message: error || 'Failed to delete post', severity: 'error' });
     }
   };
 
   const handleReportPost = async (postId: string, reason: string) => {
     try {
       // await dispatch(reportPost({ postId, reason })).unwrap();
-      // You might want to show a success message here
+      setSnackbar({ open: true, message: 'Post reported successfully!', severity: 'info' });
     } catch (error) {
       console.error('Failed to report post:', error);
+      setSnackbar({ open: true, message: 'Failed to report post', severity: 'error' });
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   const filteredPosts = posts.filter(post => {
@@ -564,8 +722,9 @@ export const CommunityPage: React.FC = () => {
             disabled={!newPost.trim() || isSubmitting}
             sx={{ borderRadius: 8 }}
             onClick={handleCreatePost}
+            startIcon={isSubmitting ? <CircularProgress size={16} /> : undefined}
           >
-            {isSubmitting ? <CircularProgress size={20} /> : 'Post'}
+            {isSubmitting ? 'Posting...' : 'Post'}
           </Button>
         </CardActions>
       </Card>
@@ -608,6 +767,22 @@ export const CommunityPage: React.FC = () => {
           <CircularProgress />
         </Box>
       )}
+
+      {/* Snackbar for feedback */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

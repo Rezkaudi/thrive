@@ -75,32 +75,71 @@ export class CommunityController {
   }
 
   async deletePost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const { postId } = req.params;
+    try {
+      const { postId } = req.params;
 
-    const postRepository = new PostRepository();
-    const post = await postRepository.findById(postId);
+      const postRepository = new PostRepository();
+      const post = await postRepository.findById(postId);
 
-    if (!post) {
-      res.status(404).json({ error: "Post not found" });
-      return;
+      if (!post) {
+        res.status(404).json({ error: "Post not found" });
+        return;
+      }
+
+      // Fix: Use post.userId instead of post.author.userId
+      if (post.author?.userId !== req.user?.userId && req.user?.role !== "ADMIN") {
+        res.status(403).json({ error: "Not authorized to delete this post" });
+        return;
+      }
+
+      const deleted = await postRepository.delete(postId);
+      if (!deleted) {
+        res.status(500).json({ error: 'Failed to delete post' });
+        return;
+      }
+
+      res.json({ message: 'Post deleted successfully' });
+    } catch (error) {
+      next(error);
     }
-
-    // Fix: Use post.userId instead of post.author.userId
-    if (post.author?.userId !== req.user?.userId && req.user?.role !== "ADMIN") {
-      res.status(403).json({ error: "Not authorized to delete this post" });
-      return;
-    }
-
-    const deleted = await postRepository.delete(postId);
-    if (!deleted) {
-      res.status(500).json({ error: 'Failed to delete post' });
-      return;
-    }
-
-    res.json({ message: 'Post deleted successfully' });
-  } catch (error) {
-    next(error);
   }
-}
+
+  async editPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+
+
+    try {
+      const { postId } = req.params
+      const { content, mediaUrls } = req.body
+
+      const postRepository = new PostRepository()
+      const post = await postRepository.findById(postId);
+
+      if (!post) {
+        res.status(404).json({ error: "Post not found" })
+        return;
+      }
+
+      if (post.author.userId !== req.user?.userId && req.user?.role !== "ADMIN") {
+        res.status(403).json({ error: "Not authorized to edit this post" })
+        return;
+      }
+
+      post.content = content;
+      post.mediaUrls = mediaUrls || post.mediaUrls;
+      post.updatedAt = new Date()
+
+      const updatedPost = await postRepository.update(post)
+
+      if (!updatedPost) {
+        res.status(500).json({ error: "Failed to edit post" })
+        return;
+      }
+
+      res.json({message: "Post edited successfully"})
+
+    } catch (error) {
+      return next(error)
+    }
+
+  }
 }

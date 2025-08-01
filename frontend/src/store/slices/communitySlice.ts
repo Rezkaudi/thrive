@@ -16,6 +16,8 @@ interface Post {
   likesCount: number;
   isLiked: boolean;
   createdAt: string;
+  isEditing?: boolean;
+  isDeleting?: boolean;
 }
 
 interface CommunityState {
@@ -24,6 +26,8 @@ interface CommunityState {
   currentPage: number;
   loading: boolean;
   error: string | null;
+  editError: string | null;
+  deleteError: string | null;
 }
 
 const initialState: CommunityState = {
@@ -32,6 +36,8 @@ const initialState: CommunityState = {
   currentPage: 1,
   loading: false,
   error: null,
+  editError: null,
+  deleteError: null,
 };
 
 export const fetchPosts = createAsyncThunk(
@@ -62,10 +68,39 @@ export const toggleLike = createAsyncThunk(
   }
 );
 
-export const deletePost = createAsyncThunk(`community/deletePost`, async (postId: string) => {
-  const response = await api.delete(`community/posts/${postId}`);
-  return { ...response.data }
-})
+export const editPost = createAsyncThunk(
+  'community/editPost', 
+  async ({ postId, content, mediaUrls }: {
+    postId: string;
+    content: string;
+    mediaUrls?: string[];
+  }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/community/posts/${postId}`, { content, mediaUrls });
+      
+      return { 
+        postId, 
+        updatedPost: response.data.post || response.data,
+        content,
+        mediaUrls: mediaUrls || [],
+      };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to edit post');
+    }
+  }
+);
+
+export const deletePost = createAsyncThunk(
+  'community/deletePost', 
+  async (postId: string, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/community/posts/${postId}`);
+      return { postId, ...response.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to delete post');
+    }
+  }
+);
 
 const communitySlice = createSlice({
   name: 'community',
@@ -76,6 +111,30 @@ const communitySlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+      state.editError = null;
+      state.deleteError = null;
+    },
+    startEditPost: (state, action) => {
+      const postIndex = state.posts.findIndex(p => p.id === action.payload);
+      if (postIndex !== -1) {
+        state.posts[postIndex].isEditing = true;
+      }
+    },
+    startDeletePost: (state, action) => {
+      const postIndex = state.posts.findIndex(p => p.id === action.payload);
+      if (postIndex !== -1) {
+        state.posts[postIndex].isDeleting = true;
+      }
+    },
+    updatePostContent: (state, action) => {
+      const { postId, content, mediaUrls } = action.payload;
+      const postIndex = state.posts.findIndex(p => p.id === postId);
+      if (postIndex !== -1) {
+        state.posts[postIndex].content = content;
+        if (mediaUrls !== undefined) {
+          state.posts[postIndex].mediaUrls = mediaUrls;
+        }
+      }
     },
   },
   extraReducers: (builder) => {
@@ -105,14 +164,59 @@ const communitySlice = createSlice({
           state.posts[postIndex].isLiked = action.payload.isLiked;
         }
       })
-      .addCase(deletePost.fulfilled, (state, action) => {
-        // Remove the deleted post from the posts array
-        state.posts = state.posts.filter(post => post.id !== action.meta.arg);
-        // Decrease the total posts count
-        state.totalPosts = Math.max(0, state.totalPosts - 1);
+      .addCase(editPost.pending, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.meta.arg.postId);
+        if (postIndex !== -1) {
+          state.posts[postIndex].isEditing = true;
+        }
+        state.editError = null;
       })
+      .addCase(editPost.fulfilled, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
+        if (postIndex !== -1) {
+          const updatedPost = {
+            ...state.posts[postIndex],
+            content: action.payload.content,
+            mediaUrls: action.payload.mediaUrls,
+            isEditing: false,
+          };
+          
+          if (action.payload.updatedPost) {
+            Object.assign(updatedPost, action.payload.updatedPost);
+          }
+          
+          state.posts[postIndex] = updatedPost;
+        }
+        state.editError = null;
+      })
+      .addCase(editPost.rejected, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.meta.arg.postId);
+        if (postIndex !== -1) {
+          state.posts[postIndex].isEditing = false;
+        }
+        state.editError = action.payload as string;
+      })
+      .addCase(deletePost.pending, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.meta.arg);
+        if (postIndex !== -1) {
+          state.posts[postIndex].isDeleting = true;
+        }
+        state.deleteError = null;
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        state.posts = state.posts.filter(post => post.id !== action.payload.postId);
+        state.totalPosts = Math.max(0, state.totalPosts - 1);
+        state.deleteError = null;
+      })
+      .addCase(deletePost.rejected, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.meta.arg);
+        if (postIndex !== -1) {
+          state.posts[postIndex].isDeleting = false;
+        }
+        state.deleteError = action.payload as string;
+      });
   },
 });
 
-export const { setCurrentPage, clearError } = communitySlice.actions;
+export const { setCurrentPage, clearError, startEditPost, startDeletePost, updatePostContent } = communitySlice.actions;
 export default communitySlice.reducer;
