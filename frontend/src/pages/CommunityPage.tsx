@@ -33,6 +33,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
 import { fetchPosts, createPost, toggleLike } from '../store/slices/communitySlice';
+import { Link } from 'react-router-dom';
 
 // Use the Post type from your Redux state or make level optional
 interface ComponentPost {
@@ -99,23 +100,25 @@ const PostCard = ({
             badgeContent={post.author?.level ? `L${post.author.level}` : undefined}
             color="primary"
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          >
+            >
             <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
-              {post.author?.name?.[0] || '?'}
+              {!post.author?.avatar && post.author?.name?.[0]}
             </Avatar>
           </Badge>
           <Box flexGrow={1}>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="subtitle1" fontWeight={600}>
-                {post.author?.name || 'Unknown User'}
-              </Typography>
+              <Link to={`/profile/${post.author?.userId}`} target='_blank' style={{textDecoration: 'none', color: "#2D3436"}}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {post.author?.name || 'Unknown User'}
+                </Typography>
+              </Link>
               {post.isAnnouncement && (
                 <Chip
                   icon={<Campaign />}
                   label="Announcement"
                   size="small"
                   color="primary"
-                />
+                  />
               )}
             </Stack>
             <Typography variant="caption" color="text.secondary">
@@ -213,6 +216,9 @@ export const CommunityPage: React.FC = () => {
     (state: RootState) => state.community
   );
 
+  const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto)
+  const name = useSelector((state: RootState) => state.dashboard.data?.user.name)
+
   // Fetch posts when component mounts
   useEffect(() => {
     dispatch(fetchPosts({ page: 1, limit: 20 }));
@@ -266,7 +272,9 @@ export const CommunityPage: React.FC = () => {
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Stack direction="row" spacing={2}>
-            <Avatar sx={{ bgcolor: 'primary.main' }}>Y</Avatar>
+            <Avatar src={profilePhoto} sx={{ width: 48, height: 48 }}>
+              {!profilePhoto ? name?.[0] : "U"}
+            </Avatar>
             <TextField
               fullWidth
               multiline
