@@ -8,6 +8,8 @@ import { IPostRepository } from '../../../domain/repositories/IPostRepository';
 import { ISessionRepository } from '../../../domain/repositories/ISessionRepository';
 import { IBookingRepository } from '../../../domain/repositories/IBookingRepository';
 import { IEnrollmentRepository } from '../../../domain/repositories/IEnrollmentRepository';
+import { IRecentActivityRepository } from '../../../domain/repositories/IRecentActivityRepository';
+import { RecentActivity } from '../../../domain/entities/RecentActivity';
 
 export interface DashboardDataDTO {
     userId: string;
@@ -19,13 +21,6 @@ export interface CourseProgress {
     totalLessons: number;
     completedLessons: number;
     progressPercentage: number;
-}
-
-export interface RecentActivity {
-    type: 'lesson_completed' | 'points_earned' | 'post_created' | 'session_booked';
-    title: string;
-    timestamp: Date;
-    metadata?: any;
 }
 
 export interface Achievement {
@@ -75,7 +70,8 @@ export class GetDashboardDataUseCase {
         private postRepository: IPostRepository,
         private sessionRepository: ISessionRepository,
         private bookingRepository: IBookingRepository,
-        private enrollmentRepository: IEnrollmentRepository
+        private enrollmentRepository: IEnrollmentRepository,
+        private activityRepository: IRecentActivityRepository,
     ) { }
 
     async execute(dto: DashboardDataDTO): Promise<DashboardData> {
@@ -140,7 +136,10 @@ export class GetDashboardDataUseCase {
         }
 
         // Get recent activity (only from enrolled courses)
-        const recentActivity: RecentActivity[] = await this.getRecentActivity(dto.userId, enrollments);
+        const recentActivity: RecentActivity[] = await this.activityRepository.findByUserId(
+            dto.userId,
+            10
+        );
 
         // Get achievements
         const achievements = this.calculateAchievements(
@@ -178,80 +177,80 @@ export class GetDashboardDataUseCase {
         return dashboardData;
     }
 
-    private async getRecentActivity(userId: string, enrollments: any[]): Promise<RecentActivity[]> {
-        const activities: RecentActivity[] = [];
+    // private async getRecentActivity(userId: string, enrollments: any[]): Promise<RecentActivity[]> {
+    //     const activities: RecentActivity[] = [];
 
-        // Get recent completed lessons from ENROLLED COURSES ONLY
-        const enrolledCourseIds = enrollments.map(e => e.courseId);
-        
-        for (const courseId of enrolledCourseIds) {
-            const courseProgress = await this.progressRepository.findByUserAndCourse(userId, courseId);
-            const completedProgress = courseProgress
-                .filter(p => p.isCompleted && p.completedAt)
-                .sort((a, b) => {
-                    const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-                    const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-                    return dateB - dateA;
-                })
-                .slice(0, 3); // Get top 3 recent lessons per course
+    //     // Get recent completed lessons from ENROLLED COURSES ONLY
+    //     const enrolledCourseIds = enrollments.map(e => e.courseId);
 
-            for (const progress of completedProgress) {
-                const lesson = await this.lessonRepository.findById(progress.lessonId);
-                if (lesson) {
-                    activities.push({
-                        type: 'lesson_completed',
-                        title: `Completed ${lesson.title}`,
-                        timestamp: progress.completedAt!,
-                    });
+    //     for (const courseId of enrolledCourseIds) {
+    //         const courseProgress = await this.progressRepository.findByUserAndCourse(userId, courseId);
+    //         const completedProgress = courseProgress
+    //             .filter(p => p.isCompleted && p.completedAt)
+    //             .sort((a, b) => {
+    //                 const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+    //                 const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+    //                 return dateB - dateA;
+    //             })
+    //             .slice(0, 3); // Get top 3 recent lessons per course
 
-                    if (lesson.pointsReward > 0) {
-                        activities.push({
-                            type: 'points_earned',
-                            title: `Earned ${lesson.pointsReward} points`,
-                            timestamp: progress.completedAt!,
-                        });
-                    }
-                }
-            }
-        }
+    //         for (const progress of completedProgress) {
+    //             const lesson = await this.lessonRepository.findById(progress.lessonId);
+    //             if (lesson) {
+    //                 activities.push({
+    //                     type: 'lesson_completed',
+    //                     title: `Completed ${lesson.title}`,
+    //                     timestamp: progress.completedAt!,
+    //                 });
 
-        // Get recent posts
-        const recentPosts = await this.postRepository.findByUserId(userId);
-        const sortedPosts = recentPosts
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 3);
+    //                 if (lesson.pointsReward > 0) {
+    //                     activities.push({
+    //                         type: 'points_earned',
+    //                         title: `Earned ${lesson.pointsReward} points`,
+    //                         timestamp: progress.completedAt!,
+    //                     });
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        for (const post of sortedPosts) {
-            activities.push({
-                type: 'post_created',
-                title: 'Posted in community',
-                timestamp: post.createdAt,
-            });
-        }
+    //     // Get recent posts
+    //     const recentPosts = await this.postRepository.findByUserId(userId);
+    //     const sortedPosts = recentPosts
+    //         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    //         .slice(0, 3);
 
-        // Get recent bookings
-        const recentBookings = await this.bookingRepository.findByUserId(userId);
-        const sortedBookings = recentBookings
-            .filter(b => b.status === 'CONFIRMED')
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 3);
+    //     for (const post of sortedPosts) {
+    //         activities.push({
+    //             type: 'post_created',
+    //             title: 'Posted in community',
+    //             timestamp: post.createdAt,
+    //         });
+    //     }
 
-        for (const booking of sortedBookings) {
-            const session = await this.sessionRepository.findById(booking.sessionId);
-            if (session) {
-                activities.push({
-                    type: 'session_booked',
-                    title: `Booked ${session.title}`,
-                    timestamp: booking.createdAt,
-                });
-            }
-        }
+    //     // Get recent bookings
+    //     const recentBookings = await this.bookingRepository.findByUserId(userId);
+    //     const sortedBookings = recentBookings
+    //         .filter(b => b.status === 'CONFIRMED')
+    //         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    //         .slice(0, 3);
 
-        // Sort all activities by timestamp and return the most recent 10
-        return activities
-            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-            .slice(0, 10);
-    }
+    //     for (const booking of sortedBookings) {
+    //         const session = await this.sessionRepository.findById(booking.sessionId);
+    //         if (session) {
+    //             activities.push({
+    //                 type: 'session_booked',
+    //                 title: `Booked ${session.title}`,
+    //                 timestamp: booking.createdAt,
+    //             });
+    //         }
+    //     }
+
+    //     // Sort all activities by timestamp and return the most recent 10
+    //     return activities
+    //         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    //         .slice(0, 10);
+    // }
 
     private calculateAchievements(
         profile: any,

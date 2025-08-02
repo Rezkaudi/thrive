@@ -48,7 +48,8 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { profileService } from '../services/profileService';
-
+import { activityService } from '../services/activityService';
+import { ActivityFeed } from '../components/activity/ActivityFeed';
 interface PublicProfile {
   id: string;
   name: string;
@@ -118,6 +119,8 @@ export const PublicProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   useEffect(() => {
     const fetchPublicProfile = async () => {
@@ -141,6 +144,25 @@ export const PublicProfilePage: React.FC = () => {
 
     fetchPublicProfile();
   }, [userId]);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (profile?.id) {
+        setActivitiesLoading(true);
+        try {
+          const response = await activityService.getUserActivities(userId!, 1, 10);
+          setRecentActivities(response.activities);
+        } catch (error) {
+          console.error('Failed to fetch activities:', error);
+        } finally {
+          setActivitiesLoading(false);
+        }
+      }
+    };
+
+    fetchActivities();
+  }, [profile?.id, userId]);
+
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -530,7 +552,7 @@ export const PublicProfilePage: React.FC = () => {
 
         {/* Learning Progress and Course Progress */}
         <Grid container spacing={4} mb={4}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          {/* <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -565,7 +587,7 @@ export const PublicProfilePage: React.FC = () => {
                 </Stack>
               </CardContent>
             </Card>
-          </Grid>
+          </Grid> */}
 
           <Grid size={{ xs: 12, md: 6 }}>
             <Card>
@@ -620,36 +642,14 @@ export const PublicProfilePage: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" fontWeight={600} gutterBottom>
-                  Recent Milestones
+                  Recent Activity
                 </Typography>
-                {profile.recentMilestones.length > 0 ? (
-                  <List>
-                    {profile.recentMilestones.map((milestone, index) => (
-                      <ListItem key={index} sx={{ px: 0 }}>
-                        <ListItemIcon>
-                          {milestoneIcons[milestone.type] || <Star />}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={milestone.title}
-                          secondary={
-                            <>
-                              {milestone.date}
-                              {milestone.details && (
-                                <Typography variant="caption" display="block" color="text.secondary">
-                                  {milestone.details}
-                                </Typography>
-                              )}
-                            </>
-                          }
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No recent activity
-                  </Typography>
-                )}
+                <ActivityFeed
+                  activities={recentActivities}
+                  loading={activitiesLoading}
+                  compact
+                  maxItems={5}
+                />
               </CardContent>
             </Card>
           </Grid>

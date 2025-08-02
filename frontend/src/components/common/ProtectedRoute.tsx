@@ -18,7 +18,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
   const { isAuthenticated, loading, user, authChecking, hasTrailingSubscription } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    console.log(hasTrailingSubscription)
     const fetchData = async () => {
       if (!isAuthenticated && !authChecking) {
         await dispatch(checkAuth());

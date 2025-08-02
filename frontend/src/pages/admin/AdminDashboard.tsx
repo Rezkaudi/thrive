@@ -28,6 +28,8 @@ import {
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { activityService } from '../../services/activityService';
+import { ActivityFeed } from '../../components/activity/ActivityFeed';
 
 interface DashboardStats {
   totalUsers: number;
@@ -111,10 +113,28 @@ export const AdminDashboard: React.FC = () => {
     pendingReviews: 0
   });
   const [loading, setLoading] = useState(true);
+  const [globalActivities, setGlobalActivities] = useState<any[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   useEffect(() => {
     fetchDashboardStats();
   }, []);
+
+  useEffect(() => {
+    fetchGlobalActivities();
+  }, []);
+
+  const fetchGlobalActivities = async () => {
+    setActivitiesLoading(true);
+    try {
+      const response = await activityService.getGlobalActivities(10);
+      setGlobalActivities(response.activities);
+    } catch (error) {
+      console.error('Failed to fetch activities:', error);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
 
   const fetchDashboardStats = async () => {
     try {
@@ -294,35 +314,20 @@ export const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight={600} gutterBottom>
-                Recent Activity
+                Recent Platform Activity
               </Typography>
-              <Stack spacing={2}>
-                {[
-                  { action: 'New user registered', user: 'sarah@example.com', time: '2 minutes ago' },
-                  { action: 'Course completed', user: 'mike@example.com', course: 'Japan in Context', time: '15 minutes ago' },
-                  { action: 'Post flagged for review', user: 'john@example.com', time: '1 hour ago' },
-                  { action: 'Speaking session booked', user: 'amy@example.com', time: '2 hours ago' },
-                ].map((activity, index) => (
-                  <Paper key={index} sx={{ p: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {activity.action}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {activity.user} {activity.course && `• ${activity.course}`}
-                        </Typography>
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {activity.time}
-                      </Typography>
-                    </Stack>
-                  </Paper>
-                ))}
-              </Stack>
+              <ActivityFeed
+                activities={globalActivities}
+                loading={activitiesLoading}
+                showUser
+                compact
+                maxItems={100}
+              />
             </CardContent>
           </Card>
         </Grid>
+
+
 
         {/* <Grid size={{ xs: 12, md: 4 }}>
           <Card>

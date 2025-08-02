@@ -9,6 +9,7 @@ import { PostLikeRepository } from '../../database/repositories/PostLikeReposito
 import { UserRepository } from '../../database/repositories/UserRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
 import { CommentRepository } from "../../database/repositories/CommentRepository";
+import { ActivityService } from '../../services/ActivityService';
 
 export class CommunityController {
   async createPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -18,7 +19,8 @@ export class CommunityController {
       const createPostUseCase = new CreatePostUseCase(
         new PostRepository(),
         new UserRepository(),
-        new ProfileRepository()
+        new ProfileRepository(),
+        new ActivityService()
       );
 
       const post = await createPostUseCase.execute({
@@ -135,7 +137,8 @@ export class CommunityController {
         return;
       }
 
-      res.json({message: "Post edited successfully"})
+      res.json({ message: "Post edited successfully" })
+
     } catch (error) {
       return next(error)
     }
@@ -143,52 +146,52 @@ export class CommunityController {
 
   // Comments Operations
   async getCommentsByPost(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { postId } = req.params;
-    const { page = 1, limit = 20, includeReplies = true } = req.query;
+    try {
+      const { postId } = req.params;
+      const { page = 1, limit = 20, includeReplies = true } = req.query;
 
-    console.log('Getting comments for post:', postId, { page, limit, includeReplies });
+      console.log('Getting comments for post:', postId, { page, limit, includeReplies });
 
-    const getCommentsUseCase = new GetCommentsUseCase(
-      new CommentRepository(),
-      new UserRepository(),
-      new ProfileRepository()
-    );
+      const getCommentsUseCase = new GetCommentsUseCase(
+        new CommentRepository(),
+        new UserRepository(),
+        new ProfileRepository()
+      );
 
-    const result = await getCommentsUseCase.execute({
-      postId,
-      currentUserId: req.user?.userId,
-      page: Number(page),
-      limit: Number(limit),
-      includeReplies: String(includeReplies).toLowerCase() === 'true'
-    });
+      const result = await getCommentsUseCase.execute({
+        postId,
+        currentUserId: req.user?.userId,
+        page: Number(page),
+        limit: Number(limit),
+        includeReplies: String(includeReplies).toLowerCase() === 'true'
+      });
 
-    // Get the total count of ALL comments (including replies) for accurate count
-    const commentRepository = new CommentRepository();
-    const totalCommentsIncludingReplies = await commentRepository.countByPost(postId);
+      // Get the total count of ALL comments (including replies) for accurate count
+      const commentRepository = new CommentRepository();
+      const totalCommentsIncludingReplies = await commentRepository.countByPost(postId);
 
-    console.log('Comments result:', result);
+      console.log('Comments result:', result);
 
-    res.status(200).json({
-      success: true,
-      data: {
-        comments: result.comments,
-        pagination: {
-          total: result.total, // This is just top-level comments for pagination
-          totalWithReplies: totalCommentsIncludingReplies, // Total including all replies
-          page: result.page,
-          limit: Number(limit),
-          totalPages: result.totalPages,
-          hasNextPage: result.page < result.totalPages,
-          hasPrevPage: result.page > 1
+      res.status(200).json({
+        success: true,
+        data: {
+          comments: result.comments,
+          pagination: {
+            total: result.total, // This is just top-level comments for pagination
+            totalWithReplies: totalCommentsIncludingReplies, // Total including all replies
+            page: result.page,
+            limit: Number(limit),
+            totalPages: result.totalPages,
+            hasNextPage: result.page < result.totalPages,
+            hasPrevPage: result.page > 1
+          }
         }
-      }
-    });
-  } catch (error) {
-    console.error('Error in getCommentsByPost:', error);
-    next(error);
+      });
+    } catch (error) {
+      console.error('Error in getCommentsByPost:', error);
+      next(error);
+    }
   }
-}
 
   async createComment(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -265,7 +268,7 @@ export class CommunityController {
       // Enrich with author information
       const user = await userRepository.findById(comment.userId);
       const profile = await profileRepository.findByUserId(comment.userId);
-      
+
       comment.author = {
         userId: comment.userId,
         name: profile?.name || user?.email?.split('@')[0] || 'Unknown User',
@@ -341,7 +344,7 @@ export class CommunityController {
       // Enrich with author information
       const user = await userRepository.findById(updatedComment.userId);
       const profile = await profileRepository.findByUserId(updatedComment.userId);
-      
+
       updatedComment.author = {
         userId: updatedComment.userId,
         name: profile?.name || user?.email?.split('@')[0] || 'Unknown User',
@@ -424,7 +427,7 @@ export class CommunityController {
         replies.map(async (reply) => {
           const user = await userRepository.findById(reply.userId);
           const profile = await profileRepository.findByUserId(reply.userId);
-          
+
           reply.author = {
             userId: reply.userId,
             name: profile?.name || user?.email?.split('@')[0] || 'Unknown User',
@@ -448,28 +451,28 @@ export class CommunityController {
   }
 
   async getCommentCount(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { postId } = req.params;
+    try {
+      const { postId } = req.params;
 
-    const commentRepository = new CommentRepository();
-    
-    // Get total count including all replies
-    const totalCount = await commentRepository.countByPost(postId);
-    
-    // Optionally also get top-level count
-    const topLevelCount = await commentRepository.countTopLevelByPost(postId);
+      const commentRepository = new CommentRepository();
 
-    res.status(200).json({
-      success: true,
-      data: { 
-        count: totalCount, // Total including replies
-        topLevelCount, // Just top-level comments
-        repliesCount: totalCount - topLevelCount // Number of replies
-      }
-    });
-  } catch (error) {
-    console.error('Error in getCommentCount:', error);
-    next(error);
+      // Get total count including all replies
+      const totalCount = await commentRepository.countByPost(postId);
+
+      // Optionally also get top-level count
+      const topLevelCount = await commentRepository.countTopLevelByPost(postId);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          count: totalCount, // Total including replies
+          topLevelCount, // Just top-level comments
+          repliesCount: totalCount - topLevelCount // Number of replies
+        }
+      });
+    } catch (error) {
+      console.error('Error in getCommentCount:', error);
+      next(error);
+    }
   }
-}
 }

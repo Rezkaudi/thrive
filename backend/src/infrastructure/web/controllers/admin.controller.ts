@@ -16,6 +16,7 @@ import { Keyword } from '../../../domain/entities/Keyword';
 import { ProgressRepository } from '../../database/repositories/ProgressRepository';
 import { PaymentRepository } from '../../database/repositories/PaymentRepository';
 import { CreateRecurringSessionUseCase } from '../../../application/use-cases/admin/CreateRecurringSessionUseCase';
+import { ActivityService } from '../../services/ActivityService';
 
 export class AdminController {
   async getUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -957,7 +958,8 @@ export class AdminController {
       const createPostUseCase = new CreatePostUseCase(
         new PostRepository(),
         new UserRepository(),
-        new ProfileRepository()
+        new ProfileRepository(),
+        new ActivityService()
       );
 
       const post = await createPostUseCase.execute({

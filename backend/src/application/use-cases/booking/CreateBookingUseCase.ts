@@ -1,6 +1,7 @@
 import { ISessionRepository } from '../../../domain/repositories/ISessionRepository';
 import { IBookingRepository, Booking } from '../../../domain/repositories/IBookingRepository';
 import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
+import { ActivityService } from '../../../infrastructure/services/ActivityService';
 
 export interface CreateBookingDTO {
   userId: string;
@@ -11,8 +12,9 @@ export class CreateBookingUseCase {
   constructor(
     private sessionRepository: ISessionRepository,
     private bookingRepository: IBookingRepository,
-    private profileRepository: IProfileRepository
-  ) {}
+    private profileRepository: IProfileRepository,
+    private activityService: ActivityService
+  ) { }
 
   async execute(dto: CreateBookingDTO): Promise<Booking> {
     const session = await this.sessionRepository.findById(dto.sessionId);
@@ -57,6 +59,13 @@ export class CreateBookingUseCase {
     if (session.pointsRequired > 0) {
       await this.profileRepository.updatePoints(dto.userId, -session.pointsRequired);
     }
+
+    // #activity
+    await this.activityService.logSessionBooked(
+      dto.userId,
+      session.title,
+      session.scheduledAt
+    );
 
     return savedBooking;
   }

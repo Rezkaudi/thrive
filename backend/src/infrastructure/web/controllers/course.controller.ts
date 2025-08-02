@@ -11,6 +11,7 @@ import { EnrollInCourseUseCase } from '../../../application/use-cases/course/Enr
 import { EnrollmentRepository } from '../../database/repositories/EnrollmentRepository';
 import { UserRepository } from '../../database/repositories/UserRepository';
 import { Keyword } from '../../../domain/entities/Keyword';
+import { ActivityService } from '../../services/ActivityService';
 
 export class CourseController {
   async getAllCourses(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -96,7 +97,8 @@ export class CourseController {
       const completeLessonUseCase = new CompleteLessonUseCase(
         new LessonRepository(),
         new ProgressRepository(),
-        new ProfileRepository()
+        new ProfileRepository(),
+        new ActivityService()
       );
 
       const progress = await completeLessonUseCase.execute({

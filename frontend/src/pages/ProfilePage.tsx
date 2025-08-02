@@ -40,6 +40,7 @@ import {
   Switch,
   FormControlLabel,
   Divider,
+  Pagination,
 } from '@mui/material';
 import {
   Edit,
@@ -90,6 +91,8 @@ import {
 import { UpdateProfileData, profileService } from '../services/profileService';
 import { subscriptionService } from '../services/subscriptionService';
 import { chackPayment } from '../store/slices/authSlice';
+import { fetchUserActivities } from '../store/slices/activitySlice';
+import { ActivityFeed } from '../components/activity/ActivityFeed';
 
 interface Achievement {
   id: string;
@@ -148,6 +151,7 @@ export const ProfilePage: React.FC = () => {
   const { user, status } = useSelector((state: RootState) => state.auth);
   const totalLessonsCompleted = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsCompleted)
   const totalLessonsAvailable = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsAvailable)
+  const { userActivities, loading: activityLoading, pagination } = useSelector((state: RootState) => state.activity);
 
   // Local state
   const [tabValue, setTabValue] = useState(0);
@@ -157,6 +161,7 @@ export const ProfilePage: React.FC = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [loadingManage, setLoadingManage] = useState(false);
   const [loadingStart, setLoadingStart] = useState(false);
+  const [activityPage, setActivityPage] = useState(1);
 
   // Real profile data state
   const [publicProfileData, setPublicProfileData] = useState<any>(null);
@@ -204,6 +209,17 @@ export const ProfilePage: React.FC = () => {
       });
     }
   }, [profile]);
+
+  // Fetch activities when tab changes
+  useEffect(() => {
+    if (tabValue === 3 && profile?.userId) {
+      dispatch(fetchUserActivities({
+        userId: profile.userId,
+        page: activityPage,
+        limit: 10
+      }));
+    }
+  }, [tabValue, profile?.userId, activityPage, dispatch]);
 
   // Generate share URL
   useEffect(() => {
@@ -965,7 +981,7 @@ export const ProfilePage: React.FC = () => {
                       </List>
                     </Grid>
 
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    {/* <Grid size={{ xs: 12, md: 6 }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>
                         Skills Overview
                       </Typography>
@@ -1027,7 +1043,7 @@ export const ProfilePage: React.FC = () => {
                           </Box>
                         ))}
                       </Stack>
-                    </Grid>
+                    </Grid> */}
                   </Grid>
                 </motion.div>
               )}
@@ -1210,74 +1226,23 @@ export const ProfilePage: React.FC = () => {
                   <Typography variant="h6" fontWeight={600} gutterBottom>
                     Recent Activity
                   </Typography>
-                  <Stack spacing={2}>
-                    {[
-                      {
-                        action: 'Completed Lesson 5: Greetings',
-                        time: '2 hours ago',
-                        points: '+50',
-                        icon: <School />,
-                        color: '#A6531C'
-                      },
-                      {
-                        action: 'Posted in community',
-                        time: '5 hours ago',
-                        points: '+10',
-                        icon: <Forum />,
-                        color: '#D4BC8C'
-                      },
-                      {
-                        action: 'Achieved 7-day streak',
-                        time: 'Yesterday',
-                        points: '+100',
-                        icon: <EmojiEvents />,
-                        color: '#FFD700'
-                      },
-                      {
-                        action: 'Joined speaking session',
-                        time: '2 days ago',
-                        points: '+30',
-                        icon: <VideoCall />,
-                        color: '#5C633A'
-                      },
-                      {
-                        action: 'Completed quiz with 90% score',
-                        time: '3 days ago',
-                        points: '+45',
-                        icon: <CheckCircle />,
-                        color: '#483C32'
-                      },
-                    ].map((activity, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        <Paper sx={{ p: 3 }}>
-                          <Stack direction="row" spacing={2} alignItems="center">
-                            <Avatar sx={{ bgcolor: `${activity.color}20`, color: activity.color }}>
-                              {activity.icon}
-                            </Avatar>
-                            <Box flex={1}>
-                              <Typography variant="body1" fontWeight={500}>
-                                {activity.action}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {activity.time}
-                              </Typography>
-                            </Box>
-                            <Chip
-                              label={activity.points}
-                              color="success"
-                              size="small"
-                              sx={{ fontWeight: 600, color: "white" }}
-                            />
-                          </Stack>
-                        </Paper>
-                      </motion.div>
-                    ))}
-                  </Stack>
+
+                  <ActivityFeed
+                    activities={userActivities}
+                    loading={activityLoading}
+                    showUser={false}
+                  />
+
+                  {pagination.totalPages > 1 && (
+                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                      <Pagination
+                        count={pagination.totalPages}
+                        page={activityPage}
+                        onChange={(_, page) => setActivityPage(page)}
+                        color="primary"
+                      />
+                    </Box>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

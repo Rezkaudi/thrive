@@ -5,6 +5,7 @@ import communityReducer from './slices/communitySlice';
 import profileReducer from './slices/profileSlice';
 import calendarReducer from './slices/calendarSlice';
 import dashboardReducer from './slices/dashboardSlice';
+import activityReducer from './slices/activitySlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,7 +15,7 @@ export const store = configureStore({
     profile: profileReducer,
     calendar: calendarReducer,
     dashboard: dashboardReducer,
-
+    activity: activityReducer,
   },
 });
 
