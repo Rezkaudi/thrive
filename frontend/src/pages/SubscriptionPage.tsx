@@ -1,5 +1,5 @@
 // frontend/src/pages/registration/SubscriptionPage.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -25,6 +25,7 @@ import {
 import { motion } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
 import api from '../services/api';
+
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY!);
 
@@ -211,7 +212,7 @@ export const SubscriptionPage: React.FC = () => {
             <Container maxWidth="xl">
                 <Button
                     startIcon={<ArrowBack />}
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/register')}
                     sx={{
                         mb: 3,
                         '&:hover': {

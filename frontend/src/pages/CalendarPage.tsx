@@ -70,6 +70,7 @@ import {
 import { useSweetAlert } from "../utils/sweetAlert";
 import { subscriptionService } from "../services/subscriptionService";
 import { chackPayment } from "../store/slices/authSlice";
+import { sleep } from "../utils/sleep";
 
 export const CalendarPage: React.FC = () => {
   const { showConfirm, showError } = useSweetAlert();
@@ -160,6 +161,10 @@ export const CalendarPage: React.FC = () => {
     setLoadingStart(true);
     try {
       await subscriptionService.endTrial();
+      // sleep 5 secode
+
+      await sleep(5000);
+
       await dispatch(chackPayment());
       setSnackbar({
         open: true,

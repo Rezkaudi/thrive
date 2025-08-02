@@ -39,7 +39,7 @@ export const LoginPage: React.FC = () => {
     const result = await dispatch(login(formData));
     await dispatch(chackPayment());
     if (login.fulfilled.match(result)) {
-      window.location.href = "/dashboard"
+      navigate("/dashboard")
     }
   };
 
@@ -102,7 +102,7 @@ export const LoginPage: React.FC = () => {
             <CardContent sx={{ p: 5 }}>
               <Box textAlign="center" mb={4}>
                 <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-                  Welcome Back! 🌸
+                  Welcome Back!
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                   Continue your Japanese learning journey

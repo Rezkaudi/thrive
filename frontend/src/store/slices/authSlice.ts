@@ -27,7 +27,7 @@ const initialState: AuthState = {
   user: null,
   csrfToken: null,
   isAuthenticated: false,
-  loading: false,
+  loading: true,
   hasActiveSubscription: false,
   hasTrailingSubscription: false,
   status: null,
