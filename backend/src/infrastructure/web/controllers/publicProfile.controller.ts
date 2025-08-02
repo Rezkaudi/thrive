@@ -122,13 +122,13 @@ export class PublicProfileController {
         if (course && course.isActive) {
           const lessons = await this.lessonRepository.findByCourseId(course.id);
           const completedLessons = await this.progressRepository.getCompletedLessonCount(userId, course.id);
-          
+
           // Add to totals
           totalLessonsAvailable += lessons.length;
           totalLessonsCompleted += completedLessons;
-          
+
           const progressPercentage = lessons.length > 0 ? Math.round((completedLessons / lessons.length) * 100) : 0;
-          
+
           if (progressPercentage === 100) {
             completedCourses++;
           }
@@ -145,7 +145,7 @@ export class PublicProfileController {
       // Get user progress ONLY from enrolled courses with proper typing
       const enrolledCourseIds = enrollments.map(e => e.courseId);
       let userProgress: Progress[] = [];
-      
+
       for (const courseId of enrolledCourseIds) {
         const courseProgress = await this.progressRepository.findByUserAndCourse(userId, courseId);
         userProgress.push(...courseProgress);
@@ -444,7 +444,7 @@ export class PublicProfileController {
     // Calculate base progress based on actual lesson completion
     const lessonProgress = totalLessons > 0 ? (lessonsCompleted / totalLessons) * 100 : 0;
     const levelBonus = level * 3; // Each level adds 3% bonus
-    
+
     // Calculate different skills based on different activities
     const vocabularyProgress = Math.min(lessonProgress + levelBonus + (completedCourses * 5), 95);
     const grammarProgress = Math.min(lessonProgress + levelBonus + (completedCourses * 5), 95);
@@ -456,22 +456,22 @@ export class PublicProfileController {
       {
         skill: 'Vocabulary',
         level: Math.round(vocabularyProgress),
-        color: '#FF6B6B',
+        color: '#5C633A',
       },
       {
         skill: 'Grammar',
         level: Math.round(grammarProgress),
-        color: '#4ECDC4',
+        color: '#A6531C',
       },
       {
         skill: 'Listening',
         level: Math.round(listeningProgress),
-        color: '#FFB7C5',
+        color: '#D4BC8C',
       },
       {
         skill: 'Speaking',
         level: Math.round(speakingProgress),
-        color: '#00B894',
+        color: '#483C32',
       },
       {
         skill: 'Reading',
@@ -632,21 +632,21 @@ export class PublicProfileController {
   private parseDateFromRelativeTime(relativeTime: string): Date {
     try {
       const now = new Date();
-      
+
       if (relativeTime === 'just now') {
         return now;
       }
-      
+
       // Extract number and unit from strings like "5 minutes ago", "2 days ago", etc.
       const match = relativeTime.match(/(\d+)\s+(minute|hour|day|week|month)s?\s+ago/);
       if (!match) {
         // Fallback for unmatched patterns
         return new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day ago
       }
-      
+
       const [, numberStr, unit] = match;
       const number = parseInt(numberStr, 10);
-      
+
       switch (unit) {
         case 'minute':
           return new Date(now.getTime() - number * 60 * 1000);

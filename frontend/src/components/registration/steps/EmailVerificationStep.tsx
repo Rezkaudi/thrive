@@ -162,7 +162,7 @@ export const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
                                 width: 80,
                                 height: 80,
                                 borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #00B894 0%, #00D4AA 100%)',
+                                background: 'linear-gradient(135deg, #483C32 0%, #00D4AA 100%)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',

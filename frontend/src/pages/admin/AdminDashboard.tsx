@@ -134,28 +134,28 @@ export const AdminDashboard: React.FC = () => {
       description: 'View and manage all users',
       icon: <People />,
       path: '/admin/users',
-      color: '#FF6B6B',
+      color: '#5C633A',
     },
     {
       title: 'Course Management',
       description: 'Create and edit courses',
       icon: <School />,
       path: '/admin/courses',
-      color: '#4ECDC4',
+      color: '#A6531C',
     },
     {
       title: 'Community Moderation',
       description: 'Review flagged content',
       icon: <Forum />,
       path: '/admin/community',
-      color: '#FFB7C5',
+      color: '#D4BC8C',
     },
     {
       title: 'Session Management',
       description: 'Manage speaking sessions',
       icon: <CalendarMonth />,
       path: '/admin/sessions',
-      color: '#00B894',
+      color: '#483C32',
     },
   ];
 
@@ -204,7 +204,7 @@ export const AdminDashboard: React.FC = () => {
             value={stats.totalUsers.toLocaleString()}
             subtitle={`${stats.activeUsers} active`}
             trend={stats.userGrowth}
-            color="#FF6B6B"
+            color="#5C633A"
             onClick={() => navigate('/admin/users')}
           />
         </Grid>
@@ -214,7 +214,7 @@ export const AdminDashboard: React.FC = () => {
             title="Monthly Revenue"
             value={`¥${stats.monthlyRevenue.toLocaleString()}`}
             trend={stats.revenueGrowth}
-            color="#4ECDC4"
+            color="#A6531C"
             onClick={() => navigate('/admin/analytics')}
           />
         </Grid>
@@ -224,7 +224,7 @@ export const AdminDashboard: React.FC = () => {
             title="Completion Rate"
             value={`${stats.completionRate}%`}
             subtitle="Average across all courses"
-            color="#FFB7C5"
+            color="#D4BC8C"
             onClick={() => navigate('/admin/courses')}
           />
         </Grid>

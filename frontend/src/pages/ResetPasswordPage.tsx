@@ -137,13 +137,13 @@ export const ResetPasswordPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 }}
             >
                 <Card sx={{ borderRadius: 3, boxShadow: 10, p: 2 }}>
                     <CardContent>
                         <Stack direction="row" spacing={2} alignItems="center">
-                            <CircularProgress size={24} sx={{ color: '#FF6B6B' }} />
+                            <CircularProgress size={24} sx={{ color: '#5C633A' }} />
                             <Typography color="text.secondary">
                                 Validating reset link...
                             </Typography>
@@ -163,7 +163,7 @@ export const ResetPasswordPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                     position: 'relative',
                     overflow: 'hidden',
                 }}
@@ -246,7 +246,7 @@ export const ResetPasswordPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 }}
             >
                 <Container maxWidth="sm">
@@ -302,7 +302,7 @@ export const ResetPasswordPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 position: 'relative',
                 overflow: 'hidden',
             }}

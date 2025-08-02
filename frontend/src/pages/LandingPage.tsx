@@ -34,7 +34,7 @@ const FeatureCard = ({ icon, title, description, delay }: any) => (
           left: 0,
           right: 0,
           height: '4px',
-          background: 'linear-gradient(90deg, #FF6B6B 0%, #FFB7C5 100%)',
+          background: 'linear-gradient(90deg, #5C633A 0%, #D4BC8C 100%)',
         },
       }}
     >
@@ -44,7 +44,7 @@ const FeatureCard = ({ icon, title, description, delay }: any) => (
             display: 'inline-flex',
             p: 2,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+            background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
             color: 'white',
             mb: 3,
           }}
@@ -79,7 +79,7 @@ export const LandingPage: React.FC = () => {
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+          background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
           color: 'white',
           py: { xs: 8, md: 12 },
           position: 'relative',
@@ -142,7 +142,7 @@ export const LandingPage: React.FC = () => {
                     onClick={handleStartJourney} // () => setPaymentModalOpen(true)
                     sx={{
                       background: 'white',
-                      color: '#FF6B6B',
+                      color: '#5C633A',
                       fontSize: '1.125rem',
                       px: 4,
                       py: 1.5,
@@ -222,7 +222,7 @@ export const LandingPage: React.FC = () => {
                               width: 8,
                               height: 8,
                               borderRadius: '50%',
-                              background: '#FF6B6B',
+                              background: '#5C633A',
                               mr: 2,
                             }}
                           />
@@ -290,7 +290,7 @@ export const LandingPage: React.FC = () => {
       {/* CTA Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #4ECDC4 0%, #7ED4D0 100%)',
+          background: 'linear-gradient(135deg, #A6531C 0%, #7ED4D0 100%)',
           color: 'white',
           py: 8,
           textAlign: 'center',
@@ -309,7 +309,7 @@ export const LandingPage: React.FC = () => {
             onClick={handleStartJourney}
             sx={{
               background: 'white',
-              color: '#4ECDC4',
+              color: '#A6531C',
               fontSize: '1.125rem',
               px: 4,
               py: 1.5,

@@ -8,72 +8,72 @@ import { swaggerSpec } from './swagger.config';
 import { SwaggerSpecification, SwaggerYamlContent } from './swagger.types';
 
 export function setupSwagger(app: Application): void {
-    // Cast swaggerSpec to the proper type
-    const spec = swaggerSpec as SwaggerSpecification;
+  // Cast swaggerSpec to the proper type
+  const spec = swaggerSpec as SwaggerSpecification;
 
-    // Load all YAML files from definitions directory
-    const definitionsPath = path.join(__dirname, 'definitions');
+  // Load all YAML files from definitions directory
+  const definitionsPath = path.join(__dirname, 'definitions');
 
-    // Check if definitions directory exists
-    if (fs.existsSync(definitionsPath)) {
-        const yamlFiles = fs.readdirSync(definitionsPath).filter(file => file.endsWith('.yml'));
+  // Check if definitions directory exists
+  if (fs.existsSync(definitionsPath)) {
+    const yamlFiles = fs.readdirSync(definitionsPath).filter(file => file.endsWith('.yml'));
 
-        // Merge all YAML definitions into the main spec
-        yamlFiles.forEach(file => {
-            try {
-                const filePath = path.join(definitionsPath, file);
-                const yamlContent = YAML.load(filePath) as SwaggerYamlContent;
+    // Merge all YAML definitions into the main spec
+    yamlFiles.forEach(file => {
+      try {
+        const filePath = path.join(definitionsPath, file);
+        const yamlContent = YAML.load(filePath) as SwaggerYamlContent;
 
-                // Merge components
-                if (yamlContent.components) {
-                    spec.components = {
-                        ...spec.components,
-                        ...yamlContent.components,
-                        schemas: {
-                            ...spec.components?.schemas,
-                            ...yamlContent.components?.schemas
-                        },
-                        securitySchemes: {
-                            ...spec.components?.securitySchemes,
-                            ...yamlContent.components?.securitySchemes
-                        }
-                    };
-                }
-
-                // Merge paths
-                if (yamlContent.paths) {
-                    spec.paths = {
-                        ...spec.paths,
-                        ...yamlContent.paths
-                    };
-                }
-
-                // Merge tags
-                if (yamlContent.tags) {
-                    spec.tags = [
-                        ...(spec.tags || []),
-                        ...yamlContent.tags
-                    ];
-                }
-            } catch (error) {
-                console.error(`Error loading Swagger YAML file ${file}:`, error);
+        // Merge components
+        if (yamlContent.components) {
+          spec.components = {
+            ...spec.components,
+            ...yamlContent.components,
+            schemas: {
+              ...spec.components?.schemas,
+              ...yamlContent.components?.schemas
+            },
+            securitySchemes: {
+              ...spec.components?.securitySchemes,
+              ...yamlContent.components?.securitySchemes
             }
-        });
-    } else {
-        console.warn('Swagger definitions directory not found:', definitionsPath);
-    }
+          };
+        }
 
-    // Custom CSS for Swagger UI
-    const customCss = `
+        // Merge paths
+        if (yamlContent.paths) {
+          spec.paths = {
+            ...spec.paths,
+            ...yamlContent.paths
+          };
+        }
+
+        // Merge tags
+        if (yamlContent.tags) {
+          spec.tags = [
+            ...(spec.tags || []),
+            ...yamlContent.tags
+          ];
+        }
+      } catch (error) {
+        console.error(`Error loading Swagger YAML file ${file}:`, error);
+      }
+    });
+  } else {
+    console.warn('Swagger definitions directory not found:', definitionsPath);
+  }
+
+  // Custom CSS for Swagger UI
+  const customCss = `
     .swagger-ui .topbar { 
       display: none; 
     }
     .swagger-ui .info .title {
-      color: #FF6B6B;
+      color: #5C633A;
     }
     .swagger-ui .btn.authorize {
-      background-color: #FF6B6B;
-      border-color: #FF6B6B;
+      background-color: #5C633A;
+      border-color: #5C633A;
     }
     .swagger-ui .btn.authorize:hover {
       background-color: #ff5252;
@@ -93,33 +93,33 @@ export function setupSwagger(app: Application): void {
     }
   `;
 
-    // Swagger UI options
-    const swaggerOptions = {
-        customCss,
-        customSiteTitle: 'Thrive in Japan API Documentation',
-        customfavicon: '/favicon.ico',
-        swaggerOptions: {
-            persistAuthorization: true,
-            tryItOutEnabled: process.env.NODE_ENV !== 'production',
-            filter: true,
-            deepLinking: true,
-            displayOperationId: false,
-            defaultModelsExpandDepth: 1,
-            defaultModelExpandDepth: 1,
-            docExpansion: 'list' as const,
-            tagsSorter: 'alpha' as const,
-            operationsSorter: 'alpha' as const
-        }
-    };
+  // Swagger UI options
+  const swaggerOptions = {
+    customCss,
+    customSiteTitle: 'Thrive in Japan API Documentation',
+    customfavicon: '/favicon.ico',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: process.env.NODE_ENV !== 'production',
+      filter: true,
+      deepLinking: true,
+      displayOperationId: false,
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 1,
+      docExpansion: 'list' as const,
+      tagsSorter: 'alpha' as const,
+      operationsSorter: 'alpha' as const
+    }
+  };
 
-    // Serve Swagger JSON spec at /api-spec
-    app.get('/api-spec', (req, res) => {
-        res.setHeader('Content-Type', 'application/json');
-        res.send(spec);
-    });
+  // Serve Swagger JSON spec at /api-spec
+  app.get('/api-spec', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(spec);
+  });
 
-    // Serve Swagger UI at /docs
-    app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec, swaggerOptions));
+  // Serve Swagger UI at /docs
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec, swaggerOptions));
 
-    console.log('Swagger documentation available at /docs');
+  console.log('Swagger documentation available at /docs');
 }

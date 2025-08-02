@@ -95,12 +95,12 @@ export const SubscriptionSuccessPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 }}
             >
                 <Card sx={{ p: 4, borderRadius: 3 }}>
                     <Stack spacing={3} alignItems="center">
-                        <CircularProgress size={60} sx={{ color: '#FF6B6B' }} />
+                        <CircularProgress size={60} sx={{ color: '#5C633A' }} />
                         <Typography variant="h6" color="text.secondary">
                             Confirming your subscription...
                         </Typography>
@@ -118,7 +118,7 @@ export const SubscriptionSuccessPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 }}
             >
                 <Container maxWidth="sm">
@@ -168,7 +168,7 @@ export const SubscriptionSuccessPage: React.FC = () => {
         <Box
             sx={{
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 py: 4,
                 position: 'relative',
                 overflow: 'hidden',
@@ -208,7 +208,7 @@ export const SubscriptionSuccessPage: React.FC = () => {
                         {/* Success Header */}
                         <Box
                             sx={{
-                                background: 'linear-gradient(135deg, #00B894 0%, #00D4AA 100%)',
+                                background: 'linear-gradient(135deg, #483C32 0%, #00D4AA 100%)',
                                 color: 'white',
                                 p: 4,
                                 textAlign: 'center',
@@ -284,25 +284,25 @@ export const SubscriptionSuccessPage: React.FC = () => {
                                         icon: <School />,
                                         title: 'All Courses Unlocked',
                                         description: 'Access every lesson in Japan in Context and JLPT preparation',
-                                        color: '#FF6B6B',
+                                        color: '#5C633A',
                                     },
                                     {
                                         icon: <VideoCall />,
                                         title: 'Live Speaking Sessions',
                                         description: 'Join unlimited speaking practice sessions with instructors',
-                                        color: '#4ECDC4',
+                                        color: '#A6531C',
                                     },
                                     {
                                         icon: <Groups />,
                                         title: 'Exclusive Community',
                                         description: 'Connect with serious learners and native speakers',
-                                        color: '#FFB7C5',
+                                        color: '#D4BC8C',
                                     },
                                     {
                                         icon: <EmojiEvents />,
                                         title: 'Bonus Points & Rewards',
                                         description: 'Earn double points and unlock special achievements',
-                                        color: '#00B894',
+                                        color: '#483C32',
                                     },
                                 ].map((benefit, index) => (
                                     <motion.div
@@ -381,11 +381,11 @@ export const SubscriptionSuccessPage: React.FC = () => {
                                         fullWidth
                                         sx={{
                                             py: 1.5,
-                                            background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                                            background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                                             color: 'white',
                                             fontWeight: 600,
                                             '&:hover': {
-                                                background: 'linear-gradient(135deg, #E55555 0%, #FF9FAC 100%)',
+                                                background: 'linear-gradient(135deg, #283618 0%, #D4BC8C 100%)',
                                             }
                                         }}
                                     >

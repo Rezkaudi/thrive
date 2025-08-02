@@ -53,7 +53,7 @@ export const ForgotPasswordPage: React.FC = () => {
                     minHeight: '100vh',
                     display: 'flex',
                     alignItems: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 }}
             >
                 <Container maxWidth="sm">
@@ -108,7 +108,7 @@ export const ForgotPasswordPage: React.FC = () => {
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
-                background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 position: 'relative',
                 overflow: 'hidden',
             }}

@@ -118,12 +118,12 @@ interface CourseProgress {
 // Global color scheme definitions
 const gradientColors = {
   JAPAN_IN_CONTEXT: {
-    primary: "#FF6B6B",
-    secondary: "#FFB7C5",
-    accent: "#FF8E8E",
+    primary: "#5C633A",
+    secondary: "#D4BC8C",
+    accent: "#D4BC8C",
   },
   JLPT_IN_CONTEXT: {
-    primary: "#4ECDC4",
+    primary: "#A6531C",
     secondary: "#7ED4D0",
     accent: "#6DD6CE",
   },
@@ -1419,7 +1419,7 @@ export const ClassroomPage: React.FC = () => {
               gutterBottom
               fontWeight={800}
               sx={{
-                background: "linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)",
+                background: "linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)",
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -1589,13 +1589,13 @@ export const ClassroomPage: React.FC = () => {
                 background: enrollDialog
                   ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary
                   } 0%, ${getCourseColors(enrollDialog.type).secondary} 100%)`
-                  : "linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)",
+                  : "linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)",
                 "&:hover": {
                   background: enrollDialog
                     ? `linear-gradient(135deg, ${getCourseColors(enrollDialog.type).primary
                     } 20%, ${getCourseColors(enrollDialog.type).secondary
                     } 120%)`
-                    : "linear-gradient(135deg, #FF6B6B 20%, #FFB7C5 120%)",
+                    : "linear-gradient(135deg, #5C633A 20%, #D4BC8C 120%)",
                 },
               }}
             >
@@ -1812,7 +1812,7 @@ export const ClassroomPage: React.FC = () => {
                           p: 6,
                           maxWidth: 500,
                           mx: 'auto',
-                          background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                          background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                           color: 'white',
                           borderRadius: 4,
                         }}

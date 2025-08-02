@@ -251,22 +251,22 @@ export const PublicProfilePage: React.FC = () => {
     {
       label: 'Current Level',
       value: profile.level,
-      icon: <TrendingUp sx={{ color: '#FF6B6B' }} />,
-      color: '#FF6B6B',
+      icon: <TrendingUp sx={{ color: '#5C633A' }} />,
+      color: '#5C633A',
       description: 'Learning level',
     },
     {
       label: 'Lessons Completed',
       value: profile.totalLessonsCompleted,
-      icon: <School sx={{ color: '#4ECDC4' }} />,
-      color: '#4ECDC4',
+      icon: <School sx={{ color: '#A6531C' }} />,
+      color: '#A6531C',
       description: `Out of ${profile.totalLessonsAvailable}`,
     },
     {
       label: 'Days Learning',
       value: profile.joinedDaysAgo,
-      icon: <CalendarMonth sx={{ color: '#FFB7C5' }} />,
-      color: '#FFB7C5',
+      icon: <CalendarMonth sx={{ color: '#D4BC8C' }} />,
+      color: '#D4BC8C',
       description: 'Since joining',
     },
   ];
@@ -298,8 +298,8 @@ export const PublicProfilePage: React.FC = () => {
     },
   ];
 
-  const overallProgress = profile.totalLessonsAvailable > 0 
-    ? (profile.totalLessonsCompleted / profile.totalLessonsAvailable) * 100 
+  const overallProgress = profile.totalLessonsAvailable > 0
+    ? (profile.totalLessonsCompleted / profile.totalLessonsAvailable) * 100
     : 0;
 
   return (
@@ -307,7 +307,7 @@ export const PublicProfilePage: React.FC = () => {
       {/* Header */}
       {/* <Box
         sx={{
-          background: `linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 50%, #4ECDC4 100%)`,
+          background: `linear-gradient(135deg, #5C633A 0%, #D4BC8C 50%, #A6531C 100%)`,
           color: 'white',
           py: 2,
         }}
@@ -337,7 +337,7 @@ export const PublicProfilePage: React.FC = () => {
         sx={{
           position: 'relative',
           height: { xs: 200, md: 250 },
-          background: `linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 50%, #4ECDC4 100%)`,
+          background: `linear-gradient(135deg, #5C633A 0%, #D4BC8C 50%, #A6531C 100%)`,
           overflow: 'hidden',
         }}
       >
@@ -391,17 +391,17 @@ export const PublicProfilePage: React.FC = () => {
                     </Typography>
                   </Box>
                   <Stack direction="row" spacing={2} flexWrap="wrap">
-                    <Chip 
-                      icon={<CalendarMonth />} 
-                      label={`Learning for ${profile.joinedDaysAgo} days`} 
+                    <Chip
+                      icon={<CalendarMonth />}
+                      label={`Learning for ${profile.joinedDaysAgo} days`}
                     />
-                    <Chip 
-                      icon={<WorkspacePremium />} 
-                      label={`Level ${profile.level}`} 
+                    <Chip
+                      icon={<WorkspacePremium />}
+                      label={`Level ${profile.level}`}
                     />
-                    <Chip 
-                      icon={<EmojiEvents />} 
-                      label={`${profile.publicAchievements.length} achievements`} 
+                    <Chip
+                      icon={<EmojiEvents />}
+                      label={`${profile.publicAchievements.length} achievements`}
                     />
                   </Stack>
                 </Stack>
@@ -448,7 +448,7 @@ export const PublicProfilePage: React.FC = () => {
                   backgroundColor: 'action.hover',
                   '& .MuiLinearProgress-bar': {
                     borderRadius: 5,
-                    background: 'linear-gradient(90deg, #FF6B6B 0%, #FFB7C5 50%, #4ECDC4 100%)',
+                    background: 'linear-gradient(90deg, #5C633A 0%, #D4BC8C 50%, #A6531C 100%)',
                   },
                 }}
               />
@@ -594,7 +594,7 @@ export const PublicProfilePage: React.FC = () => {
                             backgroundColor: 'action.hover',
                             '& .MuiLinearProgress-bar': {
                               borderRadius: 4,
-                              backgroundColor: course.progressPercentage === 100 ? '#00B894' : '#FF6B6B',
+                              backgroundColor: course.progressPercentage === 100 ? '#483C32' : '#5C633A',
                             },
                           }}
                         />

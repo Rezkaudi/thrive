@@ -3,12 +3,12 @@ import { createTheme } from '@mui/material/styles';
 export const theme = createTheme({
   palette: {
     primary: {
-      main: '#FF6B6B', // Warm coral/salmon - reminiscent of Japanese lanterns
-      light: '#FFB7C5', // Cherry blossom pink
-      dark: '#E55555',
+      main: '#5C633A', // Warm coral/salmon - reminiscent of Japanese lanterns
+      light: '#D4BC8C', // Cherry blossom pink
+      dark: '#283618',
     },
     secondary: {
-      main: '#4ECDC4', // Teal - like Japanese ocean paintings
+      main: '#A6531C', // Teal - like Japanese ocean paintings
       light: '#7ED4D0',
       dark: '#3BA59E',
     },
@@ -21,10 +21,10 @@ export const theme = createTheme({
       secondary: '#636E72',
     },
     error: {
-      main: '#FF6B6B',
+      main: '#FF9FAC',
     },
     success: {
-      main: '#00B894',
+      main: '#483C32',
     },
   },
   typography: {
@@ -72,9 +72,9 @@ export const theme = createTheme({
           },
         },
         containedPrimary: {
-          background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+          background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
           '&:hover': {
-            background: 'linear-gradient(135deg, #E55555 0%, #FF9FAC 100%)',
+            background: 'linear-gradient(135deg, #283618 0%, #D4BC8C 100%)',
           },
         },
       },
@@ -98,10 +98,10 @@ export const theme = createTheme({
           '& .MuiOutlinedInput-root': {
             borderRadius: 8,
             '&:hover fieldset': {
-              borderColor: '#FFB7C5',
+              borderColor: '#D4BC8C',
             },
             '&.Mui-focused fieldset': {
-              borderColor: '#FF6B6B',
+              borderColor: '#5C633A',
             },
           },
         },
