@@ -1,194 +1,55 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../middleware/auth.middleware';
-import { CreatePostUseCase } from '../../../application/use-cases/community/CreatePostUseCase';
-import { ToggleLikeUseCase } from '../../../application/use-cases/community/ToggleLikeUseCase';
+import { NextFunction, Response } from "express";
+import { AuthRequest } from "../middleware/auth.middleware";
 import { GetCommentsUseCase } from "../../../application/use-cases/community/GetCommentsUseCase";
 import { CreateCommentUseCase } from "../../../application/use-cases/community/CreateCommentUseCase";
-import { PostRepository } from '../../database/repositories/PostRepository';
-import { PostLikeRepository } from '../../database/repositories/PostLikeRepository';
-import { UserRepository } from '../../database/repositories/UserRepository';
-import { ProfileRepository } from '../../database/repositories/ProfileRepository';
+import { UserRepository } from "../../database/repositories/UserRepository";
+import { ProfileRepository } from "../../database/repositories/ProfileRepository";
 import { CommentRepository } from "../../database/repositories/CommentRepository";
+import { PostRepository } from "../../database/repositories/PostRepository";
 
-export class CommunityController {
-  async createPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+export class CommentController {
+  async getCommentsByPost(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { content, mediaUrls, isAnnouncement } = req.body;
+      const { postId } = req.params;
+      const { page = 1, limit = 20, includeReplies = true } = req.query;
 
-      const createPostUseCase = new CreatePostUseCase(
-        new PostRepository(),
+      console.log('Getting comments for post:', postId, { page, limit, includeReplies });
+
+      const getCommentsUseCase = new GetCommentsUseCase(
+        new CommentRepository(),
         new UserRepository(),
         new ProfileRepository()
       );
 
-      const post = await createPostUseCase.execute({
-        userId: req.user!.userId,
-        content,
-        mediaUrls,
-        isAnnouncement
-      });
-
-      res.status(201).json(post);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async getPosts(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { page = 1, limit = 20 } = req.query;
-      const postRepository = new PostRepository();
-
-      const offset = (Number(page) - 1) * Number(limit);
-      const result = await postRepository.findAll(Number(limit), offset, req.user!.userId);
-
-      res.json({
-        posts: result.posts,
-        total: result.total,
+      const result = await getCommentsUseCase.execute({
+        postId,
+        currentUserId: req.user?.userId,
         page: Number(page),
-        totalPages: Math.ceil(result.total / Number(limit))
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async toggleLike(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { postId } = req.params;
-
-      const toggleLikeUseCase = new ToggleLikeUseCase(
-        new PostRepository(),
-        new PostLikeRepository()
-      );
-
-      const result = await toggleLikeUseCase.execute({
-        userId: req.user!.userId,
-        postId
+        limit: Number(limit),
+        includeReplies: String(includeReplies).toLowerCase() === 'true'
       });
 
-      res.json({
-        message: result.isLiked ? 'Post liked' : 'Post dislike',
-        isLiked: result.isLiked,
-        likesCount: result.likesCount
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
+      console.log('Comments result:', result);
 
-  async deletePost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { postId } = req.params;
-
-      const postRepository = new PostRepository();
-      const post = await postRepository.findById(postId);
-
-      if (!post) {
-        res.status(404).json({ error: "Post not found" });
-        return;
-      }
-
-      if (post.author?.userId !== req.user?.userId && req.user?.role !== "ADMIN") {
-        res.status(403).json({ error: "Not authorized to delete this post" });
-        return;
-      }
-
-      const deleted = await postRepository.delete(postId);
-      if (!deleted) {
-        res.status(500).json({ error: 'Failed to delete post' });
-        return;
-      }
-
-      res.json({ message: 'Post deleted successfully' });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async editPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { postId } = req.params
-      const { content, mediaUrls } = req.body
-
-      const postRepository = new PostRepository()
-      const post = await postRepository.findById(postId);
-
-      if (!post) {
-        res.status(404).json({ error: "Post not found" })
-        return;
-      }
-
-      if (post.author.userId !== req.user?.userId && req.user?.role !== "ADMIN") {
-        res.status(403).json({ error: "Not authorized to edit this post" })
-        return;
-      }
-
-      post.content = content;
-      post.mediaUrls = mediaUrls || post.mediaUrls;
-      post.updatedAt = new Date()
-
-      const updatedPost = await postRepository.update(post)
-
-      if (!updatedPost) {
-        res.status(500).json({ error: "Failed to edit post" })
-        return;
-      }
-
-      res.json({message: "Post edited successfully"})
-    } catch (error) {
-      return next(error)
-    }
-  }
-
-  // Comments Operations
-  async getCommentsByPost(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { postId } = req.params;
-    const { page = 1, limit = 20, includeReplies = true } = req.query;
-
-    console.log('Getting comments for post:', postId, { page, limit, includeReplies });
-
-    const getCommentsUseCase = new GetCommentsUseCase(
-      new CommentRepository(),
-      new UserRepository(),
-      new ProfileRepository()
-    );
-
-    const result = await getCommentsUseCase.execute({
-      postId,
-      currentUserId: req.user?.userId,
-      page: Number(page),
-      limit: Number(limit),
-      includeReplies: String(includeReplies).toLowerCase() === 'true'
-    });
-
-    // Get the total count of ALL comments (including replies) for accurate count
-    const commentRepository = new CommentRepository();
-    const totalCommentsIncludingReplies = await commentRepository.countByPost(postId);
-
-    console.log('Comments result:', result);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        comments: result.comments,
-        pagination: {
-          total: result.total, // This is just top-level comments for pagination
-          totalWithReplies: totalCommentsIncludingReplies, // Total including all replies
-          page: result.page,
-          limit: Number(limit),
-          totalPages: result.totalPages,
-          hasNextPage: result.page < result.totalPages,
-          hasPrevPage: result.page > 1
+      res.status(200).json({
+        success: true,
+        data: {
+          comments: result.comments,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            limit: Number(limit),
+            totalPages: result.totalPages,
+            hasNextPage: result.page < result.totalPages,
+            hasPrevPage: result.page > 1
+          }
         }
-      }
-    });
-  } catch (error) {
-    console.error('Error in getCommentsByPost:', error);
-    next(error);
+      });
+    } catch (error) {
+      console.error('Error in getCommentsByPost:', error);
+      next(error);
+    }
   }
-}
 
   async createComment(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -448,28 +309,19 @@ export class CommunityController {
   }
 
   async getCommentCount(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { postId } = req.params;
+    try {
+      const { postId } = req.params;
 
-    const commentRepository = new CommentRepository();
-    
-    // Get total count including all replies
-    const totalCount = await commentRepository.countByPost(postId);
-    
-    // Optionally also get top-level count
-    const topLevelCount = await commentRepository.countTopLevelByPost(postId);
+      const commentRepository = new CommentRepository();
+      const count = await commentRepository.countByPost(postId);
 
-    res.status(200).json({
-      success: true,
-      data: { 
-        count: totalCount, // Total including replies
-        topLevelCount, // Just top-level comments
-        repliesCount: totalCount - topLevelCount // Number of replies
-      }
-    });
-  } catch (error) {
-    console.error('Error in getCommentCount:', error);
-    next(error);
+      res.status(200).json({
+        success: true,
+        data: { count }
+      });
+    } catch (error) {
+      console.error('Error in getCommentCount:', error);
+      next(error);
+    }
   }
-}
 }

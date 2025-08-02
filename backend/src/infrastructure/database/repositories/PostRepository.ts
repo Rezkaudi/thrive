@@ -3,6 +3,7 @@ import { AppDataSource } from '../config/database.config';
 import { PostEntity } from '../entities/Post.entity';
 import { UserEntity } from '../entities/User.entity';
 import { ProfileEntity } from '../entities/Profile.entity';
+import { CommentEntity } from '../entities/Comment.entity';
 import { IPostRepository } from '../../../domain/repositories/IPostRepository';
 import { Post, IAuthor } from '../../../domain/entities/Post';
 import { PostLikeRepository } from './PostLikeRepository';
@@ -11,12 +12,14 @@ export class PostRepository implements IPostRepository {
   private repository: Repository<PostEntity>;
   private userRepository: Repository<UserEntity>;
   private profileRepository: Repository<ProfileEntity>;
+  private commentRepository: Repository<CommentEntity>;
   private postLikeRepository: PostLikeRepository;
 
   constructor() {
     this.repository = AppDataSource.getRepository(PostEntity);
     this.userRepository = AppDataSource.getRepository(UserEntity);
     this.profileRepository = AppDataSource.getRepository(ProfileEntity);
+    this.commentRepository = AppDataSource.getRepository(CommentEntity);
     this.postLikeRepository = new PostLikeRepository();
   }
 
@@ -26,7 +29,7 @@ export class PostRepository implements IPostRepository {
     
     // Fetch author info for the created post
     const author = await this.getAuthorInfo(saved.userId);
-    return this.toDomain(saved, author, false); // New posts are not liked by default
+    return this.toDomain(saved, author, false, 0); // New posts have 0 comments
   }
 
   async findById(id: string, currentUserId?: string): Promise<Post | null> {
@@ -35,7 +38,8 @@ export class PostRepository implements IPostRepository {
     
     const author = await this.getAuthorInfo(entity.userId);
     const isLiked = currentUserId ? await this.checkIfLiked(id, currentUserId) : false;
-    return this.toDomain(entity, author, isLiked);
+    const commentsCount = await this.getCommentsCount(id);
+    return this.toDomain(entity, author, isLiked, commentsCount);
   }
 
   async findAll(limit?: number, offset?: number, currentUserId?: string): Promise<{ posts: Post[]; total: number }> {
@@ -50,12 +54,16 @@ export class PostRepository implements IPostRepository {
     const likedPostIds = currentUserId ? 
       await this.postLikeRepository.findLikedPostsByUser(currentUserId, postIds) : [];
     
+    // Get comments count for all posts at once
+    const commentsCountMap = await this.getCommentsCountForPosts(postIds);
+    
     // Get author info for all posts
     const posts = await Promise.all(
       entities.map(async (entity) => {
         const author = await this.getAuthorInfo(entity.userId);
         const isLiked = likedPostIds.includes(entity.id);
-        return this.toDomain(entity, author, isLiked);
+        const commentsCount = commentsCountMap.get(entity.id) || 0;
+        return this.toDomain(entity, author, isLiked, commentsCount);
       })
     );
     
@@ -72,8 +80,16 @@ export class PostRepository implements IPostRepository {
     const likedPostIds = currentUserId ? 
       await this.postLikeRepository.findLikedPostsByUser(currentUserId, postIds) : [];
     
+    // Get comments count for all posts
+    const commentsCountMap = await this.getCommentsCountForPosts(postIds);
+    
     const author = await this.getAuthorInfo(userId);
-    return entities.map(e => this.toDomain(e, author, likedPostIds.includes(e.id)));
+    return entities.map(e => this.toDomain(
+      e, 
+      author, 
+      likedPostIds.includes(e.id),
+      commentsCountMap.get(e.id) || 0
+    ));
   }
 
   async findAnnouncements(currentUserId?: string): Promise<Post[]> {
@@ -86,11 +102,15 @@ export class PostRepository implements IPostRepository {
     const likedPostIds = currentUserId ? 
       await this.postLikeRepository.findLikedPostsByUser(currentUserId, postIds) : [];
     
+    // Get comments count for all posts
+    const commentsCountMap = await this.getCommentsCountForPosts(postIds);
+    
     const posts = await Promise.all(
       entities.map(async (entity) => {
         const author = await this.getAuthorInfo(entity.userId);
         const isLiked = likedPostIds.includes(entity.id);
-        return this.toDomain(entity, author, isLiked);
+        const commentsCount = commentsCountMap.get(entity.id) || 0;
+        return this.toDomain(entity, author, isLiked, commentsCount);
       })
     );
     
@@ -100,12 +120,22 @@ export class PostRepository implements IPostRepository {
   async update(post: Post): Promise<Post> {
     const entity = this.toEntity(post);
     const saved = await this.repository.save(entity);
-    return this.toDomain(saved, post.author, post.isLiked);
+    const commentsCount = await this.getCommentsCount(saved.id);
+    return this.toDomain(saved, post.author, post.isLiked, commentsCount);
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.repository.delete(id);
-    return result.affected !== 0;
+    try {
+      // First delete all comments for this post
+      await this.commentRepository.delete({ postId: id });
+      
+      // Then delete the post itself
+      const result = await this.repository.delete(id);
+      return result.affected !== 0;
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      return false;
+    }
   }
 
   async incrementLikes(id: string): Promise<Post | null> {
@@ -116,6 +146,49 @@ export class PostRepository implements IPostRepository {
   async decrementLikes(id: string): Promise<Post | null> {
     await this.repository.decrement({ id }, 'likesCount', 1);
     return this.findById(id);
+  }
+
+  // Comments count methods
+  async getCommentsCount(postId: string): Promise<number> {
+    return await this.commentRepository.count({
+      where: { postId }
+    });
+  }
+
+  async getCommentsCountForPosts(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) return new Map();
+
+    const counts = await this.commentRepository
+      .createQueryBuilder('comment')
+      .select('comment.postId', 'postId')
+      .addSelect('COUNT(*)', 'count')
+      .where('comment.postId IN (:...postIds)', { postIds })
+      .groupBy('comment.postId')
+      .getRawMany();
+
+    const countMap = new Map<string, number>();
+    
+    // Initialize all posts with 0 comments
+    postIds.forEach(id => countMap.set(id, 0));
+    
+    // Set actual counts
+    counts.forEach(({ postId, count }) => {
+      countMap.set(postId, parseInt(count, 10));
+    });
+
+    return countMap;
+  }
+
+  // Method to increment comment count when a comment is added
+  async incrementCommentsCount(postId: string): Promise<void> {
+    // We don't need to store comment count in post entity since we calculate it dynamically
+    // This method can be used for optimization if needed in the future
+  }
+
+  // Method to decrement comment count when a comment is deleted
+  async decrementCommentsCount(postId: string): Promise<void> {
+    // We don't need to store comment count in post entity since we calculate it dynamically
+    // This method can be used for optimization if needed in the future
   }
 
   private async checkIfLiked(postId: string, userId: string): Promise<boolean> {
@@ -147,7 +220,7 @@ export class PostRepository implements IPostRepository {
     }
   }
 
-  private toDomain(entity: PostEntity, author: IAuthor, isLiked: boolean): Post {
+  private toDomain(entity: PostEntity, author: IAuthor, isLiked: boolean, commentsCount: number): Post {
     return new Post(
       entity.id,
       author,
@@ -155,9 +228,10 @@ export class PostRepository implements IPostRepository {
       entity.mediaUrls.split(',').filter(url => url),
       entity.isAnnouncement,
       entity.likesCount,
-      isLiked, // Add isLiked property
+      isLiked,
       entity.createdAt,
-      entity.updatedAt
+      entity.updatedAt,
+      commentsCount
     );
   }
 

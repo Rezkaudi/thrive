@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
+import { commentService, Comment, CreateCommentData, UpdateCommentData } from '../../services/commentService';
 
 interface Post {
   id: string;
@@ -18,6 +19,12 @@ interface Post {
   createdAt: string;
   isEditing?: boolean;
   isDeleting?: boolean;
+  commentsCount?: number;
+  comments?: Comment[];
+  commentsLoading?: boolean;
+  commentsPage?: number;
+  commentsHasMore?: boolean;
+  commentsInitialized?: boolean;
 }
 
 interface CommunityState {
@@ -28,6 +35,7 @@ interface CommunityState {
   error: string | null;
   editError: string | null;
   deleteError: string | null;
+  commentError: string | null;
 }
 
 const initialState: CommunityState = {
@@ -38,8 +46,10 @@ const initialState: CommunityState = {
   error: null,
   editError: null,
   deleteError: null,
+  commentError: null,
 };
 
+// Post actions
 export const fetchPosts = createAsyncThunk(
   'community/fetchPosts',
   async ({ page = 1, limit = 20 }: { page?: number; limit?: number }) => {
@@ -102,6 +112,225 @@ export const deletePost = createAsyncThunk(
   }
 );
 
+// Comment actions - Updated to use community endpoints
+export const fetchComments = createAsyncThunk(
+  'community/fetchComments',
+  async ({ postId, page = 1, limit = 20, includeReplies = true }: {
+    postId: string;
+    page?: number;
+    limit?: number;
+    includeReplies?: boolean;
+  }, { rejectWithValue }) => {
+    try {
+      console.log('Fetching comments for post:', postId, { page, limit, includeReplies });
+      const response = await api.get(`/community/posts/${postId}/comments`, {
+        params: { page, limit, includeReplies }
+      });
+      
+      if (response.data.success) {
+        console.log('Comments response:', response.data.data);
+        return { postId, ...response.data.data };
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch comments');
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch comments:', error);
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch comments');
+    }
+  }
+);
+
+export const createComment = createAsyncThunk(
+  'community/createComment',
+  async ({ postId, data }: { postId: string; data: CreateCommentData }, { rejectWithValue, getState }) => {
+    try {
+      console.log('Creating comment for post:', postId, data);
+      const response = await api.post(`/community/posts/${postId}/comments`, data);
+      
+      if (response.data.success) {
+        const comment = response.data.data;
+        console.log('Comment created:', comment);
+        
+        // Get current user info from state for optimistic UI updates
+        const state = getState() as any;
+        const currentUserId = state.auth.user?.id;
+        const userProfile = state.dashboard.data?.user;
+        
+        // Ensure the comment has author info for immediate display
+        const commentWithAuthor = {
+          ...comment,
+          author: comment.author || {
+            userId: currentUserId,
+            name: userProfile?.name || userProfile?.email?.split('@')[0] || 'You',
+            email: userProfile?.email || '',
+            avatar: userProfile?.profilePhoto || '',
+            level: userProfile?.level || 1
+          }
+        };
+        
+        return { postId, comment: commentWithAuthor };
+      } else {
+        throw new Error(response.data.message || 'Failed to create comment');
+      }
+    } catch (error: any) {
+      console.error('Failed to create comment:', error);
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to create comment');
+    }
+  }
+);
+
+export const updateComment = createAsyncThunk(
+  'community/updateComment',
+  async ({ commentId, data }: { commentId: string; data: UpdateCommentData }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/community/comments/${commentId}`, data);
+      
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to update comment');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update comment');
+    }
+  }
+);
+
+export const deleteComment = createAsyncThunk(
+  'community/deleteComment',
+  async ({ commentId, postId }: { commentId: string; postId: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/community/comments/${commentId}`);
+      
+      if (response.data.success) {
+        return { commentId, postId };
+      } else {
+        throw new Error(response.data.message || 'Failed to delete comment');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete comment');
+    }
+  }
+);
+
+export const fetchCommentCount = createAsyncThunk(
+  'community/fetchCommentCount',
+  async (postId: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as { community: CommunityState };
+      const post = state.community.posts.find(p => p.id === postId);
+      
+      if (post?.commentsCount !== undefined) {
+        return { postId, count: post.commentsCount };
+      }
+
+      const response = await api.get(`/community/posts/${postId}/comments/count`);
+      
+      if (response.data.success) {
+        return { postId, count: response.data.data.count };
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch comment count');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch comment count');
+    }
+  }
+);
+
+// Helper functions for nested comment operations - FIXED VERSION
+const findAndUpdateComment = (comments: Comment[], commentId: string, updatedComment: Comment): Comment[] => {
+  return comments.map(comment => {
+    if (comment.id === commentId) {
+      return { ...updatedComment, isEditing: false, isDeleting: false };
+    }
+    if (comment.replies && comment.replies.length > 0) {
+      return {
+        ...comment,
+        replies: findAndUpdateComment(comment.replies, commentId, updatedComment)
+      };
+    }
+    return comment;
+  });
+};
+
+const findAndDeleteComment = (comments: Comment[], commentId: string): Comment[] => {
+  return comments
+    .filter(comment => comment.id !== commentId)
+    .map(comment => ({
+      ...comment,
+      replies: comment.replies ? findAndDeleteComment(comment.replies, commentId) : undefined
+    }));
+};
+
+// FIXED: Only add replies to their parent comments, not to top-level
+const findAndAddReply = (comments: Comment[], parentId: string, newReply: Comment): Comment[] => {
+  return comments.map(comment => {
+    if (comment.id === parentId) {
+      return {
+        ...comment,
+        replies: [...(comment.replies || []), newReply]
+      };
+    }
+    if (comment.replies && comment.replies.length > 0) {
+      return {
+        ...comment,
+        replies: findAndAddReply(comment.replies, parentId, newReply)
+      };
+    }
+    return comment;
+  });
+};
+
+const markCommentAsEditing = (comments: Comment[], commentId: string, isEditing: boolean = true): Comment[] => {
+  return comments.map(comment => {
+    if (comment.id === commentId) {
+      return { ...comment, isEditing, isDeleting: false };
+    }
+    if (comment.replies) {
+      return {
+        ...comment,
+        replies: markCommentAsEditing(comment.replies, commentId, isEditing)
+      };
+    }
+    return comment;
+  });
+};
+
+const markCommentAsDeleting = (comments: Comment[], commentId: string, isDeleting: boolean = true): Comment[] => {
+  return comments.map(comment => {
+    if (comment.id === commentId) {
+      return { ...comment, isDeleting, isEditing: false };
+    }
+    if (comment.replies) {
+      return {
+        ...comment,
+        replies: markCommentAsDeleting(comment.replies, commentId, isDeleting)
+      };
+    }
+    return comment;
+  });
+};
+
+// FIXED: Count replies recursively
+const countAllComments = (comments: Comment[]): number => {
+  let count = comments.length;
+  comments.forEach(comment => {
+    if (comment.replies && comment.replies.length > 0) {
+      count += countAllComments(comment.replies);
+    }
+  });
+  return count;
+};
+
+const resetCommentStates = (comments: Comment[]): Comment[] => {
+  return comments.map(comment => ({
+    ...comment,
+    isEditing: false,
+    isDeleting: false,
+    replies: comment.replies ? resetCommentStates(comment.replies) : undefined
+  }));
+};
+
 const communitySlice = createSlice({
   name: 'community',
   initialState,
@@ -113,6 +342,7 @@ const communitySlice = createSlice({
       state.error = null;
       state.editError = null;
       state.deleteError = null;
+      state.commentError = null;
     },
     startEditPost: (state, action) => {
       const postIndex = state.posts.findIndex(p => p.id === action.payload);
@@ -136,9 +366,49 @@ const communitySlice = createSlice({
         }
       }
     },
+    toggleCommentsSection: (state, action) => {
+      const postIndex = state.posts.findIndex(p => p.id === action.payload);
+      if (postIndex !== -1) {
+        if (!state.posts[postIndex].comments) {
+          state.posts[postIndex].comments = [];
+          state.posts[postIndex].commentsPage = 1;
+          state.posts[postIndex].commentsHasMore = false;
+        }
+      }
+    },
+    startEditComment: (state, action) => {
+      const { postId, commentId } = action.payload;
+      const postIndex = state.posts.findIndex(p => p.id === postId);
+      if (postIndex !== -1 && state.posts[postIndex].comments) {
+        state.posts[postIndex].comments = markCommentAsEditing(
+          state.posts[postIndex].comments!,
+          commentId,
+          true
+        );
+      }
+    },
+    startDeleteComment: (state, action) => {
+      const { postId, commentId } = action.payload;
+      const postIndex = state.posts.findIndex(p => p.id === postId);
+      if (postIndex !== -1 && state.posts[postIndex].comments) {
+        state.posts[postIndex].comments = markCommentAsDeleting(
+          state.posts[postIndex].comments!,
+          commentId,
+          true
+        );
+      }
+    },
+    resetCommentLoadingStates: (state) => {
+      state.posts.forEach(post => {
+        if (post.comments) {
+          post.comments = resetCommentStates(post.comments);
+        }
+      });
+    },
   },
   extraReducers: (builder) => {
     builder
+      // Posts
       .addCase(fetchPosts.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -214,9 +484,189 @@ const communitySlice = createSlice({
           state.posts[postIndex].isDeleting = false;
         }
         state.deleteError = action.payload as string;
+      })
+      
+      // Comments
+      .addCase(fetchComments.pending, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.meta.arg.postId);
+        if (postIndex !== -1) {
+          state.posts[postIndex].commentsLoading = true;
+        }
+        state.commentError = null;
+      })
+      .addCase(fetchComments.fulfilled, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
+        if (postIndex !== -1) {
+          const { comments, pagination } = action.payload;
+          
+          console.log('Updating post comments:', { postId: action.payload.postId, comments, pagination });
+          
+          // Mark as initialized and set comments
+          state.posts[postIndex].commentsInitialized = true;
+          state.posts[postIndex].commentsLoading = false;
+          
+          if (pagination.page === 1) {
+            state.posts[postIndex].comments = comments;
+          } else {
+            state.posts[postIndex].comments = [
+              ...(state.posts[postIndex].comments || []),
+              ...comments
+            ];
+          }
+          
+          state.posts[postIndex].commentsPage = pagination.page;
+          state.posts[postIndex].commentsHasMore = pagination.hasNextPage;
+          
+          // FIXED: Use total with replies for accurate count
+          if (pagination.totalWithReplies !== undefined) {
+            state.posts[postIndex].commentsCount = pagination.totalWithReplies;
+          } else if (pagination.total !== undefined) {
+            state.posts[postIndex].commentsCount = pagination.total;
+          }
+        }
+      })
+      .addCase(fetchComments.rejected, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.meta.arg.postId);
+        if (postIndex !== -1) {
+          state.posts[postIndex].commentsLoading = false;
+          state.posts[postIndex].commentsInitialized = true;
+        }
+        state.commentError = action.payload as string;
+      })
+      .addCase(createComment.pending, (state, action) => {
+        state.commentError = null;
+      })
+      .addCase(createComment.fulfilled, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
+        if (postIndex !== -1) {
+          // Ensure comments array exists
+          if (!state.posts[postIndex].comments) {
+            state.posts[postIndex].comments = [];
+          }
+          
+          state.posts[postIndex].commentsInitialized = true;
+          
+          const newComment = action.payload.comment;
+          
+          if (newComment.parentCommentId) {
+            // FIXED: Handle reply - only add to parent comment's replies, not to top-level
+            state.posts[postIndex].comments = findAndAddReply(
+              state.posts[postIndex].comments!,
+              newComment.parentCommentId,
+              newComment
+            );
+          } else {
+            // Handle top-level comment - add to beginning of comments array
+            state.posts[postIndex].comments!.unshift(newComment);
+          }
+          
+          // FIXED: Count all comments including nested replies
+          const totalComments = countAllComments(state.posts[postIndex].comments!);
+          state.posts[postIndex].commentsCount = totalComments;
+        }
+      })
+      .addCase(createComment.rejected, (state, action) => {
+        state.commentError = action.payload as string;
+      })
+      .addCase(updateComment.pending, (state, action) => {
+        // Find and mark comment as editing across all posts
+        for (const post of state.posts) {
+          if (post.comments) {
+            post.comments = markCommentAsEditing(post.comments, action.meta.arg.commentId, true);
+          }
+        }
+        state.commentError = null;
+      })
+      .addCase(updateComment.fulfilled, (state, action) => {
+        // Find and update the comment in all posts, clearing loading state
+        for (const post of state.posts) {
+          if (post.comments) {
+            post.comments = findAndUpdateComment(post.comments, action.payload.id, action.payload);
+          }
+        }
+        state.commentError = null;
+      })
+      .addCase(updateComment.rejected, (state, action) => {
+        // Remove editing state from the specific comment
+        for (const post of state.posts) {
+          if (post.comments) {
+            post.comments = markCommentAsEditing(post.comments, action.meta.arg.commentId, false);
+          }
+        }
+        state.commentError = action.payload as string;
+      })
+      .addCase(deleteComment.pending, (state, action) => {
+        const { postId, commentId } = action.meta.arg;
+        const postIndex = state.posts.findIndex(p => p.id === postId);
+        if (postIndex !== -1 && state.posts[postIndex].comments) {
+          state.posts[postIndex].comments = markCommentAsDeleting(
+            state.posts[postIndex].comments!,
+            commentId,
+            true
+          );
+        }
+        state.commentError = null;
+      })
+      .addCase(deleteComment.fulfilled, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
+        if (postIndex !== -1 && state.posts[postIndex].comments) {
+          
+          // Count comments before deletion (including nested)
+          const beforeCount = countAllComments(state.posts[postIndex].comments!);
+          
+          // Remove comment from nested structure
+          state.posts[postIndex].comments = findAndDeleteComment(
+            state.posts[postIndex].comments!,
+            action.payload.commentId
+          );
+          
+          // Count comments after deletion
+          const afterCount = countAllComments(state.posts[postIndex].comments!);
+          
+          // Update comment count based on actual difference
+          const deletedCount = beforeCount - afterCount;
+          state.posts[postIndex].commentsCount = Math.max(
+            0, 
+            (state.posts[postIndex].commentsCount || 0) - deletedCount
+          );
+        }
+        state.commentError = null;
+      })
+      .addCase(deleteComment.rejected, (state, action) => {
+        const { postId, commentId } = action.meta.arg;
+        const postIndex = state.posts.findIndex(p => p.id === postId);
+        if (postIndex !== -1 && state.posts[postIndex].comments) {
+          // Remove deleting state
+          state.posts[postIndex].comments = markCommentAsDeleting(
+            state.posts[postIndex].comments!,
+            commentId,
+            false
+          );
+        }
+        state.commentError = action.payload as string;
+      })
+      .addCase(fetchCommentCount.fulfilled, (state, action) => {
+        const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
+        if (postIndex !== -1) {
+          state.posts[postIndex].commentsCount = action.payload.count;
+        }
+      })
+      .addCase(fetchCommentCount.rejected, (state, action) => {
+        console.error('Failed to fetch comment count:', action.payload);
       });
   },
 });
 
-export const { setCurrentPage, clearError, startEditPost, startDeletePost, updatePostContent } = communitySlice.actions;
+export const { 
+  setCurrentPage, 
+  clearError, 
+  startEditPost, 
+  startDeletePost, 
+  updatePostContent,
+  toggleCommentsSection,
+  startEditComment,
+  startDeleteComment,
+  resetCommentLoadingStates
+} = communitySlice.actions;
+
 export default communitySlice.reducer;
