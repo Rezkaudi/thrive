@@ -3,6 +3,7 @@ import { ILessonRepository } from '../../../domain/repositories/ILessonRepositor
 import { IProgressRepository } from '../../../domain/repositories/IProgressRepository';
 import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
 import { Progress } from '../../../domain/entities/Progress';
+import { ActivityService } from '../../../infrastructure/services/ActivityService';
 
 export interface CompleteLessonDTO {
   userId: string;
@@ -15,8 +16,9 @@ export class CompleteLessonUseCase {
   constructor(
     private lessonRepository: ILessonRepository,
     private progressRepository: IProgressRepository,
-    private profileRepository: IProfileRepository
-  ) {}
+    private profileRepository: IProfileRepository,
+    private activityService: ActivityService
+  ) { }
 
   async execute(dto: CompleteLessonDTO): Promise<Progress> {
     const lesson = await this.lessonRepository.findById(dto.lessonId);
@@ -38,7 +40,7 @@ export class CompleteLessonUseCase {
 
     // Check existing progress
     let progress = await this.progressRepository.findByUserAndLesson(dto.userId, dto.lessonId);
-    
+
     if (progress) {
       if (progress.isCompleted) {
         throw new Error('Lesson already completed');
@@ -71,6 +73,13 @@ export class CompleteLessonUseCase {
     if (lesson.pointsReward > 0) {
       await this.profileRepository.updatePoints(dto.userId, lesson.pointsReward);
     }
+
+    // #activity
+    await this.activityService.logLessonCompleted(
+      dto.userId,
+      lesson.title,
+      lesson.pointsReward
+    );
 
     return savedProgress;
   }

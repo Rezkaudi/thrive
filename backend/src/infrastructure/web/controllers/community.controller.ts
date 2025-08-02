@@ -6,6 +6,7 @@ import { PostRepository } from '../../database/repositories/PostRepository';
 import { PostLikeRepository } from '../../database/repositories/PostLikeRepository';
 import { UserRepository } from '../../database/repositories/UserRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
+import { ActivityService } from '../../services/ActivityService';
 
 export class CommunityController {
   async createPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -15,7 +16,8 @@ export class CommunityController {
       const createPostUseCase = new CreatePostUseCase(
         new PostRepository(),
         new UserRepository(),
-        new ProfileRepository()
+        new ProfileRepository(),
+        new ActivityService()
       );
 
       const post = await createPostUseCase.execute({
@@ -135,7 +137,7 @@ export class CommunityController {
         return;
       }
 
-      res.json({message: "Post edited successfully"})
+      res.json({ message: "Post edited successfully" })
 
     } catch (error) {
       return next(error)

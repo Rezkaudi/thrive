@@ -17,12 +17,37 @@ export interface CourseProgress {
     progressPercentage: number;
 }
 
-export interface RecentActivity {
-    type: 'lesson_completed' | 'points_earned' | 'post_created' | 'session_booked';
-    title: string;
-    timestamp: string;
-    metadata?: any;
+export enum ActivityType {
+    USER_REGISTERED = 'USER_REGISTERED',
+    LESSON_COMPLETED = 'LESSON_COMPLETED',
+    POST_CREATED = 'POST_CREATED',
+    SESSION_BOOKED = 'SESSION_BOOKED',
+    SESSION_ATTENDED = 'SESSION_ATTENDED',
+    COURSE_COMPLETED = 'COURSE_COMPLETED',
+    ACHIEVEMENT_EARNED = 'ACHIEVEMENT_EARNED',
+    POINTS_EARNED = 'POINTS_EARNED',
+    LEVEL_UP = 'LEVEL_UP',
+    PROFILE_UPDATED = 'PROFILE_UPDATED'
 }
+
+export interface RecentActivity {
+    id: string;
+    userId: string;
+    activityType: string;
+    title: string;
+    description?: string;
+    metadata?: Record<string, any>;
+    createdAt: string;
+    user?: {
+        id: string;
+        email: string;
+        name: string;
+        profilePhoto?: string;
+        level: number;
+    };
+}
+
+
 
 export interface Achievement {
     id: string;

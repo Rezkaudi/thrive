@@ -15,6 +15,7 @@ import {
   IconButton,
   Skeleton,
   Alert,
+  Button,
 } from '@mui/material';
 import {
   School,
@@ -28,7 +29,8 @@ import { motion } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
 import { fetchDashboardData } from '../store/slices/dashboardSlice';
-import { formatDistanceToNow } from 'date-fns';
+import { ActivityFeed } from '../components/activity/ActivityFeed';
+
 
 const StatCard = ({ icon, title, value, color, onClick, loading }: any) => (
   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -67,8 +69,10 @@ const StatCard = ({ icon, title, value, color, onClick, loading }: any) => (
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+
   const { data: dashboardData, loading, error } = useSelector((state: RootState) => state.dashboard);
 
+  // In useEffect
   useEffect(() => {
     dispatch(fetchDashboardData());
   }, [dispatch]);
@@ -109,13 +113,13 @@ export const DashboardPage: React.FC = () => {
     },
   ];
 
-  const formatActivityTime = (timestamp: string) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch {
-      return 'Recently';
-    }
-  };
+  // const formatActivityTime = (timestamp: string) => {
+  //   try {
+  //     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+  //   } catch {
+  //     return 'Recently';
+  //   }
+  // };
 
   if (error) {
     return (
@@ -221,7 +225,7 @@ export const DashboardPage: React.FC = () => {
                   <Skeleton variant="rectangular" height={40} sx={{ mb: 2 }} />
                   <Skeleton variant="rectangular" height={40} />
                 </>
-              ) : (
+              ) : (dashboardData?.courseProgress?.length && dashboardData?.courseProgress?.length > 0 ?
                 dashboardData?.courseProgress.map((course, index) => (
                   <Box key={course.courseId} sx={{ mb: index === 0 ? 3 : 0 }}>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -240,13 +244,18 @@ export const DashboardPage: React.FC = () => {
                       {course.completedLessons} of {course.totalLessons} lessons completed
                     </Typography>
                   </Box>
-                ))
+                )) :
+                <Paper sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No Progress yet
+                  </Typography>
+                </Paper>
               )}
             </CardContent>
           </Card>
-
+          {/* */}
           {/* Recent Activity */}
-          <Card>
+          {/* <Card>
             <CardContent>
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 Recent Activity
@@ -279,6 +288,25 @@ export const DashboardPage: React.FC = () => {
                   ))
                 )}
               </Stack>
+            </CardContent>
+          </Card> */}
+
+          <Card>
+            <CardContent>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" fontWeight={600}>
+                  Recent Activity
+                </Typography>
+                {/* <Button size="small" onClick={() => navigate('/profile?tab=activity')}>
+                  View All
+                </Button> */}
+              </Stack>
+              <ActivityFeed
+                activities={dashboardData?.recentActivity!}
+                loading={loading}
+                compact
+                maxItems={5}
+              />
             </CardContent>
           </Card>
         </Grid>

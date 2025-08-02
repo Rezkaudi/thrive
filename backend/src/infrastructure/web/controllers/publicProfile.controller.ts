@@ -12,6 +12,8 @@ import { SessionRepository } from '../../database/repositories/SessionRepository
 import { Progress } from '../../../domain/entities/Progress';
 import { Post } from '../../../domain/entities/Post';
 import { Booking } from '../../../domain/repositories/IBookingRepository';
+import { RecentActivityRepository } from '../../database/repositories/RecentActivityRepository';
+import { RecentActivity } from '../../../domain/entities/RecentActivity';
 
 export interface PublicProfileData {
   id: string;
@@ -48,12 +50,7 @@ export interface PublicProfileData {
     color: string;
   }>;
   // Real recent milestones
-  recentMilestones: Array<{
-    title: string;
-    date: string;
-    type: 'lesson' | 'level' | 'achievement' | 'community' | 'course';
-    details?: string;
-  }>;
+  recentMilestones: RecentActivity[];
   // Course progress
   courseProgress: Array<{
     courseTitle: string;
@@ -73,6 +70,8 @@ export class PublicProfileController {
   private enrollmentRepository: EnrollmentRepository;
   private bookingRepository: BookingRepository;
   private sessionRepository: SessionRepository;
+  private recentActivityRepository: RecentActivityRepository
+
 
   constructor() {
     this.profileRepository = new ProfileRepository();
@@ -84,6 +83,8 @@ export class PublicProfileController {
     this.enrollmentRepository = new EnrollmentRepository();
     this.bookingRepository = new BookingRepository();
     this.sessionRepository = new SessionRepository();
+    this.recentActivityRepository = new RecentActivityRepository();
+
   }
 
   async getPublicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -186,13 +187,18 @@ export class PublicProfileController {
       );
 
       // Generate recent milestones based on real activity
-      const recentMilestones = await this.generateRealMilestones(
+      const recentMilestones = await this.recentActivityRepository.findByUserId(
         userId,
-        userProgress,
-        userPosts,
-        userBookings,
-        completedCourses
+        100
       );
+
+      //  const recentMilestones = await this.generateRealMilestones(
+      //   userId,
+      //   userProgress,
+      //   userPosts,
+      //   userBookings,
+      //   completedCourses
+      // );
 
       const publicProfileData: PublicProfileData = {
         id: profile.id,

@@ -24,7 +24,7 @@ export class EnrollmentRepository implements IEnrollmentRepository {
   }
 
   async findByUserId(userId: string): Promise<Enrollment[]> {
-    const entities = await this.repository.find({ where: { userId } });
+    const entities = await this.repository.find({ where: { userId }, order: { createdAt: 'DESC' }, });
     return entities.map(e => this.toDomain(e));
   }
 

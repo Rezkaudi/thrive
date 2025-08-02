@@ -5,6 +5,7 @@ import { CancelBookingUseCase } from '../../../application/use-cases/booking/Can
 import { SessionRepository } from '../../database/repositories/SessionRepository';
 import { BookingRepository } from '../../database/repositories/BookingRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
+import { ActivityService } from '../../services/ActivityService';
 
 export class BookingController {
   async createBooking(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -14,7 +15,8 @@ export class BookingController {
       const createBookingUseCase = new CreateBookingUseCase(
         new SessionRepository(),
         new BookingRepository(),
-        new ProfileRepository()
+        new ProfileRepository(),
+        new ActivityService()
       );
 
       const booking = await createBookingUseCase.execute({

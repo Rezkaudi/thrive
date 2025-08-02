@@ -20,6 +20,7 @@ import { dashboardRouter } from './routes/dashboard.routes';
 import { publicProfileRouter } from './routes/publicProfile.routes'; // Add this import
 
 import { setupSwagger } from './swagger/swagger.setup';
+import { activityRouter } from './routes/activity.routes';
 
 export class Server {
   private app: Application;
@@ -85,6 +86,7 @@ export class Server {
     this.app.use('/api/sessions', sessionRouter);
     this.app.use('/api/subscriptions', subscriptionRouter);
     this.app.use('/api/dashboard', dashboardRouter);
+    this.app.use('/api/activities', activityRouter);
 
     // Health check
     this.app.get('/', (_, res) => {
@@ -104,7 +106,7 @@ export class Server {
     this.app.listen(this.port, () => {
       console.log(`Server running on port ${this.port}`);
       console.log(`API Documentation available at http://localhost:${this.port}/docs`);
-      
+
       // Log S3 configuration status
       if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
         console.log(`✅ AWS S3 configured for bucket: ${process.env.AWS_S3_BUCKET_NAME || 'thrive-in-japan'}`);

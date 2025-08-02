@@ -11,6 +11,7 @@ import { PostRepository } from '../../database/repositories/PostRepository';
 import { SessionRepository } from '../../database/repositories/SessionRepository';
 import { BookingRepository } from '../../database/repositories/BookingRepository';
 import { EnrollmentRepository } from '../../database/repositories/EnrollmentRepository';
+import { RecentActivityRepository } from '../../database/repositories/RecentActivityRepository';
 
 export class DashboardController {
     async getDashboardData(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -24,31 +25,15 @@ export class DashboardController {
                 new PostRepository(),
                 new SessionRepository(),
                 new BookingRepository(),
-                new EnrollmentRepository()
+                new EnrollmentRepository(),
+                new RecentActivityRepository()
             );
 
             const dashboardData = await getDashboardDataUseCase.execute({
                 userId: req.user!.userId,
             });
 
-            // Format dates for frontend
-            const formattedData = {
-                ...dashboardData,
-                recentActivity: dashboardData.recentActivity.map(activity => ({
-                    ...activity,
-                    timestamp: activity.timestamp.toISOString(),
-                })),
-                upcomingSessions: dashboardData.upcomingSessions.map(session => ({
-                    ...session,
-                    scheduledAt: session.scheduledAt.toISOString(),
-                })),
-                achievements: dashboardData.achievements.map(achievement => ({
-                    ...achievement,
-                    earnedAt: achievement.earnedAt.toISOString(),
-                })),
-            };
-
-            res.json(formattedData);
+            res.json(dashboardData);
         } catch (error) {
             next(error);
         }
