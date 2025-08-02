@@ -16,6 +16,9 @@ import {
 import { Email } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../services/api';
+import { checkAuth } from '../store/slices/authSlice';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../store/store';
 
 export const VerifyEmailPage: React.FC = () => {
     const navigate = useNavigate();
@@ -26,6 +29,7 @@ export const VerifyEmailPage: React.FC = () => {
     const [resendTimer, setResendTimer] = useState(60);
     const [resendLoading, setResendLoading] = useState(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const dispatch = useDispatch<AppDispatch>();
 
     useEffect(() => {
         // Get email from session storage
@@ -76,10 +80,13 @@ export const VerifyEmailPage: React.FC = () => {
 
         try {
             await api.post('/auth/verify-email-code', { email, code });
+            await dispatch(checkAuth());
 
             // Tokens are now set in cookies, redirect to profile
             sessionStorage.removeItem('registration_email');
-            navigate('/register/success');
+            // navigate('/subscription')
+            window.location.href = '/subscription'
+
         } catch (err: any) {
             setError(err.response?.data?.error || 'Invalid verification code');
         } finally {

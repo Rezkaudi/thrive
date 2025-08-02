@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/store';
 import { chackPayment, checkAuth } from '../../store/slices/authSlice';
 import { fetchDashboardData } from '../../store/slices/dashboardSlice';
+import { Box, CircularProgress } from '@mui/material';
 
 
 interface ProtectedRouteProps {
@@ -17,16 +18,31 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
   const { isAuthenticated, loading, user, authChecking, hasTrailingSubscription } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    // Re-check auth if needed
-    if (!isAuthenticated && !authChecking) {
-      dispatch(checkAuth());
-      dispatch(fetchDashboardData());
-      // dispatch(chackPayment());
-    }
+    console.log(hasTrailingSubscription)
+    const fetchData = async () => {
+      if (!isAuthenticated && !authChecking) {
+        await dispatch(checkAuth());
+        await dispatch(fetchDashboardData());
+        // dispatch(checkPayment()); // Uncomment if needed
+      }
+    };
+
+    fetchData();
   }, [dispatch, isAuthenticated, authChecking]);
 
   if (authChecking || loading) {
-    return null; // Or a loading spinner
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (!isAuthenticated) {

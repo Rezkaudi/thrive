@@ -50,10 +50,13 @@ function AppContent() {
   const { authChecking, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    // Check auth status on app load
-    dispatch(checkAuth());
-    dispatch(chackPayment());
-    dispatch(fetchDashboardData());
+    const initApp = async () => {
+      await dispatch(checkAuth());
+      await dispatch(chackPayment());
+      await dispatch(fetchDashboardData());
+    };
+
+    initApp();
   }, [dispatch]);
 
   if (authChecking) {
@@ -92,9 +95,7 @@ function AppContent() {
 
         <Route
           path="/subscription"
-          element={
-            <SubscriptionPage />
-          }
+          element={isAuthenticated ? <SubscriptionPage /> : <Navigate to="/login" replace />}
         />
 
         <Route

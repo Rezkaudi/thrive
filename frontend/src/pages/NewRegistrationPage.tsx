@@ -168,7 +168,7 @@ export const NewRegistrationPage: React.FC = () => {
                         <CardContent sx={{ p: 5 }}>
                             <Box textAlign="center" mb={4}>
                                 <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-                                    Create Your Account 🌸
+                                    Create Your Account
                                 </Typography>
                                 <Typography variant="body1" color="text.secondary">
                                     Join thousands learning Japanese with cultural context
