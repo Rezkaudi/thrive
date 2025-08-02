@@ -21,7 +21,7 @@ export const useSweetAlert = () => {
       text: options.text || '',
       icon: options.icon || 'info',
       confirmButtonText: options.confirmButtonText || 'OK',
-      confirmButtonColor: options.confirmButtonColor || '#FF6B6B',
+      confirmButtonColor: options.confirmButtonColor || '#5C633A',
       customClass: {
         popup: 'sweet-alert-popup',
         title: 'sweet-alert-title',
@@ -40,7 +40,7 @@ export const useSweetAlert = () => {
       showCancelButton: true,
       confirmButtonText: options.confirmButtonText || 'Yes',
       cancelButtonText: options.cancelButtonText || 'Cancel',
-      confirmButtonColor: options.confirmButtonColor || '#FF6B6B',
+      confirmButtonColor: options.confirmButtonColor || '#5C633A',
       cancelButtonColor: options.cancelButtonColor || '#6C757D',
       customClass: {
         popup: 'sweet-alert-popup',

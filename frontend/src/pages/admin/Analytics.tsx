@@ -44,7 +44,7 @@
 //   demographics: Array<{ level: string; count: number }>;
 // }
 
-// const COLORS = ['#FF6B6B', '#4ECDC4', '#FFB7C5', '#00B894', '#FFA502'];
+// const COLORS = ['#5C633A', '#A6531C', '#D4BC8C', '#483C32', '#FFA502'];
 
 // export const Analytics: React.FC = () => {
 //   const [timeRange, setTimeRange] = useState('30days');
@@ -219,9 +219,9 @@
 //                   <Line
 //                     type="monotone"
 //                     dataKey="revenue"
-//                     stroke="#FF6B6B"
+//                     stroke="#5C633A"
 //                     strokeWidth={2}
-//                     dot={{ fill: '#FF6B6B' }}
+//                     dot={{ fill: '#5C633A' }}
 //                   />
 //                 </LineChart>
 //               </ResponsiveContainer>
@@ -273,8 +273,8 @@
 //                   <YAxis />
 //                   <Tooltip />
 //                   <Legend />
-//                   <Bar dataKey="lessons" fill="#4ECDC4" />
-//                   <Bar dataKey="posts" fill="#FFB7C5" />
+//                   <Bar dataKey="lessons" fill="#A6531C" />
+//                   <Bar dataKey="posts" fill="#D4BC8C" />
 //                 </BarChart>
 //               </ResponsiveContainer>
 //             </CardContent>
@@ -294,7 +294,7 @@
 //                   <XAxis type="number" domain={[0, 100]} />
 //                   <YAxis dataKey="course" type="category" width={100} />
 //                   <Tooltip formatter={(value) => `${value}%`} />
-//                   <Bar dataKey="rate" fill="#00B894">
+//                   <Bar dataKey="rate" fill="#483C32">
 //                     {analyticsData.courseCompletion.map((entry, index) => (
 //                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
 //                     ))}
@@ -370,7 +370,7 @@ interface AnalyticsData {
   demographics: Array<{ level: string; count: number }>;
 }
 
-const COLORS = ['#FF6B6B', '#4ECDC4', '#FFB7C5', '#00B894', '#FFA502'];
+const COLORS = ['#5C633A', '#A6531C', '#D4BC8C', '#483C32', '#FFA502'];
 
 // Custom formatter to ensure proper currency display
 const currencyFormatter = (value: any) => {
@@ -648,9 +648,9 @@ export const Analytics: React.FC = () => {
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#FF6B6B"
+                      stroke="#5C633A"
                       strokeWidth={2}
-                      dot={{ fill: '#FF6B6B' }}
+                      dot={{ fill: '#5C633A' }}
                       name="Revenue"
                     />
                   </LineChart>
@@ -715,8 +715,8 @@ export const Analytics: React.FC = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="lessons" fill="#4ECDC4" name="Lessons" />
-                    <Bar dataKey="posts" fill="#FFB7C5" name="Posts" />
+                    <Bar dataKey="lessons" fill="#A6531C" name="Lessons" />
+                    <Bar dataKey="posts" fill="#D4BC8C" name="Posts" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -742,7 +742,7 @@ export const Analytics: React.FC = () => {
                     <XAxis type="number" domain={[0, 100]} />
                     <YAxis dataKey="course" type="category" width={100} />
                     <Tooltip formatter={(value) => `${value}%`} />
-                    <Bar dataKey="rate" fill="#00B894">
+                    <Bar dataKey="rate" fill="#483C32">
                       {analyticsData.courseCompletion.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}

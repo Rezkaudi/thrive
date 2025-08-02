@@ -105,7 +105,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   // const [isLoading, setIsLoading] = useState(false);
   const [fullscreenDialog, setFullscreenDialog] = useState(false);
-  
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -300,7 +300,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
 
     // Check correctness
     const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
-    
+
     setShowFeedback(prev => ({
       ...prev,
       [slideId]: true
@@ -373,7 +373,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         acc[item.text] = item.target;
         return acc;
       }, {}) || {};
-      
+
       checkAnswer(slideId, userAnswer, correctAnswer, 'drag-drop');
     };
 
@@ -382,7 +382,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -477,14 +477,14 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             variant="contained"
             size="large"
             onClick={handleCheckAnswer}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 2,
               fontSize: '1.1rem',
               borderRadius: 3,
-              background: 'linear-gradient(45deg, #FF6B6B 30%, #FFB7C5 90%)',
+              background: 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
               '&:hover': {
-                background: 'linear-gradient(45deg, #E55555 30%, #FF9FAC 90%)',
+                background: 'linear-gradient(45deg, #283618 30%, #D4BC8C 90%)',
               }
             }}
           >
@@ -529,21 +529,21 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           correctAnswer[`${item.id}-${index}`] = blank;
         });
       });
-      
+
       checkAnswer(slideId, userAnswer, correctAnswer, 'fill-blanks');
     };
 
     const renderSentenceWithBlanks = (item: any) => {
       const parts = item.sentence?.split('___') || [];
       const result = [];
-      
+
       for (let i = 0; i < parts.length; i++) {
         result.push(
           <span key={`text-${i}`} style={{ fontSize: '1.5rem', fontWeight: 500 }}>
             {parts[i]}
           </span>
         );
-        
+
         if (i < parts.length - 1) {
           result.push(
             <TextField
@@ -572,7 +572,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           );
         }
       }
-      
+
       return <div style={{ lineHeight: 2.5 }}>{result}</div>;
     };
 
@@ -581,17 +581,17 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
 
         <Stack spacing={4} sx={{ mb: 4 }}>
           {content.items?.map((item: any, index: number) => (
-            <Paper 
-              key={item.id} 
-              sx={{ 
-                p: 4, 
+            <Paper
+              key={item.id}
+              sx={{
+                p: 4,
                 textAlign: 'center',
                 borderRadius: 3,
                 background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
@@ -609,10 +609,10 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
                 {renderSentenceWithBlanks(item)}
               </Box>
               {item.translation && (
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
-                    color: 'text.secondary', 
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'text.secondary',
                     fontStyle: 'italic',
                     fontSize: '1rem',
                     mt: 2,
@@ -635,12 +635,12 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             variant="contained"
             size="large"
             onClick={handleCheckAnswer}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 2,
               fontSize: '1.1rem',
               borderRadius: 3,
-              background: 'linear-gradient(45deg, #4ECDC4 30%, #7ED4D0 90%)',
+              background: 'linear-gradient(45deg, #A6531C 30%, #7ED4D0 90%)',
               '&:hover': {
                 background: 'linear-gradient(45deg, #3BA59E 30%, #6DD6CE 90%)',
               }
@@ -652,11 +652,11 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
 
         {showSlideFeeback && validation && (
           <Fade in>
-            <Alert 
-              severity={validation.type} 
-              sx={{ 
-                mt: 3, 
-                borderRadius: 2, 
+            <Alert
+              severity={validation.type}
+              sx={{
+                mt: 3,
+                borderRadius: 2,
                 fontSize: '1rem',
                 '& .MuiAlert-icon': {
                   fontSize: '1.5rem'
@@ -689,7 +689,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
       content.items?.forEach((item: any) => {
         correctAnswer[item.left] = item.right;
       });
-      
+
       checkAnswer(slideId, connections, correctAnswer, 'matching');
     };
 
@@ -698,7 +698,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -795,8 +795,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleCheckAnswer}
             disabled={Object.keys(connections).length !== (content.items?.length || 0)}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 2,
               fontSize: '1.1rem',
               borderRadius: 3,
@@ -864,13 +864,13 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
 
         {/* Sentence Building Area */}
-        <Paper sx={{ 
+        <Paper sx={{
           minHeight: '120px',
           p: 3,
           mb: 4,
@@ -918,7 +918,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           <Typography variant="h6" gutterBottom textAlign="center" fontWeight={600} sx={{ mb: 3 }}>
             📝 Available Words
           </Typography>
-          <Box sx={{ 
+          <Box sx={{
             display: 'flex',
             flexWrap: 'wrap',
             gap: 2,
@@ -972,8 +972,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             variant="outlined"
             size="large"
             onClick={resetSentence}
-            sx={{ 
-              px: 4, 
+            sx={{
+              px: 4,
               py: 1.5,
               fontSize: '1rem',
               borderRadius: 3
@@ -986,12 +986,12 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleCheckAnswer}
             disabled={selectedWords.length !== (item.words?.length || 0)}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 1.5,
               fontSize: '1.1rem',
               borderRadius: 3,
-              background: 'linear-gradient(45deg, #FF6348 30%, #FF8E8E 90%)',
+              background: 'linear-gradient(45deg, #FF6348 30%, #D4BC8C 90%)',
               '&:hover': {
                 background: 'linear-gradient(45deg, #E55538 30%, #FF7E7E 90%)',
               }
@@ -1029,7 +1029,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
       const correctOrder = content.items
         ?.sort((a: any, b: any) => a.correctOrder - b.correctOrder)
         .map((item: any) => item.text) || [];
-      
+
       checkAnswer(slideId, sortedItems, correctOrder, 'sorting');
     };
 
@@ -1044,7 +1044,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -1063,7 +1063,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           <Typography variant="h6" textAlign="center" gutterBottom fontWeight={600} sx={{ mb: 3 }}>
             📋 Correct Order (Drag items here)
           </Typography>
-          
+
           {sortedItems.length === 0 ? (
             <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ fontStyle: 'italic', mt: 4 }}>
               Drag items from below to arrange them in the correct order ⬇️
@@ -1093,12 +1093,12 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    <Avatar sx={{ 
-                      bgcolor: 'primary.main', 
-                      width: 32, 
-                      height: 32, 
+                    <Avatar sx={{
+                      bgcolor: 'primary.main',
+                      width: 32,
+                      height: 32,
                       fontSize: '0.9rem',
-                      fontWeight: 600 
+                      fontWeight: 600
                     }}>
                       {index + 1}
                     </Avatar>
@@ -1166,8 +1166,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleCheckAnswer}
             disabled={sortedItems.length !== (content.items?.length || 0)}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 1.5,
               fontSize: '1.1rem',
               borderRadius: 3,
@@ -1208,7 +1208,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
     const handleCheckAnswer = () => {
       const correctHotspots = content.items?.map((item: any) => item.id.toString()) || [];
       const clickedHotspots = Array.from(hotspotClicks);
-      
+
       checkAnswer(slideId, clickedHotspots.sort(), correctHotspots.sort(), 'hotspot');
     };
 
@@ -1221,7 +1221,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -1243,7 +1243,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
                   objectFit: 'cover'
                 }}
               />
-              
+
               {/* Hotspot Indicators */}
               {content.items?.map((item: any) => (
                 <Tooltip
@@ -1264,7 +1264,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
                       bgcolor: hotspotClicks.has(item.id.toString()) ? 'success.main' : 'primary.main',
                       color: 'white',
                       boxShadow: 3,
-                      animation: content.settings?.showAllHotspots || hotspotClicks.has(item.id.toString()) 
+                      animation: content.settings?.showAllHotspots || hotspotClicks.has(item.id.toString())
                         ? 'none' : 'pulse 2s infinite',
                       '&:hover': {
                         bgcolor: hotspotClicks.has(item.id.toString()) ? 'success.dark' : 'primary.dark',
@@ -1320,8 +1320,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleCheckAnswer}
             disabled={hotspotClicks.size !== (content.items?.length || 0)}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 1.5,
               fontSize: '1.1rem',
               borderRadius: 3,
@@ -1364,7 +1364,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         ?.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .map((item: any) => item.id) || [];
       const userOrder = timelineOrder.map(item => item.id);
-      
+
       checkAnswer(slideId, userOrder, correctOrder, 'timeline');
     };
 
@@ -1372,7 +1372,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
       setTimelineOrder([]);
     };
 
-    const availableEvents = content.items?.filter((item: any) => 
+    const availableEvents = content.items?.filter((item: any) =>
       !timelineOrder.find(t => t.id === item.id)
     ) || [];
 
@@ -1381,7 +1381,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -1530,8 +1530,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleCheckAnswer}
             disabled={timelineOrder.length !== (content.items?.length || 0)}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 1.5,
               fontSize: '1.1rem',
               borderRadius: 3,
@@ -1584,7 +1584,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -1691,8 +1691,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleMarkComplete}
             disabled={Object.keys(flashcardStates).length !== (content.items?.length || 0)}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 2,
               fontSize: '1.1rem',
               borderRadius: 3,
@@ -1768,7 +1768,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -1842,8 +1842,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleMarkComplete}
             disabled={!audioUrl}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 2,
               fontSize: '1.1rem',
               borderRadius: 3,
@@ -1882,7 +1882,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
       content.items?.forEach((item: any, index: number) => {
         correctAnswers[index] = item.correct;
       });
-      
+
       checkAnswer(slideId, userAnswer || {}, correctAnswers, 'listening');
     };
 
@@ -1900,7 +1900,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
           {slide.content.title}
         </Typography>
-        
+
         <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
           {content.instruction}
         </Typography>
@@ -1957,8 +1957,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
             size="large"
             onClick={handleCheckAnswer}
             disabled={!userAnswer || Object.keys(userAnswer).length !== (content.items?.length || 0)}
-            sx={{ 
-              px: 6, 
+            sx={{
+              px: 6,
               py: 2,
               fontSize: '1.1rem',
               borderRadius: 3,
@@ -2063,13 +2063,13 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         const quizId = `quiz-${slide.id}`;
         const userAnswer = interactiveAnswers[quizId];
         const showQuizFeedback = showFeedback[quizId];
-        
+
         return (
           <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
             <Typography variant="h4" fontWeight={600} gutterBottom>
               {content.content.question}
             </Typography>
-            
+
             {content.content.type === 'multiple-choice' ? (
               <RadioGroup
                 value={userAnswer || ''}
@@ -2314,10 +2314,10 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <LinearProgress
           variant="determinate"
           value={progress}
-          sx={{ 
+          sx={{
             height: 8,
             '& .MuiLinearProgress-bar': {
-              background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)'
+              background: 'linear-gradient(90deg, #5C633A 0%, #A6531C 100%)'
             }
           }}
         />
@@ -2333,9 +2333,9 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
               transition={{ duration: 0.4, ease: "easeInOut" }}
               sx={{ width: '100%', maxWidth: 1200, mx: 'auto' }}
             >
-              <Card sx={{ 
-                m: 3, 
-                bgcolor: 'rgba(255, 255, 255, 0.98)', 
+              <Card sx={{
+                m: 3,
+                bgcolor: 'rgba(255, 255, 255, 0.98)',
                 borderRadius: 4,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
               }}>
@@ -2381,8 +2381,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
                   bgcolor: index === currentSlide
                     ? 'primary.main'
                     : slideProgress.has(index)
-                    ? 'success.main'
-                    : 'grey.300',
+                      ? 'success.main'
+                      : 'grey.300',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                   '&:hover': {
@@ -2401,7 +2401,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
               onClick={handleComplete}
               disabled={isLessonCompleted}
               endIcon={<CheckCircle />}
-              sx={{ 
+              sx={{
                 borderRadius: 2,
                 px: 3,
                 background: 'linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)',
@@ -2417,12 +2417,12 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
               endIcon={<NavigateNext />}
               onClick={handleNext}
               variant="contained"
-              sx={{ 
+              sx={{
                 borderRadius: 2,
                 px: 3,
-                background: 'linear-gradient(45deg, #FF6B6B 30%, #FFB7C5 90%)',
+                background: 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #E55555 30%, #FF9FAC 90%)',
+                  background: 'linear-gradient(45deg, #283618 30%, #D4BC8C 90%)',
                 }
               }}
             >
@@ -2438,15 +2438,15 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         open={fullscreenDialog && !isFullscreen}
         onClose={() => setFullscreenDialog(false)}
         PaperProps={{
-          sx: { 
+          sx: {
             bgcolor: 'background.default',
             backgroundImage: 'none'
           }
         }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <DialogTitle sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           bgcolor: 'primary.main',
           color: 'white'
@@ -2454,7 +2454,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           <Typography variant="h6" fontWeight={600}>
             Interactive Slides - Fullscreen Mode
           </Typography>
-          <IconButton 
+          <IconButton
             onClick={() => setFullscreenDialog(false)}
             sx={{ color: 'white' }}
           >

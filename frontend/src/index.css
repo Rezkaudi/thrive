@@ -16,7 +16,7 @@ code {
 .sweet-alert-popup {
   font-family: 'Inter', 'Noto Sans JP', 'Helvetica', 'Arial', sans-serif !important;
   border-radius: 16px !important;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.12) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
 }
 
 .sweet-alert-title {
@@ -30,14 +30,14 @@ code {
   font-weight: 600 !important;
   padding: 12px 24px !important;
   transition: all 0.3s ease !important;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%) !important;
+  background: linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%) !important;
   border: none !important;
 }
 
 .sweet-alert-confirm:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3) !important;
-  background: linear-gradient(135deg, #E55555 0%, #FF9FAC 100%) !important;
+  background: linear-gradient(135deg, #283618 0%, #D4BC8C 100%) !important;
 }
 
 .sweet-alert-cancel {

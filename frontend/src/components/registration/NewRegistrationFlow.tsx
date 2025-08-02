@@ -89,10 +89,10 @@ export const NewRegistrationFlow: React.FC = () => {
                                         fontWeight: activeStep === index ? 600 : 400,
                                     },
                                     '& .MuiStepIcon-root.Mui-active': {
-                                        color: '#FF6B6B',
+                                        color: '#5C633A',
                                     },
                                     '& .MuiStepIcon-root.Mui-completed': {
-                                        color: '#00B894',
+                                        color: '#483C32',
                                     },
                                 }}
                             >

@@ -75,7 +75,8 @@ function AppContent() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {/* <Route path="/" element={<LandingPage />} /> */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
         {/* Public Routes (no authentication required) */}
         <Route path="/profile/:userId" element={<PublicProfilePage />} /> {/* Add this route */}

@@ -164,13 +164,13 @@ export const SubscriptionPage: React.FC = () => {
     const getPlanColor = (planId: string) => {
         switch (planId) {
             case 'one-time':
-                return { primary: '#FF6B6B', secondary: '#FFB7C5' };
+                return { primary: '#5C633A', secondary: '#D4BC8C' };
             case 'monthly':
-                return { primary: '#4ECDC4', secondary: '#7ED4D0' };
+                return { primary: '#A6531C', secondary: '#483C32' };
             case 'yearly':
-                return { primary: '#00B894', secondary: '#00D4AA' };
+                return { primary: '#5C633A', secondary: '#283618' };
             default:
-                return { primary: '#FF6B6B', secondary: '#FFB7C5' };
+                return { primary: '#5C633A', secondary: '#D4BC8C' };
         }
     };
 
@@ -219,7 +219,6 @@ export const SubscriptionPage: React.FC = () => {
                         },
                     }}
                 >
-                    Back to Home
                 </Button>
 
                 {/* Header Section */}

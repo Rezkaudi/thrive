@@ -101,7 +101,7 @@ export const VerifyEmailPage: React.FC = () => {
 
             // Show success message
             const successMessage = document.createElement('div');
-            successMessage.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #00B894; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; font-family: "Inter", sans-serif;';
+            successMessage.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #483C32; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; font-family: "Inter", sans-serif;';
             successMessage.textContent = 'Verification code resent successfully!';
             document.body.appendChild(successMessage);
 
@@ -124,7 +124,7 @@ export const VerifyEmailPage: React.FC = () => {
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
-                background: 'linear-gradient(135deg, #4ECDC4 0%, #7ED4D0 100%)',
+                background: 'linear-gradient(135deg, #A6531C 0%, #7ED4D0 100%)',
                 position: 'relative',
                 overflow: 'hidden',
             }}
@@ -172,7 +172,7 @@ export const VerifyEmailPage: React.FC = () => {
                                             width: 80,
                                             height: 80,
                                             borderRadius: '50%',
-                                            background: 'linear-gradient(135deg, #4ECDC4 0%, #7ED4D0 100%)',
+                                            background: 'linear-gradient(135deg, #A6531C 0%, #7ED4D0 100%)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',

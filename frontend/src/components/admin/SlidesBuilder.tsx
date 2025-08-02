@@ -205,9 +205,9 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
         if (!slide.content.content?.question?.trim()) {
           errors.push('Quiz question is required');
         }
-        if (slide.content.content?.type === 'multiple-choice' && 
-            (!slide.content.content?.options || 
-             slide.content.content.options.some((opt: string) => !opt.trim()))) {
+        if (slide.content.content?.type === 'multiple-choice' &&
+          (!slide.content.content?.options ||
+            slide.content.content.options.some((opt: string) => !opt.trim()))) {
           errors.push('All quiz options must be filled');
         }
         break;
@@ -334,7 +334,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
       description: 'Students drag items to correct positions',
       example: 'Match Japanese words to their English translations',
       difficulty: 'Easy',
-      color: '#FF6B6B'
+      color: '#5C633A'
     },
     {
       value: 'fill-blanks',
@@ -343,7 +343,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
       description: 'Students fill missing words in sentences',
       example: 'Complete the Japanese sentence: "私は___です"',
       difficulty: 'Medium',
-      color: '#4ECDC4'
+      color: '#A6531C'
     },
     {
       value: 'matching',
@@ -429,7 +429,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
           <Typography variant="h6" gutterBottom fontWeight={600} sx={{ mb: 3 }}>
             Choose Interactive Type
           </Typography>
-          
+
           <Grid container spacing={2}>
             {interactiveTypes.map((type) => {
               const isSelected = currentType === type.value;
@@ -474,37 +474,37 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                       >
                         {type.icon}
                       </Avatar>
-                      
+
                       <Typography variant="h6" fontWeight={600} gutterBottom>
                         {type.label}
                       </Typography>
-                      
+
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, minHeight: 40 }}>
                         {type.description}
                       </Typography>
-                      
+
                       <Stack direction="row" spacing={1} justifyContent="center" sx={{ mb: 2 }}>
-                        <Chip 
-                          label={type.difficulty} 
-                          size="small" 
-                          sx={{ 
+                        <Chip
+                          label={type.difficulty}
+                          size="small"
+                          sx={{
                             bgcolor: type.color + '20',
                             color: type.color,
                             fontWeight: 600
-                          }} 
+                          }}
                         />
                       </Stack>
-                      
+
                       <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
                         {type.example}
                       </Typography>
-                      
+
                       {isSelected && (
-                        <CheckCircle sx={{ 
-                          position: 'absolute', 
-                          top: 8, 
-                          right: 8, 
-                          color: type.color 
+                        <CheckCircle sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          color: type.color
                         }} />
                       )}
                     </CardContent>
@@ -521,7 +521,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
   const updateInteractiveContent = (slideIndex: number, updates: Partial<InteractiveContent>) => {
     const slide = slides[slideIndex];
     const interactiveContent = slide.content.content as InteractiveContent;
-    
+
     updateSlideContent(slideIndex, {
       content: {
         ...interactiveContent,
@@ -677,8 +677,8 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
               ) : (
                 <Stack spacing={3}>
                   {interactiveContent.items.map((item: any, itemIndex: number) => (
-                    <Card key={item.id || itemIndex} variant="outlined" sx={{ 
-                      border: '2px solid', 
+                    <Card key={item.id || itemIndex} variant="outlined" sx={{
+                      border: '2px solid',
                       borderColor: 'divider',
                       borderRadius: 2,
                       '&:hover': {
@@ -687,9 +687,9 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                     }}>
                       <CardContent>
                         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                          <Chip 
-                            label={`Item ${itemIndex + 1}`} 
-                            color="primary" 
+                          <Chip
+                            label={`Item ${itemIndex + 1}`}
+                            color="primary"
                             variant="outlined"
                             icon={<DragIndicator />}
                           />
@@ -735,7 +735,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
 
         <TabPanel value={tabValue} index={3}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            Preview functionality would show how this interactive slide appears to students. 
+            Preview functionality would show how this interactive slide appears to students.
             This would render the actual interactive component in a preview mode.
           </Alert>
           <Paper sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2, textAlign: 'center' }}>
@@ -1496,7 +1496,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
               {slides.map((slide, index) => {
                 const errors = validationErrors[index] || [];
                 const hasErrors = errors.length > 0;
-                
+
                 return (
                   <Paper
                     key={slide.id}
@@ -1506,7 +1506,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                       bgcolor: activeSlide === index ? 'primary.light' : 'background.paper',
                       border: '2px solid',
                       borderColor: hasErrors ? 'error.main' : activeSlide === index ? 'primary.main' : 'transparent',
-                      '&:hover': { 
+                      '&:hover': {
                         bgcolor: activeSlide === index ? 'primary.light' : 'action.hover',
                         borderColor: hasErrors ? 'error.main' : 'primary.main'
                       },
@@ -1515,9 +1515,9 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                     onClick={() => setActiveSlide(index)}
                   >
                     <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                      <IconButton 
-                        size="small" 
-                        sx={{ 
+                      <IconButton
+                        size="small"
+                        sx={{
                           cursor: 'grab',
                           color: getSlideTypeColor(slide.content.type)
                         }}
@@ -1590,9 +1590,9 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                 );
               })}
             </Stack>
-            
+
             <Divider sx={{ my: 2 }} />
-            
+
             <Typography variant="subtitle2" gutterBottom>
               Add New Slide
             </Typography>
@@ -1604,8 +1604,8 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                       fullWidth
                       size="small"
                       onClick={() => addSlide(type)}
-                      sx={{ 
-                        flexDirection: 'column', 
+                      sx={{
+                        flexDirection: 'column',
                         py: 1,
                         color: getSlideTypeColor(type),
                         borderColor: getSlideTypeColor(type) + '40',
@@ -1667,7 +1667,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                     {slides[activeSlide]?.content.title || 'Untitled slide'}
                   </Typography>
                 </Box>
-                
+
                 <Stack direction="row" spacing={2}>
                   <FormControl size="small" sx={{ width: 150 }}>
                     <InputLabel>Slide Type</InputLabel>
@@ -1796,8 +1796,8 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                         sx={{
                           height: 120,
                           bgcolor: slides[activeSlide].backgroundColor || 'background.paper',
-                          backgroundImage: slides[activeSlide].backgroundImage 
-                            ? `url(${slides[activeSlide].backgroundImage})` 
+                          backgroundImage: slides[activeSlide].backgroundImage
+                            ? `url(${slides[activeSlide].backgroundImage})`
                             : 'none',
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
@@ -1809,11 +1809,11 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                           borderColor: 'divider'
                         }}
                       >
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            bgcolor: 'rgba(255,255,255,0.8)', 
-                            p: 1, 
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            bgcolor: 'rgba(255,255,255,0.8)',
+                            p: 1,
                             borderRadius: 1,
                             color: 'text.primary'
                           }}
@@ -1970,7 +1970,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
               <Typography variant="h6" fontWeight={600} color="primary.main">
                 📊 Presentation Summary
               </Typography>
-              
+
               <Grid container spacing={2}>
                 <Grid size={{ xs: 6, sm: 3 }}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper' }}>
@@ -2062,7 +2062,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
               >
                 Preview Presentation
               </Button>
-              
+
               <Button
                 fullWidth
                 variant="outlined"
@@ -2093,9 +2093,9 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
           sx: { bgcolor: 'background.default' }
         }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <DialogTitle sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           bgcolor: 'primary.main',
           color: 'white'
@@ -2107,8 +2107,8 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
             <Button
               variant="outlined"
               startIcon={<Visibility />}
-              sx={{ 
-                color: 'white', 
+              sx={{
+                color: 'white',
                 borderColor: 'rgba(255,255,255,0.5)',
                 '&:hover': {
                   borderColor: 'white',
@@ -2118,7 +2118,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
             >
               Student View
             </Button>
-            <IconButton 
+            <IconButton
               onClick={() => setPreviewMode(false)}
               sx={{ color: 'white' }}
             >
@@ -2129,15 +2129,15 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
         <DialogContent sx={{ p: 0, height: '100%' }}>
           <Alert severity="info" sx={{ m: 2, borderRadius: 2 }}>
             <Typography variant="body2">
-              🎯 This is a preview of how your slides will appear to students. 
+              🎯 This is a preview of how your slides will appear to students.
               Interactive features are simulated and may not function fully in preview mode.
             </Typography>
           </Alert>
-          
+
           {/* Here you would render the actual InteractiveSlides component with the slides data */}
-          <Box sx={{ 
-            height: 'calc(100% - 80px)', 
-            bgcolor: 'grey.100', 
+          <Box sx={{
+            height: 'calc(100% - 80px)',
+            bgcolor: 'grey.100',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2150,7 +2150,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
                 Interactive Slides Preview
               </Typography>
               <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ maxWidth: 400 }}>
-                This would show your {slides.length} slides with full interactivity. 
+                This would show your {slides.length} slides with full interactivity.
                 Students would be able to navigate, complete activities, and receive feedback.
               </Typography>
               <Chip
@@ -2179,7 +2179,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
             <Typography variant="body1">
               Welcome to the Interactive Slides Builder! Here's how to create engaging educational content:
             </Typography>
-            
+
             <Stepper orientation="vertical">
               <Step active>
                 <StepLabel>Choose Slide Type</StepLabel>
@@ -2217,7 +2217,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {}}>Got it!</Button>
+          <Button onClick={() => { }}>Got it!</Button>
         </DialogActions>
       </Dialog>
     </Box>

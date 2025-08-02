@@ -213,8 +213,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             component="div"
             sx={{ flexGrow: 1, fontWeight: 700, color: 'primary.main' }}
           >
-            <Link to="/" style={{ color: "#FF6B6B", textDecoration: "none" }}>
-              Thrive in Japan
+            <Link to="/" style={{ color: "#5C633A", textDecoration: "none", display: "flex", alignItems: "center" }}>
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="Description of image"
+                sx={{ width: 200, height: 30 }}
+              />
             </Link>
           </Typography>
 

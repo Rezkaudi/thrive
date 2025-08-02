@@ -1203,8 +1203,8 @@ export const CourseManagement: React.FC = () => {
                 <Box
                   sx={{
                     height: 120,
-                    background: `linear-gradient(135deg, ${course.type === "JAPAN_IN_CONTEXT" ? "#FF6B6B" : "#4ECDC4"
-                      } 0%, ${course.type === "JAPAN_IN_CONTEXT" ? "#FFB7C5" : "#7ED4D0"
+                    background: `linear-gradient(135deg, ${course.type === "JAPAN_IN_CONTEXT" ? "#5C633A" : "#A6531C"
+                      } 0%, ${course.type === "JAPAN_IN_CONTEXT" ? "#D4BC8C" : "#7ED4D0"
                       } 100%)`,
                     display: "flex",
                     alignItems: "center",

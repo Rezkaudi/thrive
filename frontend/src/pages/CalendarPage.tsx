@@ -26,6 +26,9 @@ import {
   ListItemAvatar,
   Avatar,
   Divider,
+  Checkbox,
+  FormControlLabel,
+  Link,
 } from "@mui/material";
 import {
   AccessTime,
@@ -92,7 +95,8 @@ export const CalendarPage: React.FC = () => {
     severity: "success" as 'success' | 'error' | 'warning' | 'info',
   });
 
-  const profile = useSelector((state: RootState) => state.profile.data);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const profile = useSelector((state: RootState) => state.dashboard.data);
   const { user, status } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
@@ -697,7 +701,7 @@ export const CalendarPage: React.FC = () => {
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="h3" fontWeight={700} color="primary">
-                    {profile?.points || 0}
+                    {profile?.stats.totalPoints || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Available Points
@@ -750,7 +754,7 @@ export const CalendarPage: React.FC = () => {
               <Typography variant="body2">
                 <strong>Points Required:</strong>{" "}
                 {bookingDialog?.pointsRequired === 0 ? (
-                  <span style={{ color: "#00B894" }}>FREE</span>
+                  <span style={{ color: "#483C32" }}>FREE</span>
                 ) : (
                   <div style={{ display: "inline-block" }}>
                     <div style={{ display: "flex", alignItems: "center" }}>
@@ -793,6 +797,31 @@ export const CalendarPage: React.FC = () => {
                 Subscribe to access this Booking
               </Alert>
             )}
+            {status !== "active" && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={agreeToTerms}
+                    onChange={(e) => setAgreeToTerms(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2">
+                    I agree to the{" "}
+                    <Link
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      color="primary"
+                    >
+                      terms and conditions
+                    </Link>
+                  </Typography>
+                }
+                sx={{ mt: 2 }}
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -807,10 +836,10 @@ export const CalendarPage: React.FC = () => {
             <Button
               variant="contained"
               onClick={handleSubscription}
-              disabled={loadingStart}
+              disabled={loadingStart || !agreeToTerms}
               startIcon={loadingStart && <CircularProgress size={20} />}
             >
-              Subscripe Now
+              Pay Now
             </Button>
           }
         </DialogActions>

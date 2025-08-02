@@ -84,27 +84,27 @@ export const DashboardPage: React.FC = () => {
       value: dashboardData
         ? `${dashboardData.stats.totalLessonsCompleted}/${dashboardData.stats.totalLessonsAvailable}`
         : '-',
-      color: '#FF6B6B',
+      color: '#5C633A',
       onClick: () => navigate('/classroom'),
     },
     {
       icon: <EmojiEvents />,
       title: 'Total Points',
       value: dashboardData?.stats.totalPoints || 0,
-      color: '#4ECDC4',
+      color: '#A6531C',
     },
     {
       icon: <Groups />,
       title: 'Community Posts',
       value: dashboardData?.stats.communityPostsCount || 0,
-      color: '#FFB7C5',
+      color: '#D4BC8C',
       onClick: () => navigate('/community'),
     },
     {
       icon: <CalendarMonth />,
       title: 'Upcoming Sessions',
       value: dashboardData?.stats.upcomingSessionsCount || 0,
-      color: '#00B894',
+      color: '#483C32',
       onClick: () => navigate('/calendar'),
     },
   ];
@@ -143,7 +143,7 @@ export const DashboardPage: React.FC = () => {
           sx={{
             p: 4,
             mb: 4,
-            background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+            background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
             color: 'white',
             borderRadius: 3,
             position: 'relative',

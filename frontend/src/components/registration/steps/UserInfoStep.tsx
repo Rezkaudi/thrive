@@ -137,7 +137,7 @@ export const UserInfoStep: React.FC<UserInfoStepProps> = ({
                                 width: 80,
                                 height: 80,
                                 borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #4ECDC4 0%, #7ED4D0 100%)',
+                                background: 'linear-gradient(135deg, #A6531C 0%, #7ED4D0 100%)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -228,7 +228,7 @@ export const UserInfoStep: React.FC<UserInfoStepProps> = ({
                                         size="small"
                                         icon={<CheckCircle />}
                                         color="success"
-                                        sx={{color: "white"}}
+                                        sx={{ color: "white" }}
                                     />
                                 )}
                             </Stack>

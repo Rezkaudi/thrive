@@ -41,7 +41,7 @@ export const RegistrationSuccessPage: React.FC = () => {
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
-                background: 'linear-gradient(135deg, #00B894 0%, #00D4AA 100%)',
+                background: 'linear-gradient(135deg, #483C32 0%, #00D4AA 100%)',
                 position: 'relative',
                 overflow: 'hidden',
             }}
@@ -113,7 +113,7 @@ export const RegistrationSuccessPage: React.FC = () => {
                                             width: 100,
                                             height: 100,
                                             borderRadius: '50%',
-                                            background: 'linear-gradient(135deg, #00B894 0%, #00D4AA 100%)',
+                                            background: 'linear-gradient(135deg, #483C32 0%, #00D4AA 100%)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -143,7 +143,7 @@ export const RegistrationSuccessPage: React.FC = () => {
                                         <Paper
                                             sx={{
                                                 p: 3,
-                                                background: 'linear-gradient(135deg, #FF6B6B15 0%, #FFB7C515 100%)',
+                                                background: 'linear-gradient(135deg, #5C633A15 0%, #D4BC8C15 100%)',
                                                 border: '1px solid',
                                                 borderColor: 'primary.light',
                                             }}

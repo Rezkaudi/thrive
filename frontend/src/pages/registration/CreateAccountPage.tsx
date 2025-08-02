@@ -226,7 +226,7 @@ export const CreateAccountPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 }}
             >
                 <Card sx={{ p: 4, textAlign: 'center' }}>
@@ -245,7 +245,7 @@ export const CreateAccountPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 }}
             >
                 <Card sx={{ p: 4, textAlign: 'center' }}>
@@ -266,9 +266,9 @@ export const CreateAccountPage: React.FC = () => {
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
-                // background: 'linear-gradient(135deg, #4ECDC4 0%, #7ED4D0 100%)',
+                // background: 'linear-gradient(135deg, #A6531C 0%, #7ED4D0 100%)',
                 py: 4,
-                background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+                background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
                 position: 'relative',
                 overflow: 'hidden',
             }}
@@ -370,7 +370,7 @@ export const CreateAccountPage: React.FC = () => {
                                         width: 80,
                                         height: 80,
                                         borderRadius: '50%',
-                                        background: 'linear-gradient(135deg, #4ECDC4 0%, #7ED4D0 100%)',
+                                        background: 'linear-gradient(135deg, #A6531C 0%, #7ED4D0 100%)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -462,7 +462,7 @@ export const CreateAccountPage: React.FC = () => {
                                                     size="small"
                                                     icon={<CheckCircle />}
                                                     color="success"
-                                                    sx={{color: "white"}}
+                                                    sx={{ color: "white" }}
                                                 />
                                             )}
                                         </Stack>

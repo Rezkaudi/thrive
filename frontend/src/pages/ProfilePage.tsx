@@ -365,7 +365,7 @@ export const ProfilePage: React.FC = () => {
         ctx.fillRect(0, 0, 800, 600);
 
         // Border
-        ctx.strokeStyle = '#FF6B6B';
+        ctx.strokeStyle = '#5C633A';
         ctx.lineWidth = 10;
         ctx.strokeRect(20, 20, 760, 560);
 
@@ -381,7 +381,7 @@ export const ProfilePage: React.FC = () => {
 
         // Name
         ctx.font = 'bold 32px Arial';
-        ctx.fillStyle = '#FF6B6B';
+        ctx.fillStyle = '#5C633A';
         ctx.fillText(profile?.name || 'Student', 400, 250);
 
         // Description
@@ -392,7 +392,7 @@ export const ProfilePage: React.FC = () => {
 
         // Level
         ctx.font = 'bold 24px Arial';
-        ctx.fillStyle = '#4ECDC4';
+        ctx.fillStyle = '#A6531C';
         ctx.fillText(`Current Level: JLPT ${profile?.languageLevel || 'N5'}`, 400, 380);
 
         // Points
@@ -502,22 +502,22 @@ export const ProfilePage: React.FC = () => {
     {
       label: 'Current Level',
       value: profile?.level || 1,
-      icon: <TrendingUp sx={{ color: '#FF6B6B' }} />,
-      color: '#FF6B6B',
+      icon: <TrendingUp sx={{ color: '#5C633A' }} />,
+      color: '#5C633A',
       description: 'Keep learning to level up'
     },
     {
       label: 'Lessons Completed',
       value: publicProfileData?.totalLessonsCompleted || 0,
-      icon: <School sx={{ color: '#4ECDC4' }} />,
-      color: '#4ECDC4',
+      icon: <School sx={{ color: '#A6531C' }} />,
+      color: '#A6531C',
       description: `Out of ${publicProfileData?.totalLessonsAvailable || 0} total`
     },
     {
       label: 'Study Streak',
       value: `${publicProfileData?.joinedDaysAgo || 0} days`,
-      icon: <Star sx={{ color: '#FFB7C5' }} />,
-      color: '#FFB7C5',
+      icon: <Star sx={{ color: '#D4BC8C' }} />,
+      color: '#D4BC8C',
       description: 'Days since joining'
     },
   ];
@@ -604,7 +604,7 @@ export const ProfilePage: React.FC = () => {
         sx={{
           position: 'relative',
           height: { xs: 200, md: 300 },
-          background: `linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 50%, #4ECDC4 100%)`,
+          background: `linear-gradient(135deg, #5C633A 0%, #D4BC8C 50%, #A6531C 100%)`,
           overflow: 'hidden',
         }}
       >
@@ -838,7 +838,7 @@ export const ProfilePage: React.FC = () => {
                   backgroundColor: 'action.hover',
                   '& .MuiLinearProgress-bar': {
                     borderRadius: 4,
-                    background: 'linear-gradient(90deg, #FF6B6B 0%, #FFB7C5 100%)',
+                    background: 'linear-gradient(90deg, #5C633A 0%, #D4BC8C 100%)',
                   },
                 }}
               />
@@ -996,10 +996,10 @@ export const ProfilePage: React.FC = () => {
                           </Box>
                         )) || [
                           // Fallback data if no real data available
-                          { skill: 'Vocabulary', level: 60, color: '#FF6B6B' },
-                          { skill: 'Grammar', level: 45, color: '#4ECDC4' },
-                          { skill: 'Listening', level: 30, color: '#FFB7C5' },
-                          { skill: 'Speaking', level: 20, color: '#00B894' },
+                          { skill: 'Vocabulary', level: 60, color: '#5C633A' },
+                          { skill: 'Grammar', level: 45, color: '#A6531C' },
+                          { skill: 'Listening', level: 30, color: '#D4BC8C' },
+                          { skill: 'Speaking', level: 20, color: '#483C32' },
                           { skill: 'Reading', level: 50, color: '#FFA502' },
                         ].map((skill) => (
                           <Box key={skill.skill}>
@@ -1112,7 +1112,7 @@ export const ProfilePage: React.FC = () => {
                                 backgroundColor: 'action.hover',
                                 '& .MuiLinearProgress-bar': {
                                   borderRadius: 5,
-                                  backgroundColor: '#4ECDC4',
+                                  backgroundColor: '#A6531C',
                                 },
                               }}
                             />
@@ -1123,8 +1123,8 @@ export const ProfilePage: React.FC = () => {
                         )) ||
                           // Fallback if no real data
                           [
-                            { course: 'Japan in Context', progress: 40, lessons: '4/10', color: '#FF6B6B' },
-                            { course: 'JLPT N5 Preparation', progress: 25, lessons: '3/12', color: '#4ECDC4' },
+                            { course: 'Japan in Context', progress: 40, lessons: '4/10', color: '#5C633A' },
+                            { course: 'JLPT N5 Preparation', progress: 25, lessons: '3/12', color: '#A6531C' },
                           ].map((course) => (
                             <Paper key={course.course} sx={{ p: 3 }}>
                               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -1217,14 +1217,14 @@ export const ProfilePage: React.FC = () => {
                         time: '2 hours ago',
                         points: '+50',
                         icon: <School />,
-                        color: '#4ECDC4'
+                        color: '#A6531C'
                       },
                       {
                         action: 'Posted in community',
                         time: '5 hours ago',
                         points: '+10',
                         icon: <Forum />,
-                        color: '#FFB7C5'
+                        color: '#D4BC8C'
                       },
                       {
                         action: 'Achieved 7-day streak',
@@ -1238,14 +1238,14 @@ export const ProfilePage: React.FC = () => {
                         time: '2 days ago',
                         points: '+30',
                         icon: <VideoCall />,
-                        color: '#FF6B6B'
+                        color: '#5C633A'
                       },
                       {
                         action: 'Completed quiz with 90% score',
                         time: '3 days ago',
                         points: '+45',
                         icon: <CheckCircle />,
-                        color: '#00B894'
+                        color: '#483C32'
                       },
                     ].map((activity, index) => (
                       <motion.div

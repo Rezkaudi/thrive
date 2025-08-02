@@ -204,7 +204,7 @@ export const KeywordFlashcards: React.FC<KeywordFlashcardsProps> = ({
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
-              background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB7C5 100%)',
+              background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
               color: 'white',
               zIndex: isFlipped ? 0 : 1,
               borderRadius: 1,
@@ -233,7 +233,7 @@ export const KeywordFlashcards: React.FC<KeywordFlashcardsProps> = ({
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
-              background: 'linear-gradient(135deg, #4ECDC4 0%, #7ED4D0 100%)',
+              background: 'linear-gradient(135deg, #A6531C 0%, #7ED4D0 100%)',
               color: 'white',
               zIndex: isFlipped ? 1 : 0,
               borderRadius: 1,
@@ -270,8 +270,8 @@ export const KeywordFlashcards: React.FC<KeywordFlashcardsProps> = ({
                 bgcolor: completedCards.has(i)
                   ? 'success.main'
                   : i === currentIndex
-                  ? 'primary.main'
-                  : 'grey.300',
+                    ? 'primary.main'
+                    : 'grey.300',
               }}
               onClick={() => setCurrentIndex(i)}
             />
