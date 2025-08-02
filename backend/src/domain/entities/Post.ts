@@ -1,10 +1,19 @@
+export interface IAuthor {
+  userId: string;
+  name: string;
+  email: string;
+  avatar: string;
+  level: number;
+}
+
 export interface IPost {
   id: string;
-  userId: string;
   content: string;
   mediaUrls: string[];
   isAnnouncement: boolean;
   likesCount: number;
+  author: IAuthor;
+  isLiked: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,11 +21,12 @@ export interface IPost {
 export class Post implements IPost {
   constructor(
     public id: string,
-    public userId: string,
+    public author: IAuthor,
     public content: string,
     public mediaUrls: string[],
     public isAnnouncement: boolean,
     public likesCount: number,
+    public isLiked: boolean,
     public createdAt: Date,
     public updatedAt: Date
   ) {}
@@ -27,5 +37,14 @@ export class Post implements IPost {
 
   decrementLikes(): void {
     this.likesCount = Math.max(0, this.likesCount - 1);
+  }
+
+  toggleLike(): void {
+    if (this.isLiked) {
+      this.decrementLikes();
+    } else {
+      this.incrementLikes();
+    }
+    this.isLiked = !this.isLiked;
   }
 }

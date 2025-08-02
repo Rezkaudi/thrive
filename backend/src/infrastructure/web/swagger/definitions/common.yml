@@ -194,12 +194,24 @@ components:
           type: string
           format: date-time
 
+    Author:
+      type: object
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        avatar:
+          type: string
+          nullable: true
+
     Post:
       type: object
       properties:
         id:
-          type: string
-        userId:
           type: string
         content:
           type: string
@@ -212,6 +224,8 @@ components:
         likesCount:
           type: integer
           minimum: 0
+        author:
+          $ref: "#/components/schemas/Author"
         createdAt:
           type: string
           format: date-time

@@ -1,6 +1,7 @@
 import { IPostRepository } from '../../../domain/repositories/IPostRepository';
 import { IUserRepository } from '../../../domain/repositories/IUserRepository';
-import { Post } from '../../../domain/entities/Post';
+import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
+import { Post, IAuthor } from '../../../domain/entities/Post';
 import { UserRole } from '../../../domain/entities/User';
 
 export interface CreatePostDTO {
@@ -13,7 +14,8 @@ export interface CreatePostDTO {
 export class CreatePostUseCase {
   constructor(
     private postRepository: IPostRepository,
-    private userRepository: IUserRepository
+    private userRepository: IUserRepository,
+    private profileRepository: IProfileRepository
   ) {}
 
   async execute(dto: CreatePostDTO): Promise<Post> {
@@ -27,13 +29,25 @@ export class CreatePostUseCase {
       throw new Error('Only admins can create announcements');
     }
 
+    // Get user profile for author info
+    const profile = await this.profileRepository.findByUserId(dto.userId);
+    
+    const author: IAuthor = {
+      userId: dto.userId,
+      name: profile?.name || user.email.split('@')[0] || 'Unknown User',
+      email: user.email,
+      avatar: profile?.profilePhoto || '',
+      level: profile?.level || 0
+    };
+
     const post = new Post(
       `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-      dto.userId,
+      author,
       dto.content,
       dto.mediaUrls || [],
       dto.isAnnouncement || false,
       0,
+      false,
       new Date(),
       new Date()
     );

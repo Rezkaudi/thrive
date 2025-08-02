@@ -182,16 +182,7 @@ export const CommunityModeration: React.FC = () => {
       showError('Validation Error', 'Please enter announcement content');
       return;
     }
-
-    const result = await showConfirm({
-      title: 'Create Announcement',
-      text: 'Are you sure you want to post this announcement to the community?',
-      icon: 'question',
-      confirmButtonText: 'Yes, post it',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (result.isConfirmed) {
+    
       try {
         await api.post('/admin/announcements', { content: announcementContent });
         setSnackbar({
@@ -206,7 +197,7 @@ export const CommunityModeration: React.FC = () => {
         console.error('Failed to create announcement:', error);
         showError('Error', 'Failed to create announcement');
       }
-    }
+    
   };
 
   const filteredPosts = posts.filter(post =>
@@ -222,8 +213,17 @@ export const CommunityModeration: React.FC = () => {
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="start">
             <Stack direction="row" spacing={2}>
-              <Avatar sx={{ bgcolor: 'primary.main' }}>
-                {post.author?.name?.[0] || 'U'}
+              <Avatar
+                src={post.author?.avatar || undefined}
+                sx={{
+                  bgcolor: 'primary.main',
+                  width: 40,
+                  height: 40,
+                  border: '2px solid',
+                  borderColor: 'primary.light',
+                }}
+              >
+                {!post.author?.avatar && (post.author?.name?.[0] || post.author?.email[0].toUpperCase())}
               </Avatar>
               <Box>
                 <Stack direction="row" alignItems="center" spacing={1}>
@@ -238,7 +238,11 @@ export const CommunityModeration: React.FC = () => {
                   )}
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  {post.author?.email} • {new Date(post.createdAt).toLocaleString()}
+                  {post.author?.email} • {new Date(post.createdAt).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit'
+                  })} {new Date(post.createdAt).toLocaleTimeString("en-US", {minute: "2-digit", hour: "2-digit"})}
                 </Typography>
               </Box>
             </Stack>
