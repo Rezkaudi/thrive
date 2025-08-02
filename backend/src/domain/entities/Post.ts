@@ -14,6 +14,7 @@ export interface IPost {
   likesCount: number;
   author: IAuthor;
   isLiked: boolean;
+  commentsCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,7 +29,8 @@ export class Post implements IPost {
     public likesCount: number,
     public isLiked: boolean,
     public createdAt: Date,
-    public updatedAt: Date
+    public updatedAt: Date,
+    public commentsCount: number = 0
   ) {}
 
   incrementLikes(): void {
@@ -46,5 +48,14 @@ export class Post implements IPost {
       this.incrementLikes();
     }
     this.isLiked = !this.isLiked;
+  }
+
+  // Add methods for comments count
+  incrementCommentsCount(): void {
+    this.commentsCount++;
+  }
+
+  decrementCommentsCount(): void {
+    this.commentsCount = Math.max(0, this.commentsCount - 1);
   }
 }

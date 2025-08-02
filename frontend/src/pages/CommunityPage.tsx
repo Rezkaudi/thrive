@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -30,7 +30,7 @@ import {
   DialogTitle,
   Snackbar,
   Backdrop,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ThumbUp,
   Comment,
@@ -45,19 +45,22 @@ import {
   Report,
   Save,
   Cancel,
-} from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../store/store';
-import { 
-  fetchPosts, 
-  createPost, 
-  toggleLike,
+} from "@mui/icons-material";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSelector, useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
+import { Comments } from "../components/community/Comments";
+import { AppDispatch, RootState } from "../store/store";
+import {
+  createPost,
   deletePost,
   editPost,
-  clearError,
-} from '../store/slices/communitySlice';
-import { Link } from 'react-router-dom';
+  fetchCommentCount,
+  fetchPosts,
+  toggleCommentsSection,
+  toggleLike,
+} from "../store/slices/communitySlice";
+import { clearError } from "../store/slices/authSlice";
 
 interface ComponentPost {
   id: string;
@@ -76,15 +79,19 @@ interface ComponentPost {
   isLiked: boolean;
   isEditing?: boolean;
   isDeleting?: boolean;
+  commentsCount?: number;
+  comments?: any[];
+  commentsLoading?: boolean;
+  commentsInitialized?: boolean;
 }
 
 // Format date utility
 const formatPostDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 };
 
@@ -93,7 +100,7 @@ const formatPostTime = (timeString: string): string => {
   const time = new Date(timeString);
   return time.toLocaleTimeString("en-US", {
     minute: "2-digit",
-    hour: "2-digit"
+    hour: "2-digit",
   });
 };
 
@@ -106,24 +113,38 @@ interface PostCardProps {
   currentUserId?: string;
 }
 
-const PostCard = ({ 
-  post, 
+const PostCard = ({
+  post,
   onToggleLike,
   onEdit,
   onDelete,
   onReport,
-  currentUserId
+  currentUserId,
 }: PostCardProps) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [editMediaUrls, setEditMediaUrls] = useState<string[]>(post.mediaUrls);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
-  const [reportReason, setReportReason] = useState('');
+  const [reportReason, setReportReason] = useState("");
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   const menuOpen = Boolean(anchorEl);
   const isOwnPost = currentUserId === post.author?.userId;
+
+  // Only fetch comment count if we don't have it and haven't initialized comments
+  useEffect(() => {
+    if (post.commentsCount === undefined && !post.commentsInitialized) {
+      // Add a small delay to prevent too many simultaneous requests
+      const timer = setTimeout(() => {
+        dispatch(fetchCommentCount(post.id));
+      }, Math.random() * 1000); // Random delay between 0-1 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [dispatch, post.id, post.commentsCount, post.commentsInitialized]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -132,7 +153,6 @@ const PostCard = ({
     }
   }, [post.content, post.mediaUrls, isEditing]);
 
-  
   useEffect(() => {
     if (!post.isEditing && !isEditing) {
       setEditContent(post.content);
@@ -156,17 +176,18 @@ const PostCard = ({
   };
 
   const handleSaveEdit = async () => {
-    if (editContent.trim() && 
-        (editContent !== post.content || 
-          JSON.stringify(editMediaUrls) !== JSON.stringify(post.mediaUrls))) {
-      
+    if (
+      editContent.trim() &&
+      (editContent !== post.content ||
+        JSON.stringify(editMediaUrls) !== JSON.stringify(post.mediaUrls))
+    ) {
       try {
         await onEdit(post.id, editContent, editMediaUrls);
         setIsEditing(false);
       } catch (error) {
         setEditContent(post.content);
         setEditMediaUrls(post.mediaUrls);
-        console.error('Failed to save edit:', error);
+        console.error("Failed to save edit:", error);
       }
     }
   };
@@ -187,13 +208,13 @@ const PostCard = ({
       await onDelete(post.id);
       setDeleteDialogOpen(false);
     } catch (error) {
-      console.error('Failed to delete post:', error);
+      console.error("Failed to delete post:", error);
     }
   };
 
   const handleReportClick = () => {
     setReportDialogOpen(true);
-    setReportReason('');
+    setReportReason("");
     handleMenuClose();
   };
 
@@ -201,7 +222,7 @@ const PostCard = ({
     if (reportReason.trim()) {
       onReport(post.id, reportReason);
       setReportDialogOpen(false);
-      setReportReason('');
+      setReportReason("");
     }
   };
 
@@ -217,8 +238,23 @@ const PostCard = ({
   };
 
   const handleAddMediaUrl = () => {
-    setEditMediaUrls([...editMediaUrls, '']);
+    setEditMediaUrls([...editMediaUrls, ""]);
   };
+
+  const handleCommentsToggle = () => {
+    if (!commentsOpen) {
+      dispatch(toggleCommentsSection(post.id));
+    }
+    setCommentsOpen(!commentsOpen);
+  };
+
+  // Don't show comment count if it's 0 and we haven't initialized
+  const displayCommentsCount =
+    post.commentsCount !== undefined
+      ? post.commentsCount
+      : post.commentsInitialized
+      ? 0
+      : "...";
 
   return (
     <motion.div
@@ -230,22 +266,22 @@ const PostCard = ({
       <Card
         sx={{
           mb: 3,
-          position: 'relative',
+          position: "relative",
           opacity: post.isDeleting ? 0.5 : 1,
           ...(post.isAnnouncement && {
-            border: '2px solid',
-            borderColor: 'primary.main',
+            border: "2px solid",
+            borderColor: "primary.main",
           }),
         }}
       >
         {/* Loading overlay for deleting */}
         {post.isDeleting && (
           <Backdrop
-            sx={{ 
-              position: 'absolute', 
-              zIndex: 1, 
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              borderRadius: 1
+            sx={{
+              position: "absolute",
+              zIndex: 1,
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+              borderRadius: 1,
             }}
             open={true}
           >
@@ -256,9 +292,11 @@ const PostCard = ({
         <CardContent>
           <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
             <Badge
-              badgeContent={post.author?.level ? `L${post.author.level}` : undefined}
+              badgeContent={
+                post.author?.level ? `L${post.author.level}` : undefined
+              }
               color="primary"
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             >
               <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
                 {!post.author?.avatar && post.author?.name?.[0]}
@@ -266,21 +304,23 @@ const PostCard = ({
             </Badge>
             <Box flexGrow={1}>
               <Stack direction="row" alignItems="center" spacing={1}>
-                <Link 
-                  to={`/profile/${post.author?.userId}`} 
-                  target='_blank' 
-                  style={{textDecoration: 'none'}}
-                  
+                <Link
+                  to={`/profile/${post.author?.userId}`}
+                  target="_blank"
+                  style={{ textDecoration: "none" }}
                 >
-                  <Typography variant="subtitle1" fontWeight={600}
-                  sx={{
-                    color: "#2D3436",
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
-                    transition: 'color 0.2s ease-in-out',
-                  }}>
-                    {post.author?.name || 'Unknown User'}
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    sx={{
+                      color: "#2D3436",
+                      "&:hover": {
+                        color: "primary.main",
+                      },
+                      transition: "color 0.2s ease-in-out",
+                    }}
+                  >
+                    {post.author?.name || "Unknown User"}
                   </Typography>
                 </Link>
                 {post.isAnnouncement && (
@@ -301,59 +341,70 @@ const PostCard = ({
                 )}
               </Stack>
               <Typography variant="caption" color="text.secondary">
-                {post.author?.email} • {formatPostDate(post.createdAt)} {formatPostTime(post.createdAt)}
+                {post.author?.email} • {formatPostDate(post.createdAt)}{" "}
+                {formatPostTime(post.createdAt)}
               </Typography>
             </Box>
-            
+
             <IconButton
               size="small"
               onClick={handleMenuClick}
               disabled={post.isDeleting}
-              sx={{ 
-                color: 'text.secondary',
-                '&:hover': {
-                  color: 'text.primary',
-                  bgcolor: 'action.hover'
-                }
+              sx={{
+                color: "text.secondary",
+                "&:hover": {
+                  color: "text.primary",
+                  bgcolor: "action.hover",
+                },
               }}
             >
               <MoreVert />
             </IconButton>
-            
+
             {/* Options Menu */}
             <Menu
               anchorEl={anchorEl}
               open={menuOpen}
               onClose={handleMenuClose}
               anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
+                vertical: "bottom",
+                horizontal: "right",
               }}
               transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
+                vertical: "top",
+                horizontal: "right",
               }}
             >
               {isOwnPost && (
-                <MenuItem onClick={handleEdit} disabled={post.isEditing || isEditing}>
+                <MenuItem
+                  onClick={handleEdit}
+                  disabled={post.isEditing || isEditing}
+                >
                   <ListItemIcon>
                     <Edit fontSize="small" />
                   </ListItemIcon>
                   <ListItemText>Edit</ListItemText>
                 </MenuItem>
               )}
-              
+
               {isOwnPost && (
-                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }} disabled={post.isDeleting}>
+                <MenuItem
+                  onClick={handleDeleteClick}
+                  sx={{ color: "error.main" }}
+                  disabled={post.isDeleting}
+                >
                   <ListItemIcon>
                     <Delete fontSize="small" color="error" />
                   </ListItemIcon>
                   <ListItemText>Delete</ListItemText>
                 </MenuItem>
               )}
-              
+
               {!isOwnPost && (
-                <MenuItem onClick={handleReportClick} sx={{ color: 'warning.main' }}>
+                <MenuItem
+                  onClick={handleReportClick}
+                  sx={{ color: "warning.main" }}
+                >
                   <ListItemIcon>
                     <Report fontSize="small" color="warning" />
                   </ListItemIcon>
@@ -377,10 +428,15 @@ const PostCard = ({
                 disabled={post.isEditing}
                 placeholder="Edit your post content..."
               />
-              
+
               {/* Media URLs editing */}
               <Box sx={{ mb: 2 }}>
-                <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  gutterBottom
+                  display="block"
+                >
                   Media URLs:
                 </Typography>
                 {editMediaUrls.map((url, index) => (
@@ -389,7 +445,9 @@ const PostCard = ({
                     fullWidth
                     size="small"
                     value={url}
-                    onChange={(e) => handleMediaUrlChange(index, e.target.value)}
+                    onChange={(e) =>
+                      handleMediaUrlChange(index, e.target.value)
+                    }
                     sx={{ mb: 1 }}
                     disabled={post.isEditing}
                     placeholder={`Media URL ${index + 1}`}
@@ -399,11 +457,11 @@ const PostCard = ({
                           size="small"
                           onClick={() => handleRemoveMediaUrl(index)}
                           disabled={post.isEditing}
-                          sx={{ color: 'error.main' }}
+                          sx={{ color: "error.main" }}
                         >
                           <Delete fontSize="small" />
                         </IconButton>
-                      )
+                      ),
                     }}
                   />
                 ))}
@@ -421,11 +479,13 @@ const PostCard = ({
                 <Button
                   size="small"
                   variant="contained"
-                  startIcon={post.isEditing ? <CircularProgress size={16} /> : <Save />}
+                  startIcon={
+                    post.isEditing ? <CircularProgress size={16} /> : <Save />
+                  }
                   onClick={handleSaveEdit}
                   disabled={!editContent.trim() || post.isEditing}
                 >
-                  {post.isEditing ? 'Saving...' : 'Save'}
+                  {post.isEditing ? "Saving..." : "Save"}
                 </Button>
                 <Button
                   size="small"
@@ -439,7 +499,7 @@ const PostCard = ({
               </Stack>
             </Box>
           ) : (
-            <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+            <Typography variant="body1" sx={{ mb: 2, whiteSpace: "pre-wrap" }}>
               {post.content}
             </Typography>
           )}
@@ -447,8 +507,9 @@ const PostCard = ({
           {post.mediaUrls.length > 0 && !isEditing && (
             <Box
               sx={{
-                display: 'grid',
-                gridTemplateColumns: post.mediaUrls.length === 1 ? '1fr' : 'repeat(2, 1fr)',
+                display: "grid",
+                gridTemplateColumns:
+                  post.mediaUrls.length === 1 ? "1fr" : "repeat(2, 1fr)",
                 gap: 1,
                 mb: 2,
               }}
@@ -457,23 +518,23 @@ const PostCard = ({
                 <Paper
                   key={index}
                   sx={{
-                    paddingTop: '56.25%',
-                    position: 'relative',
-                    bgcolor: 'grey.100',
+                    paddingTop: "56.25%",
+                    position: "relative",
+                    bgcolor: "grey.100",
                     borderRadius: 2,
-                    overflow: 'hidden',
+                    overflow: "hidden",
                   }}
                 >
                   <Box
                     sx={{
-                      position: 'absolute',
+                      position: "absolute",
                       top: 0,
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
                     <Typography variant="caption" color="text.secondary">
@@ -493,31 +554,42 @@ const PostCard = ({
             <Button
               startIcon={<ThumbUp />}
               size="small"
-              color={post.isLiked ? 'primary' : 'inherit'}
-              sx={{ textTransform: 'none' }}
+              color={post.isLiked ? "primary" : "inherit"}
+              sx={{ textTransform: "none" }}
               onClick={() => onToggleLike(post.id)}
               disabled={post.isDeleting}
             >
-              {post.likesCount} Likes
+              {post.likesCount} {post.likesCount === 1 ? "Like" : "Likes"}
             </Button>
             <Button
               startIcon={<Comment />}
               size="small"
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: "none" }}
+              onClick={handleCommentsToggle}
               disabled={post.isDeleting}
+              color={commentsOpen ? "primary" : "inherit"}
             >
-              Comments
+              {displayCommentsCount}{" "}
+              {displayCommentsCount === 1 ? "Comment" : "Comments"}
             </Button>
             <Button
               startIcon={<Share />}
               size="small"
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: "none" }}
               disabled={post.isDeleting}
             >
               Share
             </Button>
           </Stack>
         </CardActions>
+
+        {/* Comments Section */}
+        <Comments
+          postId={post.id}
+          commentsCount={post.commentsCount}
+          isOpen={commentsOpen}
+          onToggle={handleCommentsToggle}
+        />
       </Card>
 
       {/* Delete Confirmation Dialog */}
@@ -528,19 +600,22 @@ const PostCard = ({
         <DialogTitle>Delete Post</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this post? This action cannot be undone.
+            Are you sure you want to delete this post? This action cannot be
+            undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
             variant="contained"
             disabled={post.isDeleting}
-            startIcon={post.isDeleting ? <CircularProgress size={16} /> : undefined}
+            startIcon={
+              post.isDeleting ? <CircularProgress size={16} /> : undefined
+            }
           >
-            {post.isDeleting ? 'Deleting...' : 'Delete'}
+            {post.isDeleting ? "Deleting..." : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -569,9 +644,9 @@ const PostCard = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setReportDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleReportSubmit} 
-            color="warning" 
+          <Button
+            onClick={handleReportSubmit}
+            color="warning"
             variant="contained"
             disabled={!reportReason.trim()}
           >
@@ -585,21 +660,32 @@ const PostCard = ({
 
 export const CommunityPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
-  const [newPost, setNewPost] = useState('');
+  const [newPost, setNewPost] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [snackbar, setSnackbar] = useState({ 
-    open: false, 
-    message: '', 
-    severity: 'success' as 'success' | 'error' | 'info' | 'warning' 
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
   });
 
   const dispatch = useDispatch<AppDispatch>();
-  const { posts, loading, error, editError, deleteError, currentPage, totalPosts } = useSelector(
-    (state: RootState) => state.community
-  );
+  const {
+    posts,
+    loading,
+    error,
+    editError,
+    deleteError,
+    commentError,
+    currentPage,
+    totalPosts,
+  } = useSelector((state: RootState) => state.community);
 
-  const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
-  const name = useSelector((state: RootState) => state.dashboard.data?.user.name);
+  const profilePhoto = useSelector(
+    (state: RootState) => state.dashboard.data?.user.profilePhoto
+  );
+  const name = useSelector(
+    (state: RootState) => state.dashboard.data?.user.name
+  );
   const currentUserId = useSelector((state: RootState) => state.auth.user?.id);
 
   // Fetch posts when component mounts
@@ -610,17 +696,24 @@ export const CommunityPage: React.FC = () => {
   // Handle errors with snackbar
   useEffect(() => {
     if (editError) {
-      setSnackbar({ open: true, message: editError, severity: 'error' });
+      setSnackbar({ open: true, message: editError, severity: "error" });
       dispatch(clearError());
     }
   }, [editError, dispatch]);
 
   useEffect(() => {
     if (deleteError) {
-      setSnackbar({ open: true, message: deleteError, severity: 'error' });
+      setSnackbar({ open: true, message: deleteError, severity: "error" });
       dispatch(clearError());
     }
   }, [deleteError, dispatch]);
+
+  useEffect(() => {
+    if (commentError) {
+      setSnackbar({ open: true, message: commentError, severity: "error" });
+      dispatch(clearError());
+    }
+  }, [commentError, dispatch]);
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
@@ -628,11 +721,19 @@ export const CommunityPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       await dispatch(createPost({ content: newPost })).unwrap();
-      setNewPost('');
-      setSnackbar({ open: true, message: 'Post created successfully!', severity: 'success' });
+      setNewPost("");
+      setSnackbar({
+        open: true,
+        message: "Post created successfully!",
+        severity: "success",
+      });
     } catch (error) {
-      console.error('Failed to create post:', error);
-      setSnackbar({ open: true, message: 'Failed to create post', severity: 'error' });
+      console.error("Failed to create post:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to create post",
+        severity: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -642,39 +743,69 @@ export const CommunityPage: React.FC = () => {
     dispatch(toggleLike(postId));
   };
 
-  const handleEditPost = async (postId: string, newContent: string, mediaUrls?: string[]) => {
+  const handleEditPost = async (
+    postId: string,
+    newContent: string,
+    mediaUrls?: string[]
+  ) => {
     try {
-      await dispatch(editPost({ postId, content: newContent, mediaUrls })).unwrap();
-      setSnackbar({ open: true, message: 'Post updated successfully!', severity: 'success' });
+      await dispatch(
+        editPost({ postId, content: newContent, mediaUrls })
+      ).unwrap();
+      setSnackbar({
+        open: true,
+        message: "Post updated successfully!",
+        severity: "success",
+      });
     } catch (error: any) {
-      setSnackbar({ open: true, message: error || 'Failed to edit post', severity: 'error' });
+      setSnackbar({
+        open: true,
+        message: error || "Failed to edit post",
+        severity: "error",
+      });
     }
   };
 
   const handleDeletePost = async (postId: string) => {
     try {
       await dispatch(deletePost(postId)).unwrap();
-      setSnackbar({ open: true, message: 'Post deleted successfully!', severity: 'success' });
+      setSnackbar({
+        open: true,
+        message: "Post deleted successfully!",
+        severity: "success",
+      });
     } catch (error: any) {
-      setSnackbar({ open: true, message: error || 'Failed to delete post', severity: 'error' });
+      setSnackbar({
+        open: true,
+        message: error || "Failed to delete post",
+        severity: "error",
+      });
     }
   };
 
   const handleReportPost = async (postId: string, reason: string) => {
     try {
       // await dispatch(reportPost({ postId, reason })).unwrap();
-      setSnackbar({ open: true, message: 'Post reported successfully!', severity: 'info' });
+      setSnackbar({
+        open: true,
+        message: "Post reported successfully!",
+        severity: "info",
+      });
     } catch (error) {
-      console.error('Failed to report post:', error);
-      setSnackbar({ open: true, message: 'Failed to report post', severity: 'error' });
+      console.error("Failed to report post:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to report post",
+        severity: "error",
+      });
     }
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const filteredPosts = posts.filter(post => {
+  const filteredPosts = posts.filter((post) => {
     if (tabValue === 1) return post.isAnnouncement;
     if (tabValue === 2) return post.likesCount > 15;
     return true;
@@ -682,7 +813,10 @@ export const CommunityPage: React.FC = () => {
 
   if (loading && posts.length === 0) {
     return (
-      <Container maxWidth="md" sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+      <Container
+        maxWidth="md"
+        sx={{ py: 4, display: "flex", justifyContent: "center" }}
+      >
         <CircularProgress />
       </Container>
     );
@@ -734,9 +868,11 @@ export const CommunityPage: React.FC = () => {
             disabled={!newPost.trim() || isSubmitting}
             sx={{ borderRadius: 8 }}
             onClick={handleCreatePost}
-            startIcon={isSubmitting ? <CircularProgress size={16} /> : undefined}
+            startIcon={
+              isSubmitting ? <CircularProgress size={16} /> : undefined
+            }
           >
-            {isSubmitting ? 'Posting...' : 'Post'}
+            {isSubmitting ? "Posting..." : "Post"}
           </Button>
         </CardActions>
       </Card>
@@ -750,10 +886,10 @@ export const CommunityPage: React.FC = () => {
 
       {/* Posts */}
       <AnimatePresence>
-        {filteredPosts.map(post => (
-          <PostCard 
-            key={post.id} 
-            post={post} 
+        {filteredPosts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
             onToggleLike={handleToggleLike}
             onEdit={handleEditPost}
             onDelete={handleDeletePost}
@@ -764,7 +900,7 @@ export const CommunityPage: React.FC = () => {
       </AnimatePresence>
 
       {filteredPosts.length === 0 && !loading && (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Box sx={{ textAlign: "center", py: 4 }}>
           <Typography variant="h6" color="text.secondary">
             No posts found
           </Typography>
@@ -775,7 +911,7 @@ export const CommunityPage: React.FC = () => {
       )}
 
       {loading && posts.length > 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
           <CircularProgress />
         </Box>
       )}
@@ -785,12 +921,12 @@ export const CommunityPage: React.FC = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>
