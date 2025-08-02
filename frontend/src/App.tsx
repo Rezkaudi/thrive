@@ -9,7 +9,7 @@ import { chackPayment, checkAuth } from './store/slices/authSlice';
 import { CircularProgress, Box } from '@mui/material';
 
 // Pages
-import { LandingPage } from './pages/LandingPage';
+// import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ClassroomPage } from './pages/ClassroomPage';
@@ -18,7 +18,8 @@ import { ProfilePage } from './pages/ProfilePage';
 import { PublicProfilePage } from './pages/PublicProfilePage'; // Add this import
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
-
+import { NotFoundPage } from './pages/NotFoundPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 // Registration Pages
 // import { EmailVerificationPage } from './pages/registration/EmailVerificationPage';
 // import { PaymentPlanPage } from './pages/registration/PaymentPlanPage';
@@ -226,6 +227,12 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+        {/* Privacy Policy - Public Route */}
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+
+        {/* 404 Not Found - This should be the last route */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
   );
