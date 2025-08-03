@@ -92,7 +92,7 @@ export const ResetPasswordPage: React.FC = () => {
             hasUpperCase: /[A-Z]/.test(password),
             hasLowerCase: /[a-z]/.test(password),
             hasNumber: /\d/.test(password),
-            hasSpecialChar: /[@$!%*?&]/.test(password),
+            hasSpecialChar: /[@$!%*?&#]/.test(password),
             hasMinLength: password.length >= 8,
         });
     }, [password]);
@@ -199,7 +199,7 @@ export const ResetPasswordPage: React.FC = () => {
                         transition={{ duration: 0.5 }}
                     >
                         <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-                            <CardContent sx={{ p: 5, textAlign: 'center' }}>
+                            <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 }, textAlign: 'center' }}>
                                 <Box
                                     sx={{
                                         width: 80,
@@ -256,7 +256,7 @@ export const ResetPasswordPage: React.FC = () => {
                         transition={{ duration: 0.5 }}
                     >
                         <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-                            <CardContent sx={{ p: 5, textAlign: 'center' }}>
+                            <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 }, textAlign: 'center' }}>
                                 <Box
                                     sx={{
                                         width: 80,
@@ -339,9 +339,9 @@ export const ResetPasswordPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-                        <CardContent sx={{ p: 5 }}>
-                            <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
+                    <Card sx={{ borderRadius: 3, boxShadow: 10, my: 4 }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
+                            <Typography variant="h4" mt={3} fontWeight={700} color="primary" gutterBottom>
                                 Create New Password 🔐
                             </Typography>
                             <Typography variant="body1" color="text.secondary" gutterBottom>
@@ -416,7 +416,7 @@ export const ResetPasswordPage: React.FC = () => {
                                                 { check: passwordStrength.hasUpperCase, text: 'One uppercase letter' },
                                                 { check: passwordStrength.hasLowerCase, text: 'One lowercase letter' },
                                                 { check: passwordStrength.hasNumber, text: 'One number' },
-                                                { check: passwordStrength.hasSpecialChar, text: 'One special character (@$!%*?&)' },
+                                                { check: passwordStrength.hasSpecialChar, text: 'One special character (@$!%*?&#)' },
                                             ].map((req, index) => (
                                                 <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
                                                     <ListItemIcon sx={{ minWidth: 32 }}>

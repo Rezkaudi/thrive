@@ -166,9 +166,9 @@ export const VerifyEmailPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-                        <CardContent sx={{ p: 5 }}>
-                            <Box textAlign="center" mb={4}>
+                    <Card sx={{ borderRadius: 3, boxShadow: 10, my: 4 }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
+                            <Box textAlign="center" m={4}>
                                 <motion.div
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}

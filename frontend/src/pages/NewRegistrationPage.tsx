@@ -164,9 +164,9 @@ export const NewRegistrationPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-                        <CardContent sx={{ p: 5 }}>
-                            <Box textAlign="center" mb={4}>
+                    <Card sx={{ borderRadius: 3, boxShadow: 10, my: 4 }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
+                            <Box textAlign="center" m={4}>
                                 <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
                                     Create Your Account
                                 </Typography>
