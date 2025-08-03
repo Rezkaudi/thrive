@@ -45,6 +45,12 @@ import {
   Report,
   Save,
   Cancel,
+  ContentCopy,
+  Close,
+  Facebook,
+  Twitter,
+  LinkedIn,
+  WhatsApp,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
@@ -111,6 +117,8 @@ interface PostCardProps {
   onDelete: (postId: string) => void;
   onReport: (postId: string, reason: string) => void;
   currentUserId?: string;
+  onShowSnackbar: (message: string, severity: "success" | "error" | "info" | "warning") => void;
+  isHighlighted?: boolean;
 }
 
 const PostCard = ({
@@ -120,6 +128,8 @@ const PostCard = ({
   onDelete,
   onReport,
   currentUserId,
+  onShowSnackbar,
+  isHighlighted = false,
 }: PostCardProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -130,6 +140,34 @@ const PostCard = ({
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [shareDialog, setShareDialog] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  
+
+  const shareToSocial = (platform: string) => {
+    const message = `Check out this post from the Thrive in Japan community!`;
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedMessage = encodeURIComponent(message);
+
+    let shareUrl_platform = '';
+
+    switch (platform) {
+      case 'facebook':
+        shareUrl_platform = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+        break;
+      case 'twitter':
+        shareUrl_platform = `https://twitter.com/intent/tweet?text=${encodedMessage}&url=${encodedUrl}`;
+        break;
+      case 'linkedin':
+        shareUrl_platform = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+        break;
+      case 'whatsapp':
+        shareUrl_platform = `https://wa.me/?text=${encodedMessage} ${encodedUrl}`;
+        break;
+    }
+
+    window.open(shareUrl_platform, '_blank', 'width=600,height=400');
+  };
 
   const menuOpen = Boolean(anchorEl);
   const isOwnPost = currentUserId === post.author?.userId;
@@ -173,6 +211,18 @@ const PostCard = ({
     setEditContent(post.content);
     setEditMediaUrls(post.mediaUrls);
     handleMenuClose();
+  };
+
+  const handleShareClick = () => {
+    // Generate URL that opens community page and highlights this specific post
+    const postUrl = `${window.location.origin}/community?highlight=${post.id}`;
+    setShareUrl(postUrl);
+    setShareDialog(true);
+  };
+
+  const copyShareUrl = () => {
+    navigator.clipboard.writeText(shareUrl);
+    onShowSnackbar('Post URL copied to clipboard!', 'success');
   };
 
   const handleSaveEdit = async () => {
@@ -264,6 +314,7 @@ const PostCard = ({
       layout
     >
       <Card
+        id={`post-${post.id}`}
         sx={{
           mb: 3,
           position: "relative",
@@ -271,6 +322,12 @@ const PostCard = ({
           ...(post.isAnnouncement && {
             border: "2px solid",
             borderColor: "primary.main",
+          }),
+          ...(isHighlighted && {
+            border: "2px solid",
+            borderColor: "warning.main",
+            boxShadow: "0 0 20px #D4BC8C",
+            backgroundColor: "warning.50",
           }),
         }}
       >
@@ -576,6 +633,7 @@ const PostCard = ({
               startIcon={<Share />}
               size="small"
               sx={{ textTransform: "none" }}
+              onClick={handleShareClick}
               disabled={post.isDeleting}
             >
               Share
@@ -620,6 +678,76 @@ const PostCard = ({
         </DialogActions>
       </Dialog>
 
+      {/* Share Post Dialog */}
+      <Dialog
+        open={shareDialog}
+        onClose={() => setShareDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            Share This Post
+            <IconButton onClick={() => setShareDialog(false)}>
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Share this post - the link will open the community page and highlight this post
+              </Typography>
+              <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Typography variant="body2" sx={{ flex: 1, wordBreak: 'break-all' }}>
+                    {shareUrl}
+                  </Typography>
+                  <IconButton onClick={copyShareUrl} size="small">
+                    <ContentCopy />
+                  </IconButton>
+                </Stack>
+              </Paper>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Share on Social Media
+              </Typography>
+              <Stack direction="row" spacing={2}>
+                <IconButton
+                  onClick={() => shareToSocial('facebook')}
+                  sx={{ bgcolor: '#1877F2', color: 'white', '&:hover': { bgcolor: '#166FE5' } }}
+                >
+                  <Facebook />
+                </IconButton>
+                <IconButton
+                  onClick={() => shareToSocial('twitter')}
+                  sx={{ bgcolor: '#1DA1F2', color: 'white', '&:hover': { bgcolor: '#1A91DA' } }}
+                >
+                  <Twitter />
+                </IconButton>
+                <IconButton
+                  onClick={() => shareToSocial('linkedin')}
+                  sx={{ bgcolor: '#0A66C2', color: 'white', '&:hover': { bgcolor: '#095BA8' } }}
+                >
+                  <LinkedIn />
+                </IconButton>
+                <IconButton
+                  onClick={() => shareToSocial('whatsapp')}
+                  sx={{ bgcolor: '#25D366', color: 'white', '&:hover': { bgcolor: '#22C75D' } }}
+                >
+                  <WhatsApp />
+                </IconButton>
+              </Stack>
+            </Box>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
       {/* Report Dialog */}
       <Dialog
         open={reportDialogOpen}
@@ -662,6 +790,7 @@ export const CommunityPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [newPost, setNewPost] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -693,6 +822,37 @@ export const CommunityPage: React.FC = () => {
     dispatch(fetchPosts({ page: 1, limit: 20 }));
   }, [dispatch]);
 
+  // Handle URL highlight parameter for shared posts
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlightParam = urlParams.get('highlight');
+    
+    if (highlightParam) {
+      setHighlightedPostId(highlightParam);
+      
+      // Scroll to highlighted post after a short delay to ensure posts are loaded
+      const timer = setTimeout(() => {
+        const postElement = document.getElementById(`post-${highlightParam}`);
+        if (postElement) {
+          postElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          
+          // Remove highlight after a few seconds
+          setTimeout(() => {
+            setHighlightedPostId(null);
+            // Clean up URL parameter
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+          }, 3000);
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [posts]);
+
   // Handle errors with snackbar
   useEffect(() => {
     if (editError) {
@@ -714,6 +874,14 @@ export const CommunityPage: React.FC = () => {
       dispatch(clearError());
     }
   }, [commentError, dispatch]);
+
+  const handleShowSnackbar = (message: string, severity: "success" | "error" | "info" | "warning") => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
@@ -895,6 +1063,8 @@ export const CommunityPage: React.FC = () => {
             onDelete={handleDeletePost}
             onReport={handleReportPost}
             currentUserId={currentUserId}
+            onShowSnackbar={handleShowSnackbar}
+            isHighlighted={highlightedPostId === post.id}
           />
         ))}
       </AnimatePresence>
