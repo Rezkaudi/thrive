@@ -32,6 +32,8 @@ interface CommunityState {
   totalPosts: number;
   currentPage: number;
   loading: boolean;
+  loadingMore: boolean; // New loading state for infinite scroll
+  hasMorePosts: boolean; // New computed state
   error: string | null;
   editError: string | null;
   deleteError: string | null;
@@ -43,18 +45,39 @@ const initialState: CommunityState = {
   totalPosts: 0,
   currentPage: 1,
   loading: false,
+  loadingMore: false,
+  hasMorePosts: true,
   error: null,
   editError: null,
   deleteError: null,
   commentError: null,
 };
 
-// Post actions
+// Modified fetchPosts to support infinite scroll
 export const fetchPosts = createAsyncThunk(
   'community/fetchPosts',
-  async ({ page = 1, limit = 20 }: { page?: number; limit?: number }) => {
+  async ({ page = 1, limit = 20, append = false }: { 
+    page?: number; 
+    limit?: number; 
+    append?: boolean; // New parameter to indicate if we should append or replace
+  }) => {
     const response = await api.get('/community/posts', { params: { page, limit } });
-    return response.data;
+    return { ...response.data, append };
+  }
+);
+
+// New action specifically for loading more posts
+export const loadMorePosts = createAsyncThunk(
+  'community/loadMorePosts',
+  async (_, { getState }) => {
+    const state = getState() as { community: CommunityState };
+    const nextPage = state.community.currentPage + 1;
+    
+    const response = await api.get('/community/posts', { 
+      params: { page: nextPage, limit: 20 } 
+    });
+    
+    return { ...response.data, page: nextPage, append: true };
   }
 );
 
@@ -344,6 +367,11 @@ const communitySlice = createSlice({
       state.deleteError = null;
       state.commentError = null;
     },
+    resetPosts: (state) => {
+      state.posts = [];
+      state.currentPage = 1;
+      state.hasMorePosts = true;
+    },
     startEditPost: (state, action) => {
       const postIndex = state.posts.findIndex(p => p.id === action.payload);
       if (postIndex !== -1) {
@@ -408,21 +436,75 @@ const communitySlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Posts
-      .addCase(fetchPosts.pending, (state) => {
-        state.loading = true;
+      // Posts - Modified to handle both initial load and infinite scroll
+      .addCase(fetchPosts.pending, (state, action) => {
+        const page = action.meta.arg.page ?? 1; // Fix: Handle undefined page
+        const append = action.meta.arg.append ?? false;
+        
+        if (append || page > 1) {
+          state.loadingMore = true;
+        } else {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchPosts.fulfilled, (state, action) => {
         state.loading = false;
-        state.posts = action.payload.posts;
+        state.loadingMore = false;
+        
+        const page = action.meta.arg.page ?? 1; // Fix: Handle undefined page
+        const append = action.meta.arg.append ?? false;
+        
+        if (append || page > 1) {
+          // Append posts for infinite scroll
+          const newPosts = action.payload.posts.filter(
+            (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id) // Fix: Add type annotation
+          );
+          state.posts = [...state.posts, ...newPosts];
+        } else {
+          // Replace posts for initial load or refresh
+          state.posts = action.payload.posts;
+        }
+        
         state.totalPosts = action.payload.total;
         state.currentPage = action.payload.page;
+        
+        // Calculate if there are more posts to load
+        const totalLoadedPosts = state.posts.length;
+        state.hasMorePosts = totalLoadedPosts < state.totalPosts;
       })
       .addCase(fetchPosts.rejected, (state, action) => {
         state.loading = false;
+        state.loadingMore = false;
         state.error = action.error.message || 'Failed to fetch posts';
       })
+      
+      // Load More Posts
+      .addCase(loadMorePosts.pending, (state) => {
+        state.loadingMore = true;
+        state.error = null;
+      })
+      .addCase(loadMorePosts.fulfilled, (state, action) => {
+        state.loadingMore = false;
+        
+        // Append new posts, avoiding duplicates
+        const newPosts = action.payload.posts.filter(
+          (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id) // Fix: Add type annotation
+        );
+        state.posts = [...state.posts, ...newPosts];
+        
+        state.totalPosts = action.payload.total;
+        state.currentPage = action.payload.page;
+        
+        // Calculate if there are more posts to load
+        const totalLoadedPosts = state.posts.length;
+        state.hasMorePosts = totalLoadedPosts < state.totalPosts;
+      })
+      .addCase(loadMorePosts.rejected, (state, action) => {
+        state.loadingMore = false;
+        state.error = action.error.message || 'Failed to load more posts';
+      })
+      
       .addCase(createPost.fulfilled, (state, action) => {
         state.posts.unshift(action.payload);
         state.totalPosts++;
@@ -660,6 +742,7 @@ const communitySlice = createSlice({
 export const { 
   setCurrentPage, 
   clearError, 
+  resetPosts,
   startEditPost, 
   startDeletePost, 
   updatePostContent,

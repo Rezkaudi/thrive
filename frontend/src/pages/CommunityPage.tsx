@@ -1,5 +1,5 @@
-// frontend/src/pages/CommunityPage.tsx - Fixed Share Functionality
-import React, { useState, useEffect } from "react";
+// frontend/src/pages/CommunityPage.tsx - With Infinite Scroll Pagination
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Container,
@@ -32,6 +32,7 @@ import {
   Snackbar,
   Backdrop,
   Collapse,
+  Fade,
 } from "@mui/material";
 import {
   ThumbUp,
@@ -72,8 +73,10 @@ import {
   editPost,
   fetchCommentCount,
   fetchPosts,
+  loadMorePosts, // New action
   toggleCommentsSection,
   toggleLike,
+  resetPosts, // New action to reset posts when changing tabs
 } from "../store/slices/communitySlice";
 import { clearError } from "../store/slices/authSlice";
 import { linkifyText } from "../utils/linkify";
@@ -767,6 +770,37 @@ const PostCard = ({
   );
 };
 
+// Custom hook for infinite scroll
+const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: boolean) => {
+  const [isFetching, setIsFetching] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop < document.documentElement.offsetHeight - 1000) {
+        return;
+      }
+      if (hasMore && !loading && !isFetching) {
+        setIsFetching(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loading, isFetching]);
+
+  useEffect(() => {
+    if (!isFetching) return;
+    
+    if (hasMore && !loading) {
+      callback();
+    }
+    
+    setIsFetching(false);
+  }, [isFetching, callback, hasMore, loading]);
+
+  return [isFetching, setIsFetching] as const;
+};
+
 export const CommunityPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [newPost, setNewPost] = useState("");
@@ -786,6 +820,8 @@ export const CommunityPage: React.FC = () => {
   const {
     posts,
     loading,
+    loadingMore, // New loading state
+    hasMorePosts, // New state to check if more posts available
     error,
     editError,
     deleteError,
@@ -802,10 +838,27 @@ export const CommunityPage: React.FC = () => {
   );
   const currentUserId = useSelector((state: RootState) => state.auth.user?.id);
 
+  // Infinite scroll callback
+  const loadMore = useCallback(() => {
+    if (hasMorePosts && !loadingMore) {
+      dispatch(loadMorePosts());
+    }
+  }, [dispatch, hasMorePosts, loadingMore]);
+
+  // Use the infinite scroll hook
+  const [isFetching] = useInfiniteScroll(loadMore, hasMorePosts, loadingMore);
+
   // Fetch posts when component mounts
   useEffect(() => {
     dispatch(fetchPosts({ page: 1, limit: 20 }));
   }, [dispatch]);
+
+  // Reset posts when changing tabs
+  useEffect(() => {
+    // Reset posts and fetch new ones when tab changes
+    dispatch(resetPosts());
+    dispatch(fetchPosts({ page: 1, limit: 20 }));
+  }, [tabValue, dispatch]);
 
   // Handle URL highlight parameter for shared posts
   useEffect(() => {
@@ -1116,10 +1169,32 @@ export const CommunityPage: React.FC = () => {
         </Box>
       )}
 
-      {loading && posts.length > 0 && (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
-          <CircularProgress />
-        </Box>
+      {/* Loading More Indicator */}
+      {loadingMore && (
+        <Fade in={loadingMore}>
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <Stack alignItems="center" spacing={2}>
+              <CircularProgress size={32} />
+              <Typography variant="body2" color="text.secondary">
+                Loading more posts...
+              </Typography>
+            </Stack>
+          </Box>
+        </Fade>
+      )}
+
+      {/* End of Posts Indicator */}
+      {!hasMorePosts && posts.length > 0 && !loading && (
+        <Fade in={true}>
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              🎉 You've reached the end! 
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {posts.length} posts loaded
+            </Typography>
+          </Box>
+        </Fade>
       )}
 
       {/* Snackbar for feedback */}
