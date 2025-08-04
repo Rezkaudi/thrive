@@ -117,6 +117,17 @@ export class S3StorageService {
     }
 
     /**
+     * Generate unique profile photo filename
+     */
+    private generateProfilePhotoFilename(userId: string, mimeType: string): string {
+        const extension = mimeType.split('/')[1] || 'jpg';
+        const timestamp = Date.now();
+        const uuid = uuidv4().substring(0, 8);
+        
+        return `profile_${userId}_${timestamp}_${uuid}.${extension}`;
+    }
+
+    /**
      * Validate community media file
      */
     static validateCommunityMediaFile(file: Express.Multer.File): void {
@@ -135,6 +146,146 @@ export class S3StorageService {
         if (file.size > maxSize) {
             const maxSizeLabel = file.mimetype.startsWith('image/') ? '10MB' : '100MB';
             throw new Error(`File size exceeds ${maxSizeLabel}. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+        }
+    }
+
+    /**
+     * Upload profile photo
+     */
+    async uploadProfilePhoto(
+        userId: string,
+        fileBuffer: Buffer,
+        mimeType: string
+    ): Promise<string> {
+        try {
+            console.log('=== Profile Photo Upload Starting ===');
+            console.log('User ID:', userId);
+            console.log('File size:', fileBuffer.length, 'bytes');
+            console.log('MIME type:', mimeType);
+
+            // Validate inputs
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+
+            if (!fileBuffer || fileBuffer.length === 0) {
+                throw new Error('Empty file buffer');
+            }
+
+            // Validate file type
+            const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!allowedMimeTypes.includes(mimeType)) {
+                throw new Error(`Invalid file type: ${mimeType}. Allowed types: ${allowedMimeTypes.join(', ')}`);
+            }
+
+            // Validate file size (5MB max for profile photos)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (fileBuffer.length > maxSize) {
+                throw new Error(`File size exceeds 5MB limit. Current size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+            }
+
+            // Generate safe filename
+            const safeFilename = this.generateProfilePhotoFilename(userId, mimeType);
+            console.log('Generated safe filename:', safeFilename);
+
+            // Create S3 key with folder structure
+            const key = `profiles/${userId}/${safeFilename}`;
+            console.log('S3 key:', key);
+
+            // Prepare upload parameters
+            const uploadParams: AWS.S3.PutObjectRequest = {
+                Bucket: this.bucketName,
+                Key: key,
+                Body: fileBuffer,
+                ContentType: mimeType,
+                ContentDisposition: `inline; filename="${safeFilename}"`,
+                CacheControl: 'public, max-age=31536000', // 1 year cache
+                ACL: 'public-read', // Make file publicly accessible
+                Metadata: {
+                    'uploaded-by': userId,
+                    'file-type': 'profile-photo',
+                    'upload-timestamp': Date.now().toString(),
+                    'file-size': fileBuffer.length.toString()
+                }
+            };
+
+            console.log('Upload parameters:', {
+                Bucket: uploadParams.Bucket,
+                Key: uploadParams.Key,
+                ContentType: uploadParams.ContentType,
+                BufferSize: fileBuffer.length,
+                ACL: uploadParams.ACL
+            });
+
+            // Perform S3 upload
+            console.log('Starting S3 upload...');
+            const result = await this.s3.upload(uploadParams).promise();
+            
+            console.log('✅ Profile photo upload successful!');
+            console.log('File URL:', result.Location);
+            console.log('ETag:', result.ETag);
+
+            return result.Location;
+
+        } catch (error: any) {
+            console.error('❌ Profile Photo Upload Error Details:');
+            console.error('Error message:', error.message);
+            console.error('Error code:', error.code);
+            console.error('Status code:', error.statusCode);
+
+            // Provide specific error messages based on error codes
+            let errorMessage = `Failed to upload profile photo: ${error.message}`;
+            
+            switch (error.code) {
+                case 'SignatureDoesNotMatch':
+                    errorMessage = 'AWS credentials are invalid or expired. Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.';
+                    break;
+                case 'NoSuchBucket':
+                    errorMessage = `S3 bucket "${this.bucketName}" does not exist or is not accessible.`;
+                    break;
+                case 'AccessDenied':
+                    errorMessage = 'Access denied. Please check your AWS IAM permissions for S3 operations.';
+                    break;
+                case 'InvalidAccessKeyId':
+                    errorMessage = 'Invalid AWS Access Key ID. Please verify your credentials.';
+                    break;
+                default:
+                    break;
+            }
+
+            throw new Error(errorMessage);
+        }
+    }
+
+    /**
+     * Delete old profile photo
+     */
+    async deleteOldProfilePhoto(photoUrl: string): Promise<void> {
+        try {
+            if (!photoUrl) {
+                console.log('No photo URL provided for deletion');
+                return;
+            }
+
+            console.log('Deleting old profile photo:', photoUrl);
+
+            // Extract key from URL
+            const url = new URL(photoUrl);
+            const key = url.pathname.substring(1); // Remove leading slash
+
+            console.log('Extracted S3 key:', key);
+
+            const deleteParams: AWS.S3.DeleteObjectRequest = {
+                Bucket: this.bucketName,
+                Key: key
+            };
+
+            await this.s3.deleteObject(deleteParams).promise();
+            console.log('✅ Old profile photo deleted successfully');
+
+        } catch (error: any) {
+            console.error('❌ Delete old profile photo error:', error);
+            throw new Error(`Failed to delete old profile photo: ${error.message}`);
         }
     }
 
