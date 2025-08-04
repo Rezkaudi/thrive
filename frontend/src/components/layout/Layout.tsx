@@ -55,7 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const user = useSelector((state: RootState) => state.auth.user);
   const profile = useSelector((state: RootState) => state.dashboard.data);
-  const profilePhoto = useSelector((state: RootState) => state.profile.data?.profilePhoto);
+  const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
 
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -99,11 +99,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Toolbar>
-        {(isMobile || desktopDrawerOpen) && (
-          <Typography variant="h6" fontWeight={700} color="primary">
-            Thrive in Japan
-          </Typography>
-        )}
         {!isMobile && (
           <IconButton
             onClick={handleDrawerToggle}
