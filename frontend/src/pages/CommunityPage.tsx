@@ -60,7 +60,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { Comments } from "../components/community/Comments";
-import { MediaUpload, UploadedMedia } from "../components/community/MediaUpload";
+import {
+  MediaUpload,
+  UploadedMedia,
+} from "../components/community/MediaUpload";
 import { PostMedia } from "../components/community/PostMedia";
 import { AppDispatch, RootState } from "../store/store";
 import {
@@ -73,6 +76,7 @@ import {
   toggleLike,
 } from "../store/slices/communitySlice";
 import { clearError } from "../store/slices/authSlice";
+import { linkifyText } from "../utils/linkify";
 
 interface ComponentPost {
   id: string;
@@ -123,7 +127,10 @@ interface PostCardProps {
   onDelete: (postId: string) => void;
   onReport: (postId: string, reason: string) => void;
   currentUserId?: string;
-  onShowSnackbar: (message: string, severity: "success" | "error" | "info" | "warning") => void;
+  onShowSnackbar: (
+    message: string,
+    severity: "success" | "error" | "info" | "warning"
+  ) => void;
   isHighlighted?: boolean;
 }
 
@@ -147,7 +154,7 @@ const PostCard = ({
   const [reportReason, setReportReason] = useState("");
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
+  const [shareUrl, setShareUrl] = useState("");
   const [mediaExpanded, setMediaExpanded] = useState(false);
 
   const shareToSocial = (platform: string) => {
@@ -155,35 +162,40 @@ const PostCard = ({
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedMessage = encodeURIComponent(message);
 
-    let platformShareUrl = '';
+    let platformShareUrl = "";
 
     switch (platform) {
-      case 'facebook':
+      case "facebook":
         platformShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
         break;
-      case 'twitter':
+      case "twitter":
         platformShareUrl = `https://twitter.com/intent/tweet?text=${encodedMessage}&url=${encodedUrl}`;
         break;
-      case 'linkedin':
+      case "linkedin":
         platformShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
         break;
-      case 'whatsapp':
+      case "whatsapp":
         platformShareUrl = `https://wa.me/?text=${encodedMessage} ${encodedUrl}`;
         break;
     }
 
-    window.open(platformShareUrl, '_blank', 'width=600,height=400');
+    window.open(platformShareUrl, "_blank", "width=600,height=400");
   };
 
   const menuOpen = Boolean(anchorEl);
   const isOwnPost = currentUserId === post.author?.userId;
 
   // Convert mediaUrls to UploadedMedia format for editing
-  const editExistingMedia: UploadedMedia[] = editMediaUrls.map((url, index) => ({
-    url,
-    size: 0, // We don't have size info for existing media
-    mimeType: url.includes('.mp4') || url.includes('.mov') || url.includes('.avi') ? 'video/mp4' : 'image/jpeg',
-  }));
+  const editExistingMedia: UploadedMedia[] = editMediaUrls.map(
+    (url, index) => ({
+      url,
+      size: 0, // We don't have size info for existing media
+      mimeType:
+        url.includes(".mp4") || url.includes(".mov") || url.includes(".avi")
+          ? "video/mp4"
+          : "image/jpeg",
+    })
+  );
 
   // Only fetch comment count if we don't have it and haven't initialized comments
   useEffect(() => {
@@ -235,7 +247,7 @@ const PostCard = ({
 
   const copyShareUrl = () => {
     navigator.clipboard.writeText(shareUrl);
-    onShowSnackbar('Post URL copied to clipboard!', 'success');
+    onShowSnackbar("Post URL copied to clipboard!", "success");
   };
 
   const handleSaveEdit = async () => {
@@ -297,12 +309,12 @@ const PostCard = ({
   };
 
   const handleEditMediaUpload = (mediaFiles: UploadedMedia[]) => {
-    const urls = mediaFiles.map(file => file.url);
+    const urls = mediaFiles.map((file) => file.url);
     setEditMediaUrls([...editMediaUrls, ...urls]);
   };
 
   const handleEditMediaRemove = (mediaUrl: string) => {
-    setEditMediaUrls(editMediaUrls.filter(url => url !== mediaUrl));
+    setEditMediaUrls(editMediaUrls.filter((url) => url !== mediaUrl));
   };
 
   // Don't show comment count if it's 0 and we haven't initialized
@@ -539,7 +551,7 @@ const PostCard = ({
             </Box>
           ) : (
             <Typography variant="body1" sx={{ mb: 2, whiteSpace: "pre-wrap" }}>
-              {post.content}
+              {linkifyText(post.content)}
             </Typography>
           )}
 
@@ -631,7 +643,11 @@ const PostCard = ({
         fullWidth
       >
         <DialogTitle>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             Share This Post
             <IconButton onClick={() => setShareDialog(false)}>
               <Close />
@@ -642,11 +658,15 @@ const PostCard = ({
           <Stack spacing={3}>
             <Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Share this post - the link will open the community page and highlight this post
+                Share this post - the link will open the community page and
+                highlight this post
               </Typography>
-              <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+              <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="body2" sx={{ flex: 1, wordBreak: 'break-all' }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ flex: 1, wordBreak: "break-all" }}
+                  >
                     {shareUrl}
                   </Typography>
                   <IconButton onClick={copyShareUrl} size="small">
@@ -664,26 +684,42 @@ const PostCard = ({
               </Typography>
               <Stack direction="row" spacing={2}>
                 <IconButton
-                  onClick={() => shareToSocial('facebook')}
-                  sx={{ bgcolor: '#1877F2', color: 'white', '&:hover': { bgcolor: '#166FE5' } }}
+                  onClick={() => shareToSocial("facebook")}
+                  sx={{
+                    bgcolor: "#1877F2",
+                    color: "white",
+                    "&:hover": { bgcolor: "#166FE5" },
+                  }}
                 >
                   <Facebook />
                 </IconButton>
                 <IconButton
-                  onClick={() => shareToSocial('twitter')}
-                  sx={{ bgcolor: '#1DA1F2', color: 'white', '&:hover': { bgcolor: '#1A91DA' } }}
+                  onClick={() => shareToSocial("twitter")}
+                  sx={{
+                    bgcolor: "#1DA1F2",
+                    color: "white",
+                    "&:hover": { bgcolor: "#1A91DA" },
+                  }}
                 >
                   <Twitter />
                 </IconButton>
                 <IconButton
-                  onClick={() => shareToSocial('linkedin')}
-                  sx={{ bgcolor: '#0A66C2', color: 'white', '&:hover': { bgcolor: '#095BA8' } }}
+                  onClick={() => shareToSocial("linkedin")}
+                  sx={{
+                    bgcolor: "#0A66C2",
+                    color: "white",
+                    "&:hover": { bgcolor: "#095BA8" },
+                  }}
                 >
                   <LinkedIn />
                 </IconButton>
                 <IconButton
-                  onClick={() => shareToSocial('whatsapp')}
-                  sx={{ bgcolor: '#25D366', color: 'white', '&:hover': { bgcolor: '#22C75D' } }}
+                  onClick={() => shareToSocial("whatsapp")}
+                  sx={{
+                    bgcolor: "#25D366",
+                    color: "white",
+                    "&:hover": { bgcolor: "#22C75D" },
+                  }}
                 >
                   <WhatsApp />
                 </IconButton>
@@ -742,7 +778,9 @@ export const CommunityPage: React.FC = () => {
     severity: "success" as "success" | "error" | "info" | "warning",
   });
   const [mediaExpanded, setMediaExpanded] = useState(false);
-  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
+    null
+  );
 
   const dispatch = useDispatch<AppDispatch>();
   const {
@@ -772,30 +810,30 @@ export const CommunityPage: React.FC = () => {
   // Handle URL highlight parameter for shared posts
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const highlightParam = urlParams.get('highlight');
-    
+    const highlightParam = urlParams.get("highlight");
+
     if (highlightParam) {
       setHighlightedPostId(highlightParam);
-      
+
       // Scroll to highlighted post after a short delay to ensure posts are loaded
       const timer = setTimeout(() => {
         const postElement = document.getElementById(`post-${highlightParam}`);
         if (postElement) {
-          postElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
+          postElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
           });
-          
+
           // Remove highlight after a few seconds
           setTimeout(() => {
             setHighlightedPostId(null);
             // Clean up URL parameter
             const newUrl = window.location.pathname;
-            window.history.replaceState({}, '', newUrl);
+            window.history.replaceState({}, "", newUrl);
           }, 3000);
         }
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [posts]);
@@ -822,7 +860,10 @@ export const CommunityPage: React.FC = () => {
     }
   }, [commentError, dispatch]);
 
-  const handleShowSnackbar = (message: string, severity: "success" | "error" | "info" | "warning") => {
+  const handleShowSnackbar = (
+    message: string,
+    severity: "success" | "error" | "info" | "warning"
+  ) => {
     setSnackbar({ open: true, message, severity });
   };
 
@@ -831,11 +872,11 @@ export const CommunityPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const mediaUrls = newPostMedia.map(media => media.url);
+      const mediaUrls = newPostMedia.map((media) => media.url);
       await dispatch(
-        createPost({ 
-          content: newPost || " ", 
-          mediaUrls 
+        createPost({
+          content: newPost || " ",
+          mediaUrls,
         })
       ).unwrap();
       setNewPost("");
@@ -929,7 +970,7 @@ export const CommunityPage: React.FC = () => {
   };
 
   const handleNewPostMediaRemove = (mediaUrl: string) => {
-    setNewPostMedia(newPostMedia.filter(media => media.url !== mediaUrl));
+    setNewPostMedia(newPostMedia.filter((media) => media.url !== mediaUrl));
   };
 
   const filteredPosts = posts.filter((post) => {
@@ -1007,17 +1048,17 @@ export const CommunityPage: React.FC = () => {
         <Divider />
         <CardActions sx={{ px: 3, py: 1.5 }}>
           <Stack direction="row" spacing={1} flexGrow={1}>
-            <IconButton 
-              size="small" 
-              color="primary" 
+            <IconButton
+              size="small"
+              color="primary"
               disabled={isSubmitting}
               onClick={() => setMediaExpanded(!mediaExpanded)}
             >
               <PhotoCamera />
             </IconButton>
-            <IconButton 
-              size="small" 
-              color="primary" 
+            <IconButton
+              size="small"
+              color="primary"
               disabled={isSubmitting}
               onClick={() => setMediaExpanded(!mediaExpanded)}
             >
@@ -1026,7 +1067,9 @@ export const CommunityPage: React.FC = () => {
           </Stack>
           <Button
             variant="contained"
-            disabled={(!newPost.trim() && newPostMedia.length === 0) || isSubmitting}
+            disabled={
+              (!newPost.trim() && newPostMedia.length === 0) || isSubmitting
+            }
             sx={{ borderRadius: 8 }}
             onClick={handleCreatePost}
             startIcon={
