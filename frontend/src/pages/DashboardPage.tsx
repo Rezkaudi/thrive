@@ -15,7 +15,6 @@ import {
   IconButton,
   Skeleton,
   Alert,
-  Button,
 } from '@mui/material';
 import {
   School,
@@ -136,7 +135,7 @@ export const DashboardPage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
       {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

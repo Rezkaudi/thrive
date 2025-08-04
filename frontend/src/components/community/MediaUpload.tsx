@@ -106,7 +106,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   const [uploadStage, setUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'success' | 'error'>('idle');
   const [successMessage, setSuccessMessage] = useState('');
   const [collapsed, setCollapsed] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -143,10 +143,10 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   const handleFileSelect = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files);
     const currentTotal = existingMedia.length + selectedFiles.length;
-    
+
     // Clear previous errors
     setUploadErrors({});
-    
+
     if (fileArray.length + currentTotal > maxFiles) {
       setUploadErrors({
         fileLimit: `You can only upload ${maxFiles} files total. You currently have ${currentTotal} files.`
@@ -160,7 +160,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     fileArray.forEach((file) => {
       const fileId = generateFileId();
       const error = validateFile(file);
-      
+
       if (error) {
         errors[fileId] = `${file.name}: ${error}`;
       } else {
@@ -184,7 +184,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     if (validFiles.length > 0) {
       setSelectedFiles((prev) => [...prev, ...validFiles]);
       setUploadStage('idle');
-      
+
       // Show success message for valid files
       if (validFiles.length > 0) {
         setSuccessMessage(`${validFiles.length} file${validFiles.length > 1 ? 's' : ''} ready to upload`);
@@ -203,9 +203,9 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragOver(false);
-    
+
     if (disabled) return;
-    
+
     const files = Array.from(event.dataTransfer.files);
     handleFileSelect(files);
   }, [disabled, handleFileSelect]);
@@ -223,7 +223,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX;
     const y = event.clientY;
-    
+
     if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
       setDragOver(false);
     }
@@ -233,14 +233,14 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     setSelectedFiles((prev) => {
       const newFiles = prev.filter(item => item.id !== id);
       const removedItem = prev.find(item => item.id === id);
-      
+
       if (removedItem?.preview) {
         URL.revokeObjectURL(removedItem.preview);
       }
-      
+
       return newFiles;
     });
-    
+
     // Clear any errors for this file
     setUploadErrors(prev => {
       const newErrors = { ...prev };
@@ -254,13 +254,13 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     if (!fileItem) return;
 
     // Update file status
-    setSelectedFiles(prev => prev.map(f => 
+    setSelectedFiles(prev => prev.map(f =>
       f.id === fileId ? { ...f, isUploading: true, error: undefined, uploadProgress: 0 } : f
     ));
 
     try {
       const response = await communityService.uploadMedia([fileItem.file]);
-      
+
       const uploadedMedia: UploadedMedia[] = response.files.map((file) => ({
         url: file.url,
         size: file.size,
@@ -270,17 +270,17 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
       }));
 
       onMediaUpload(uploadedMedia);
-      
+
       // Remove from selected files
       setSelectedFiles(prev => prev.filter(f => f.id !== fileId));
       URL.revokeObjectURL(fileItem.preview);
-      
+
     } catch (error: any) {
-      setSelectedFiles(prev => prev.map(f => 
-        f.id === fileId ? { 
-          ...f, 
-          isUploading: false, 
-          error: error.response?.data?.error || error.message || 'Upload failed' 
+      setSelectedFiles(prev => prev.map(f =>
+        f.id === fileId ? {
+          ...f,
+          isUploading: false,
+          error: error.response?.data?.error || error.message || 'Upload failed'
         } : f
       ));
     }
@@ -298,10 +298,10 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
 
     try {
       setUploadStage('uploading');
-      
+
       const filesToUpload: File[] = selectedFiles.map(item => item.file);
       const response = await communityService.uploadMedia(filesToUpload);
-      
+
       const uploadedMedia: UploadedMedia[] = response.files.map((file, index) => ({
         url: file.url,
         size: file.size,
@@ -311,31 +311,31 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
       }));
 
       onMediaUpload(uploadedMedia);
-      
+
       // Clean up
       selectedFiles.forEach((item) => {
         if (item.preview) {
           URL.revokeObjectURL(item.preview);
         }
       });
-      
+
       setSelectedFiles([]);
       setUploadStage('success');
       setSuccessMessage(`Successfully uploaded ${uploadedMedia.length} file${uploadedMedia.length > 1 ? 's' : ''}!`);
-      
+
       // Auto-clear success state
       setTimeout(() => {
         setUploadStage('idle');
         setSuccessMessage('');
       }, 3000);
-      
+
     } catch (error: any) {
       console.error('Upload error:', error);
       setUploadStage('error');
-      setUploadErrors({ 
-        upload: error.response?.data?.error || error.message || 'Upload failed. Please try again.' 
+      setUploadErrors({
+        upload: error.response?.data?.error || error.message || 'Upload failed. Please try again.'
       });
-      
+
       // Reset file states
       setSelectedFiles(prev => prev.map(f => ({ ...f, isUploading: false })));
     } finally {
@@ -414,10 +414,10 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
       }
 
       return (
-        <Stack alignItems="center" spacing={2}>
-          <CloudUpload 
-            color={dragOver ? 'primary' : 'action'} 
-            sx={{ fontSize: 48, transition: 'all 0.3s ease' }} 
+        <Stack alignItems="center" spacing={1}>
+          <CloudUpload
+            color={dragOver ? 'primary' : 'action'}
+            sx={{ fontSize: 48, transition: 'all 0.3s ease' }}
           />
           <Box textAlign="center">
             <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -426,7 +426,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Drag and drop files, or click to select
             </Typography>
-            
+
             <ButtonGroup variant="outlined" size="small">
               <Button
                 startIcon={<PhotoCamera />}
@@ -442,7 +442,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
               </Button>
             </ButtonGroup>
           </Box>
-          
+
           <Button
             size="small"
             variant="text"
@@ -462,14 +462,14 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           p: 4,
           mb: 2,
           border: '2px dashed',
-          borderColor: 
+          borderColor:
             uploadStage === 'success' ? 'success.main' :
-            uploadStage === 'error' ? 'error.main' :
-            dragOver ? 'primary.main' : 'grey.300',
-          bgcolor: 
+              uploadStage === 'error' ? 'error.main' :
+                dragOver ? 'primary.main' : 'grey.300',
+          bgcolor:
             uploadStage === 'success' ? 'success.50' :
-            uploadStage === 'error' ? 'error.50' :
-            dragOver ? 'primary.50' : 'grey.50',
+              uploadStage === 'error' ? 'error.50' :
+                dragOver ? 'primary.50' : 'grey.50',
           transition: 'all 0.3s ease',
           cursor: canAddMore ? 'pointer' : 'default',
           '&:hover': canAddMore ? {
@@ -483,7 +483,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
         onClick={() => canAddMore && fileInputRef.current?.click()}
       >
         {getUploadAreaContent()}
-        
+
         <Collapse in={showHelp}>
           <Divider sx={{ my: 2 }} />
           <Stack direction="row" spacing={4} justifyContent="center">
@@ -529,7 +529,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
         style={{ display: 'none' }}
         disabled={disabled || !canAddMore}
       />
-      
+
       <input
         type="file"
         ref={videoInputRef}
@@ -559,7 +559,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
               />
             </Badge>
           </Stack>
-          
+
           <IconButton
             size="small"
             onClick={() => setCollapsed(!collapsed)}
@@ -585,7 +585,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           >
             {isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}`}
           </Button>
-          
+
           <Button
             variant="outlined"
             startIcon={<Cancel />}
@@ -605,8 +605,8 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
           >
-            <Alert 
-              severity="error" 
+            <Alert
+              severity="error"
               sx={{ mb: 2 }}
               action={
                 <IconButton
@@ -717,7 +717,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                         </Box>
                       </>
                     )}
-                    
+
                     {/* Status indicator */}
                     <Chip
                       icon={<CheckCircle />}
@@ -732,7 +732,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                       }}
                     />
                   </CardMedia>
-                  
+
                   <CardActions sx={{ p: 1, minHeight: 60 }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" width="100%">
                       <Stack spacing={0.5}>
@@ -744,7 +744,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                           color={getFileTypeColor(media.mimeType)}
                         />
                       </Stack>
-                      
+
                       <Stack direction="row" spacing={0.5}>
                         <Tooltip title="Preview">
                           <IconButton
@@ -804,7 +804,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                       </Typography>
                     </Box>
                   )}
-                  
+
                   <CardMedia
                     sx={{
                       height: 120,
@@ -834,7 +834,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                         </Typography>
                       </Stack>
                     )}
-                    
+
                     {/* Status indicators */}
                     {item.error ? (
                       <Chip
@@ -864,7 +864,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                       />
                     )}
                   </CardMedia>
-                  
+
                   <CardActions sx={{ p: 1, minHeight: 60 }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" width="100%">
                       <Stack spacing={0.5}>
@@ -881,7 +881,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                           </Typography>
                         )}
                       </Stack>
-                      
+
                       <Stack direction="row" spacing={0.5}>
                         {item.error && (
                           <Tooltip title="Retry upload">
@@ -927,9 +927,9 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           },
         }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <DialogTitle sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           bgcolor: 'rgba(0, 0, 0, 0.8)',
           color: 'white',
@@ -942,8 +942,8 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ 
-          p: 0, 
+        <DialogContent sx={{
+          p: 0,
           bgcolor: 'black',
           display: 'flex',
           alignItems: 'center',
@@ -951,8 +951,8 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           minHeight: '60vh',
         }}>
           {previewMedia && (
-            <Box sx={{ 
-              width: '100%', 
+            <Box sx={{
+              width: '100%',
               height: '100%',
               display: 'flex',
               alignItems: 'center',

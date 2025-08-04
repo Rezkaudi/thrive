@@ -1,54 +1,52 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
+
 import CssBaseline from '@mui/material/CssBaseline';
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { store, RootState, AppDispatch } from './store/store';
-import { theme } from './theme/theme';
-import { chackPayment, checkAuth } from './store/slices/authSlice';
+import { ThemeProvider } from '@mui/material/styles';
 import { CircularProgress, Box } from '@mui/material';
 
-// Pages
-// import { LandingPage } from './pages/LandingPage';
+import { theme } from './theme/theme';
+
+import { store, RootState, AppDispatch } from './store/store';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { chackPayment, checkAuth } from './store/slices/authSlice';
+import { fetchDashboardData } from './store/slices/dashboardSlice';
+
+
+// Auth Pages
 import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { ClassroomPage } from './pages/ClassroomPage';
-import { CommunityPage } from './pages/CommunityPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { PublicProfilePage } from './pages/PublicProfilePage'; // Add this import
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
-import { NotFoundPage } from './pages/NotFoundPage';
-import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
-// Registration Pages
-// import { EmailVerificationPage } from './pages/registration/EmailVerificationPage';
-// import { PaymentPlanPage } from './pages/registration/PaymentPlanPage';
-// import { CreateAccountPage } from './pages/registration/CreateAccountPage';
-// import { RegistrationCompletePage } from './pages/registration/RegistrationCompletePage';
 import { NewRegistrationPage } from './pages/NewRegistrationPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 // Admin Pages
+import { Analytics } from './pages/admin/Analytics';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
 import { CourseManagement } from './pages/admin/CourseManagement';
-import { CommunityModeration } from './pages/admin/CommunityModeration';
 import { SessionManagement } from './pages/admin/SessionManagement';
-import { Analytics } from './pages/admin/Analytics';
+import { CommunityModeration } from './pages/admin/CommunityModeration';
+
+// Pages
+import { ProfilePage } from './pages/ProfilePage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ClassroomPage } from './pages/ClassroomPage';
+import { CommunityPage } from './pages/CommunityPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { PublicProfilePage } from './pages/PublicProfilePage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { SubscriptionPage } from './pages/SubscriptionPage';
 
 // Components
-import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 
-import { CalendarPage } from './pages/CalendarPage';
-import { VerifyEmailPage } from './pages/VerifyEmailPage';
-import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
-import { SubscriptionPage } from './pages/SubscriptionPage';
-import { SubscriptionSuccessPage } from './pages/SubscriptionSuccessPage';
-import { fetchDashboardData } from './store/slices/dashboardSlice';
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>();
-  const { authChecking, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { authChecking, isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const initApp = async () => {
@@ -60,8 +58,7 @@ function AppContent() {
     initApp();
   }, [dispatch]);
 
-  if (authChecking) {
-    // Show loading spinner while checking auth
+  if (authChecking || loading) {
     return (
       <Box
         sx={{
@@ -79,31 +76,15 @@ function AppContent() {
   return (
     <Router>
       <Routes>
-        {/* <Route path="/" element={<LandingPage />} /> */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-        {/* Public Routes (no authentication required) */}
-        <Route path="/profile/:userId" element={<PublicProfilePage />} /> {/* Add this route */}
-
-        {/* <Route path="/register/email" element={<EmailVerificationPage />} />
-        <Route path="/register/payment" element={<PaymentPlanPage />} />
-        <Route path="/register/account" element={<CreateAccountPage />} />
-        <Route path="/register/complete" element={<RegistrationCompletePage />} /> */}
 
         <Route path="/register" element={<NewRegistrationPage />} />
         <Route path="/register/verify" element={<VerifyEmailPage />} />
-        <Route path="/register/success" element={<RegistrationSuccessPage />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/profile/:userId" element={<PublicProfilePage />} />
 
         <Route
           path="/subscription"
           element={isAuthenticated ? <SubscriptionPage /> : <Navigate to="/login" replace />}
-        />
-
-        <Route
-          path="/subscription/success"
-          element={
-            <SubscriptionSuccessPage />
-          }
         />
 
         <Route
@@ -151,6 +132,17 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <ProfilePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CalendarPage />
               </Layout>
             </ProtectedRoute>
           }
@@ -217,21 +209,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/calendar"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <CalendarPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
 
-        {/* Privacy Policy - Public Route */}
+
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-
-        {/* 404 Not Found - This should be the last route */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>

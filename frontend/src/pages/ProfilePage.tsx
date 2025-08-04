@@ -640,7 +640,7 @@ export const ProfilePage: React.FC = () => {
         {/* Profile Header */}
         <Card sx={{ mb: 4, overflow: 'visible' }}>
           <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-            <Grid container spacing={3} alignItems="flex-start">
+            <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="flex-start">
               <Grid size={{ xs: 12, md: 3 }} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
                 <Badge
                   overlap="circular"
@@ -668,8 +668,8 @@ export const ProfilePage: React.FC = () => {
                   <Avatar
                     src={profile?.profilePhoto}
                     sx={{
-                      width: { xs: 120, md: 150 },
-                      height: { xs: 120, md: 150 },
+                      width: { xs: 100, sm: 120, md: 150 },
+                      height: { xs: 100, sm: 120, md: 150 },
                       mx: 'auto',
                       border: '4px solid white',
                       boxShadow: 3,
@@ -711,7 +711,10 @@ export const ProfilePage: React.FC = () => {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 {editing ? (
-                  <Stack spacing={2}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                  >
                     <TextField
                       fullWidth
                       label="Name"

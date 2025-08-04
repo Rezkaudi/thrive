@@ -1,6 +1,6 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 
-export const theme = createTheme({
+export const theme = responsiveFontSizes(createTheme({
   palette: {
     primary: {
       main: '#5C633A', // Warm coral/salmon - reminiscent of Japanese lanterns
@@ -108,4 +108,4 @@ export const theme = createTheme({
       },
     },
   },
-});
+}));

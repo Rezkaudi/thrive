@@ -1,5 +1,5 @@
 // frontend/src/pages/registration/SubscriptionPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -7,8 +7,6 @@ import {
     Typography,
     Button,
     Stack,
-    Paper,
-    Chip,
     Alert,
     CircularProgress,
     Card,
@@ -25,6 +23,8 @@ import {
 import { motion } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
 import api from '../services/api';
+import { RootState } from '../store/store';
+import { useSelector } from 'react-redux';
 
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY!);
@@ -100,6 +100,7 @@ export const SubscriptionPage: React.FC = () => {
     const [selectedPlan, setSelectedPlan] = useState<string>('monthly');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const { hasTrailingSubscription } = useSelector((state: RootState) => state.auth);
 
     const handleSelectPlan = async (planId: string) => {
         setSelectedPlan(planId);
@@ -121,7 +122,7 @@ export const SubscriptionPage: React.FC = () => {
             const response = await api.post('/payment/create-checkout-session', {
                 priceId: plan.stripePriceId,
                 mode: plan.period === 'one-time' ? 'payment' : 'subscription',
-                successUrl: `${window.location.origin}/classroom`,
+                successUrl: `${window.location.origin}/dashboard`,
                 cancelUrl: `${window.location.origin}/subscription`,
                 metadata: {
                     plan: planId
@@ -223,7 +224,7 @@ export const SubscriptionPage: React.FC = () => {
                 </Button>
 
                 {/* Header Section */}
-                <Box textAlign="center" mb={15}>
+                <Box textAlign="center" sx={{ mb: { xs: 5, sm: 10, md: 15 } }}>
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -232,55 +233,25 @@ export const SubscriptionPage: React.FC = () => {
                         <Typography variant="h3" fontWeight={700} gutterBottom>
                             Choose Your Learning Journey
                         </Typography>
-                        {/* <Typography variant="h5" color="text.secondary" sx={{ mb: 2 }}>
-                            3 different options to match your learning goals!
-                        </Typography>
-                        <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
-                            <Typography variant="body1" color="text.secondary">
-                                Thrive in Japan goes
-                            </Typography>
-                            <Chip
-                                label="LIVE"
-                                color="error"
-                                size="small"
-                                sx={{
-                                    fontWeight: 700,
-                                    fontStyle: 'italic',
-                                    animation: 'pulse 2s infinite',
-                                    '@keyframes pulse': {
-                                        '0%': { transform: 'scale(1)' },
-                                        '50%': { transform: 'scale(1.05)' },
-                                        '100%': { transform: 'scale(1)' },
-                                    },
-                                }}
-                            />
-                            <Typography variant="body1" color="text.secondary">
-                                on
-                            </Typography>
-                            <Typography variant="body1" color="error" fontWeight={700}>
-                                August 1st, 2025
-                            </Typography>
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                            Special discounted pricing available until October 31st
-                        </Typography> */}
                     </motion.div>
                 </Box>
 
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        <Alert
-                            severity="error"
-                            sx={{ mb: 3, maxWidth: 'lg', mx: 'auto' }}
-                            onClose={() => setError('')}
+                {
+                    error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
                         >
-                            {error}
-                        </Alert>
-                    </motion.div>
-                )}
+                            <Alert
+                                severity="error"
+                                sx={{ mb: 3, maxWidth: 'lg', mx: 'auto' }}
+                                onClose={() => setError('')}
+                            >
+                                {error}
+                            </Alert>
+                        </motion.div>
+                    )
+                }
 
                 {/* Plans Grid */}
                 <Stack
@@ -446,7 +417,7 @@ export const SubscriptionPage: React.FC = () => {
                                         {loading && selectedPlan === plan.id ? (
                                             <CircularProgress size={24} color="inherit" />
                                         ) : (
-                                            '14-Day Free Trial'
+                                            hasTrailingSubscription ? 'Subscripe Now' : '14-Day Free Trial'
                                         )}
                                     </Button>
                                 </CardContent>
@@ -484,7 +455,7 @@ export const SubscriptionPage: React.FC = () => {
                         </Stack>
                     </Paper>
                 </Box> */}
-            </Container>
-        </Box>
+            </Container >
+        </Box >
     );
 };
