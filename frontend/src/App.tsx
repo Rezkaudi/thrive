@@ -137,6 +137,17 @@ function AppContent() {
           }
         />
 
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CalendarPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* Admin Routes */}
         <Route
           path="/admin"
@@ -198,16 +209,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/calendar"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <CalendarPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+
 
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="*" element={<NotFoundPage />} />

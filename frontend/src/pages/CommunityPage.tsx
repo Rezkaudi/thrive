@@ -1,5 +1,5 @@
 // frontend/src/pages/CommunityPage.tsx - With Infinite Scroll Pagination
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Container,
@@ -33,6 +33,7 @@ import {
   Backdrop,
   Collapse,
   Fade,
+  useMediaQuery,
 } from "@mui/material";
 import {
   ThumbUp,
@@ -80,6 +81,7 @@ import {
 } from "../store/slices/communitySlice";
 import { clearError } from "../store/slices/authSlice";
 import { linkifyText } from "../utils/linkify";
+import { theme } from "../theme/theme";
 
 interface ComponentPost {
   id: string;
@@ -325,8 +327,8 @@ const PostCard = ({
     post.commentsCount !== undefined
       ? post.commentsCount
       : post.commentsInitialized
-      ? 0
-      : "...";
+        ? 0
+        : "...";
 
   return (
     <motion.div
@@ -1039,6 +1041,8 @@ export const CommunityPage: React.FC = () => {
     if (tabValue === 2) return post.likesCount > 15; // Trending: Posts with >15 likes
     return true;
   });
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
 
   if (loading && posts.length === 0) {
     return (
@@ -1051,8 +1055,9 @@ export const CommunityPage: React.FC = () => {
     );
   }
 
+
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
       <Typography variant="h3" gutterBottom fontWeight={700}>
         Community
       </Typography>
@@ -1066,7 +1071,7 @@ export const CommunityPage: React.FC = () => {
       {/* Create Post */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
-          <Stack direction="row" spacing={2} mb={2}>
+          <Stack direction="row" spacing={isMobile ? 1 : 2} mb={2}>
             <Avatar src={profilePhoto} sx={{ width: 48, height: 48 }}>
               {!profilePhoto ? name?.[0] : "U"}
             </Avatar>
@@ -1166,44 +1171,50 @@ export const CommunityPage: React.FC = () => {
         ))}
       </AnimatePresence>
 
-      {filteredPosts.length === 0 && !loading && (
-        <Box sx={{ textAlign: "center", py: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            No posts found
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Be the first to share something!
-          </Typography>
-        </Box>
-      )}
+      {
+        filteredPosts.length === 0 && !loading && (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="h6" color="text.secondary">
+              No posts found
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Be the first to share something!
+            </Typography>
+          </Box>
+        )
+      }
 
       {/* Loading More Indicator */}
-      {loadingMore && (
-        <Fade in={loadingMore}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <Stack alignItems="center" spacing={2}>
-              <CircularProgress size={32} />
-              <Typography variant="body2" color="text.secondary">
-                Loading more posts...
-              </Typography>
-            </Stack>
-          </Box>
-        </Fade>
-      )}
+      {
+        loadingMore && (
+          <Fade in={loadingMore}>
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <Stack alignItems="center" spacing={2}>
+                <CircularProgress size={32} />
+                <Typography variant="body2" color="text.secondary">
+                  Loading more posts...
+                </Typography>
+              </Stack>
+            </Box>
+          </Fade>
+        )
+      }
 
       {/* End of Posts Indicator */}
-      {!hasMorePosts && posts.length > 0 && !loading && (
-        <Fade in={true}>
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              🎉 You've reached the end!
-            </Typography>
-            {/* <Typography variant="caption" color="text.secondary">
+      {
+        !hasMorePosts && posts.length > 0 && !loading && (
+          <Fade in={true}>
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                🎉 You've reached the end!
+              </Typography>
+              {/* <Typography variant="caption" color="text.secondary">
               {posts.length} posts loaded
             </Typography> */}
-          </Box>
-        </Fade>
-      )}
+            </Box>
+          </Fade>
+        )
+      }
 
       {/* Snackbar for feedback */}
       <Snackbar
@@ -1220,6 +1231,6 @@ export const CommunityPage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </Container >
   );
 };
