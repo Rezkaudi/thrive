@@ -771,12 +771,19 @@ const PostCard = ({
 };
 
 // Custom hook for infinite scroll
-const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: boolean) => {
+const useInfiniteScroll = (
+  callback: () => void,
+  hasMore: boolean,
+  loading: boolean
+) => {
   const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + document.documentElement.scrollTop < document.documentElement.offsetHeight - 1000) {
+      if (
+        window.innerHeight + document.documentElement.scrollTop <
+        document.documentElement.offsetHeight - 1000
+      ) {
         return;
       }
       if (hasMore && !loading && !isFetching) {
@@ -784,17 +791,17 @@ const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: bool
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [hasMore, loading, isFetching]);
 
   useEffect(() => {
     if (!isFetching) return;
-    
+
     if (hasMore && !loading) {
       callback();
     }
-    
+
     setIsFetching(false);
   }, [isFetching, callback, hasMore, loading]);
 
@@ -1027,8 +1034,9 @@ export const CommunityPage: React.FC = () => {
   };
 
   const filteredPosts = posts.filter((post) => {
-    if (tabValue === 1) return post.isAnnouncement;
-    if (tabValue === 2) return post.likesCount > 15;
+    if (tabValue === 0) return !post.isAnnouncement; // All Posts: Only show NON-announcement posts
+    if (tabValue === 1) return post.isAnnouncement; // Announcements: Only show announcements
+    if (tabValue === 2) return post.likesCount > 15; // Trending: Posts with >15 likes
     return true;
   });
 
@@ -1188,11 +1196,11 @@ export const CommunityPage: React.FC = () => {
         <Fade in={true}>
           <Box sx={{ textAlign: "center", py: 4 }}>
             <Typography variant="body2" color="text.secondary">
-              🎉 You've reached the end! 
+              🎉 You've reached the end!
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            {/* <Typography variant="caption" color="text.secondary">
               {posts.length} posts loaded
-            </Typography>
+            </Typography> */}
           </Box>
         </Fade>
       )}
