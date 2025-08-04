@@ -43,6 +43,7 @@ import {
   deleteComment,
 } from '../../store/slices/communitySlice';
 import { Comment } from '../../services/commentService';
+import { linkifyText } from '../../utils/linkify';
 
 // Format date utility
 const formatCommentDate = (dateString: string): string => {
@@ -270,7 +271,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 variant="body2"
                 sx={{ mb: 1, whiteSpace: 'pre-wrap' }}
               >
-                {comment.content}
+                {linkifyText(comment.content)}
               </Typography>
             )}
             
