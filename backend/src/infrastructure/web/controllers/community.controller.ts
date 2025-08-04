@@ -10,8 +10,94 @@ import { UserRepository } from '../../database/repositories/UserRepository';
 import { ProfileRepository } from '../../database/repositories/ProfileRepository';
 import { CommentRepository } from "../../database/repositories/CommentRepository";
 import { ActivityService } from '../../services/ActivityService';
+import { S3StorageService } from '../../services/S3StorageService';
 
 export class CommunityController {
+  private storageService: S3StorageService;
+
+  constructor() {
+    this.storageService = new S3StorageService();
+  }
+
+  async uploadMedia(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    console.log('uploadMedia called');
+    console.log('req.files:', req.files);
+    console.log('req.body:', req.body);
+    console.log('Files array check:', Array.isArray(req.files));
+    
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      console.log('No files uploaded - req.files:', req.files);
+      res.status(400).json({ error: 'No files uploaded' });
+      return;
+    }
+
+    const files = req.files as Express.Multer.File[];
+    const userId = req.user!.userId;
+
+    console.log('Processing files:', files.map(f => ({ 
+      fieldname: f.fieldname,
+      originalname: f.originalname, 
+      mimetype: f.mimetype, 
+      size: f.size 
+    })));
+
+    // Validate all files before processing
+    for (const file of files) {
+      try {
+        S3StorageService.validateCommunityMediaFile(file);
+      } catch (error: any) {
+        console.log('File validation failed:', error.message);
+        res.status(400).json({ error: error.message });
+        return;
+      }
+    }
+
+    // Upload files to S3
+    const uploadedFiles = await this.storageService.uploadMultipleCommunityMedia(
+      userId,
+      files.map(file => ({
+        buffer: file.buffer,
+        filename: file.originalname,
+        mimeType: file.mimetype,
+      }))
+    );
+
+    console.log('Files uploaded successfully:', uploadedFiles.length);
+
+    res.json({
+      message: 'Files uploaded successfully',
+      files: uploadedFiles.map(file => ({
+        url: file.url,
+        size: file.size,
+        mimeType: file.mimeType,
+      })),
+    });
+  } catch (error) {
+    console.error('Media upload error:', error);
+    next(error);
+  }
+}
+
+  async deleteMedia(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { mediaUrls } = req.body;
+
+      if (!mediaUrls || !Array.isArray(mediaUrls)) {
+        res.status(400).json({ error: 'Invalid media URLs' });
+        return;
+      }
+
+      // Delete files from S3
+      await this.storageService.deleteMultipleCommunityMedia(mediaUrls);
+
+      res.json({ message: 'Media files deleted successfully' });
+    } catch (error) {
+      console.error('Media deletion error:', error);
+      next(error);
+    }
+  }
+
   async createPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { content, mediaUrls, isAnnouncement } = req.body;
@@ -26,7 +112,7 @@ export class CommunityController {
       const post = await createPostUseCase.execute({
         userId: req.user!.userId,
         content,
-        mediaUrls,
+        mediaUrls: mediaUrls || [],
         isAnnouncement
       });
 
@@ -96,6 +182,16 @@ export class CommunityController {
         return;
       }
 
+      // Delete associated media files from S3 before deleting the post
+      if (post.mediaUrls && post.mediaUrls.length > 0) {
+        try {
+          await this.storageService.deleteMultipleCommunityMedia(post.mediaUrls);
+        } catch (error) {
+          console.warn('Failed to delete media files:', error);
+          // Continue with post deletion even if media deletion fails
+        }
+      }
+
       const deleted = await postRepository.delete(postId);
       if (!deleted) {
         res.status(500).json({ error: 'Failed to delete post' });
@@ -111,7 +207,7 @@ export class CommunityController {
   async editPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { postId } = req.params
-      const { content, mediaUrls } = req.body
+      const { content, mediaUrls, removedMediaUrls } = req.body
 
       const postRepository = new PostRepository()
       const post = await postRepository.findById(postId);
@@ -126,8 +222,18 @@ export class CommunityController {
         return;
       }
 
+      // Delete removed media files from S3
+      if (removedMediaUrls && removedMediaUrls.length > 0) {
+        try {
+          await this.storageService.deleteMultipleCommunityMedia(removedMediaUrls);
+        } catch (error) {
+          console.warn('Failed to delete removed media files:', error);
+          // Continue with post update even if media deletion fails
+        }
+      }
+
       post.content = content;
-      post.mediaUrls = mediaUrls || post.mediaUrls;
+      post.mediaUrls = mediaUrls || [];
       post.updatedAt = new Date()
 
       const updatedPost = await postRepository.update(post)
@@ -137,7 +243,7 @@ export class CommunityController {
         return;
       }
 
-      res.json({ message: "Post edited successfully" })
+      res.json({ message: "Post edited successfully", post: updatedPost })
 
     } catch (error) {
       return next(error)
