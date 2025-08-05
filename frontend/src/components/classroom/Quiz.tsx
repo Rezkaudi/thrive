@@ -288,7 +288,7 @@ export const Quiz: React.FC<QuizProps> = ({
 
               {/* ACTION BUTTONS */}
               <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 4 }}>
-                {!passed && !isLessonCompleted && (
+                {!passed && (
                   <Button
                     variant="outlined"
                     onClick={resetQuiz}
