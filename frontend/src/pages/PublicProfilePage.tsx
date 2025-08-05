@@ -13,26 +13,18 @@ import {
   Chip,
   LinearProgress,
   Paper,
-  IconButton,
-  Tooltip,
   useTheme,
   useMediaQuery,
   CircularProgress,
   Alert,
   Button,
   Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
 } from '@mui/material';
 import {
   EmojiEvents,
   School,
   TrendingUp,
-  Star,
   CalendarMonth,
-  CheckCircle,
   Language,
   ArrowBack,
   Share,
@@ -412,7 +404,7 @@ export const PublicProfilePage: React.FC = () => {
                       {profile.bio || 'Learning Japanese with passion! 🌸'}
                     </Typography>
                   </Box>
-                  <Stack direction="row" spacing={2} flexWrap="wrap">
+                  <Stack direction="row" gap={2} flexWrap="wrap">
                     <Chip
                       icon={<CalendarMonth />}
                       label={`Learning for ${profile.joinedDaysAgo} days`}
@@ -429,7 +421,7 @@ export const PublicProfilePage: React.FC = () => {
                 </Stack>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 3 }}>
+              {/* <Grid size={{ xs: 12, md: 3 }}>
                 <Stack spacing={2} alignItems={{ xs: 'center', md: 'flex-end' }}>
                   <Button
                     variant="contained"
@@ -448,7 +440,7 @@ export const PublicProfilePage: React.FC = () => {
                     Message
                   </Button>
                 </Stack>
-              </Grid>
+              </Grid> */}
             </Grid>
 
             {/* Overall Progress Bar */}

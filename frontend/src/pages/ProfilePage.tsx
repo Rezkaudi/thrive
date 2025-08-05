@@ -907,15 +907,22 @@ export const ProfilePage: React.FC = () => {
         </Grid>
 
         {/* Main Content Tabs */}
-        <Card>
+        <Card >
           <Tabs
             value={tabValue}
             onChange={(e, v) => setTabValue(v)}
-            variant={isMobile ? 'fullWidth' : 'standard'}
+            variant={isMobile ? 'scrollable' : 'standard'}
+            scrollButtons={isMobile ? 'auto' : false}
+            allowScrollButtonsMobile
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
               px: { xs: 1, md: 3 },
+              '& .MuiTab-root': {
+                minHeight: '48px', // Reduce height on mobile
+                // padding: { xs: '6px 8px', sm: '12px 16px' },
+                fontSize: { xs: '0.7rem', sm: '0.875rem' },
+              },
             }}
           >
             <Tab label="Overview" icon={<Category />} iconPosition="start" />
@@ -1059,7 +1066,7 @@ export const ProfilePage: React.FC = () => {
                   exit={{ opacity: 0, x: 20 }}
                 >
                   <Stack spacing={3}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction={isMobile ? "column" : "row"} gap={1} justifyContent="space-between" alignItems="center">
                       <Typography variant="h6" fontWeight={600}>
                         Your Achievements
                       </Typography>

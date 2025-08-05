@@ -213,7 +213,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 component="img"
                 src="/logo.png"
                 alt="Description of image"
-                sx={{ width: 200, height: 30 }}
+                sx={isMobile ? { width: 150, height: 20 } : { width: 200, height: 30 }}
               />
             </Link>
           </Typography>
@@ -323,6 +323,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Box
         component="main"
         sx={{
+          maxWidth: "100%",
           flexGrow: 1,
           bgcolor: 'background.default',
           p: 0,
