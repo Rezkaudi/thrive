@@ -1,5 +1,5 @@
 // frontend/src/pages/CommunityPage.tsx - Complete Improved Version
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Container,
@@ -35,13 +35,14 @@ import {
   Fade,
   LinearProgress,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   ThumbUp,
   Comment,
   Share,
   PhotoCamera,
-  VideoCall,
   Campaign,
   TrendingUp,
   MoreVert,
@@ -75,7 +76,6 @@ import {
   createPost,
   deletePost,
   editPost,
-  fetchCommentCount,
   fetchPosts,
   loadMorePosts,
   toggleCommentsSection,
@@ -156,9 +156,7 @@ const PostCard = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
-  const [editSelectedMedia, setEditSelectedMedia] = useState<SelectedMedia[]>(
-    []
-  );
+  const [editSelectedMedia, setEditSelectedMedia] = useState<SelectedMedia[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -166,6 +164,9 @@ const PostCard = ({
   const [shareDialog, setShareDialog] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [mediaExpanded, setMediaExpanded] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const shareToSocial = (platform: string) => {
     const message = `Check out this post from the Thrive in Japan community!`;
@@ -382,7 +383,7 @@ const PostCard = ({
               color="primary"
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             >
-              <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
+              <Avatar src={post.author?.avatar} sx={{ width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
                 {!post.author?.avatar && post.author?.name?.[0]}
               </Avatar>
             </Badge>
@@ -424,9 +425,8 @@ const PostCard = ({
                   />
                 )}
               </Stack>
-              <Typography variant="caption" color="text.secondary">
-                {post.author?.email} • {formatPostDate(post.createdAt)}{" "}
-                {formatPostTime(post.createdAt)}
+              <Typography variant={isMobile ? "h5" : "caption"} color="text.secondary">
+                {post.author?.email} • {formatPostDate(post.createdAt)}{" "} {formatPostTime(post.createdAt)}
               </Typography>
             </Box>
 
@@ -504,7 +504,7 @@ const PostCard = ({
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                rows={isMobile ? 3 : 4}
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 variant="outlined"
@@ -579,7 +579,7 @@ const PostCard = ({
               startIcon={<ThumbUp />}
               size="small"
               color={post.isLiked ? "primary" : "inherit"}
-              sx={{ textTransform: "none" }}
+              sx={{ textTransform: "none", p: { xs: 1, md: 2 } }}
               onClick={() => onToggleLike(post.id)}
               disabled={post.isDeleting}
             >
@@ -588,7 +588,7 @@ const PostCard = ({
             <Button
               startIcon={<Comment />}
               size="small"
-              sx={{ textTransform: "none" }}
+              sx={{ textTransform: "none", p: { xs: 1, md: 2 } }}
               onClick={handleCommentsToggle}
               disabled={post.isDeleting}
               color={commentsOpen ? "primary" : "inherit"}
@@ -599,7 +599,7 @@ const PostCard = ({
             <Button
               startIcon={<Share />}
               size="small"
-              sx={{ textTransform: "none" }}
+              sx={{ textTransform: "none", p: { xs: 1, md: 2 } }}
               onClick={handleShareClick}
               disabled={post.isDeleting}
             >
@@ -754,7 +754,7 @@ const PostCard = ({
           <TextField
             fullWidth
             multiline
-            rows={4}
+            rows={isMobile ? 3 : 4}
             placeholder="Describe why you're reporting this post..."
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
@@ -1113,9 +1113,8 @@ export const CommunityPage: React.FC = () => {
   const hasContent = newPost.trim() || selectedMedia.length > 0;
   const postButtonText =
     selectedMedia.length > 0
-      ? `Post with ${selectedMedia.length} ${
-          selectedMedia.length === 1 ? "file" : "files"
-        }`
+      ? `Post with ${selectedMedia.length} ${selectedMedia.length === 1 ? "file" : "files"
+      }`
       : "Post";
 
   if (loading && posts.length === 0) {
@@ -1131,7 +1130,7 @@ export const CommunityPage: React.FC = () => {
 
 
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+    <Container maxWidth="md" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
       <Typography variant="h3" gutterBottom fontWeight={700}>
         Community
       </Typography>
@@ -1231,7 +1230,7 @@ export const CommunityPage: React.FC = () => {
 
           {/* Media Upload Section - Compact by default */}
           <Collapse in={mediaExpanded}>
-            <Box sx={{ mb: 2, pl: 7 }}>
+            <Box sx={{ mb: 2 }}>
               <MediaUpload
                 onMediaChange={handleMediaChange}
                 selectedMedia={selectedMedia}
@@ -1335,10 +1334,10 @@ export const CommunityPage: React.FC = () => {
                   {uploadProgress < 25
                     ? "Preparing..."
                     : uploadProgress < 75
-                    ? "Uploading media..."
-                    : uploadProgress < 95
-                    ? "Creating post..."
-                    : "Almost done..."}
+                      ? "Uploading media..."
+                      : uploadProgress < 95
+                        ? "Creating post..."
+                        : "Almost done..."}
                 </Typography>
               </Stack>
             )}
@@ -1377,7 +1376,7 @@ export const CommunityPage: React.FC = () => {
       </Card>
 
       {/* Tabs */}
-      <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }}>
+      <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         <Tab label="All Posts" />
         <Tab label="Announcements" />
         <Tab label="Trending" icon={<TrendingUp />} iconPosition="end" />

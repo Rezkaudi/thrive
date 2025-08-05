@@ -1738,7 +1738,7 @@ export const ClassroomPage: React.FC = () => {
 
                     <Stack
                       direction="row"
-                      spacing={2}
+                      gap={2}
                       alignItems="center"
                       flexWrap="wrap"
                     >

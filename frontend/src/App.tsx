@@ -46,7 +46,7 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>();
-  const { authChecking, isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
+  const { authChecking, isAuthenticated, paymentChecking } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const initApp = async () => {
@@ -58,7 +58,7 @@ function AppContent() {
     initApp();
   }, [dispatch]);
 
-  if (authChecking || loading) {
+  if (authChecking || paymentChecking) {
     return (
       <Box
         sx={{

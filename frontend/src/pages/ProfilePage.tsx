@@ -1519,7 +1519,7 @@ export const ProfilePage: React.FC = () => {
             <Divider />
 
             {/* Payment Settings */}
-            <Box>
+            {user?.role !== "ADMIN" && <Box>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
                 <CreditCard color="primary" />
                 <Typography variant="h6">Payment Settings</Typography>
@@ -1549,7 +1549,7 @@ export const ProfilePage: React.FC = () => {
                   </Button>}
                 </Stack>
               </Stack>
-            </Box>
+            </Box>}
 
 
 
