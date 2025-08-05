@@ -103,7 +103,6 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
-  // const [isLoading, setIsLoading] = useState(false);
   const [fullscreenDialog, setFullscreenDialog] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -198,7 +197,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
 
   // Enhanced validation system
   const validateAnswer = (slideId: string, userAnswer: any, interactiveType: string): ValidationResult => {
-    if (!userAnswer) {
+    if (!userAnswer && interactiveType !== 'quiz') {
       return {
         isValid: false,
         message: 'Please provide an answer before submitting.',
@@ -207,6 +206,28 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
     }
 
     switch (interactiveType) {
+      case 'quiz':
+        const quizContent = slide.content.content;
+        
+        if (quizContent?.type === 'single-choice') {
+          if (typeof userAnswer !== 'number') {
+            return {
+              isValid: false,
+              message: 'Please select an answer before submitting.',
+              type: 'warning'
+            };
+          }
+        } else if (quizContent?.type === 'multiple-choice') {
+          if (!userAnswer || !Array.isArray(userAnswer) || userAnswer.length === 0) {
+            return {
+              isValid: false,
+              message: 'Please select at least one answer before submitting.',
+              type: 'warning'
+            };
+          }
+        }
+        break;
+
       case 'drag-drop':
         const requiredItems = slide.content.content.items?.length || 0;
         const answeredItems = Object.keys(userAnswer).length;
@@ -263,6 +284,42 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           return {
             isValid: false,
             message: `Please click on all ${requiredClicks} hotspots. You have clicked ${actualClicks}.`,
+            type: 'warning'
+          };
+        }
+        break;
+
+      case 'matching':
+        const requiredConnections = slide.content.content.items?.length || 0;
+        const actualConnections = Object.keys(connections).length;
+        if (actualConnections < requiredConnections) {
+          return {
+            isValid: false,
+            message: `Please make all ${requiredConnections} connections. You have ${actualConnections} connected.`,
+            type: 'warning'
+          };
+        }
+        break;
+
+      case 'timeline':
+        const requiredEvents = slide.content.content.items?.length || 0;
+        const arrangedEvents = timelineOrder.length;
+        if (arrangedEvents < requiredEvents) {
+          return {
+            isValid: false,
+            message: `Please arrange all ${requiredEvents} events. You have ${arrangedEvents} arranged.`,
+            type: 'warning'
+          };
+        }
+        break;
+
+      case 'listening':
+        const totalQuestions = slide.content.content.items?.length || 0;
+        const answeredQuestions = Object.keys(userAnswer || {}).length;
+        if (answeredQuestions < totalQuestions) {
+          return {
+            isValid: false,
+            message: `Please answer all ${totalQuestions} questions. You have answered ${answeredQuestions}.`,
             type: 'warning'
           };
         }
@@ -2063,76 +2120,212 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         const quizId = `quiz-${slide.id}`;
         const userAnswer = interactiveAnswers[quizId];
         const showQuizFeedback = showFeedback[quizId];
+        const validation = validationResults[quizId];
+
+        const handleSingleChoiceAnswer = (answerIndex: string) => {
+          setInteractiveAnswers(prev => ({
+            ...prev,
+            [quizId]: parseInt(answerIndex)
+          }));
+        };
+
+        const handleMultipleChoiceAnswer = (answerIndex: number, isChecked: boolean) => {
+          setInteractiveAnswers(prev => {
+            const currentAnswers = prev[quizId] || [];
+            let newAnswers;
+            
+            if (isChecked) {
+              newAnswers = [...currentAnswers, answerIndex];
+            } else {
+              newAnswers = currentAnswers.filter((index: number) => index !== answerIndex);
+            }
+            
+            return {
+              ...prev,
+              [quizId]: newAnswers
+            };
+          });
+        };
+
+        const handleCheckQuizAnswer = () => {
+          if (content.content.type === 'single-choice') {
+            const correctAnswer = content.content.correctAnswer;
+            checkAnswer(quizId, userAnswer, correctAnswer, 'quiz');
+          } else if (content.content.type === 'multiple-choice') {
+            const correctAnswers = content.content.correctAnswers || [];
+            const userAnswers = userAnswer || [];
+            // Sort both arrays for comparison
+            const sortedUserAnswers = [...userAnswers].sort();
+            const sortedCorrectAnswers = [...correctAnswers].sort();
+            checkAnswer(quizId, sortedUserAnswers, sortedCorrectAnswers, 'quiz');
+          }
+        };
 
         return (
           <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
-            <Typography variant="h4" fontWeight={600} gutterBottom>
+            <Typography variant="h4" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
+              {content.title || 'Quiz Question'}
+            </Typography>
+
+            <Typography variant="h6" gutterBottom sx={{ mb: 4, lineHeight: 1.6 }}>
               {content.content.question}
             </Typography>
 
-            {content.content.type === 'multiple-choice' ? (
+            {/* Single Choice - Radio Buttons */}
+            {content.content.type === 'single-choice' && (
               <RadioGroup
-                value={userAnswer || ''}
-                onChange={(e) => setInteractiveAnswers(prev => ({
-                  ...prev,
-                  [quizId]: e.target.value
-                }))}
+                value={userAnswer?.toString() || ''}
+                onChange={(e) => handleSingleChoiceAnswer(e.target.value)}
               >
                 {content.content.options?.map((option: string, index: number) => (
                   <FormControlLabel
                     key={index}
                     value={index.toString()}
-                    control={<Radio />}
-                    label={option}
+                    control={<Radio color="primary" />}
+                    label={
+                      <Typography variant="body1" sx={{ fontSize: '1.1rem', py: 0.5 }}>
+                        {option}
+                      </Typography>
+                    }
                     sx={{
                       mb: 2,
                       p: 2,
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      '&:hover': { bgcolor: 'action.hover' },
+                      borderRadius: 2,
+                      border: '2px solid',
+                      borderColor: userAnswer === index ? 'primary.main' : 'divider',
+                      backgroundColor: userAnswer === index ? 'primary.50' : 'background.paper',
+                      '&:hover': { 
+                        bgcolor: 'action.hover',
+                        borderColor: 'primary.light'
+                      },
+                      transition: 'all 0.2s ease',
+                      width: '100%',
+                      ml: 0,
+                      mr: 0
                     }}
                   />
                 ))}
               </RadioGroup>
-            ) : (
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                variant="outlined"
-                placeholder="Type your answer here..."
-                value={userAnswer || ''}
-                onChange={(e) => setInteractiveAnswers(prev => ({
-                  ...prev,
-                  [quizId]: e.target.value
-                }))}
-                sx={{ mt: 3 }}
-              />
             )}
 
-            <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+            {/* Multiple Choice - Checkboxes */}
+            {content.content.type === 'multiple-choice' && (
+              <Box>
+                <Typography variant="body2" color="primary.main" sx={{ mb: 2, fontWeight: 500 }}>
+                  💡 Select all correct answers
+                </Typography>
+                {content.content.options?.map((option: string, index: number) => {
+                  const isChecked = (userAnswer || []).includes(index);
+                  
+                  return (
+                    <FormControlLabel
+                      key={index}
+                      control={
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => handleMultipleChoiceAnswer(index, e.target.checked)}
+                          style={{ 
+                            width: 20, 
+                            height: 20, 
+                            accentColor: '#1976d2',
+                            cursor: 'pointer',
+                            marginRight: '12px'
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography variant="body1" sx={{ fontSize: '1.1rem', py: 0.5 }}>
+                          {option}
+                        </Typography>
+                      }
+                      sx={{
+                        mb: 2,
+                        p: 2,
+                        borderRadius: 2,
+                        border: '2px solid',
+                        borderColor: isChecked ? 'primary.main' : 'divider',
+                        backgroundColor: isChecked ? 'primary.50' : 'background.paper',
+                        '&:hover': { 
+                          bgcolor: 'action.hover',
+                          borderColor: 'primary.light'
+                        },
+                        transition: 'all 0.2s ease',
+                        width: '100%',
+                        ml: 0,
+                        mr: 0,
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+            )}
+
+            {/* Check Answer Button */}
+            <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
               <Button
                 variant="contained"
-                onClick={() => {
-                  const correct = content.content.correctAnswer;
-                  checkAnswer(quizId, userAnswer, correct);
+                size="large"
+                onClick={handleCheckQuizAnswer}
+                disabled={
+                  content.content.type === 'single-choice' 
+                    ? (typeof userAnswer !== 'number')
+                    : (content.content.type === 'multiple-choice' && (!userAnswer || userAnswer.length === 0))
+                }
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1.1rem',
+                  borderRadius: 3,
+                  background: 'linear-gradient(45deg, primary.main 30%, primary.light 90%)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, primary.main 30%, primary.light 90%)',
+                  }
                 }}
-                disabled={!userAnswer}
               >
                 Check Answer
+                {content.content.type === 'multiple-choice' && userAnswer && (
+                  <Chip 
+                    label={`${userAnswer.length} selected`} 
+                    size="small" 
+                    sx={{ ml: 2, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                  />
+                )}
               </Button>
             </Stack>
 
-            {showQuizFeedback && (
+            {/* Quiz Type Indicator */}
+            <Box sx={{ mt: 3, p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.200' }}>
+              <Typography variant="body2" color="info.dark" sx={{ fontWeight: 500 }}>
+                📋 Quiz Type: {content.content.type === 'single-choice' ? 'Single Choice (select one answer)' : 'Multiple Choice (select all correct answers)'}
+              </Typography>
+            </Box>
+
+            {/* Feedback */}
+            {showQuizFeedback && validation && (
               <Fade in>
                 <Alert
-                  severity={userAnswer === content.content.correctAnswer?.toString() ? 'success' : 'error'}
-                  sx={{ mt: 2 }}
+                  severity={validation.type}
+                  sx={{ 
+                    mt: 3, 
+                    borderRadius: 2, 
+                    fontSize: '1rem',
+                    '& .MuiAlert-message': {
+                      fontSize: '1rem'
+                    }
+                  }}
+                  icon={validation.type === 'success' ? <CheckCircle /> : <Error />}
                 >
-                  {userAnswer === content.content.correctAnswer?.toString()
-                    ? 'Correct! ' + (content.content.explanation || '')
-                    : 'Not quite. ' + (content.content.explanation || '')}
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {validation.message}
+                  </Typography>
+                  {content.content.explanation && validation.type === 'success' && (
+                    <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
+                      💡 {content.content.explanation}
+                    </Typography>
+                  )}
                 </Alert>
               </Fade>
             )}
