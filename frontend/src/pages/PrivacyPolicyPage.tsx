@@ -104,12 +104,12 @@ export const PrivacyPolicyPage: React.FC = () => {
                     <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
                         <Button
                             startIcon={<ArrowBack />}
-                            onClick={() => navigate(-1)}
+                            onClick={() => navigate('/dashboard')}
                             sx={{ color: 'white' }}
                         >
                             Back
                         </Button>
-                        <Stack direction="row" spacing={1}>
+                        {/* <Stack direction="row" spacing={1}>
                             <Tooltip title="Print">
                                 <IconButton onClick={handlePrint} sx={{ color: 'white' }}>
                                     <Print />
@@ -117,12 +117,12 @@ export const PrivacyPolicyPage: React.FC = () => {
                             </Tooltip>
                             <Button
                                 startIcon={<Home />}
-                                onClick={() => navigate('/')}
+                                onClick={() => navigate('/dashboard')}
                                 sx={{ color: 'white' }}
                             >
-                                Home
+                                Dashboard
                             </Button>
-                        </Stack>
+                        </Stack> */}
                     </Stack>
 
                     <motion.div

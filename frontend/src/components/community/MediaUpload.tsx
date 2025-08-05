@@ -72,7 +72,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   const [showHelp, setShowHelp] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [expanded, setExpanded] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = useCallback((file: File): string | null => {
@@ -112,9 +112,9 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   const handleFileSelect = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files);
     const currentTotal = selectedMedia.length;
-    
+
     setErrors({});
-    
+
     if (fileArray.length + currentTotal > maxFiles) {
       setErrors({
         fileLimit: `You can only attach ${maxFiles} files total. You currently have ${currentTotal} files.`
@@ -195,9 +195,9 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
       }
       return true;
     });
-    
+
     onMediaChange(updatedMedia);
-    
+
     setErrors(prev => {
       const newErrors = { ...prev };
       delete newErrors[id];
@@ -232,7 +232,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           style={{ display: 'none' }}
           disabled={disabled || !canAddMore}
         />
-        
+
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
           <Tooltip title="Add photos/videos">
             <IconButton
@@ -253,15 +253,15 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
               </Badge>
             </IconButton>
           </Tooltip>
-          
+
           {hasFiles && (
             <Stack direction="row" spacing={0.5} flexWrap="wrap">
               {selectedMedia.slice(0, 3).map((item) => (
-                <Chip 
+                <Chip
                   key={item.id}
                   label={item.file.name.length > 10 ? `${item.file.name.substring(0, 10)}...` : item.file.name}
-                  size="small" 
-                  color="primary" 
+                  size="small"
+                  color="primary"
                   variant="outlined"
                   onDelete={() => handleRemoveFile(item.id)}
                   deleteIcon={<Close />}
@@ -269,10 +269,10 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                 />
               ))}
               {selectedMedia.length > 3 && (
-                <Chip 
+                <Chip
                   label={`+${selectedMedia.length - 3} more`}
-                  size="small" 
-                  color="primary" 
+                  size="small"
+                  color="primary"
                   variant="filled"
                 />
               )}
@@ -322,9 +322,9 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
 
     return (
       <Stack alignItems="center" spacing={2}>
-        <Add 
-          color={dragOver ? 'primary' : 'action'} 
-          sx={{ fontSize: 48, transition: 'all 0.3s ease' }} 
+        <Add
+          color={dragOver ? 'primary' : 'action'}
+          sx={{ fontSize: 48, transition: 'all 0.3s ease' }}
         />
         <Box textAlign="center">
           <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -333,7 +333,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Files will be uploaded when you post
           </Typography>
-          
+
           <ButtonGroup variant="outlined" size="small">
             <Button
               startIcon={<PhotoCamera />}
@@ -349,7 +349,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
             </Button>
           </ButtonGroup>
         </Box>
-        
+
         <Button
           size="small"
           variant="text"
@@ -512,7 +512,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                       </Typography>
                     </Stack>
                   )}
-                  
+
                   <Chip
                     icon={<DragIndicator />}
                     label="Ready"
@@ -526,7 +526,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                     }}
                   />
                 </CardMedia>
-                
+
                 <CardActions sx={{ p: 1, minHeight: 60 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" width="100%">
                     <Chip
@@ -536,7 +536,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                       variant="outlined"
                       color={item.file.type.startsWith('image/') ? 'primary' : 'secondary'}
                     />
-                    
+
                     <Tooltip title="Remove">
                       <IconButton
                         size="small"

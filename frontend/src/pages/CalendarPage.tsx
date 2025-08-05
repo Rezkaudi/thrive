@@ -16,7 +16,6 @@ import {
   DialogActions,
   Alert,
   IconButton,
-  Badge,
   CircularProgress,
   Tooltip,
   Snackbar,
@@ -509,8 +508,8 @@ export const CalendarPage: React.FC = () => {
                     <Grid size={{ xs: 12 / 7 }} key={day.toISOString()}>
                       <Paper
                         sx={{
-                          p: 1,
-                          minHeight: 80,
+                          p: { xs: 0.5, sm: 1 },
+                          minHeight: { xs: 60, sm: 80 },
                           textAlign: "center",
                           cursor: "pointer",
                           position: "relative",

@@ -38,9 +38,9 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
 
     const result = await dispatch(login(formData));
-    await dispatch(chackPayment());
 
     if (login.fulfilled.match(result)) {
+      await dispatch(chackPayment());
       navigate("/dashboard")
     }
 

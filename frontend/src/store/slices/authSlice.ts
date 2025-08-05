@@ -20,6 +20,7 @@ interface AuthState {
   status: string | null,
   loading: boolean;
   authChecking: boolean;
+  paymentChecking: boolean
   error: string | null;
 }
 
@@ -32,6 +33,7 @@ const initialState: AuthState = {
   hasTrailingSubscription: false,
   status: null,
   authChecking: true,
+  paymentChecking: true,
   error: null,
 };
 
@@ -135,15 +137,18 @@ const authSlice = createSlice({
       })
       // Check Subscription
       .addCase(chackPayment.pending, (state) => {
+        state.paymentChecking = true;
         state.loading = true;
       })
       .addCase(chackPayment.fulfilled, (state, action) => {
+        state.paymentChecking = false;
         state.loading = false;
         state.status = action.payload.status;
         state.hasActiveSubscription = action.payload.hasActiveSubscription;
         state.hasTrailingSubscription = action.payload.hasTrailingSubscription;
       })
       .addCase(chackPayment.rejected, (state) => {
+        state.paymentChecking = false;
         state.loading = false;
         state.hasActiveSubscription = false
         state.hasTrailingSubscription = false
