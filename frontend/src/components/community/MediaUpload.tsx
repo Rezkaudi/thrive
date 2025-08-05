@@ -128,7 +128,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     fileArray.forEach((file) => {
       const fileId = generateFileId();
       const error = validateFile(file);
-      
+
       if (error) {
         newErrors[fileId] = `${file.name}: ${error}`;
       } else {
@@ -162,9 +162,9 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragOver(false);
-    
+
     if (disabled) return;
-    
+
     const files = Array.from(event.dataTransfer.files);
     handleFileSelect(files);
   }, [disabled, handleFileSelect]);
@@ -181,7 +181,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX;
     const y = event.clientY;
-    
+
     if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
       setDragOver(false);
     }
@@ -396,7 +396,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
         onClick={() => canAddMore && fileInputRef.current?.click()}
       >
         {getUploadAreaContent()}
-        
+
         <Collapse in={showHelp}>
           <Divider sx={{ my: 2 }} />
           <Stack direction="row" spacing={4} justifyContent="center">
@@ -436,8 +436,8 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
           >
-            <Alert 
-              severity="error" 
+            <Alert
+              severity="error"
               sx={{ mb: 2 }}
               action={
                 <IconButton

@@ -22,11 +22,11 @@ import { motion } from 'framer-motion';
 import { login, clearError, chackPayment } from '../store/slices/authSlice';
 import { AppDispatch, RootState } from '../store/store';
 
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, loading, error } = useSelector((state: RootState) => state.auth);
-
 
   const [formData, setFormData] = useState({
     email: '',
@@ -36,11 +36,14 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const result = await dispatch(login(formData));
     await dispatch(chackPayment());
+
     if (login.fulfilled.match(result)) {
       navigate("/dashboard")
     }
+
   };
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +59,7 @@ export const LoginPage: React.FC = () => {
     }
     dispatch(clearError());
   }, [isAuthenticated, navigate, dispatch]);
+
 
   return (
     <Box
@@ -98,9 +102,9 @@ export const LoginPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-            <CardContent sx={{ p: 5 }}>
-              <Box textAlign="center" mb={4}>
+          <Card sx={{ borderRadius: 3, boxShadow: 10, my: 4 }}>
+            <CardContent sx={{ px: { xs: 2, sm: 3, md: 5 } }}>
+              <Box textAlign="center" mb={4} mt={4}>
                 <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
                   Welcome Back!
                 </Typography>
@@ -200,12 +204,6 @@ export const LoginPage: React.FC = () => {
                 </Button>
               </Box>
 
-              {/* <Alert severity="info" sx={{ mt: 3 }}>
-                <Typography variant="caption">
-                  After payment, you'll receive your login credentials via email.
-                  Check your spam folder if you don't see it.
-                </Typography>
-              </Alert> */}
             </CardContent>
           </Card>
         </motion.div>

@@ -330,8 +330,8 @@ const PostCard = ({
     post.commentsCount !== undefined
       ? post.commentsCount
       : post.commentsInitialized
-      ? 0
-      : "...";
+        ? 0
+        : "...";
 
   return (
     <motion.div
@@ -1129,8 +1129,9 @@ export const CommunityPage: React.FC = () => {
     );
   }
 
+
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
       <Typography variant="h3" gutterBottom fontWeight={700}>
         Community
       </Typography>
@@ -1399,30 +1400,34 @@ export const CommunityPage: React.FC = () => {
         ))}
       </AnimatePresence>
 
-      {filteredPosts.length === 0 && !loading && (
-        <Box sx={{ textAlign: "center", py: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            No posts found
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Be the first to share something!
-          </Typography>
-        </Box>
-      )}
+      {
+        filteredPosts.length === 0 && !loading && (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="h6" color="text.secondary">
+              No posts found
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Be the first to share something!
+            </Typography>
+          </Box>
+        )
+      }
 
       {/* Loading More Indicator */}
-      {loadingMore && (
-        <Fade in={loadingMore}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <Stack alignItems="center" spacing={2}>
-              <CircularProgress size={32} />
-              <Typography variant="body2" color="text.secondary">
-                Loading more posts...
-              </Typography>
-            </Stack>
-          </Box>
-        </Fade>
-      )}
+      {
+        loadingMore && (
+          <Fade in={loadingMore}>
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <Stack alignItems="center" spacing={2}>
+                <CircularProgress size={32} />
+                <Typography variant="body2" color="text.secondary">
+                  Loading more posts...
+                </Typography>
+              </Stack>
+            </Box>
+          </Fade>
+        )
+      }
 
       {/* End of Posts Indicator */}
       {!hasMorePosts && posts.length > 0 && !loading && (
@@ -1450,6 +1455,6 @@ export const CommunityPage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </Container >
   );
 };

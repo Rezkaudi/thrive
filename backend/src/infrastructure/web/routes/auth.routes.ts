@@ -33,7 +33,7 @@ router.post(
   [
     body('email').isEmail(),
     body('name').notEmpty().trim(),
-    body('password').isLength({ min: 8 }).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&])[A-Za-z\d@$!%*?&]/),
+    body('password').isLength({ min: 8 }).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/),
     // body('stripePaymentIntentId').notEmpty(),
   ],
   validateRequest,
@@ -84,7 +84,7 @@ router.post(
     body('newPassword')
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/)
       .withMessage('Password must contain uppercase, lowercase, number and special character')
   ],
   validateRequest,
@@ -101,7 +101,7 @@ router.post(
   [
     body('name').notEmpty().trim(),
     body('email').isEmail(),
-    body('password').isLength({ min: 8 }).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&])[A-Za-z\d@$!%*?&]/),
+    body('password').isLength({ min: 8 }).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d|.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/),
   ],
   validateRequest,
   authController.registerWithVerification

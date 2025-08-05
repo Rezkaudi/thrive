@@ -49,7 +49,7 @@ export class S3StorageService {
      */
     private sanitizeFilename(originalName: string): string {
         console.log('Original filename:', originalName);
-        
+
         try {
             // First try to decode if it's URL encoded
             let decoded = originalName;
@@ -62,7 +62,7 @@ export class S3StorageService {
 
             // Convert from buffer encoding issues (Arabic text)
             let sanitized = decoded;
-            
+
             // If we have encoding issues, create a safe filename
             if (sanitized.includes('Ø') || sanitized.includes('\\x')) {
                 console.log('Detected encoding issues, generating safe filename');
@@ -94,7 +94,7 @@ export class S3StorageService {
 
             console.log('Sanitized filename:', sanitized);
             return sanitized;
-            
+
         } catch (error) {
             console.error('Error sanitizing filename:', error);
             // Fallback to timestamp-based name
@@ -112,7 +112,7 @@ export class S3StorageService {
         const nameWithoutExt = path.basename(sanitizedName, ext);
         const timestamp = Date.now();
         const uuid = uuidv4().substring(0, 8);
-        
+
         return `${nameWithoutExt}_${timestamp}_${uuid}${ext}`;
     }
 
@@ -123,7 +123,7 @@ export class S3StorageService {
         const extension = mimeType.split('/')[1] || 'jpg';
         const timestamp = Date.now();
         const uuid = uuidv4().substring(0, 8);
-        
+
         return `profile_${userId}_${timestamp}_${uuid}.${extension}`;
     }
 
@@ -200,7 +200,7 @@ export class S3StorageService {
                 ContentType: mimeType,
                 ContentDisposition: `inline; filename="${safeFilename}"`,
                 CacheControl: 'public, max-age=31536000', // 1 year cache
-                ACL: 'public-read', // Make file publicly accessible
+                // ACL: 'public-read', // Make file publicly accessible
                 Metadata: {
                     'uploaded-by': userId,
                     'file-type': 'profile-photo',
@@ -220,7 +220,7 @@ export class S3StorageService {
             // Perform S3 upload
             console.log('Starting S3 upload...');
             const result = await this.s3.upload(uploadParams).promise();
-            
+
             console.log('✅ Profile photo upload successful!');
             console.log('File URL:', result.Location);
             console.log('ETag:', result.ETag);
@@ -235,7 +235,7 @@ export class S3StorageService {
 
             // Provide specific error messages based on error codes
             let errorMessage = `Failed to upload profile photo: ${error.message}`;
-            
+
             switch (error.code) {
                 case 'SignatureDoesNotMatch':
                     errorMessage = 'AWS credentials are invalid or expired. Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.';
@@ -343,7 +343,7 @@ export class S3StorageService {
                 ContentType: fileData.mimeType,
                 ContentDisposition: `inline; filename="${safeFilename}"`,
                 CacheControl: 'public, max-age=31536000', // 1 year cache
-                ACL: 'public-read', // Make file publicly accessible
+                // ACL: 'public-read', // Make file publicly accessible
                 Metadata: {
                     'uploaded-by': userId,
                     'original-filename': this.sanitizeFilename(fileData.filename),
@@ -363,7 +363,7 @@ export class S3StorageService {
             // Perform S3 upload
             console.log('Starting S3 upload...');
             const result = await this.s3.upload(uploadParams).promise();
-            
+
             console.log('✅ S3 upload successful!');
             console.log('File URL:', result.Location);
             console.log('ETag:', result.ETag);
@@ -387,7 +387,7 @@ export class S3StorageService {
 
             // Provide specific error messages based on error codes
             let errorMessage = `Failed to upload to S3: ${error.message}`;
-            
+
             switch (error.code) {
                 case 'SignatureDoesNotMatch':
                     errorMessage = 'AWS credentials are invalid or expired. Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.';
@@ -423,7 +423,7 @@ export class S3StorageService {
             console.log(`=== Multiple Upload Starting ===`);
             console.log(`User ID: ${userId}`);
             console.log(`Number of files: ${filesData.length}`);
-            
+
             // Validate input
             if (!filesData || filesData.length === 0) {
                 throw new Error('No files provided for upload');
@@ -450,10 +450,10 @@ export class S3StorageService {
             });
 
             const results = await Promise.all(uploadPromises);
-            
+
             console.log('✅ All uploads completed successfully!');
             console.log('Uploaded URLs:', results.map(r => r.url));
-            
+
             return results;
 
         } catch (error: any) {

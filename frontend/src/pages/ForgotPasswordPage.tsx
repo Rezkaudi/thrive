@@ -63,7 +63,7 @@ export const ForgotPasswordPage: React.FC = () => {
                         transition={{ duration: 0.5 }}
                     >
                         <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-                            <CardContent sx={{ p: 5, textAlign: 'center' }}>
+                            <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 }, textAlign: 'center' }}>
                                 <CheckCircle sx={{ fontSize: 80, color: 'success.main', mb: 3 }} />
                                 <Typography variant="h4" fontWeight={700} gutterBottom>
                                     Check Your Email
@@ -144,7 +144,7 @@ export const ForgotPasswordPage: React.FC = () => {
                     transition={{ duration: 0.5 }}
                 >
                     <Card sx={{ borderRadius: 3, boxShadow: 10 }}>
-                        <CardContent sx={{ p: 5 }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
                             <Box mb={4}>
                                 <Button
                                     startIcon={<ArrowBack />}

@@ -190,7 +190,7 @@ const CourseCard = ({
           height: "100%",
           position: "relative",
           overflow: "hidden",
-          borderRadius: 4,
+          borderRadius: 2,
           boxShadow: isEnrolled
             ? `0 8px 32px ${colors.primary}20`
             : "0 4px 20px rgba(0,0,0,0.08)",
@@ -312,7 +312,7 @@ const CourseCard = ({
           )}
         </Box>
 
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="h5" gutterBottom fontWeight={700}
             sx={{
               mb: 1,
@@ -1366,13 +1366,13 @@ export const ClassroomPage: React.FC = () => {
   // Loading state with improved skeletons
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 6 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={4}>
           <Box>
             <Skeleton variant="text" width={300} height={50} sx={{ mb: 2 }} />
-            <Skeleton variant="text" width={500} height={30} />
+            <Skeleton variant="text" width={isMobile ? 320 : 500} height={30} />
           </Box>
-          <Grid container spacing={4}>
+          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
             {[1, 2].map((i) => (
               <Grid size={{ xs: 12, md: 6 }} key={i}>
                 <Card sx={{ height: 400, borderRadius: 4 }}>
@@ -1449,7 +1449,7 @@ export const ClassroomPage: React.FC = () => {
           </Alert>
         )}
 
-        <Grid container spacing={4}>
+        <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
           {courses.map((course, index) => {
             const progress = getCourseProgress(course.id);
             return (
