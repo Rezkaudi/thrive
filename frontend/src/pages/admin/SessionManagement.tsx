@@ -40,6 +40,8 @@ import {
   Checkbox,
   Divider,
   TablePagination,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add,
@@ -97,6 +99,8 @@ interface PaginationInfo {
 }
 
 export const SessionManagement: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { showConfirm, showError } = useSweetAlert();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionDialog, setSessionDialog] = useState(false);
@@ -112,23 +116,23 @@ export const SessionManagement: React.FC = () => {
     hasNextPage: false,
     hasPrevPage: false,
   });
-  
+
   // Filters
   const [filters, setFilters] = useState({
     type: '',
     isActive: '',
     isRecurring: '',
   });
-  
+
   // Add Snackbar state
-  const [snackbar, setSnackbar] = useState({ 
-    open: false, 
-    message: '', 
-    severity: 'success' as 'success' | 'error' | 'warning' | 'info' 
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
-  
+
   type SessionType = 'SPEAKING' | 'EVENT';
-  
+
   const [sessionForm, setSessionForm] = useState<{
     title: string;
     description: string;
@@ -143,7 +147,7 @@ export const SessionManagement: React.FC = () => {
     isRecurring: boolean;
     recurringWeeks: number;
     updateAllRecurring: boolean;
-    }>({
+  }>({
     title: '',
     description: '',
     type: 'SPEAKING',
@@ -167,8 +171,8 @@ export const SessionManagement: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const params: any = { 
+
+      const params: any = {
         page: pagination.page,
         limit: pagination.limit,
       };
@@ -177,9 +181,9 @@ export const SessionManagement: React.FC = () => {
       if (filters.type) params.type = filters.type;
       if (filters.isActive !== '') params.isActive = filters.isActive;
       if (filters.isRecurring !== '') params.isRecurring = filters.isRecurring;
-      
+
       const response = await api.get('/admin/sessions/paginated', { params });
-      
+
       const { sessions: sessionsData, pagination: paginationData } = response.data;
       setSessions(Array.isArray(sessionsData) ? sessionsData : []);
       setPagination(paginationData);
@@ -203,29 +207,29 @@ export const SessionManagement: React.FC = () => {
         if (editingSession.isRecurring && sessionForm.updateAllRecurring) {
           payload.updateAllRecurring = true;
         }
-        
+
         await api.put(`/admin/sessions/${editingSession.id}`, payload);
-        setSnackbar({ 
-          open: true, 
-          message: editingSession.isRecurring && sessionForm.updateAllRecurring 
-            ? 'All recurring sessions updated successfully!' 
-            : 'Session updated successfully!', 
-          severity: 'success' 
+        setSnackbar({
+          open: true,
+          message: editingSession.isRecurring && sessionForm.updateAllRecurring
+            ? 'All recurring sessions updated successfully!'
+            : 'Session updated successfully!',
+          severity: 'success'
         });
       } else {
         const response = await api.post('/admin/sessions', payload);
-        
+
         if (response.data.sessions && response.data.sessions.length > 1) {
-          setSnackbar({ 
-            open: true, 
-            message: `Created ${response.data.sessions.length} recurring sessions successfully!`, 
-            severity: 'success' 
+          setSnackbar({
+            open: true,
+            message: `Created ${response.data.sessions.length} recurring sessions successfully!`,
+            severity: 'success'
           });
         } else {
-          setSnackbar({ 
-            open: true, 
-            message: 'Session created successfully!', 
-            severity: 'success' 
+          setSnackbar({
+            open: true,
+            message: 'Session created successfully!',
+            severity: 'success'
           });
         }
       }
@@ -236,10 +240,10 @@ export const SessionManagement: React.FC = () => {
       fetchSessions();
     } catch (error: any) {
       console.error('Failed to save session:', error);
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.error || 'Failed to save session', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to save session',
+        severity: 'error'
       });
     }
   };
@@ -269,28 +273,28 @@ export const SessionManagement: React.FC = () => {
     if (result.isConfirmed) {
       try {
         const deleteParams: any = {};
-        
+
         // If it's a recurring parent and user confirmed, delete all
         if (session.isRecurring && !session.recurringParentId) {
           deleteParams.deleteAllRecurring = 'true';
         }
 
         await api.delete(`/admin/sessions/${sessionId}`, { params: deleteParams });
-        
-        setSnackbar({ 
-          open: true, 
-          message: session.isRecurring && !session.recurringParentId 
-            ? 'Recurring session series deleted successfully!' 
-            : 'Session deleted successfully!', 
-          severity: 'success' 
+
+        setSnackbar({
+          open: true,
+          message: session.isRecurring && !session.recurringParentId
+            ? 'Recurring session series deleted successfully!'
+            : 'Session deleted successfully!',
+          severity: 'success'
         });
         fetchSessions();
       } catch (error: any) {
         console.error('Failed to delete session:', error);
-        setSnackbar({ 
-          open: true, 
-          message: error.response?.data?.error || 'Failed to delete session', 
-          severity: 'error' 
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || 'Failed to delete session',
+          severity: 'error'
         });
       }
     }
@@ -318,9 +322,9 @@ export const SessionManagement: React.FC = () => {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
 
-  const handleLimitChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newLimit = parseInt(event.target.value, 10);
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+  const handleLimitChange = (value: number) => {
+    // const newLimit = parseInt(value, 10);
+    setPagination(prev => ({ ...prev, limit: value, page: 1 }));
   };
 
   const handleFilterChange = (filterName: string, value: string) => {
@@ -349,7 +353,7 @@ export const SessionManagement: React.FC = () => {
     });
   };
 
-   const getRelativeTime = (dateString: string) => {
+  const getRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
 
@@ -398,9 +402,9 @@ export const SessionManagement: React.FC = () => {
   const totalBookings = sessions.reduce((sum, s) => sum + s.currentParticipants, 0);
   const averageFillRate = sessions.length > 0
     ? Math.round(
-        sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
-        sessions.length
-      )
+      sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
+      sessions.length
+    )
     : 0;
   const recurringCount = sessions.filter(s => s.isRecurring).length;
   const activeFiltersCount = Object.values(filters).filter(f => f !== '').length;
@@ -418,7 +422,7 @@ export const SessionManagement: React.FC = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+        <Stack direction={isMobile ? "column" : "row"} gap={1} justifyContent="space-between" alignItems="center" mb={4}>
           <Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               Session Management
@@ -586,7 +590,7 @@ export const SessionManagement: React.FC = () => {
                   </Button>
                 )}
               </Stack>
-              
+
               <Grid container spacing={2} alignItems="center">
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <FormControl fullWidth size="small">
@@ -602,7 +606,7 @@ export const SessionManagement: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Status</InputLabel>
@@ -617,7 +621,7 @@ export const SessionManagement: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Recurring</InputLabel>
@@ -632,17 +636,21 @@ export const SessionManagement: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="Items per page"
-                    value={pagination.limit}
-                    onChange={handleLimitChange}
-                    inputProps={{ min: 5, max: 50 }}
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Items per page</InputLabel>
+                    <Select
+                      value={pagination.limit}
+                      label="Items per page"
+                      onChange={(e) => handleLimitChange(e.target.value)}
+
+                    >
+                      <MenuItem value="10">10</MenuItem>
+                      <MenuItem value="20">20</MenuItem>
+                      <MenuItem value="30">30</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
               </Grid>
             </Stack>
@@ -672,7 +680,7 @@ export const SessionManagement: React.FC = () => {
                   No sessions found
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {activeFiltersCount > 0 
+                  {activeFiltersCount > 0
                     ? 'Try adjusting your filters or create a new session.'
                     : 'Create your first session to get started!'
                   }
@@ -688,8 +696,8 @@ export const SessionManagement: React.FC = () => {
               </Alert>
             ) : (
               <>
-                <TableContainer>
-                  <Table>
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: { xs: 600, md: 800 } }}>
                     <TableHead>
                       <TableRow>
                         <TableCell>Session Details</TableCell>
@@ -707,7 +715,7 @@ export const SessionManagement: React.FC = () => {
                         const isPast = new Date(session.scheduledAt) < new Date();
                         const status = getSessionStatus(session);
                         const fillPercentage = (session.currentParticipants / session.maxParticipants) * 100;
-                        
+
                         return (
                           <TableRow key={session.id} sx={{ opacity: isPast ? 0.8 : 1 }}>
                             <TableCell>
@@ -887,7 +895,7 @@ export const SessionManagement: React.FC = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
-                
+
                 {/* Bottom Pagination */}
                 <Stack direction="row" justifyContent="center" mt={3}>
                   <Pagination
@@ -906,22 +914,22 @@ export const SessionManagement: React.FC = () => {
         </Card>
 
         {/* Enhanced Session Dialog */}
-        <Dialog 
-          open={sessionDialog} 
+        <Dialog
+          open={sessionDialog}
           onClose={() => {
             setSessionDialog(false);
             setEditingSession(null);
             resetForm();
-          }} 
-          maxWidth="md" 
+          }}
+          maxWidth="md"
           fullWidth
         >
           <DialogTitle>
             <Stack direction="row" spacing={2} alignItems="center">
               {sessionForm.type === 'SPEAKING' ? <Mic /> : <Event />}
               <Typography variant="h6">
-                {editingSession 
-                  ? `Edit ${sessionForm.type === 'SPEAKING' ? 'Speaking Session' : 'Special Event'}` 
+                {editingSession
+                  ? `Edit ${sessionForm.type === 'SPEAKING' ? 'Speaking Session' : 'Special Event'}`
                   : `Create New ${sessionForm.type === 'SPEAKING' ? 'Speaking Session' : 'Special Event'}`
                 }
               </Typography>
@@ -944,12 +952,12 @@ export const SessionManagement: React.FC = () => {
                 value={sessionForm.title}
                 onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
                 required
-                placeholder={sessionForm.type === 'SPEAKING' ? 
-                  'e.g., Morning Conversation Practice' : 
+                placeholder={sessionForm.type === 'SPEAKING' ?
+                  'e.g., Morning Conversation Practice' :
                   'e.g., Cultural Exchange Workshop'
                 }
               />
-                              <TextField
+              <TextField
                 fullWidth
                 multiline
                 rows={3}
@@ -957,8 +965,8 @@ export const SessionManagement: React.FC = () => {
                 value={sessionForm.description}
                 onChange={(e) => setSessionForm({ ...sessionForm, description: e.target.value })}
                 required
-                placeholder={sessionForm.type === 'SPEAKING' ? 
-                  'Describe what participants will practice...' : 
+                placeholder={sessionForm.type === 'SPEAKING' ?
+                  'Describe what participants will practice...' :
                   'Describe the special event activities...'
                 }
               />
@@ -983,7 +991,7 @@ export const SessionManagement: React.FC = () => {
                   </MenuItem>
                 </Select>
               </FormControl>
-              
+
               {sessionForm.type === 'SPEAKING' ? (
                 <TextField
                   fullWidth
@@ -1135,7 +1143,7 @@ export const SessionManagement: React.FC = () => {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button 
+            <Button
               onClick={() => {
                 setSessionDialog(false);
                 setEditingSession(null);
@@ -1144,14 +1152,14 @@ export const SessionManagement: React.FC = () => {
             >
               Cancel
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleSaveSession}
               disabled={!sessionForm.title || !sessionForm.description}
               sx={{ color: "white" }}
               startIcon={editingSession ? <Edit /> : <Add />}
             >
-              {editingSession 
+              {editingSession
                 ? (editingSession.isRecurring && sessionForm.updateAllRecurring ? 'Update Series' : 'Update Session')
                 : (sessionForm.isRecurring ? `Create ${sessionForm.recurringWeeks} Sessions` : 'Create Session')
               }
