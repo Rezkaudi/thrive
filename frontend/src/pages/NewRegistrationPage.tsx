@@ -168,10 +168,10 @@ export const NewRegistrationPage: React.FC = () => {
                         <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
                             <Box textAlign="center" m={4}>
                                 <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-                                    Create Your Account
+                                    Sign up for a free 14 day trial
                                 </Typography>
                                 <Typography variant="body1" color="text.secondary">
-                                    Join thousands learning Japanese with cultural context
+                                    Learn Japanese and start thriving in Japan with us
                                 </Typography>
                             </Box>
 
