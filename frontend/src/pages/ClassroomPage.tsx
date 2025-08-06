@@ -604,7 +604,10 @@ export const ClassroomPage: React.FC = () => {
   const [lessonLoading, setLessonLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    const stored = localStorage.getItem("sidebarCollapsed");
+    return stored === "true";
+  });
   const [progressExpanded, setProgressExpanded] = useState(true);
   const { hasActiveSubscription } = useSelector((state: RootState) => state.auth);
 
@@ -618,6 +621,10 @@ export const ClassroomPage: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", String(sidebarCollapsed))
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (selectedCourse) {

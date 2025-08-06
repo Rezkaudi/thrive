@@ -47,10 +47,6 @@ export const theme = responsiveFontSizes(createTheme({
       fontSize: '1.5rem',
       fontWeight: 600,
     },
-    h5: {
-      fontSize: '0.5rem',
-      // fontWeight: 600,
-    },
     body1: {
       fontSize: '1rem',
       lineHeight: 1.7,

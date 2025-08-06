@@ -425,10 +425,11 @@ const PostCard = ({
                   />
                 )}
               </Stack>
-              <Typography variant={isMobile ? "h5" : "caption"} color="text.secondary">
+              <Typography sx={{ fontSize: { xs: "0.5rem", md: "0.8rem" } }} color="text.secondary">
                 {post.author?.email} • {formatPostDate(post.createdAt)}{" "} {formatPostTime(post.createdAt)}
               </Typography>
             </Box>
+
 
             <IconButton
               size="small"

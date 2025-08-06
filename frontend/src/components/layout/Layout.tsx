@@ -58,8 +58,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
 
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [desktopDrawerOpen, setDesktopDrawerOpen] = useState(true);
+
+  const [mobileOpen, setMobileOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem("mobileOpen");
+    return stored === "true";
+  });
+
+  const [desktopDrawerOpen, setDesktopDrawerOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem("desktopDrawerOpen");
+    return stored ? stored === "true" : true;
+  });
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -77,8 +85,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleDrawerToggle = () => {
     if (isMobile) {
       setMobileOpen(!mobileOpen);
+      localStorage.setItem("mobileOpen", String(!mobileOpen))
     } else {
       setDesktopDrawerOpen(!desktopDrawerOpen);
+      localStorage.setItem("desktopDrawerOpen", String(!desktopDrawerOpen))
     }
   };
 
