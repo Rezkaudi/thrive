@@ -23,6 +23,16 @@ export class SubscriptionRepository implements ISubscriptionRepository {
         return entity ? this.toDomain(entity) : null;
     }
 
+    async getAllAcivePayment(): Promise<Subscription[]> {
+        const entities = await this.repository.find();
+        return entities.map(e => this.toDomain(e));
+        // {
+        //     where: {
+        //         status: In(['active'])
+        //     }
+        // }
+    }
+
     async findByUserId(userId: string): Promise<Subscription[]> {
         const entities = await this.repository.find({
             where: { userId },

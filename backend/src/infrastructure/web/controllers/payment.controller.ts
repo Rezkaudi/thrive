@@ -15,6 +15,18 @@ export class PaymentController {
   private paymentService: PaymentService;
   private subscriptionRepository: SubscriptionRepository;
 
+  // Discount configuration
+  private readonly DISCOUNT_LIMIT = Number(process.env.STRIPE_DISCOUNT_LIMIT_USERS);
+  private readonly DISCOUNT_PRICES = {
+    monthly: {
+      regular: process.env.STRIPE_MONTHLY_PRICE_ID || '',
+      discounted: process.env.STRIPE_MONTHLY_DISCOUNT_PRICE_ID || ''
+    },
+    yearly: {
+      regular: process.env.STRIPE_YEARLY_PRICE_ID || '',
+      discounted: process.env.STRIPE_YEARLY_DISCOUNT_PRICE_ID || ''
+    }
+  };
 
   constructor() {
     this.paymentRepository = new PaymentRepository();
@@ -23,6 +35,35 @@ export class PaymentController {
     this.subscriptionRepository = new SubscriptionRepository();
 
   }
+
+  // New endpoint to check discount eligibility
+  checkDiscountEligibility = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { isEligible, remainingSpots, totalUsed } = await this.getDiscountStatus();
+
+      res.json({
+        isEligible,
+        remainingSpots,
+        totalUsed,
+        limit: this.DISCOUNT_LIMIT
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Helper method to get discount status
+  private async getDiscountStatus(): Promise<{ isEligible: boolean; remainingSpots: number; totalUsed: number }> {
+    // Get count of unique users who have completed payments (excluding failed payments)
+    const allPayments = await this.subscriptionRepository.getAllAcivePayment();
+
+    const totalUsed = allPayments.length;
+    const remainingSpots = Math.max(0, this.DISCOUNT_LIMIT - totalUsed);
+    const isEligible = totalUsed < this.DISCOUNT_LIMIT;
+
+    return { isEligible, remainingSpots, totalUsed };
+  }
+
 
   createPaymentIntent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -51,27 +92,44 @@ export class PaymentController {
 
   createCheckoutSession = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { priceId, mode = 'payment', successUrl, cancelUrl, metadata } = req.body;
-      const email = req.user!.email
-      const userId = req.user!.userId
+      const { mode = 'payment', successUrl, cancelUrl, metadata, planType } = req.body;
+      const email = req.user!.email;
+      const userId = req.user!.userId;
 
+      // Check discount eligibility
+      const { isEligible } = await this.getDiscountStatus();
 
-      // Ensure email is passed in the session metadata
+      // Determine which price ID to use based on eligibility
+      let finalPriceId = "";
+
+      if (isEligible && planType && this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES]) {
+        // Use discounted price if eligible
+        finalPriceId = this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES].discounted;
+      } else if (planType && this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES]) {
+        // Use regular price if not eligible
+        finalPriceId = this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES].regular;
+      }
+
       const sessionData = {
-        priceId,
+        priceId: finalPriceId,
         mode,
         successUrl,
         cancelUrl,
         metadata: {
           ...metadata,
           email,
-          userId
+          userId,
+          isDiscounted: isEligible ? 'true' : 'false',
+          planType: planType || 'unknown'
         },
       };
 
       const session = await this.paymentService.createCheckoutSession(sessionData);
 
-      res.json({ sessionId: session.id });
+      res.json({
+        sessionId: session.id,
+        isDiscounted: isEligible
+      });
     } catch (error) {
       next(error);
     }

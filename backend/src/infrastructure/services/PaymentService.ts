@@ -1,6 +1,16 @@
 import Stripe from 'stripe';
 import { IPaymentService, PaymentIntent } from '../../application/services/IPaymentService';
 
+
+function daysToSecondsFromNow(days: number) {
+  // Convert days to seconds (days * hours * minutes * seconds)
+  const daysInSeconds = days * 24 * 60 * 60;
+  // Get current time in seconds (Unix timestamp)
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  // Return the future timestamp in seconds
+  return daysInSeconds + nowInSeconds;
+}
+
 export class PaymentService implements IPaymentService {
   private stripe: Stripe;
   private webhookSecret: string;
@@ -85,12 +95,13 @@ export class PaymentService implements IPaymentService {
       metadata: params.metadata,
       customer_email: params.metadata.email,
       subscription_data: {
-        trial_end: 2 * 24 * 60 * 60 + 60 + Math.floor(Date.now() / 1000)
+        trial_end: daysToSecondsFromNow(Number(process.env.STRIPE_FREE_DAYS)) + 200  // Adding extra 200 seconds
       }
     });
 
     return session;
   }
+
 
   async retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session | null> {
     try {
@@ -169,6 +180,7 @@ export class PaymentService implements IPaymentService {
       return null;
     }
   }
+
 
 
 }
