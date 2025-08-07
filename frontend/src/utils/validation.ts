@@ -1,4 +1,4 @@
-import { ValidationResult, Slide } from '../types/slides';
+import { ValidationResult, Slide } from '../types/slide.types';
 
 export const validateAnswer = (
   slideId: string,
@@ -39,7 +39,7 @@ export const validateAnswer = (
 
     case 'drag-drop':
       const requiredItems = slide.content.content.items?.length || 0;
-      const answeredItems = Object.keys(userAnswer).length;
+      const answeredItems = Object.keys(userAnswer || {}).length;
       if (answeredItems < requiredItems) {
         return {
           isValid: false,
@@ -53,7 +53,7 @@ export const validateAnswer = (
       const totalBlanks = slide.content.content.items?.reduce((total: number, item: any) => {
         return total + (item.sentence?.split('___').length - 1 || 0);
       }, 0) || 0;
-      const filledBlanks = Object.keys(userAnswer).length;
+      const filledBlanks = Object.keys(userAnswer || {}).length;
       if (filledBlanks < totalBlanks) {
         return {
           isValid: false,
@@ -65,7 +65,7 @@ export const validateAnswer = (
 
     case 'sentence-builder':
       const requiredWords = slide.content.content.items?.[0]?.words?.length || 0;
-      if (userAnswer.length < requiredWords) {
+      if ((userAnswer?.length || 0) < requiredWords) {
         return {
           isValid: false,
           message: `Please use all ${requiredWords} words to build the sentence.`,
@@ -75,7 +75,7 @@ export const validateAnswer = (
       break;
 
     case 'sorting':
-      const sortItems = userAnswer.length;
+      const sortItems = userAnswer?.length || 0;
       const requiredSort = slide.content.content.items?.length || 0;
       if (sortItems < requiredSort) {
         return {
@@ -88,7 +88,7 @@ export const validateAnswer = (
 
     case 'hotspot':
       const requiredClicks = slide.content.content.items?.length || 0;
-      const actualClicks = userAnswer.length;
+      const actualClicks = userAnswer?.length || 0;
       if (actualClicks < requiredClicks) {
         return {
           isValid: false,
@@ -100,7 +100,7 @@ export const validateAnswer = (
 
     case 'matching':
       const requiredConnections = slide.content.content.items?.length || 0;
-      const actualConnections = Object.keys(userAnswer).length;
+      const actualConnections = Object.keys(userAnswer || {}).length;
       if (actualConnections < requiredConnections) {
         return {
           isValid: false,
@@ -112,7 +112,7 @@ export const validateAnswer = (
 
     case 'timeline':
       const requiredEvents = slide.content.content.items?.length || 0;
-      const arrangedEvents = userAnswer.length;
+      const arrangedEvents = userAnswer?.length || 0;
       if (arrangedEvents < requiredEvents) {
         return {
           isValid: false,
@@ -146,7 +146,6 @@ export const validateAnswer = (
       }
       break;
 
-
     case 'pronunciation':
       if (!userAnswer) {
         return {
@@ -156,7 +155,6 @@ export const validateAnswer = (
         };
       }
       break;
-
   }
 
   return {

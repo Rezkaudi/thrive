@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -8,9 +8,9 @@ import {
   Alert,
   TextField,
   Fade,
-} from '@mui/material';
-import { CheckCircle, Error, Warning } from '@mui/icons-material';
-import { SlideComponentProps } from '../../types/slides';
+} from "@mui/material";
+import { CheckCircle, Error, Warning } from "@mui/icons-material";
+import { SlideComponentProps } from "../../types/slide.types";
 
 export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
   slide,
@@ -26,12 +26,16 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
   const showSlideFeeback = showFeedback[slideId];
   const validation = validationResults[slideId];
 
-  const handleInputChange = (itemId: number, blankIndex: number, value: string) => {
+  const handleInputChange = (
+    itemId: number,
+    blankIndex: number,
+    value: string
+  ) => {
     const newAnswer = {
       ...userAnswer,
-      [`${itemId}-${blankIndex}`]: value
+      [`${itemId}-${blankIndex}`]: value,
     };
-    setInteractiveAnswers(prev => ({ ...prev, [slideId]: newAnswer }));
+    setInteractiveAnswers((prev) => ({ ...prev, [slideId]: newAnswer }));
   };
 
   const handleCheckAnswer = () => {
@@ -42,16 +46,16 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
       });
     });
 
-    checkAnswer(slideId, userAnswer, correctAnswer, 'fill-blanks');
+    checkAnswer(slideId, userAnswer, correctAnswer, "fill-blanks");
   };
 
   const renderSentenceWithBlanks = (item: any) => {
-    const parts = item.sentence?.split('___') || [];
+    const parts = item.sentence?.split("___") || [];
     const result = [];
 
     for (let i = 0; i < parts.length; i++) {
       result.push(
-        <span key={`text-${i}`} style={{ fontSize: '1.5rem', fontWeight: 500 }}>
+        <span key={`text-${i}`} style={{ fontSize: "1.5rem", fontWeight: 500 }}>
           {parts[i]}
         </span>
       );
@@ -61,23 +65,23 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
           <TextField
             key={`blank-${i}`}
             size="medium"
-            value={userAnswer[`${item.id}-${i}`] || ''}
+            value={userAnswer[`${item.id}-${i}`] || ""}
             onChange={(e) => handleInputChange(item.id, i, e.target.value)}
             sx={{
               mx: 1,
-              width: '140px',
-              '& .MuiOutlinedInput-root': {
-                height: '50px',
-                fontSize: '1.2rem',
-                textAlign: 'center',
-                backgroundColor: 'background.paper',
-                '&:hover': {
-                  backgroundColor: 'primary.50'
+              width: "140px",
+              "& .MuiOutlinedInput-root": {
+                height: "50px",
+                fontSize: "1.2rem",
+                textAlign: "center",
+                backgroundColor: "background.paper",
+                "&:hover": {
+                  backgroundColor: "primary.50",
                 },
-                '&.Mui-focused': {
-                  backgroundColor: 'primary.50'
-                }
-              }
+                "&.Mui-focused": {
+                  backgroundColor: "primary.50",
+                },
+              },
             }}
             placeholder="?"
           />
@@ -89,12 +93,26 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
   };
 
   return (
-    <Box sx={{ padding: 4, maxWidth: '900px', margin: '0 auto' }}>
-      <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
+    <Box sx={{ padding: 4, maxWidth: "900px", margin: "0 auto" }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        fontWeight={600}
+        textAlign="center"
+        sx={{ mb: 3 }}
+      >
         {slide.content.title}
       </Typography>
 
-      <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
+      <Typography
+        variant="body1"
+        sx={{
+          textAlign: "center",
+          mb: 4,
+          color: "text.secondary",
+          fontSize: "1.1rem",
+        }}
+      >
         {content.instruction}
       </Typography>
 
@@ -104,35 +122,36 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
             key={item.id}
             sx={{
               p: 4,
-              textAlign: 'center',
+              textAlign: "center",
               borderRadius: 3,
-              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-              border: '2px solid transparent',
-              '&:hover': {
-                border: '2px solid',
-                borderColor: 'primary.light'
-              }
+              background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+              border: "2px solid transparent",
+              "&:hover": {
+                border: "2px solid",
+                borderColor: "primary.light",
+              },
             }}
           >
-            <Typography variant="h6" sx={{ mb: 3, color: 'text.secondary', fontWeight: 500 }}>
+            <Typography
+              variant="h6"
+              sx={{ mb: 3, color: "text.secondary", fontWeight: 500 }}
+            >
               Sentence {index + 1}
             </Typography>
-            <Box sx={{ mb: 3 }}>
-              {renderSentenceWithBlanks(item)}
-            </Box>
+            <Box sx={{ mb: 3 }}>{renderSentenceWithBlanks(item)}</Box>
             {item.translation && (
               <Typography
                 variant="body1"
                 sx={{
-                  color: 'text.secondary',
-                  fontStyle: 'italic',
-                  fontSize: '1rem',
+                  color: "text.secondary",
+                  fontStyle: "italic",
+                  fontSize: "1rem",
                   mt: 2,
                   p: 2,
-                  backgroundColor: 'primary.50',
+                  backgroundColor: "primary.50",
                   borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'primary.200'
+                  border: "1px solid",
+                  borderColor: "primary.200",
                 }}
               >
                 💭 Translation: {item.translation}
@@ -142,7 +161,7 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
         )) || []}
       </Stack>
 
-      <Box sx={{ textAlign: 'center' }}>
+      <Box sx={{ textAlign: "center" }}>
         <Button
           variant="contained"
           size="large"
@@ -150,12 +169,12 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
           sx={{
             px: 6,
             py: 2,
-            fontSize: '1.1rem',
+            fontSize: "1.1rem",
             borderRadius: 3,
-            background: 'linear-gradient(45deg, #A6531C 30%, #7ED4D0 90%)',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #3BA59E 30%, #6DD6CE 90%)',
-            }
+            background: "linear-gradient(45deg, #A6531C 30%, #7ED4D0 90%)",
+            "&:hover": {
+              background: "linear-gradient(45deg, #3BA59E 30%, #6DD6CE 90%)",
+            },
           }}
         >
           Check My Answers
@@ -169,10 +188,10 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
             sx={{
               mt: 3,
               borderRadius: 2,
-              fontSize: '1rem',
-              '& .MuiAlert-icon': {
-                fontSize: '1.5rem'
-              }
+              fontSize: "1rem",
+              "& .MuiAlert-icon": {
+                fontSize: "1.5rem",
+              },
             }}
           >
             {validation.message}

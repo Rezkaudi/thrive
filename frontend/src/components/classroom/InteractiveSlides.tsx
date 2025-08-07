@@ -1,7 +1,7 @@
 import { Box, Card, CardContent, Typography } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { InteractiveSlidesProps } from "../../types/slides";
+import { InteractiveSlidesProps } from "../../types/slide.types";
 import { SlideHeader } from "./SliderHeader";
 import { ProgressBar } from "./ProgressBar";
 import { SlideRenderer } from "./SlideRenderer";
