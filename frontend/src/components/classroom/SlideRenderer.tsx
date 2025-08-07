@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography, Paper, Chip, Alert } from "@mui/material";
 
-import { SlideComponentProps } from "../../types/slides";
+import { SlideComponentProps } from "../../types/slide.types";
 
 // sliders
 import { QuizSlide } from "../slides/QuizSlide";

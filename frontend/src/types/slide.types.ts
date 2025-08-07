@@ -3,6 +3,7 @@ export interface SlideContent {
   content: any;
   title?: string;
   subtitle?: string;
+  alignment?: 'left' | 'center' | 'right';
 }
 
 export interface Slide {
@@ -11,6 +12,11 @@ export interface Slide {
   backgroundImage?: string;
   backgroundColor?: string;
   notes?: string;
+  transition?: 'slide' | 'fade' | 'zoom' | 'flip';
+  duration?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  learningObjectives?: string;
+  tags?: string;
 }
 
 export interface ValidationResult {
@@ -37,4 +43,23 @@ export interface SlideComponentProps {
   setValidationResults: React.Dispatch<React.SetStateAction<Record<string, ValidationResult>>>;
   setSlideProgress: React.Dispatch<React.SetStateAction<Set<number>>>;
   checkAnswer: (slideId: string, userAnswer: any, correctAnswer: any, interactiveType?: string) => boolean;
+}
+
+export interface SlidesBuilderProps {
+  initialSlides?: Slide[];
+  onChange: (slides: Slide[]) => void;
+}
+
+export interface SlideEditorProps {
+  slide: Slide;
+  index: number;
+  onUpdate: (index: number, updates: Partial<Slide>) => void;
+  onUpdateContent: (index: number, contentUpdates: Partial<SlideContent>) => void;
+  validationErrors: string[];
+}
+
+export interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }

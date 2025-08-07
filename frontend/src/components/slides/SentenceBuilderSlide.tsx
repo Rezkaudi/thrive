@@ -1,5 +1,5 @@
 // components/slides/SentenceBuilderSlide.tsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -9,8 +9,8 @@ import {
   Alert,
   Chip,
   Fade,
-} from '@mui/material';
-import { SlideComponentProps } from '../../types/slides';
+} from "@mui/material";
+import { SlideComponentProps } from "../../types/slide.types";
 
 export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   slide,
@@ -27,16 +27,17 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
 
   const handleWordClick = (word: string) => {
     if (selectedWords.includes(word)) {
-      setSelectedWords(prev => prev.filter(w => w !== word));
+      setSelectedWords((prev) => prev.filter((w) => w !== word));
     } else {
-      setSelectedWords(prev => [...prev, word]);
+      setSelectedWords((prev) => [...prev, word]);
     }
   };
 
   const handleCheckAnswer = () => {
     if (!item) return;
-    const correctSentence = item.correctOrder?.map((index: number) => item.words[index]) || [];
-    checkAnswer(slideId, selectedWords, correctSentence, 'sentence-builder');
+    const correctSentence =
+      item.correctOrder?.map((index: number) => item.words[index]) || [];
+    checkAnswer(slideId, selectedWords, correctSentence, "sentence-builder");
   };
 
   const resetSentence = () => {
@@ -45,7 +46,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
 
   if (!item) {
     return (
-      <Box sx={{ textAlign: 'center', p: 4 }}>
+      <Box sx={{ textAlign: "center", p: 4 }}>
         <Typography variant="h6" color="text.secondary">
           No sentence data available
         </Typography>
@@ -54,33 +55,53 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   }
 
   return (
-    <Box sx={{ padding: 4, maxWidth: '900px', margin: '0 auto' }}>
-      <Typography variant="h4" gutterBottom fontWeight={600} textAlign="center" sx={{ mb: 3 }}>
+    <Box sx={{ padding: 4, maxWidth: "900px", margin: "0 auto" }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        fontWeight={600}
+        textAlign="center"
+        sx={{ mb: 3 }}
+      >
         {slide.content.title}
       </Typography>
 
-      <Typography variant="body1" sx={{ textAlign: 'center', mb: 4, color: 'text.secondary', fontSize: '1.1rem' }}>
+      <Typography
+        variant="body1"
+        sx={{
+          textAlign: "center",
+          mb: 4,
+          color: "text.secondary",
+          fontSize: "1.1rem",
+        }}
+      >
         {content.instruction}
       </Typography>
 
       {/* Sentence Building Area */}
-      <Paper sx={{
-        minHeight: '120px',
-        p: 3,
-        mb: 4,
-        backgroundColor: 'grey.50',
-        border: '3px dashed',
-        borderColor: selectedWords.length > 0 ? 'primary.main' : 'grey.300',
-        borderRadius: 3,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all 0.3s ease'
-      }}>
+      <Paper
+        sx={{
+          minHeight: "120px",
+          p: 3,
+          mb: 4,
+          backgroundColor: "grey.50",
+          border: "3px dashed",
+          borderColor: selectedWords.length > 0 ? "primary.main" : "grey.300",
+          borderRadius: 3,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.3s ease",
+        }}
+      >
         {selectedWords.length === 0 ? (
-          <Typography variant="h6" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ fontStyle: "italic" }}
+          >
             Click words below to build your sentence ⬇️
           </Typography>
         ) : (
@@ -88,18 +109,20 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
             <Chip
               key={`selected-${index}`}
               label={word}
-              onClick={() => setSelectedWords(prev => prev.filter((_, i) => i !== index))}
+              onClick={() =>
+                setSelectedWords((prev) => prev.filter((_, i) => i !== index))
+              }
               sx={{
-                fontSize: '1.2rem',
+                fontSize: "1.2rem",
                 fontWeight: 600,
                 p: 2,
-                height: 'auto',
-                backgroundColor: 'primary.main',
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                  transform: 'scale(1.05)'
-                }
+                height: "auto",
+                backgroundColor: "primary.main",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "primary.dark",
+                  transform: "scale(1.05)",
+                },
               }}
               clickable
             />
@@ -108,16 +131,24 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
       </Paper>
 
       {/* Available Words */}
-      <Paper sx={{ p: 3, mb: 4, borderRadius: 3, bgcolor: 'background.paper' }}>
-        <Typography variant="h6" gutterBottom textAlign="center" fontWeight={600} sx={{ mb: 3 }}>
+      <Paper sx={{ p: 3, mb: 4, borderRadius: 3, bgcolor: "background.paper" }}>
+        <Typography
+          variant="h6"
+          gutterBottom
+          textAlign="center"
+          fontWeight={600}
+          sx={{ mb: 3 }}
+        >
           📝 Available Words
         </Typography>
-        <Box sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 2,
-          justifyContent: 'center'
-        }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+            justifyContent: "center",
+          }}
+        >
           {item.words?.map((word: string, index: number) => (
             <Button
               key={`word-${index}`}
@@ -125,16 +156,22 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
               onClick={() => handleWordClick(word)}
               disabled={selectedWords.includes(word)}
               sx={{
-                fontSize: '1.1rem',
+                fontSize: "1.1rem",
                 fontWeight: 600,
                 p: 2,
-                minWidth: '80px',
-                backgroundColor: selectedWords.includes(word) ? 'grey.200' : 'secondary.main',
-                color: selectedWords.includes(word) ? 'text.disabled' : 'white',
-                '&:hover': {
-                  backgroundColor: selectedWords.includes(word) ? 'grey.200' : 'secondary.dark',
-                  transform: selectedWords.includes(word) ? 'none' : 'scale(1.05)'
-                }
+                minWidth: "80px",
+                backgroundColor: selectedWords.includes(word)
+                  ? "grey.200"
+                  : "secondary.main",
+                color: selectedWords.includes(word) ? "text.disabled" : "white",
+                "&:hover": {
+                  backgroundColor: selectedWords.includes(word)
+                    ? "grey.200"
+                    : "secondary.dark",
+                  transform: selectedWords.includes(word)
+                    ? "none"
+                    : "scale(1.05)",
+                },
               }}
             >
               {word}
@@ -144,19 +181,24 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
       </Paper>
 
       {/* Translation */}
-      <Paper sx={{
-        p: 3,
-        mb: 4,
-        bgcolor: 'info.50',
-        border: '1px solid',
-        borderColor: 'info.200',
-        borderRadius: 3,
-        textAlign: 'center'
-      }}>
-        <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: 'info.dark' }}>
+      <Paper
+        sx={{
+          p: 3,
+          mb: 4,
+          bgcolor: "info.50",
+          border: "1px solid",
+          borderColor: "info.200",
+          borderRadius: 3,
+          textAlign: "center",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{ mb: 1, fontWeight: 600, color: "info.dark" }}
+        >
           💭 Translation
         </Typography>
-        <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
+        <Typography variant="body1" sx={{ fontSize: "1.1rem" }}>
           {item.translation}
         </Typography>
       </Paper>
@@ -169,8 +211,8 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
           sx={{
             px: 4,
             py: 1.5,
-            fontSize: '1rem',
-            borderRadius: 3
+            fontSize: "1rem",
+            borderRadius: 3,
           }}
         >
           🔄 Reset
@@ -183,12 +225,12 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
           sx={{
             px: 6,
             py: 1.5,
-            fontSize: '1.1rem',
+            fontSize: "1.1rem",
             borderRadius: 3,
-            background: 'linear-gradient(45deg, #FF6348 30%, #D4BC8C 90%)',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #E55538 30%, #FF7E7E 90%)',
-            }
+            background: "linear-gradient(45deg, #FF6348 30%, #D4BC8C 90%)",
+            "&:hover": {
+              background: "linear-gradient(45deg, #E55538 30%, #FF7E7E 90%)",
+            },
           }}
         >
           Check Sentence ({selectedWords.length}/{item.words?.length || 0})
@@ -199,7 +241,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         <Fade in>
           <Alert
             severity={validation.type}
-            sx={{ mt: 3, borderRadius: 2, fontSize: '1rem' }}
+            sx={{ mt: 3, borderRadius: 2, fontSize: "1rem" }}
           >
             {validation.message}
           </Alert>

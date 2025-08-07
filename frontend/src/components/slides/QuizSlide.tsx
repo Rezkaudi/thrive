@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -10,9 +10,9 @@ import {
   Radio,
   Chip,
   Fade,
-} from '@mui/material';
-import { CheckCircle, Error } from '@mui/icons-material';
-import { SlideComponentProps } from '../../types/slides';
+} from "@mui/material";
+import { CheckCircle, Error } from "@mui/icons-material";
+import { SlideComponentProps } from "../../types/slide.types";
 
 export const QuizSlide: React.FC<SlideComponentProps> = ({
   slide,
@@ -29,47 +29,52 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
   const validation = validationResults[quizId];
 
   const handleSingleChoiceAnswer = (answerIndex: string) => {
-    setInteractiveAnswers(prev => ({
+    setInteractiveAnswers((prev) => ({
       ...prev,
-      [quizId]: parseInt(answerIndex)
+      [quizId]: parseInt(answerIndex),
     }));
   };
 
-  const handleMultipleChoiceAnswer = (answerIndex: number, isChecked: boolean) => {
-    setInteractiveAnswers(prev => {
+  const handleMultipleChoiceAnswer = (
+    answerIndex: number,
+    isChecked: boolean
+  ) => {
+    setInteractiveAnswers((prev) => {
       const currentAnswers = prev[quizId] || [];
       let newAnswers;
-      
+
       if (isChecked) {
         newAnswers = [...currentAnswers, answerIndex];
       } else {
-        newAnswers = currentAnswers.filter((index: number) => index !== answerIndex);
+        newAnswers = currentAnswers.filter(
+          (index: number) => index !== answerIndex
+        );
       }
-      
+
       return {
         ...prev,
-        [quizId]: newAnswers
+        [quizId]: newAnswers,
       };
     });
   };
 
   const handleCheckQuizAnswer = () => {
-    if (content.type === 'single-choice') {
+    if (content.type === "single-choice") {
       const correctAnswer = content.correctAnswer;
-      checkAnswer(quizId, userAnswer, correctAnswer, 'quiz');
-    } else if (content.type === 'multiple-choice') {
+      checkAnswer(quizId, userAnswer, correctAnswer, "quiz");
+    } else if (content.type === "multiple-choice") {
       const correctAnswers = content.correctAnswers || [];
       const userAnswers = userAnswer || [];
       const sortedUserAnswers = [...userAnswers].sort();
       const sortedCorrectAnswers = [...correctAnswers].sort();
-      checkAnswer(quizId, sortedUserAnswers, sortedCorrectAnswers, 'quiz');
+      checkAnswer(quizId, sortedUserAnswers, sortedCorrectAnswers, "quiz");
     }
   };
 
   return (
-    <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
+    <Box sx={{ p: 4, maxWidth: 800, mx: "auto" }}>
       <Typography variant="h4" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
-        {slide.content.title || 'Quiz Question'}
+        {slide.content.title || "Quiz Question"}
       </Typography>
 
       <Typography variant="h6" gutterBottom sx={{ mb: 4, lineHeight: 1.6 }}>
@@ -77,9 +82,9 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       {/* Single Choice - Radio Buttons */}
-      {content.type === 'single-choice' && (
+      {content.type === "single-choice" && (
         <RadioGroup
-          value={userAnswer?.toString() || ''}
+          value={userAnswer?.toString() || ""}
           onChange={(e) => handleSingleChoiceAnswer(e.target.value)}
         >
           {content.options?.map((option: string, index: number) => (
@@ -88,7 +93,10 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
               value={index.toString()}
               control={<Radio color="primary" />}
               label={
-                <Typography variant="body1" sx={{ fontSize: '1.1rem', py: 0.5 }}>
+                <Typography
+                  variant="body1"
+                  sx={{ fontSize: "1.1rem", py: 0.5 }}
+                >
                   {option}
                 </Typography>
               }
@@ -96,17 +104,18 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
                 mb: 2,
                 p: 2,
                 borderRadius: 2,
-                border: '2px solid',
-                borderColor: userAnswer === index ? 'primary.main' : 'divider',
-                backgroundColor: userAnswer === index ? 'primary.50' : 'background.paper',
-                '&:hover': { 
-                  bgcolor: 'action.hover',
-                  borderColor: 'primary.light'
+                border: "2px solid",
+                borderColor: userAnswer === index ? "primary.main" : "divider",
+                backgroundColor:
+                  userAnswer === index ? "primary.50" : "background.paper",
+                "&:hover": {
+                  bgcolor: "action.hover",
+                  borderColor: "primary.light",
                 },
-                transition: 'all 0.2s ease',
-                width: '100%',
+                transition: "all 0.2s ease",
+                width: "100%",
                 ml: 0,
-                mr: 0
+                mr: 0,
               }}
             />
           ))}
@@ -114,14 +123,18 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
       )}
 
       {/* Multiple Choice - Checkboxes */}
-      {content.type === 'multiple-choice' && (
+      {content.type === "multiple-choice" && (
         <Box>
-          <Typography variant="body2" color="primary.main" sx={{ mb: 2, fontWeight: 500 }}>
+          <Typography
+            variant="body2"
+            color="primary.main"
+            sx={{ mb: 2, fontWeight: 500 }}
+          >
             💡 Select all correct answers
           </Typography>
           {content.options?.map((option: string, index: number) => {
             const isChecked = (userAnswer || []).includes(index);
-            
+
             return (
               <FormControlLabel
                 key={index}
@@ -129,18 +142,23 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
                   <input
                     type="checkbox"
                     checked={isChecked}
-                    onChange={(e) => handleMultipleChoiceAnswer(index, e.target.checked)}
-                    style={{ 
-                      width: 20, 
-                      height: 20, 
-                      accentColor: '#1976d2',
-                      cursor: 'pointer',
-                      marginRight: '12px'
+                    onChange={(e) =>
+                      handleMultipleChoiceAnswer(index, e.target.checked)
+                    }
+                    style={{
+                      width: 20,
+                      height: 20,
+                      accentColor: "#1976d2",
+                      cursor: "pointer",
+                      marginRight: "12px",
                     }}
                   />
                 }
                 label={
-                  <Typography variant="body1" sx={{ fontSize: '1.1rem', py: 0.5 }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontSize: "1.1rem", py: 0.5 }}
+                  >
                     {option}
                   </Typography>
                 }
@@ -148,19 +166,21 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
                   mb: 2,
                   p: 2,
                   borderRadius: 2,
-                  border: '2px solid',
-                  borderColor: isChecked ? 'primary.main' : 'divider',
-                  backgroundColor: isChecked ? 'primary.50' : 'background.paper',
-                  '&:hover': { 
-                    bgcolor: 'action.hover',
-                    borderColor: 'primary.light'
+                  border: "2px solid",
+                  borderColor: isChecked ? "primary.main" : "divider",
+                  backgroundColor: isChecked
+                    ? "primary.50"
+                    : "background.paper",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                    borderColor: "primary.light",
                   },
-                  transition: 'all 0.2s ease',
-                  width: '100%',
+                  transition: "all 0.2s ease",
+                  width: "100%",
                   ml: 0,
                   mr: 0,
-                  display: 'flex',
-                  alignItems: 'center'
+                  display: "flex",
+                  alignItems: "center",
                 }}
               />
             );
@@ -175,36 +195,51 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
           size="large"
           onClick={handleCheckQuizAnswer}
           disabled={
-            content.type === 'single-choice' 
-              ? (typeof userAnswer !== 'number')
-              : (content.type === 'multiple-choice' && (!userAnswer || userAnswer.length === 0))
+            content.type === "single-choice"
+              ? typeof userAnswer !== "number"
+              : content.type === "multiple-choice" &&
+                (!userAnswer || userAnswer.length === 0)
           }
           sx={{
             px: 4,
             py: 1.5,
-            fontSize: '1.1rem',
+            fontSize: "1.1rem",
             borderRadius: 3,
-            background: 'linear-gradient(45deg, primary.main 30%, primary.light 90%)',
-            '&:hover': {
-              background: 'linear-gradient(45deg, primary.main 30%, primary.light 90%)',
-            }
+            background:
+              "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
+            "&:hover": {
+              background:
+                "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
+            },
           }}
         >
           Check Answer
-          {content.type === 'multiple-choice' && userAnswer && (
-            <Chip 
-              label={`${userAnswer.length} selected`} 
-              size="small" 
-              sx={{ ml: 2, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+          {content.type === "multiple-choice" && userAnswer && (
+            <Chip
+              label={`${userAnswer.length} selected`}
+              size="small"
+              sx={{ ml: 2, bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
             />
           )}
         </Button>
       </Stack>
 
       {/* Quiz Type Indicator */}
-      <Box sx={{ mt: 3, p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.200' }}>
+      <Box
+        sx={{
+          mt: 3,
+          p: 2,
+          bgcolor: "info.50",
+          borderRadius: 2,
+          border: "1px solid",
+          borderColor: "info.200",
+        }}
+      >
         <Typography variant="body2" color="info.dark" sx={{ fontWeight: 500 }}>
-          📋 Quiz Type: {content.type === 'single-choice' ? 'Single Choice (select one answer)' : 'Multiple Choice (select all correct answers)'}
+          📋 Quiz Type:{" "}
+          {content.type === "single-choice"
+            ? "Single Choice (select one answer)"
+            : "Multiple Choice (select all correct answers)"}
         </Typography>
       </Box>
 
@@ -213,20 +248,20 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
         <Fade in>
           <Alert
             severity={validation.type}
-            sx={{ 
-              mt: 3, 
-              borderRadius: 2, 
-              fontSize: '1rem',
-              '& .MuiAlert-message': {
-                fontSize: '1rem'
-              }
+            sx={{
+              mt: 3,
+              borderRadius: 2,
+              fontSize: "1rem",
+              "& .MuiAlert-message": {
+                fontSize: "1rem",
+              },
             }}
-            icon={validation.type === 'success' ? <CheckCircle /> : <Error />}
+            icon={validation.type === "success" ? <CheckCircle /> : <Error />}
           >
             <Typography variant="body1" sx={{ fontWeight: 500 }}>
               {validation.message}
             </Typography>
-            {content.explanation && validation.type === 'success' && (
+            {content.explanation && validation.type === "success" && (
               <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
                 💡 {content.explanation}
               </Typography>

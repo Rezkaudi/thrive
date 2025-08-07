@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Slide, ValidationResult } from "../types/slides";
+import { Slide, ValidationResult } from "../types/slide.types";
 import confetti from 'canvas-confetti';
 import { validateAnswer } from "../utils/validation";
 
