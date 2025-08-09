@@ -17,6 +17,7 @@ import { ProgressRepository } from '../../database/repositories/ProgressReposito
 import { PaymentRepository } from '../../database/repositories/PaymentRepository';
 import { CreateRecurringSessionUseCase } from '../../../application/use-cases/admin/CreateRecurringSessionUseCase';
 import { ActivityService } from '../../services/ActivityService';
+import { DeleteSessionUseCase } from '../../../application/use-cases/admin/DeleteSessionUseCase';
 
 export class AdminController {
   async getUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -464,45 +465,7 @@ export class AdminController {
     }
   }
 
-  async deleteSession(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { sessionId } = req.params;
-      const { deleteAllRecurring } = req.query;
 
-      const sessionRepository = new SessionRepository();
-      const session = await sessionRepository.findById(sessionId);
-
-      if (!session) {
-        res.status(404).json({ error: 'Session not found' });
-        return;
-      }
-
-      // If deleting a recurring session parent and user wants to delete all
-      if (session.isRecurring && !session.recurringParentId && deleteAllRecurring === 'true') {
-        // Delete all recurring sessions first
-        await sessionRepository.deleteByRecurringParentId(session.id);
-
-        // Delete parent session
-        await sessionRepository.delete(sessionId);
-
-        res.json({
-          message: 'Deleted entire recurring session series',
-          deletedRecurringSeries: true
-        });
-      } else {
-        // Delete single session
-        const deleted = await sessionRepository.delete(sessionId);
-        if (!deleted) {
-          res.status(404).json({ error: 'Session not found' });
-          return;
-        }
-
-        res.json({ message: 'Session deleted successfully' });
-      }
-    } catch (error) {
-      next(error);
-    }
-  }
 
   async getSessionsWithPagination(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -573,6 +536,59 @@ export class AdminController {
     }
   }
 
+ async deleteSession(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const { deleteOption } = req.body; // Get from request body instead of query
+
+      if (!deleteOption) {
+        res.status(400).json({ 
+          error: 'Delete option is required',
+          message: 'Please specify how you want to delete this session'
+        });
+        return;
+      }
+
+      const deleteSessionUseCase = new DeleteSessionUseCase(
+        new SessionRepository(),
+        new UserRepository()
+      );
+
+      const result = await deleteSessionUseCase.execute({
+        adminId: req.user!.userId,
+        sessionId,
+        deleteOption
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Failed to delete session:', error);
+      res.status(400).json({ 
+        error: error.message || 'Failed to delete session'
+      });
+    }
+  }
+
+  // NEW: Get delete options for a session
+  async getDeleteOptions(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+
+      const deleteSessionUseCase = new DeleteSessionUseCase(
+        new SessionRepository(),
+        new UserRepository()
+      );
+
+      const options = await deleteSessionUseCase.getDeleteOptions(sessionId);
+      res.json(options);
+    } catch (error: any) {
+      console.error('Failed to get delete options:', error);
+      res.status(400).json({ 
+        error: error.message || 'Failed to get delete options'
+      });
+    }
+  }
+
   async getRecurringSessionDetails(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sessionId } = req.params;
@@ -585,7 +601,9 @@ export class AdminController {
         return;
       }
 
-      if (!session.isRecurring) {
+      const seriesInfo = await sessionRepository.getRecurringSeriesInfo(sessionId);
+
+      if (!seriesInfo.isRecurring) {
         res.json({
           session,
           isRecurring: false,
@@ -596,39 +614,45 @@ export class AdminController {
 
       let recurringDetails;
 
-      if (session.recurringParentId) {
-        // This is a child session, get parent and all siblings
-        const parentSession = await sessionRepository.findById(session.recurringParentId);
-        const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.recurringParentId);
-
-        recurringDetails = {
-          parentSession,
-          allSessions: [parentSession, ...allRecurringSessions].filter(Boolean),
-          totalSessions: allRecurringSessions.length + 1,
-          currentSessionIndex: allRecurringSessions.findIndex(s => s.id === session.id) + 1
-        };
-      } else {
+      if (seriesInfo.isParent) {
         // This is the parent session
         const allRecurringSessions = await sessionRepository.findByRecurringParentId(session.id);
 
         recurringDetails = {
           parentSession: session,
           allSessions: [session, ...allRecurringSessions],
-          totalSessions: allRecurringSessions.length + 1,
-          currentSessionIndex: 0 // Parent is index 0
+          totalSessions: seriesInfo.totalInSeries,
+          childrenCount: seriesInfo.childrenCount,
+          currentSessionIndex: 0, // Parent is index 0
+          canPromoteChild: seriesInfo.childrenCount > 0,
+          nextInLine: allRecurringSessions.length > 0 ? allRecurringSessions[0] : null
+        };
+      } else {
+        // This is a child session
+        const parentSession = await sessionRepository.findById(seriesInfo.parentId!);
+        const allRecurringSessions = await sessionRepository.findByRecurringParentId(seriesInfo.parentId!);
+
+        recurringDetails = {
+          parentSession,
+          allSessions: [parentSession, ...allRecurringSessions].filter(Boolean),
+          totalSessions: seriesInfo.totalInSeries,
+          childrenCount: seriesInfo.childrenCount,
+          currentSessionIndex: allRecurringSessions.findIndex(s => s.id === session.id) + 1,
+          canPromoteChild: false, // Only parent can be promoted
+          nextInLine: null
         };
       }
 
       res.json({
         session,
         isRecurring: true,
-        recurringDetails
+        recurringDetails,
+        seriesInfo
       });
     } catch (error) {
       next(error);
     }
   }
-
 
 
   async getAnalyticsOverview(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

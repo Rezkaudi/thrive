@@ -6,6 +6,7 @@ import profileReducer from './slices/profileSlice';
 import calendarReducer from './slices/calendarSlice';
 import dashboardReducer from './slices/dashboardSlice';
 import activityReducer from './slices/activitySlice';
+import sessionsReducer from './slices/sessionSlice'
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     calendar: calendarReducer,
     dashboard: dashboardReducer,
     activity: activityReducer,
+    session: sessionsReducer,
   },
 });
 

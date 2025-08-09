@@ -1,5 +1,6 @@
-// File: frontend/src/pages/admin/SessionManagement.tsx
+// frontend/src/pages/admin/SessionManagement.tsx (Updated with Redux)
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
   Container,
@@ -29,17 +30,20 @@ import {
   Switch,
   FormControlLabel,
   Alert,
-  Tabs,
-  Tab,
   Avatar,
   Tooltip,
-  Badge,
   Snackbar,
   Pagination,
-  FormGroup,
   Checkbox,
   Divider,
-  TablePagination,
+  useTheme,
+  useMediaQuery,
+  RadioGroup,
+  Radio,
+  ListItem,
+  ListItemText,
+  List,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add,
@@ -56,142 +60,89 @@ import {
   Schedule,
   PersonAdd,
   Visibility,
-  Close,
   Repeat,
-  Loop,
   Timeline,
+  Upgrade,
+  DeleteSweep,
+  Warning,
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import api from '../../services/api';
-import { useSweetAlert } from '../../utils/sweetAlert';
-
-interface Session {
-  id: string;
-  title: string;
-  description: string;
-  type: 'SPEAKING' | 'EVENT';
-  hostId: string;
-  hostName?: string;
-  meetingUrl?: string;
-  location?: string;
-  scheduledAt: string;
-  duration: number;
-  maxParticipants: number;
-  currentParticipants: number;
-  pointsRequired: number;
-  isActive: boolean;
-  isRecurring: boolean;
-  recurringParentId?: string;
-  recurringWeeks?: number;
-}
-
-interface PaginationInfo {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
+import {
+  fetchSessions,
+  createSession,
+  updateSession,
+  deleteSession,
+  fetchDeleteOptions,
+  setPage,
+  setLimit,
+  setFilter,
+  clearFilters,
+  clearError,
+  resetForm,
+  updateForm,
+  setFormFromSession,
+  clearDeleteOptions,
+  Session,
+  DeleteOption,
+} from '../../store/slices/sessionSlice';
+import { AppDispatch, RootState } from '../../store/store';
 
 export const SessionManagement: React.FC = () => {
-  const { showConfirm, showError } = useSweetAlert();
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const dispatch = useDispatch<AppDispatch>();
+  
+  // Redux state
+  const {
+    sessions,
+    pagination,
+    filters,
+    loading,
+    error,
+    creating,
+    updating,
+    deleting,
+    deleteOptions,
+    deleteOptionsLoading,
+    recurringDetails,
+    sessionForm,
+  } = useSelector((state: RootState) => state.session);
+
+  // Local state
   const [sessionDialog, setSessionDialog] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tabValue, setTabValue] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    total: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [selectedDeleteOption, setSelectedDeleteOption] = useState<string>('');
   
-  // Filters
-  const [filters, setFilters] = useState({
-    type: '',
-    isActive: '',
-    isRecurring: '',
-  });
-  
-  // Add Snackbar state
-  const [snackbar, setSnackbar] = useState({ 
-    open: false, 
-    message: '', 
-    severity: 'success' as 'success' | 'error' | 'warning' | 'info' 
-  });
-  
-  type SessionType = 'SPEAKING' | 'EVENT';
-  
-  const [sessionForm, setSessionForm] = useState<{
-    title: string;
-    description: string;
-    type: SessionType;
-    meetingUrl: string;
-    location: string;
-    scheduledAt: Date;
-    duration: number;
-    maxParticipants: number;
-    pointsRequired: number;
-    isActive: boolean;
-    isRecurring: boolean;
-    recurringWeeks: number;
-    updateAllRecurring: boolean;
-    }>({
-    title: '',
-    description: '',
-    type: 'SPEAKING',
-    meetingUrl: '',
-    location: '',
-    scheduledAt: new Date(),
-    duration: 30,
-    maxParticipants: 8,
-    pointsRequired: 0,
-    isActive: true,
-    isRecurring: false,
-    recurringWeeks: 4,
-    updateAllRecurring: false,
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
 
+  // Fetch sessions when component mounts or dependencies change
   useEffect(() => {
-    fetchSessions();
-  }, [pagination.page, pagination.limit, filters]);
+    const params = {
+      page: pagination.page,
+      limit: pagination.limit,
+      ...(filters.type && { type: filters.type }),
+      ...(filters.isActive !== '' && { isActive: filters.isActive }),
+      ...(filters.isRecurring !== '' && { isRecurring: filters.isRecurring }),
+    };
+    
+    dispatch(fetchSessions(params));
+  }, [dispatch, pagination.page, pagination.limit, filters]);
 
-  const fetchSessions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const params: any = { 
-        page: pagination.page,
-        limit: pagination.limit,
-      };
-
-      // Add filters if they are set
-      if (filters.type) params.type = filters.type;
-      if (filters.isActive !== '') params.isActive = filters.isActive;
-      if (filters.isRecurring !== '') params.isRecurring = filters.isRecurring;
-      
-      const response = await api.get('/admin/sessions/paginated', { params });
-      
-      const { sessions: sessionsData, pagination: paginationData } = response.data;
-      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
-      setPagination(paginationData);
-    } catch (error: any) {
-      console.error('Failed to fetch sessions:', error);
-      setError(error.response?.data?.error || 'Failed to load sessions');
-      setSessions([]);
-    } finally {
-      setLoading(false);
-    }
+  // Handle form changes
+  const handleFormChange = (field: string, value: any) => {
+    dispatch(updateForm({ [field]: value }));
   };
 
+  // Handle save session
   const handleSaveSession = async () => {
     try {
       const payload = {
@@ -200,144 +151,144 @@ export const SessionManagement: React.FC = () => {
       };
 
       if (editingSession) {
-        if (editingSession.isRecurring && sessionForm.updateAllRecurring) {
-          payload.updateAllRecurring = true;
-        }
+        await dispatch(updateSession({ 
+          sessionId: editingSession.id, 
+          sessionData: payload 
+        })).unwrap();
         
-        await api.put(`/admin/sessions/${editingSession.id}`, payload);
-        setSnackbar({ 
-          open: true, 
-          message: editingSession.isRecurring && sessionForm.updateAllRecurring 
-            ? 'All recurring sessions updated successfully!' 
-            : 'Session updated successfully!', 
-          severity: 'success' 
+        setSnackbar({
+          open: true,
+          message: editingSession.isRecurring && sessionForm.updateAllRecurring
+            ? 'All recurring sessions updated successfully!'
+            : 'Session updated successfully!',
+          severity: 'success'
         });
       } else {
-        const response = await api.post('/admin/sessions', payload);
+        const result = await dispatch(createSession(payload)).unwrap();
         
-        if (response.data.sessions && response.data.sessions.length > 1) {
-          setSnackbar({ 
-            open: true, 
-            message: `Created ${response.data.sessions.length} recurring sessions successfully!`, 
-            severity: 'success' 
+        if (result.sessions && result.sessions.length > 1) {
+          setSnackbar({
+            open: true,
+            message: `Created ${result.sessions.length} recurring sessions successfully!`,
+            severity: 'success'
           });
         } else {
-          setSnackbar({ 
-            open: true, 
-            message: 'Session created successfully!', 
-            severity: 'success' 
+          setSnackbar({
+            open: true,
+            message: 'Session created successfully!',
+            severity: 'success'
           });
         }
       }
 
       setSessionDialog(false);
       setEditingSession(null);
-      resetForm();
-      fetchSessions();
+      dispatch(resetForm());
+      
+      // Refresh sessions list
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        ...(filters.type && { type: filters.type }),
+        ...(filters.isActive !== '' && { isActive: filters.isActive }),
+        ...(filters.isRecurring !== '' && { isRecurring: filters.isRecurring }),
+      };
+      dispatch(fetchSessions(params));
+      
     } catch (error: any) {
-      console.error('Failed to save session:', error);
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.error || 'Failed to save session', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error || 'Failed to save session',
+        severity: 'error'
       });
     }
   };
 
-  const handleDeleteSession = async (sessionId: string, session: Session) => {
-    let confirmOptions = {
-      title: 'Delete Session',
-      text: 'Are you sure you want to delete this session? This action cannot be undone.',
-      icon: 'warning' as const,
-      confirmButtonText: 'Yes, delete it',
-      cancelButtonText: 'Cancel',
-    };
-
-    // If it's a recurring session parent, ask about deleting all
-    if (session.isRecurring && !session.recurringParentId) {
-      confirmOptions = {
-        title: 'Delete Recurring Session Series',
-        text: `This is a recurring session with ${session.recurringWeeks || 'multiple'} sessions. Do you want to delete the entire series or just this session?`,
-        icon: 'warning' as const,
-        confirmButtonText: 'Delete Series',
-        cancelButtonText: 'Cancel',
-      };
+  // Handle delete session
+  const handleDeleteSession = async (session: Session) => {
+    try {
+      setSessionToDelete(session);
+      setSelectedDeleteOption('');
+      
+      // Fetch delete options
+      await dispatch(fetchDeleteOptions(session.id)).unwrap();
+      setDeleteDialog(true);
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error || 'Failed to load delete options',
+        severity: 'error'
+      });
     }
+  };
 
-    const result = await showConfirm(confirmOptions);
+  // Execute delete
+  const executeDelete = async () => {
+    if (!sessionToDelete || !selectedDeleteOption) return;
 
-    if (result.isConfirmed) {
-      try {
-        const deleteParams: any = {};
-        
-        // If it's a recurring parent and user confirmed, delete all
-        if (session.isRecurring && !session.recurringParentId) {
-          deleteParams.deleteAllRecurring = 'true';
-        }
+    try {
+      const result = await dispatch(deleteSession({
+        sessionId: sessionToDelete.id,
+        deleteOption: selectedDeleteOption
+      })).unwrap();
 
-        await api.delete(`/admin/sessions/${sessionId}`, { params: deleteParams });
-        
-        setSnackbar({ 
-          open: true, 
-          message: session.isRecurring && !session.recurringParentId 
-            ? 'Recurring session series deleted successfully!' 
-            : 'Session deleted successfully!', 
-          severity: 'success' 
-        });
-        fetchSessions();
-      } catch (error: any) {
-        console.error('Failed to delete session:', error);
-        setSnackbar({ 
-          open: true, 
-          message: error.response?.data?.error || 'Failed to delete session', 
-          severity: 'error' 
-        });
+      let message = 'Session deleted successfully';
+      if (result.deletedParentAndPromoted) {
+        message = `Parent deleted and next session promoted to parent`;
+      } else if (result.deletedRecurringSeries) {
+        message = `Entire series deleted (${result.deletedCount} sessions)`;
+      } else if (result.deletedFromSeries) {
+        message = 'Session removed from series';
       }
+
+      setSnackbar({
+        open: true,
+        message,
+        severity: 'success'
+      });
+
+      setDeleteDialog(false);
+      setSessionToDelete(null);
+      dispatch(clearDeleteOptions());
+      
+      // Refresh sessions list
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        ...(filters.type && { type: filters.type }),
+        ...(filters.isActive !== '' && { isActive: filters.isActive }),
+        ...(filters.isRecurring !== '' && { isRecurring: filters.isRecurring }),
+      };
+      dispatch(fetchSessions(params));
+      
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error || 'Failed to delete session',
+        severity: 'error'
+      });
     }
   };
 
-  const resetForm = () => {
-    setSessionForm({
-      title: '',
-      description: '',
-      type: 'SPEAKING',
-      meetingUrl: '',
-      location: '',
-      scheduledAt: new Date(),
-      duration: 30,
-      maxParticipants: 8,
-      pointsRequired: 0,
-      isActive: true,
-      isRecurring: false,
-      recurringWeeks: 4,
-      updateAllRecurring: false,
-    });
-  };
-
+  // Handle pagination
   const handlePageChange = (event: React.ChangeEvent<unknown>, newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    dispatch(setPage(newPage));
   };
 
-  const handleLimitChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newLimit = parseInt(event.target.value, 10);
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+  const handleLimitChange = (newLimit: number) => {
+    dispatch(setLimit(newLimit));
   };
 
+  // Handle filters
   const handleFilterChange = (filterName: string, value: string) => {
-    setFilters(prev => ({ ...prev, [filterName]: value }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when filtering
+    dispatch(setFilter({ filterName, value }));
   };
 
-  const clearFilters = () => {
-    setFilters({
-      type: '',
-      isActive: '',
-      isRecurring: '',
-    });
-    setPagination(prev => ({ ...prev, page: 1 }));
+  const handleClearFilters = () => {
+    dispatch(clearFilters());
   };
 
-  // Function to format date without seconds
+  // Helper functions (same as before)
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
@@ -349,14 +300,11 @@ export const SessionManagement: React.FC = () => {
     });
   };
 
-   const getRelativeTime = (dateString: string) => {
+  const getRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-
-    // Set both dates to midnight
     date.setHours(0, 0, 0, 0);
     now.setHours(0, 0, 0, 0);
-
     const diffMs = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
@@ -367,7 +315,6 @@ export const SessionManagement: React.FC = () => {
     return `In ${Math.ceil(diffDays / 7)} weeks`;
   };
 
-  // Function to get session status color and text
   const getSessionStatus = (session: Session) => {
     const now = new Date();
     const sessionDateTime = new Date(session.scheduledAt);
@@ -394,22 +341,32 @@ export const SessionManagement: React.FC = () => {
     return { color: 'default', text: 'Completed', icon: <Schedule /> };
   };
 
-  // Calculate enhanced stats
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'low': return 'success';
+      case 'medium': return 'warning';
+      case 'high': return 'error';
+      default: return 'default';
+    }
+  };
+
+  // Calculate stats
   const totalBookings = sessions.reduce((sum, s) => sum + s.currentParticipants, 0);
   const averageFillRate = sessions.length > 0
     ? Math.round(
-        sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
-        sessions.length
-      )
+      sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
+      sessions.length
+    )
     : 0;
   const recurringCount = sessions.filter(s => s.isRecurring).length;
   const activeFiltersCount = Object.values(filters).filter(f => f !== '').length;
 
-  if (loading) {
+  if (loading && sessions.length === 0) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <Typography variant="h6">Loading sessions...</Typography>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ ml: 2 }}>Loading sessions...</Typography>
         </Box>
       </Container>
     );
@@ -418,13 +375,14 @@ export const SessionManagement: React.FC = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+        {/* Header */}
+        <Stack direction={isMobile ? "column" : "row"} gap={1} justifyContent="space-between" alignItems="center" mb={4}>
           <Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               Session Management
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Manage speaking sessions and special events with pagination and recurring options
+              Manage speaking sessions and special events with advanced recurring options
             </Typography>
           </Box>
           <Stack direction="row" spacing={2}>
@@ -432,7 +390,8 @@ export const SessionManagement: React.FC = () => {
               variant="outlined"
               startIcon={<Mic />}
               onClick={() => {
-                setSessionForm({ ...sessionForm, type: 'SPEAKING' });
+                dispatch(resetForm());
+                handleFormChange('type', 'SPEAKING');
                 setSessionDialog(true);
               }}
             >
@@ -442,7 +401,8 @@ export const SessionManagement: React.FC = () => {
               variant="contained"
               startIcon={<Event />}
               onClick={() => {
-                setSessionForm({ ...sessionForm, type: 'EVENT' });
+                dispatch(resetForm());
+                handleFormChange('type', 'EVENT');
                 setSessionDialog(true);
               }}
               sx={{ color: "white" }}
@@ -453,12 +413,12 @@ export const SessionManagement: React.FC = () => {
         </Stack>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => dispatch(clearError())}>
             {error}
           </Alert>
         )}
 
-        {/* Enhanced Stats */}
+        {/* Stats Cards */}
         <Grid container spacing={3} mb={4}>
           <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
             <Card sx={{ height: '100%' }}>
@@ -572,7 +532,7 @@ export const SessionManagement: React.FC = () => {
           </Grid>
         </Grid>
 
-        {/* Filters and Pagination Controls */}
+        {/* Filters */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Stack spacing={3}>
@@ -581,12 +541,12 @@ export const SessionManagement: React.FC = () => {
                   Filter & Pagination
                 </Typography>
                 {activeFiltersCount > 0 && (
-                  <Button size="small" onClick={clearFilters}>
+                  <Button size="small" onClick={handleClearFilters}>
                     Clear Filters ({activeFiltersCount})
                   </Button>
                 )}
               </Stack>
-              
+
               <Grid container spacing={2} alignItems="center">
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <FormControl fullWidth size="small">
@@ -602,7 +562,7 @@ export const SessionManagement: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Status</InputLabel>
@@ -617,7 +577,7 @@ export const SessionManagement: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Recurring</InputLabel>
@@ -632,17 +592,20 @@ export const SessionManagement: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="Items per page"
-                    value={pagination.limit}
-                    onChange={handleLimitChange}
-                    inputProps={{ min: 5, max: 50 }}
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Items per page</InputLabel>
+                    <Select
+                      value={pagination.limit}
+                      label="Items per page"
+                      onChange={(e) => handleLimitChange(Number(e.target.value))}
+                    >
+                      <MenuItem value={10}>10</MenuItem>
+                      <MenuItem value={20}>20</MenuItem>
+                      <MenuItem value={30}>30</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
               </Grid>
             </Stack>
@@ -672,7 +635,7 @@ export const SessionManagement: React.FC = () => {
                   No sessions found
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {activeFiltersCount > 0 
+                  {activeFiltersCount > 0
                     ? 'Try adjusting your filters or create a new session.'
                     : 'Create your first session to get started!'
                   }
@@ -688,8 +651,8 @@ export const SessionManagement: React.FC = () => {
               </Alert>
             ) : (
               <>
-                <TableContainer>
-                  <Table>
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: { xs: 600, md: 800 } }}>
                     <TableHead>
                       <TableRow>
                         <TableCell>Session Details</TableCell>
@@ -707,7 +670,7 @@ export const SessionManagement: React.FC = () => {
                         const isPast = new Date(session.scheduledAt) < new Date();
                         const status = getSessionStatus(session);
                         const fillPercentage = (session.currentParticipants / session.maxParticipants) * 100;
-                        
+
                         return (
                           <TableRow key={session.id} sx={{ opacity: isPast ? 0.8 : 1 }}>
                             <TableCell>
@@ -849,23 +812,10 @@ export const SessionManagement: React.FC = () => {
                                     size="small"
                                     onClick={() => {
                                       setEditingSession(session);
-                                      setSessionForm({
-                                        title: session.title,
-                                        description: session.description,
-                                        type: session.type,
-                                        meetingUrl: session.meetingUrl || '',
-                                        location: session.location || '',
-                                        scheduledAt: new Date(session.scheduledAt),
-                                        duration: session.duration,
-                                        maxParticipants: session.maxParticipants,
-                                        pointsRequired: session.pointsRequired,
-                                        isActive: session.isActive,
-                                        isRecurring: session.isRecurring,
-                                        recurringWeeks: session.recurringWeeks || 4,
-                                        updateAllRecurring: false,
-                                      });
+                                      dispatch(setFormFromSession(session));
                                       setSessionDialog(true);
                                     }}
+                                    disabled={updating}
                                   >
                                     <Edit />
                                   </IconButton>
@@ -874,7 +824,8 @@ export const SessionManagement: React.FC = () => {
                                   <IconButton
                                     size="small"
                                     color="error"
-                                    onClick={() => handleDeleteSession(session.id, session)}
+                                    onClick={() => handleDeleteSession(session)}
+                                    disabled={deleting}
                                   >
                                     <Delete />
                                   </IconButton>
@@ -887,7 +838,7 @@ export const SessionManagement: React.FC = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
-                
+
                 {/* Bottom Pagination */}
                 <Stack direction="row" justifyContent="center" mt={3}>
                   <Pagination
@@ -905,23 +856,169 @@ export const SessionManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Enhanced Session Dialog */}
-        <Dialog 
-          open={sessionDialog} 
+        {/* Enhanced Delete Dialog */}
+        <Dialog
+          open={deleteDialog}
+          onClose={() => {
+            setDeleteDialog(false);
+            setSessionToDelete(null);
+            dispatch(clearDeleteOptions());
+          }}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Warning color="warning" />
+              <Typography variant="h6">
+                Delete Session: {sessionToDelete?.title}
+              </Typography>
+            </Stack>
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ pt: 2 }}>
+              {sessionToDelete?.isRecurring && (
+                <Alert severity="info">
+                  <Typography variant="body2" gutterBottom>
+                    This is a recurring session. You have multiple deletion options:
+                  </Typography>
+                </Alert>
+              )}
+
+              {deleteOptionsLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <RadioGroup
+                  value={selectedDeleteOption}
+                  onChange={(e) => setSelectedDeleteOption(e.target.value)}
+                >
+                  {deleteOptions.map((option) => (
+                    <Card 
+                      key={option.value} 
+                      variant="outlined" 
+                      sx={{ 
+                        mb: 1,
+                        border: selectedDeleteOption === option.value ? 2 : 1,
+                        borderColor: selectedDeleteOption === option.value ? 'primary.main' : 'grey.300'
+                      }}
+                    >
+                      <CardContent sx={{ py: 2 }}>
+                        <FormControlLabel
+                          value={option.value}
+                          control={<Radio />}
+                          label={
+                            <Stack spacing={1} sx={{ ml: 1 }}>
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                {option.value === 'promote' && <Upgrade />}
+                                {option.value === 'deleteAll' && <DeleteSweep />}
+                                {(option.value === 'single' || option.value === 'child') && <Delete />}
+                                <Typography variant="body1" fontWeight={600}>
+                                  {option.label}
+                                </Typography>
+                                <Chip 
+                                  label={option.severity.toUpperCase()} 
+                                  size="small" 
+                                  color={getSeverityColor(option.severity) as any}
+                                  sx={{ color: 'white' }}
+                                />
+                                {option.recommended && (
+                                  <Chip 
+                                    label="RECOMMENDED" 
+                                    size="small" 
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                )}
+                              </Stack>
+                              <Typography variant="body2" color="text.secondary">
+                                {option.description}
+                              </Typography>
+                            </Stack>
+                          }
+                          sx={{ alignItems: 'flex-start', margin: 0 }}
+                        />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </RadioGroup>
+              )}
+
+              {recurringDetails?.recurringDetails && (
+                <Card variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+                  <CardContent>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Series Information:
+                    </Typography>
+                    <List dense>
+                      <ListItem>
+                        <ListItemText 
+                          primary="Total Sessions in Series" 
+                          secondary={recurringDetails.recurringDetails.totalSessions}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText 
+                          primary="Child Sessions" 
+                          secondary={recurringDetails.recurringDetails.childrenCount}
+                        />
+                      </ListItem>
+                      {recurringDetails.recurringDetails.nextInLine && (
+                        <ListItem>
+                          <ListItemText 
+                            primary="Next Session to be Promoted" 
+                            secondary={`"${recurringDetails.recurringDetails.nextInLine.title}" on ${formatDateTime(recurringDetails.recurringDetails.nextInLine.scheduledAt)}`}
+                          />
+                        </ListItem>
+                      )}
+                    </List>
+                  </CardContent>
+                </Card>
+              )}
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              onClick={() => {
+                setDeleteDialog(false);
+                setSessionToDelete(null);
+                dispatch(clearDeleteOptions());
+              }}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={executeDelete}
+              disabled={!selectedDeleteOption || deleting}
+              sx={{ color: "white" }}
+              startIcon={deleting ? <CircularProgress size={16} /> : null}
+            >
+              {deleting ? 'Deleting...' : 'Confirm Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Session Create/Edit Dialog - Same as before but using Redux form state */}
+        <Dialog
+          open={sessionDialog}
           onClose={() => {
             setSessionDialog(false);
             setEditingSession(null);
-            resetForm();
-          }} 
-          maxWidth="md" 
+            dispatch(resetForm());
+          }}
+          maxWidth="md"
           fullWidth
         >
           <DialogTitle>
             <Stack direction="row" spacing={2} alignItems="center">
               {sessionForm.type === 'SPEAKING' ? <Mic /> : <Event />}
               <Typography variant="h6">
-                {editingSession 
-                  ? `Edit ${sessionForm.type === 'SPEAKING' ? 'Speaking Session' : 'Special Event'}` 
+                {editingSession
+                  ? `Edit ${sessionForm.type === 'SPEAKING' ? 'Speaking Session' : 'Special Event'}`
                   : `Create New ${sessionForm.type === 'SPEAKING' ? 'Speaking Session' : 'Special Event'}`
                 }
               </Typography>
@@ -942,23 +1039,23 @@ export const SessionManagement: React.FC = () => {
                 fullWidth
                 label={sessionForm.type === 'SPEAKING' ? 'Session Title' : 'Event Title'}
                 value={sessionForm.title}
-                onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
+                onChange={(e) => handleFormChange('title', e.target.value)}
                 required
-                placeholder={sessionForm.type === 'SPEAKING' ? 
-                  'e.g., Morning Conversation Practice' : 
+                placeholder={sessionForm.type === 'SPEAKING' ?
+                  'e.g., Morning Conversation Practice' :
                   'e.g., Cultural Exchange Workshop'
                 }
               />
-                              <TextField
+              <TextField
                 fullWidth
                 multiline
                 rows={3}
                 label="Description"
                 value={sessionForm.description}
-                onChange={(e) => setSessionForm({ ...sessionForm, description: e.target.value })}
+                onChange={(e) => handleFormChange('description', e.target.value)}
                 required
-                placeholder={sessionForm.type === 'SPEAKING' ? 
-                  'Describe what participants will practice...' : 
+                placeholder={sessionForm.type === 'SPEAKING' ?
+                  'Describe what participants will practice...' :
                   'Describe the special event activities...'
                 }
               />
@@ -967,7 +1064,7 @@ export const SessionManagement: React.FC = () => {
                 <Select
                   value={sessionForm.type}
                   label="Session Type"
-                  onChange={(e) => setSessionForm({ ...sessionForm, type: e.target.value as any })}
+                  onChange={(e) => handleFormChange('type', e.target.value)}
                 >
                   <MenuItem value="SPEAKING">
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -983,13 +1080,13 @@ export const SessionManagement: React.FC = () => {
                   </MenuItem>
                 </Select>
               </FormControl>
-              
+
               {sessionForm.type === 'SPEAKING' ? (
                 <TextField
                   fullWidth
                   label="Meeting URL"
                   value={sessionForm.meetingUrl}
-                  onChange={(e) => setSessionForm({ ...sessionForm, meetingUrl: e.target.value })}
+                  onChange={(e) => handleFormChange('meetingUrl', e.target.value)}
                   helperText="Google Meet URL will be generated if left empty"
                   placeholder="https://meet.google.com/..."
                 />
@@ -998,7 +1095,7 @@ export const SessionManagement: React.FC = () => {
                   fullWidth
                   label="Event Location"
                   value={sessionForm.location}
-                  onChange={(e) => setSessionForm({ ...sessionForm, location: e.target.value })}
+                  onChange={(e) => handleFormChange('location', e.target.value)}
                   placeholder="e.g., Community Center Room A, or Online"
                 />
               )}
@@ -1006,9 +1103,7 @@ export const SessionManagement: React.FC = () => {
               <DateTimePicker
                 label="Date & Time"
                 value={sessionForm.scheduledAt}
-                onChange={(newValue) =>
-                  newValue && setSessionForm({ ...sessionForm, scheduledAt: newValue })
-                }
+                onChange={(newValue) => newValue && handleFormChange('scheduledAt', newValue)}
                 slotProps={{
                   textField: {
                     fullWidth: true,
@@ -1024,7 +1119,7 @@ export const SessionManagement: React.FC = () => {
                     type="number"
                     label="Duration (minutes)"
                     value={sessionForm.duration}
-                    onChange={(e) => setSessionForm({ ...sessionForm, duration: parseInt(e.target.value) || 30 })}
+                    onChange={(e) => handleFormChange('duration', parseInt(e.target.value) || 30)}
                     inputProps={{ min: 15, max: 180 }}
                     helperText="15-180 minutes"
                   />
@@ -1035,7 +1130,7 @@ export const SessionManagement: React.FC = () => {
                     type="number"
                     label="Max Participants"
                     value={sessionForm.maxParticipants}
-                    onChange={(e) => setSessionForm({ ...sessionForm, maxParticipants: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => handleFormChange('maxParticipants', parseInt(e.target.value) || 1)}
                     inputProps={{ min: 1, max: 100 }}
                     helperText="1-100 people"
                   />
@@ -1047,7 +1142,7 @@ export const SessionManagement: React.FC = () => {
                 type="number"
                 label="Points Required"
                 value={sessionForm.pointsRequired}
-                onChange={(e) => setSessionForm({ ...sessionForm, pointsRequired: parseInt(e.target.value) || 0 })}
+                onChange={(e) => handleFormChange('pointsRequired', parseInt(e.target.value) || 0)}
                 helperText="Set to 0 for free sessions. Premium sessions typically cost 10-50 points."
                 inputProps={{ min: 0 }}
               />
@@ -1060,7 +1155,7 @@ export const SessionManagement: React.FC = () => {
                     control={
                       <Switch
                         checked={sessionForm.isRecurring}
-                        onChange={(e) => setSessionForm({ ...sessionForm, isRecurring: e.target.checked })}
+                        onChange={(e) => handleFormChange('isRecurring', e.target.checked)}
                       />
                     }
                     label={
@@ -1082,7 +1177,7 @@ export const SessionManagement: React.FC = () => {
                       type="number"
                       label="Number of Weeks"
                       value={sessionForm.recurringWeeks}
-                      onChange={(e) => setSessionForm({ ...sessionForm, recurringWeeks: parseInt(e.target.value) || 4 })}
+                      onChange={(e) => handleFormChange('recurringWeeks', parseInt(e.target.value) || 4)}
                       inputProps={{ min: 2, max: 52 }}
                       helperText={`Will create ${sessionForm.recurringWeeks} sessions, one each week starting from the selected date`}
                     />
@@ -1098,7 +1193,7 @@ export const SessionManagement: React.FC = () => {
                     control={
                       <Checkbox
                         checked={sessionForm.updateAllRecurring}
-                        onChange={(e) => setSessionForm({ ...sessionForm, updateAllRecurring: e.target.checked })}
+                        onChange={(e) => handleFormChange('updateAllRecurring', e.target.checked)}
                       />
                     }
                     label={
@@ -1120,7 +1215,7 @@ export const SessionManagement: React.FC = () => {
                 control={
                   <Switch
                     checked={sessionForm.isActive}
-                    onChange={(e) => setSessionForm({ ...sessionForm, isActive: e.target.checked })}
+                    onChange={(e) => handleFormChange('isActive', e.target.checked)}
                   />
                 }
                 label={
@@ -1135,26 +1230,28 @@ export const SessionManagement: React.FC = () => {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button 
+            <Button
               onClick={() => {
                 setSessionDialog(false);
                 setEditingSession(null);
-                resetForm();
+                dispatch(resetForm());
               }}
+              disabled={creating || updating}
             >
               Cancel
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleSaveSession}
-              disabled={!sessionForm.title || !sessionForm.description}
+              disabled={!sessionForm.title || !sessionForm.description || creating || updating}
               sx={{ color: "white" }}
-              startIcon={editingSession ? <Edit /> : <Add />}
+              startIcon={creating || updating ? <CircularProgress size={16} /> : (editingSession ? <Edit /> : <Add />)}
             >
-              {editingSession 
-                ? (editingSession.isRecurring && sessionForm.updateAllRecurring ? 'Update Series' : 'Update Session')
-                : (sessionForm.isRecurring ? `Create ${sessionForm.recurringWeeks} Sessions` : 'Create Session')
-              }
+              {creating || updating ? (editingSession ? 'Updating...' : 'Creating...') : (
+                editingSession
+                  ? (editingSession.isRecurring && sessionForm.updateAllRecurring ? 'Update Series' : 'Update Session')
+                  : (sessionForm.isRecurring ? `Create ${sessionForm.recurringWeeks} Sessions` : 'Create Session')
+              )}
             </Button>
           </DialogActions>
         </Dialog>
