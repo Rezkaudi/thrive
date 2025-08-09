@@ -31,6 +31,8 @@ import {
   RadioGroup,
   Radio,
   Alert,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Add,
@@ -94,6 +96,8 @@ export const CourseManagement: React.FC = () => {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [bulkAudioDialog, setBulkAudioDialog] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Drag and drop state
   const [draggedLesson, setDraggedLesson] = useState<Lesson | null>(null);
@@ -483,9 +487,10 @@ export const CourseManagement: React.FC = () => {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Stack
-          direction="row"
+          direction={isMobile ? "column" : "row"}
           justifyContent="space-between"
           alignItems="center"
+          gap={2}
           mb={4}
         >
           <Box>
@@ -897,8 +902,9 @@ export const CourseManagement: React.FC = () => {
               {lessonForm.lessonType === "KEYWORDS" && (
                 <Box>
                   <Stack
-                    direction="row"
+                    direction={isMobile ? "column" : "row"}
                     justifyContent="space-between"
+                    gap={1}
                     alignItems="center"
                     mb={2}
                   >
@@ -1077,7 +1083,7 @@ export const CourseManagement: React.FC = () => {
                     <Paper sx={{ p: 2, mt: 2, bgcolor: "grey.50" }}>
                       <Stack spacing={1}>
                         <Typography variant="subtitle2">Summary</Typography>
-                        <Stack direction="row" spacing={2}>
+                        <Stack direction={isMobile ? "column" : "row"} spacing={2}>
                           <Chip
                             label={`${lessonForm.keywords.length} total keywords`}
                             size="small"

@@ -83,21 +83,21 @@ export const BulkAudioManager: React.FC<BulkAudioManagerProps> = ({
       if (parts.length >= 2) {
         const filename = parts[0];
         const url = parts[1];
-        
+
         // Try to extract keyword and language from filename
         const nameWithoutExt = filename.replace(/\.(mp3|wav|m4a)$/i, '');
         const isJapanese = nameWithoutExt.match(/(_jp|_japanese|_ja)$/i);
         const isEnglish = nameWithoutExt.match(/(_en|_english)$/i);
-        
+
         if (isJapanese || isEnglish) {
           const keyword = nameWithoutExt.replace(/(_jp|_japanese|_ja|_en|_english)$/i, '');
-          
+
           let mapping = mappings.find(m => m.keyword.toLowerCase() === keyword.toLowerCase());
           if (!mapping) {
             mapping = { keyword, japaneseAudioUrl: '', englishAudioUrl: '' };
             mappings.push(mapping);
           }
-          
+
           if (isJapanese) {
             mapping.japaneseAudioUrl = url;
           } else if (isEnglish) {
@@ -108,28 +108,28 @@ export const BulkAudioManager: React.FC<BulkAudioManagerProps> = ({
     });
 
     setAudioMappings(mappings);
-    
+
     // Auto-match with keywords if enabled
     if (autoMatch) {
       autoMatchKeywords(mappings);
     }
-    
+
     setProcessing(false);
   };
 
   // Auto-match audio files with keywords
   const autoMatchKeywords = (mappings: AudioMapping[]) => {
     const updatedKeywords = [...keywords];
-    
+
     mappings.forEach(mapping => {
       // Try to find matching keyword by Japanese or English text
-      const keywordIndex = updatedKeywords.findIndex(k => 
+      const keywordIndex = updatedKeywords.findIndex(k =>
         k.japaneseText.toLowerCase().includes(mapping.keyword.toLowerCase()) ||
         k.englishText.toLowerCase().includes(mapping.keyword.toLowerCase()) ||
         mapping.keyword.toLowerCase().includes(k.japaneseText.toLowerCase()) ||
         mapping.keyword.toLowerCase().includes(k.englishText.toLowerCase())
       );
-      
+
       if (keywordIndex !== -1) {
         if (mapping.japaneseAudioUrl) {
           updatedKeywords[keywordIndex].japaneseAudioUrl = mapping.japaneseAudioUrl;
@@ -139,7 +139,7 @@ export const BulkAudioManager: React.FC<BulkAudioManagerProps> = ({
         }
       }
     });
-    
+
     onApply(updatedKeywords);
   };
 
@@ -182,15 +182,15 @@ sayonara_en.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_en.mp3`);
           <Typography variant="h6">Bulk Audio Manager</Typography>
         </Stack>
       </DialogTitle>
-      
+
       <DialogContent>
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 3 }}>
-          <Tab label="Bulk Audio URLs" />
+          {/* <Tab label="Bulk Audio URLs" /> */}
           <Tab label="CSV Import" />
           <Tab label="Manual Mapping" />
         </Tabs>
 
-        {activeTab === 0 && (
+        {/* {activeTab === 0 && (
           <Box>
             <Alert severity="info" sx={{ mb: 2 }}>
               Paste your audio file URLs in the format: <strong>filename URL</strong> (one per line).
@@ -281,9 +281,9 @@ arigatou_jp.mp3 https://s3.../arigatou_jp.mp3
               )}
             </Stack>
           </Box>
-        )}
+        )} */}
 
-        {activeTab === 1 && (
+        {activeTab === 0 && (
           <Box>
             <CSVKeywordImport
               onImport={(importedKeywords) => {
@@ -294,7 +294,7 @@ arigatou_jp.mp3 https://s3.../arigatou_jp.mp3
           </Box>
         )}
 
-        {activeTab === 2 && (
+        {activeTab === 1 && (
           <Box>
             <Alert severity="info" sx={{ mb: 2 }}>
               Review and manually adjust audio file assignments for each keyword.
