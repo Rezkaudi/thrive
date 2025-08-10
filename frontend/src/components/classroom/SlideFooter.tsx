@@ -57,7 +57,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         onClick={onPrevious}
         disabled={currentSlide === 0}
         variant="outlined"
-        sx={{ 
+        sx={{
           borderRadius: 2,
           minWidth: 120,
           '&:disabled': {
@@ -99,7 +99,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
                       : 'grey.500'
                 }
               }}
-              onClick={() => onSlideClick(index)}
+              onClick={() => (index)}
             />
           </Tooltip>
         ))}
