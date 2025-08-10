@@ -107,7 +107,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
                       p: 3,
                     }}
                   >
-                    <Typography variant="h5" fontWeight={600} gutterBottom>
+                    <Typography variant="h4" fontWeight={600} gutterBottom>
                       {item.front}
                     </Typography>
                     <Chip

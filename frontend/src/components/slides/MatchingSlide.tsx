@@ -156,7 +156,7 @@ export const MatchingSlide: React.FC<SlideComponentProps> = ({
                       transition: "all 0.3s ease",
                     }}
                   >
-                    <Typography variant="h5" fontWeight={500}>
+                    <Typography variant="h4" fontWeight={500}>
                       {item.right}
                     </Typography>
                     {isConnected && (
