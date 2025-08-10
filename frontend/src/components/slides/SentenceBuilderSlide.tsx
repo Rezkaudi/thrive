@@ -1,5 +1,4 @@
-// components/slides/SentenceBuilderSlide.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -24,6 +23,18 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const showSlideFeeback = showFeedback[slideId];
   const validation = validationResults[slideId];
   const item = content.items?.[0];
+
+  // Auto-reset effect when validation shows error
+  useEffect(() => {
+    if (validation?.type === "error" && showSlideFeeback) {
+      const resetTimer = setTimeout(() => {
+        // Clear the selected words to reset the activity
+        setSelectedWords([]);
+      }, 2000); // Reset after 2 seconds
+
+      return () => clearTimeout(resetTimer);
+    }
+  }, [validation, showSlideFeeback]);
 
   const handleWordClick = (word: string) => {
     if (selectedWords.includes(word)) {
@@ -244,6 +255,11 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
             sx={{ mt: 3, borderRadius: 2, fontSize: "1rem" }}
           >
             {validation.message}
+            {validation.type === "error" && (
+              <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+                Activity will reset automatically in 2 seconds...
+              </Typography>
+            )}
           </Alert>
         </Fade>
       )}

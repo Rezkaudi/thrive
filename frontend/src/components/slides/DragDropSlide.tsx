@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -27,6 +27,19 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
   const showSlideFeeback = showFeedback[slideId];
   const validation = validationResults[slideId];
 
+  // Auto-reset effect when validation shows error
+  useEffect(() => {
+    if (validation?.type === "error" && showSlideFeeback) {
+      const resetTimer = setTimeout(() => {
+        // Clear the user's answers to reset the activity
+        setInteractiveAnswers((prev) => ({ ...prev, [slideId]: {} }));
+        setDraggedItem(null);
+      }, 2000); // Reset after 2 seconds
+
+      return () => clearTimeout(resetTimer);
+    }
+  }, [validation, showSlideFeeback, slideId, setInteractiveAnswers]);
+
   const handleDragStart = (e: React.DragEvent, item: any) => {
     setDraggedItem(item);
     e.dataTransfer.effectAllowed = "move";
@@ -54,6 +67,11 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       }, {}) || {};
 
     checkAnswer(slideId, userAnswer, correctAnswer, "drag-drop");
+  };
+
+  const handleReset = () => {
+    setInteractiveAnswers((prev) => ({ ...prev, [slideId]: {} }));
+    setDraggedItem(null);
   };
 
   return (
@@ -199,7 +217,20 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         </Grid>
       </Grid>
 
-      <Box sx={{ textAlign: "center" }}>
+      <Stack direction="row" spacing={2} justifyContent="center">
+        <Button
+          variant="outlined"
+          size="large"
+          onClick={handleReset}
+          sx={{
+            px: 4,
+            py: 2,
+            fontSize: "1rem",
+            borderRadius: 3,
+          }}
+        >
+          🔄 Reset
+        </Button>
         <Button
           variant="contained"
           size="large"
@@ -218,7 +249,7 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
           Check Answers ({Object.keys(userAnswer).length}/
           {content.items?.length || 0})
         </Button>
-      </Box>
+      </Stack>
 
       {showSlideFeeback && validation && (
         <Fade in>
@@ -236,6 +267,11 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
             }
           >
             {validation.message}
+            {validation.type === "error" && (
+              <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+                Activity will reset automatically in 2 seconds...
+              </Typography>
+            )}
           </Alert>
         </Fade>
       )}
