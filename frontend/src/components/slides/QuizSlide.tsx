@@ -1,3 +1,5 @@
+// Updated QuizSlide.tsx to properly handle quiz validation
+
 import React from "react";
 import {
   Box,
@@ -10,8 +12,9 @@ import {
   Radio,
   Chip,
   Fade,
+  Paper,
 } from "@mui/material";
-import { CheckCircle, Error } from "@mui/icons-material";
+import { CheckCircle, Error, Quiz as QuizIcon } from "@mui/icons-material";
 import { SlideComponentProps } from "../../types/slide.types";
 
 export const QuizSlide: React.FC<SlideComponentProps> = ({
@@ -27,6 +30,9 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
   const userAnswer = interactiveAnswers[quizId];
   const showQuizFeedback = showFeedback[quizId];
   const validation = validationResults[quizId];
+
+  // Check if quiz is already completed correctly
+  const isQuizCompleted = validation?.type === 'success';
 
   const handleSingleChoiceAnswer = (answerIndex: string) => {
     setInteractiveAnswers((prev) => ({
@@ -61,12 +67,14 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
   const handleCheckQuizAnswer = () => {
     if (content.type === "single-choice") {
       const correctAnswer = content.correctAnswer;
+      // IMPORTANT: Pass 'quiz' as the interactiveType
       checkAnswer(quizId, userAnswer, correctAnswer, "quiz");
     } else if (content.type === "multiple-choice") {
       const correctAnswers = content.correctAnswers || [];
       const userAnswers = userAnswer || [];
       const sortedUserAnswers = [...userAnswers].sort();
       const sortedCorrectAnswers = [...correctAnswers].sort();
+      // IMPORTANT: Pass 'quiz' as the interactiveType
       checkAnswer(quizId, sortedUserAnswers, sortedCorrectAnswers, "quiz");
     }
   };
@@ -80,6 +88,26 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
       <Typography variant="h6" gutterBottom sx={{ mb: 4, lineHeight: 1.6 }}>
         {content.question}
       </Typography>
+
+      {/* Show completion status if quiz is already completed */}
+      {isQuizCompleted && (
+        <Paper
+          sx={{
+            p: 2,
+            mb: 3,
+            bgcolor: 'success.light',
+            color: 'success.contrastText',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <CheckCircle />
+          <Typography variant="body1" fontWeight={500}>
+            You've already completed this quiz correctly!
+          </Typography>
+        </Paper>
+      )}
 
       {/* Single Choice - Radio Buttons */}
       {content.type === "single-choice" && (
@@ -195,26 +223,29 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
           size="large"
           onClick={handleCheckQuizAnswer}
           disabled={
-            content.type === "single-choice"
+            isQuizCompleted || // Disable if already completed
+            (content.type === "single-choice"
               ? typeof userAnswer !== "number"
               : content.type === "multiple-choice" &&
-              (!userAnswer || userAnswer.length === 0)
+              (!userAnswer || userAnswer.length === 0))
           }
           sx={{
             px: 4,
             py: 1.5,
             fontSize: "1.1rem",
             borderRadius: 3,
-            background:
-              "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
+            background: isQuizCompleted
+              ? "linear-gradient(45deg, primary.main 30%, primary.light 90%)"
+              : "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
             "&:hover": {
-              background:
-                "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
+              background: isQuizCompleted
+                ? "linear-gradient(45deg, primary.main 30%, primary.light 90%)"
+                : "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
             },
           }}
         >
-          Check Answer
-          {content.type === "multiple-choice" && userAnswer && (
+          {isQuizCompleted ? "✓ Completed" : "Check Answer"}
+          {content.type === "multiple-choice" && userAnswer && !isQuizCompleted && (
             <Chip
               label={`${userAnswer.length} selected`}
               size="small"
@@ -268,6 +299,20 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
             )}
           </Alert>
         </Fade>
+      )}
+
+      {/* Navigation hint for incomplete quiz */}
+      {!isQuizCompleted && validation?.type === 'warning' && (
+        <Alert
+          severity="warning"
+          sx={{
+            mt: 2,
+            borderRadius: 2,
+          }}
+          icon={<QuizIcon />}
+        >
+          You must complete this quiz correctly before proceeding to the next slide.
+        </Alert>
       )}
     </Box>
   );
