@@ -45,7 +45,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
     <Box
       ref={containerRef}
       sx={{
-        height: isFullscreen ? "100vh" : "calc(100vh - 100px)",
+        // height: isFullscreen ? "100vh" : "calc(100vh - 100px)",
         display: "flex",
         flexDirection: "column",
         bgcolor: slide.backgroundColor || "background.default",
@@ -79,6 +79,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
       {/* Main Slide Content Area */}
       <Box
         sx={{
+          my: 3,
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
@@ -90,7 +91,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Box
           sx={{
             flexGrow: 1,
-            overflow: "auto",
+            overflow: "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

@@ -57,7 +57,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const profile = useSelector((state: RootState) => state.dashboard.data);
   const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
 
-  const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
+  // const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+
 
   const [mobileOpen, setMobileOpen] = useState<boolean>(() => {
     const stored = localStorage.getItem("mobileOpen");
@@ -70,16 +72,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   });
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElUser(event.currentTarget);
+    // setAnchorElUser(event.currentTarget);
+    setOpenMenu(prev => !prev)
   };
 
   const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
+    // setAnchorElUser(null);
+    setOpenMenu(prev => !prev)
   };
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/');
+    navigate('/login');
   };
 
   const handleDrawerToggle = () => {
@@ -255,7 +259,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <Menu
             sx={{ mt: '45px' }}
-            anchorEl={anchorElUser}
+            // anchorEl={anchorElUser}
             anchorOrigin={{
               vertical: 'top',
               horizontal: 'right',
@@ -265,7 +269,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               vertical: 'top',
               horizontal: 'right',
             }}
-            open={Boolean(anchorElUser)}
+            // open={Boolean(anchorElUser)}
+            open={openMenu}
             onClose={handleCloseUserMenu}
           >
             <MenuItem onClick={() => { navigate('/profile'); handleCloseUserMenu(); }}>

@@ -198,7 +198,7 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
             content.type === "single-choice"
               ? typeof userAnswer !== "number"
               : content.type === "multiple-choice" &&
-                (!userAnswer || userAnswer.length === 0)
+              (!userAnswer || userAnswer.length === 0)
           }
           sx={{
             px: 4,
