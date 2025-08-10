@@ -30,7 +30,7 @@ interface PlanOption {
         included: boolean;
     }[];
     recommended?: boolean;
-    stripePriceId: string;
+    // stripePriceId: string;
 }
 
 const plans: PlanOption[] = [
@@ -40,7 +40,7 @@ const plans: PlanOption[] = [
         price: 220000,
         currency: '¥',
         period: 'one-time',
-        stripePriceId: process.env.REACT_APP_STRIPE_ONE_TIME_PRICE_ID || 'price_premiere',
+        // stripePriceId: process.env.REACT_APP_STRIPE_ONE_TIME_PRICE_ID || 'price_premiere',
         features: [
             { title: 'Thrive in Japan Platform', included: true },
             { title: 'Speaking Sessions', included: false },
@@ -56,7 +56,6 @@ const plans: PlanOption[] = [
         price: 19980,
         currency: '¥',
         period: 'month',
-        stripePriceId: process.env.REACT_APP_STRIPE_MONTHLY_PRICE_ID || 'price_monthly',
         recommended: true,
         features: [
             { title: 'Thrive in Japan Platform', included: true },
@@ -72,7 +71,6 @@ const plans: PlanOption[] = [
         price: 199000,
         currency: '¥',
         period: 'year',
-        stripePriceId: process.env.REACT_APP_STRIPE_YEARLY_PRICE_ID || 'price_yearly',
         features: [
             { title: 'Thrive in Japan Platform', included: true },
             { title: 'Unlimited Speaking Sessions', included: true },
@@ -115,7 +113,7 @@ export const PaymentPlanPage: React.FC = () => {
 
             // Create checkout session
             const response = await api.post('/payment/create-checkout-session', {
-                priceId: plan.stripePriceId,
+                // priceId: plan.stripePriceId,
                 mode: plan.period === 'one-time' ? 'payment' : 'subscription',
                 successUrl: `${window.location.origin}/register/account?session_id={CHECKOUT_SESSION_ID}`,
                 cancelUrl: `${window.location.origin}/register/payment`,

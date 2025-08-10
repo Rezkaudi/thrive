@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/SessionManagement.tsx (Updated with Redux)
+// frontend/src/pages/admin/SessionManagement.tsx (Fixed)
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -288,7 +288,7 @@ export const SessionManagement: React.FC = () => {
     dispatch(clearFilters());
   };
 
-  // Helper functions (same as before)
+  // Helper functions
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
@@ -354,9 +354,9 @@ export const SessionManagement: React.FC = () => {
   const totalBookings = sessions.reduce((sum, s) => sum + s.currentParticipants, 0);
   const averageFillRate = sessions.length > 0
     ? Math.round(
-      sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
-      sessions.length
-    )
+        sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
+        sessions.length
+      )
     : 0;
   const recurringCount = sessions.filter(s => s.isRecurring).length;
   const activeFiltersCount = Object.values(filters).filter(f => f !== '').length;
@@ -1002,7 +1002,7 @@ export const SessionManagement: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Session Create/Edit Dialog - Same as before but using Redux form state */}
+        {/* Session Create/Edit Dialog */}
         <Dialog
           open={sessionDialog}
           onClose={() => {
@@ -1046,6 +1046,7 @@ export const SessionManagement: React.FC = () => {
                   'e.g., Cultural Exchange Workshop'
                 }
               />
+              
               <TextField
                 fullWidth
                 multiline
@@ -1059,6 +1060,7 @@ export const SessionManagement: React.FC = () => {
                   'Describe the special event activities...'
                 }
               />
+              
               <FormControl fullWidth>
                 <InputLabel>Session Type</InputLabel>
                 <Select

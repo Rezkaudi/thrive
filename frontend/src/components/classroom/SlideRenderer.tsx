@@ -36,12 +36,17 @@ export const SlideRenderer: React.FC<SlideComponentProps> = (props) => {
                 {content.subtitle}
               </Typography>
             )}
-            <Typography
-              variant="body1"
-              sx={{ mt: 3, fontSize: "1.2rem", lineHeight: 1.8 }}
-            >
-              {content.content}
-            </Typography>
+
+            {content.content.split('\n').map((item: string, index: number) =>
+              <Typography
+                key={index}
+                variant="body1"
+                sx={{ mt: 3, fontSize: "1.2rem", lineHeight: 1.8 }}
+              >
+                {item}
+              </Typography>
+
+            )}
           </Box>
         );
 

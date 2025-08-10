@@ -1,5 +1,5 @@
-// frontend/src/pages/registration/SubscriptionPage.tsx
-import React, { useState } from 'react';
+// frontend/src/pages/SubscriptionPage.tsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -11,6 +11,7 @@ import {
     CircularProgress,
     Card,
     CardContent,
+    Skeleton,
 } from '@mui/material';
 import {
     ArrowBack,
@@ -18,21 +19,20 @@ import {
     Close,
     School,
     CalendarMonth,
-    Person,
+    Timer
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
-import api from '../services/api';
 import { RootState } from '../store/store';
 import { useSelector } from 'react-redux';
-
+import { paymentService, DiscountStatus } from '../services/paymentService';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY!);
-
 interface PlanOption {
     id: string;
     name: string;
-    price: number;
+    regularPrice: number;
+    discountedPrice: number;
     currency: string;
     period: string;
     features: {
@@ -40,7 +40,7 @@ interface PlanOption {
         included: boolean;
     }[];
     recommended?: boolean;
-    stripePriceId: string;
+    savings?: number;
 }
 
 const plans: PlanOption[] = [
@@ -63,11 +63,12 @@ const plans: PlanOption[] = [
     {
         id: 'monthly',
         name: 'Monthly Subscription',
-        price: 19980,
+        regularPrice: 19980,
+        discountedPrice: 13980,
         currency: '¥',
         period: 'month',
-        stripePriceId: process.env.REACT_APP_STRIPE_MONTHLY_PRICE_ID || 'price_monthly',
         recommended: true,
+        savings: 30,
         features: [
             { title: 'Thrive in Japan Platform', included: true },
             { title: 'Unlimited Speaking Sessions', included: true },
@@ -79,10 +80,11 @@ const plans: PlanOption[] = [
     {
         id: 'yearly',
         name: 'Yearly Subscription',
-        price: 199000,
+        regularPrice: 199000,
+        discountedPrice: 139000,
         currency: '¥',
         period: 'year',
-        stripePriceId: process.env.REACT_APP_STRIPE_YEARLY_PRICE_ID || 'price_yearly',
+        savings: 30,
         features: [
             { title: 'Thrive in Japan Platform', included: true },
             { title: 'Unlimited Speaking Sessions', included: true },
@@ -100,7 +102,27 @@ export const SubscriptionPage: React.FC = () => {
     const [selectedPlan, setSelectedPlan] = useState<string>('monthly');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [discountStatus, setDiscountStatus] = useState<DiscountStatus | null>(null);
+    const [loadingDiscount, setLoadingDiscount] = useState(true);
     const { hasTrailingSubscription } = useSelector((state: RootState) => state.auth);
+
+    useEffect(() => {
+        fetchDiscountStatus();
+        // Refresh discount status every 30 seconds
+        // const interval = setInterval(fetchDiscountStatus, 30000);
+        // return () => clearInterval(interval);
+    }, []);
+
+    const fetchDiscountStatus = async () => {
+        try {
+            const status = await paymentService.checkDiscountStatus();
+            setDiscountStatus(status);
+        } catch (err) {
+            console.error('Failed to fetch discount status:', err);
+        } finally {
+            setLoadingDiscount(false);
+        }
+    };
 
     const handleSelectPlan = async (planId: string) => {
         setSelectedPlan(planId);
@@ -118,10 +140,10 @@ export const SubscriptionPage: React.FC = () => {
                 throw new Error('Invalid plan selected');
             }
 
-            // Create checkout session
-            const response = await api.post('/payment/create-checkout-session', {
-                priceId: plan.stripePriceId,
-                mode: plan.period === 'one-time' ? 'payment' : 'subscription',
+            // Create checkout session with discount check
+            const response = await paymentService.createCheckoutSession({
+                planType: planId as 'monthly' | 'yearly',
+                mode: 'subscription',
                 successUrl: `${window.location.origin}/dashboard`,
                 cancelUrl: `${window.location.origin}/subscription`,
                 metadata: {
@@ -131,7 +153,7 @@ export const SubscriptionPage: React.FC = () => {
 
             // Redirect to Stripe Checkout
             const result = await stripe.redirectToCheckout({
-                sessionId: response.data.sessionId,
+                sessionId: response.sessionId,
             });
 
             if (result.error) {
@@ -152,8 +174,6 @@ export const SubscriptionPage: React.FC = () => {
 
     const getPlanIcon = (planId: string) => {
         switch (planId) {
-            case 'one-time':
-                return <Person sx={{ fontSize: 40, color: 'white' }} />;
             case 'monthly':
                 return <CalendarMonth sx={{ fontSize: 40, color: 'white' }} />;
             case 'yearly':
@@ -165,8 +185,6 @@ export const SubscriptionPage: React.FC = () => {
 
     const getPlanColor = (planId: string) => {
         switch (planId) {
-            case 'one-time':
-                return { primary: '#5C633A', secondary: '#D4BC8C' };
             case 'monthly':
                 return { primary: '#A6531C', secondary: '#483C32' };
             case 'yearly':
@@ -175,6 +193,23 @@ export const SubscriptionPage: React.FC = () => {
                 return { primary: '#5C633A', secondary: '#D4BC8C' };
         }
     };
+
+    const isDiscountActive = discountStatus?.isEligible ?? false;
+
+    if (loadingDiscount) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100vh',
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        );
+    }
 
     return (
         <Box
@@ -186,7 +221,7 @@ export const SubscriptionPage: React.FC = () => {
                 overflow: 'hidden',
             }}
         >
-            {/* Background decoration - matching other pages */}
+            {/* Background decoration */}
             <Box
                 sx={{
                     position: 'absolute',
@@ -221,10 +256,11 @@ export const SubscriptionPage: React.FC = () => {
                         },
                     }}
                 >
+                    {/* Back */}
                 </Button>
 
-                {/* Header Section */}
-                <Box textAlign="center" sx={{ mb: { xs: 5, sm: 10, md: 15 } }}>
+                {/* Header Section with Discount Alert */}
+                <Box textAlign="center" sx={{ mb: 4 }}>
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -236,22 +272,38 @@ export const SubscriptionPage: React.FC = () => {
                     </motion.div>
                 </Box>
 
-                {
-                    error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <Alert
+                            severity="error"
+                            sx={{ mb: 3, maxWidth: 'lg', mx: 'auto' }}
+                            onClose={() => setError('')}
                         >
-                            <Alert
-                                severity="error"
-                                sx={{ mb: 3, maxWidth: 'lg', mx: 'auto' }}
-                                onClose={() => setError('')}
-                            >
-                                {error}
-                            </Alert>
+                            {error}
+                        </Alert>
+                    </motion.div>
+                )}
+
+                {/* Countdown Timer for Discount */}
+                {isDiscountActive && !loadingDiscount && (
+                    <Box sx={{ textAlign: 'center', mb: 10 }}>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
+                                <Timer sx={{ color: 'error.main' }} />
+                                <Typography variant="body1" color="error.main" fontWeight={600}>
+                                    Limited time offer ends when all {discountStatus?.limit} spots are filled
+                                </Typography>
+                            </Stack>
                         </motion.div>
-                    )
-                }
+                    </Box>
+                )}
 
                 {/* Plans Grid */}
                 <Stack
@@ -262,6 +314,9 @@ export const SubscriptionPage: React.FC = () => {
                 >
                     {plans.map((plan, index) => {
                         const colors = getPlanColor(plan.id);
+                        const currentPrice = isDiscountActive ? plan.discountedPrice : plan.regularPrice;
+                        const showDiscount = isDiscountActive && plan.discountedPrice < plan.regularPrice;
+
                         return (
                             <MotionCard
                                 key={plan.id}
@@ -274,36 +329,40 @@ export const SubscriptionPage: React.FC = () => {
                                     position: 'relative',
                                     overflow: 'visible',
                                     borderRadius: "20px",
-                                    borderColor: 'primary.main',
-                                    border: 'none',
-                                    boxShadow: 2,
                                     // border: plan.recommended ? '2px solid' : 'none',
+                                    // borderColor: plan.recommended ? 'primary.main' : 'transparent',
                                     // boxShadow: plan.recommended ? 8 : 2,
                                 }}
                             >
-                                {/* Recommended Badge */}
-                                {/* {plan.recommended && (
+
+
+                                {/* Discount Badge */}
+                                {showDiscount && (
                                     <motion.div
-                                        // initial={{ scale: 0 }}
-                                        // animate={{ scale: 1 }}
-                                        transition={{ delay: 0.3, type: "spring" }}
+                                        initial={{ scale: 0, rotate: -15 }}
+                                        animate={{ scale: 1, rotate: -15 }}
+                                        transition={{ delay: 0.4, type: "spring" }}
                                     >
-                                        <Chip
-                                            label="MOST POPULAR"
-                                            color="error"
-                                            size="small"
+                                        <Box
                                             sx={{
                                                 position: 'absolute',
-                                                top: -12,
-                                                left: '50%',
-                                                transform: 'translateX(-50%)',
-                                                fontWeight: 600,
-                                                zIndex: 1,
+                                                top: 20,
+                                                right: -10,
+                                                bgcolor: 'error.main',
+                                                color: 'white',
                                                 px: 2,
+                                                py: 0.5,
+                                                borderRadius: 2,
+                                                fontWeight: 700,
+                                                fontSize: '0.875rem',
+                                                boxShadow: 3,
+                                                zIndex: 1,
                                             }}
-                                        />
+                                        >
+                                            SAVE {plan.savings}%
+                                        </Box>
                                     </motion.div>
-                                )} */}
+                                )}
 
                                 {/* Plan Header */}
                                 <Box
@@ -311,7 +370,7 @@ export const SubscriptionPage: React.FC = () => {
                                         background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
                                         color: 'white',
                                         py: 3,
-                                        borderRadius: "18px",
+                                        borderRadius: "18px 18px 0 0",
                                         textAlign: 'center',
                                         position: 'relative',
                                     }}
@@ -343,8 +402,40 @@ export const SubscriptionPage: React.FC = () => {
                                 </Box>
 
                                 <CardContent sx={{ p: 4 }}>
+                                    {/* Price Section */}
+                                    <Box textAlign="center" sx={{ mb: 4 }}>
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: 0.5 + index * 0.1 }}
+                                        >
+                                            {showDiscount && (
+                                                <Typography
+                                                    variant="h5"
+                                                    sx={{
+                                                        textDecoration: 'line-through',
+                                                        color: 'text.secondary',
+                                                        mb: 1,
+                                                    }}
+                                                >
+                                                    {formatPrice(plan.regularPrice)}
+                                                </Typography>
+                                            )}
+                                            <Typography
+                                                variant="h3"
+                                                fontWeight={700}
+                                                sx={{ color: showDiscount ? 'error.main' : colors.primary }}
+                                            >
+                                                {formatPrice(currentPrice)}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                per {plan.period}
+                                            </Typography>
+                                        </motion.div>
+                                    </Box>
+
                                     {/* Features List */}
-                                    <Stack spacing={2} sx={{ minHeight: 200 }}>
+                                    <Stack spacing={2} sx={{ mb: 4 }}>
                                         {plan.features.map((feature, featureIndex) => (
                                             <motion.div
                                                 key={featureIndex}
@@ -363,6 +454,7 @@ export const SubscriptionPage: React.FC = () => {
                                                         sx={{
                                                             textDecoration: feature.included ? 'none' : 'line-through',
                                                             color: feature.included ? 'text.primary' : 'text.secondary',
+                                                            fontWeight: feature.title.includes('FREE') ? 600 : 400,
                                                         }}
                                                     >
                                                         {feature.title}
@@ -371,28 +463,6 @@ export const SubscriptionPage: React.FC = () => {
                                             </motion.div>
                                         ))}
                                     </Stack>
-
-                                    {/* Price Section */}
-                                    <Box textAlign="center" sx={{ mt: 4, mb: 3 }}>
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ delay: 0.5 + index * 0.1 }}
-                                        >
-                                            <Typography
-                                                variant="h3"
-                                                fontWeight={700}
-                                                sx={{ color: colors.primary }}
-                                            >
-                                                {formatPrice(plan.price)}
-                                            </Typography>
-                                            {plan.period !== 'one-time' && (
-                                                <Typography variant="body2" color="text.secondary">
-                                                    per {plan.period}
-                                                </Typography>
-                                            )}
-                                        </motion.div>
-                                    </Box>
 
                                     {/* CTA Button */}
                                     <Button
@@ -406,6 +476,8 @@ export const SubscriptionPage: React.FC = () => {
                                             background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
                                             color: 'white',
                                             fontWeight: 600,
+                                            position: 'relative',
+                                            overflow: 'hidden',
                                             '&:hover': {
                                                 background: `linear-gradient(135deg, ${colors.secondary} 0%, ${colors.primary} 100%)`,
                                             },
@@ -414,11 +486,36 @@ export const SubscriptionPage: React.FC = () => {
                                             },
                                         }}
                                     >
-                                        {loading && selectedPlan === plan.id ? (
-                                            <CircularProgress size={24} color="inherit" />
-                                        ) : (
-                                            hasTrailingSubscription ? 'Subscripe Now' : '14-Day Free Trial'
-                                        )}
+                                        <AnimatePresence mode="wait">
+                                            {loading && selectedPlan === plan.id ? (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                >
+                                                    <CircularProgress size={24} color="inherit" />
+                                                </motion.div>
+                                            ) : (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                >
+                                                    {showDiscount ? (
+                                                        <Stack spacing={0.5}>
+                                                            <Typography variant="button">
+                                                                Claim Your Discount
+                                                            </Typography>
+                                                            <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                                                                {hasTrailingSubscription ? 'Subscribe Now' : '14-Day Free Trial'}
+                                                            </Typography>
+                                                        </Stack>
+                                                    ) : (
+                                                        hasTrailingSubscription ? 'Subscribe Now' : 'Start 14-Day Free Trial'
+                                                    )}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </Button>
                                 </CardContent>
                             </MotionCard>
@@ -426,36 +523,7 @@ export const SubscriptionPage: React.FC = () => {
                     })}
                 </Stack>
 
-                {/* Additional Info */}
-                {/* <Box sx={{ mt: 6, textAlign: 'center' }}>
-                    <Paper
-                        sx={{
-                            p: 3,
-                            maxWidth: 600,
-                            mx: 'auto',
-                            background: 'rgba(255, 107, 107, 0.05)',
-                            border: '1px solid',
-                            borderColor: 'rgba(255, 107, 107, 0.2)',
-                        }}
-                    >
-                        <Stack spacing={2}>
-                            <Typography variant="h6" fontWeight={600}>
-                                Need help choosing?
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                All plans include access to our comprehensive learning platform.
-                                The monthly and yearly subscriptions offer the most value with unlimited speaking sessions.
-                            </Typography>
-                            <Button
-                                variant="outlined"
-                                onClick={() => navigate('/contact')}
-                            >
-                                Contact Support
-                            </Button>
-                        </Stack>
-                    </Paper>
-                </Box> */}
-            </Container >
-        </Box >
+            </Container>
+        </Box>
     );
 };

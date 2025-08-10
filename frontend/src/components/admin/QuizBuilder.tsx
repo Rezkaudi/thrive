@@ -84,7 +84,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
   const removeOption = (questionIndex: number, optionIndex: number) => {
     const newQuestions = [...questions];
     newQuestions[questionIndex].options.splice(optionIndex, 1);
-    
+
     // Adjust correct answer if needed
     const correctAnswer = newQuestions[questionIndex].correctAnswer;
     if (newQuestions[questionIndex].type === 'single') {
@@ -100,7 +100,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
         .filter(ans => ans !== optionIndex)
         .map(ans => ans > optionIndex ? ans - 1 : ans);
     }
-    
+
     setQuestions(newQuestions);
     onChange(newQuestions, settings);
   };
@@ -146,7 +146,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
   const toggleQuestionType = (index: number) => {
     const newQuestions = [...questions];
     const question = newQuestions[index];
-    
+
     if (question.type === 'single') {
       question.type = 'multiple';
       question.correctAnswer = [question.correctAnswer as number];
@@ -154,7 +154,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
       question.type = 'single';
       question.correctAnswer = (question.correctAnswer as number[])[0] || 0;
     }
-    
+
     setQuestions(newQuestions);
     onChange(newQuestions, settings);
   };
@@ -162,7 +162,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
   const toggleCorrectAnswer = (questionIndex: number, optionIndex: number) => {
     const newQuestions = [...questions];
     const question = newQuestions[questionIndex];
-    
+
     if (question.type === 'single') {
       question.correctAnswer = optionIndex;
     } else {
@@ -173,7 +173,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
         question.correctAnswer = [...currentAnswers, optionIndex];
       }
     }
-    
+
     setQuestions(newQuestions);
     onChange(newQuestions, settings);
   };
@@ -212,7 +212,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
           <Paper key={question.id} sx={{ p: 3 }}>
             <Stack spacing={3}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Stack direction="row" alignItems="center" spacing={2}>
+                <Stack direction="row" flexWrap={"wrap"} alignItems="center" spacing={2}>
                   <IconButton size="small" sx={{ cursor: 'grab' }}>
                     <DragIndicator />
                   </IconButton>
@@ -330,8 +330,8 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
         {/* Summary */}
         <Alert severity="info">
           <Typography variant="subtitle2">
-            Quiz Summary: {questions.length} questions, 
-            {' '}{questions.reduce((sum, q) => sum + (q.points || 1), 0)} total points, 
+            Quiz Summary: {questions.length} questions,
+            {' '}{questions.reduce((sum, q) => sum + (q.points || 1), 0)} total points,
             {' '}{settings.passingScore}% to pass
             {settings.timeLimit && `, ${settings.timeLimit} minute time limit`}
           </Typography>

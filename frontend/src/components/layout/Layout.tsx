@@ -57,28 +57,42 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const profile = useSelector((state: RootState) => state.dashboard.data);
   const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
 
-  const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [desktopDrawerOpen, setDesktopDrawerOpen] = useState(true);
+  // const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+
+
+  const [mobileOpen, setMobileOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem("mobileOpen");
+    return stored === "true";
+  });
+
+  const [desktopDrawerOpen, setDesktopDrawerOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem("desktopDrawerOpen");
+    return stored ? stored === "true" : true;
+  });
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElUser(event.currentTarget);
+    // setAnchorElUser(event.currentTarget);
+    setOpenMenu(prev => !prev)
   };
 
   const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
+    // setAnchorElUser(null);
+    setOpenMenu(prev => !prev)
   };
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/');
+    navigate('/login');
   };
 
   const handleDrawerToggle = () => {
     if (isMobile) {
       setMobileOpen(!mobileOpen);
+      localStorage.setItem("mobileOpen", String(!mobileOpen))
     } else {
       setDesktopDrawerOpen(!desktopDrawerOpen);
+      localStorage.setItem("desktopDrawerOpen", String(!desktopDrawerOpen))
     }
   };
 
@@ -245,7 +259,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <Menu
             sx={{ mt: '45px' }}
-            anchorEl={anchorElUser}
+            // anchorEl={anchorElUser}
             anchorOrigin={{
               vertical: 'top',
               horizontal: 'right',
@@ -255,7 +269,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               vertical: 'top',
               horizontal: 'right',
             }}
-            open={Boolean(anchorElUser)}
+            // open={Boolean(anchorElUser)}
+            open={openMenu}
             onClose={handleCloseUserMenu}
           >
             <MenuItem onClick={() => { navigate('/profile'); handleCloseUserMenu(); }}>

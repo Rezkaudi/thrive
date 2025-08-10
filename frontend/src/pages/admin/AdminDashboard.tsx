@@ -181,7 +181,7 @@ export const AdminDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
           <Stack spacing={2} alignItems="center">
             <CircularProgress />
@@ -193,7 +193,7 @@ export const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
       <Stack
         direction="row"
         justifyContent="space-between"
