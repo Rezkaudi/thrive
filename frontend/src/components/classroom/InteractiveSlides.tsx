@@ -1,3 +1,6 @@
+// Updated InteractiveSlides.tsx to pass new props to SlideFooter
+
+import React from "react";
 import { Box, Card, CardContent, Typography } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,6 +34,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
     handleNext,
     handleComplete,
     setCurrentSlide,
+    canNavigateToNext, // NEW: Get this from the hook
   } = useInteractiveSlides(slides, onComplete);
 
   if (!slide) {
@@ -45,7 +49,6 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
     <Box
       ref={containerRef}
       sx={{
-        // height: isFullscreen ? "100vh" : "calc(100vh - 100px)",
         display: "flex",
         flexDirection: "column",
         bgcolor: slide.backgroundColor || "background.default",
@@ -131,7 +134,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         </Box>
       </Box>
 
-      {/* Footer of Slide */}
+      {/* Footer of Slide - Updated with new props */}
       <SlideFooter
         currentSlide={currentSlide}
         totalSlides={slides.length}
@@ -142,6 +145,8 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         onNext={handleNext}
         onComplete={handleComplete}
         onSlideClick={setCurrentSlide}
+        canNavigateToNext={canNavigateToNext()} // NEW: Pass this prop
+        slides={slides} // NEW: Pass slides for checking types
       />
     </Box>
   );
