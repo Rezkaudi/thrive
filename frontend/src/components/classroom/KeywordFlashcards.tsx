@@ -9,6 +9,7 @@ import {
   Chip,
   Zoom,
   Paper,
+  Tooltip,
 } from '@mui/material';
 import {
   VolumeUp,
@@ -255,32 +256,132 @@ export const KeywordFlashcards: React.FC<KeywordFlashcardsProps> = ({
         </MotionBox>
       </Box>
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <IconButton onClick={handlePrevious} disabled={currentIndex === 0}>
+  <Stack 
+    direction="row" 
+    justifyContent="space-between" 
+    alignItems="center"
+    sx={{ py: 2, px: 1 }}
+  >
+    <Tooltip title="Previous card">
+      <span>
+        <IconButton 
+          onClick={handlePrevious} 
+          disabled={currentIndex === 0}
+          size="medium"
+          sx={{ 
+            '&:disabled': { 
+              opacity: 0.3 
+            }
+          }}
+          aria-label="Go to previous card"
+        >
           <ArrowBack />
         </IconButton>
-        <Stack direction="row" spacing={1}>
-          {keywords.map((_, i) => (
+      </span>
+    </Tooltip>
+
+    <Stack alignItems="center" sx={{ flex: 1, mx: 2, maxWidth: '100%' }}>
+      {/* Progress indicator */}
+      <Typography 
+        variant="caption" 
+        color="text.secondary"
+        sx={{ mb: 1 }}
+      >
+        {currentIndex + 1} of {keywords.length}
+      </Typography>
+      
+      {/* Responsive dot indicators with scrolling */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 0.5,
+          justifyContent: 'center',
+          maxWidth: '100%',
+          maxHeight: '60px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          px: 1,
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'grey.400',
+            borderRadius: '2px',
+          },
+        }}
+      >
+        {keywords.map((keyword, i) => (
+          <Tooltip 
+            key={i} 
+            title={`Card ${i + 1}`}
+          >
             <Box
-              key={i}
+              onClick={() => setCurrentIndex(i)}
               sx={{
-                width: 8,
-                height: 8,
+                width: completedCards.has(i) ? 10 : 8,
+                height: completedCards.has(i) ? 10 : 8,
                 borderRadius: '50%',
                 bgcolor: completedCards.has(i)
                   ? 'success.main'
                   : i === currentIndex
                     ? 'primary.main'
                     : 'grey.300',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                border: i === currentIndex ? '2px solid' : 'none',
+                borderColor: i === currentIndex ? 'primary.dark' : 'transparent',
+                flexShrink: 0,
+                '&:hover': {
+                  transform: 'scale(1.3)',
+                  bgcolor: completedCards.has(i)
+                    ? 'success.dark'
+                    : i === currentIndex
+                      ? 'primary.dark'
+                      : 'grey.400',
+                },
+                '&:focus': {
+                  outline: '2px solid',
+                  outlineColor: 'primary.main',
+                  outlineOffset: '2px',
+                }
               }}
-              onClick={() => setCurrentIndex(i)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Go to card ${i + 1}: ${keyword.englishText}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setCurrentIndex(i);
+                }
+              }}
             />
-          ))}
-        </Stack>
-        <IconButton onClick={handleNext} disabled={isOnLastCard}>
+          </Tooltip>
+        ))}
+      </Box>
+    </Stack>
+
+    <Tooltip title={isOnLastCard ? "You're on the last card" : "Next card"}>
+      <span>
+        <IconButton 
+          onClick={handleNext} 
+          disabled={isOnLastCard}
+          size="medium"
+          sx={{ 
+            '&:disabled': { 
+              opacity: 0.3 
+            }
+          }}
+          aria-label="Go to next card"
+        >
           <ArrowForward />
         </IconButton>
-      </Stack>
+      </span>
+    </Tooltip>
+  </Stack>
 
       {isAllFlipped && (
         <Zoom in>
