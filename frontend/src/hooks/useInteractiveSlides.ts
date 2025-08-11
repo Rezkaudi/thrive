@@ -1,17 +1,20 @@
+// In useInteractiveSlides.ts, update the hook with quiz completion tracking
+
 import { useEffect, useRef, useState } from "react";
 import { Slide, ValidationResult } from "../types/slide.types";
 import confetti from 'canvas-confetti';
 import { validateAnswer } from "../utils/validation";
 
-
 export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) => {
-
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [slideProgress, setSlideProgress] = useState<Set<number>>(new Set());
   const [interactiveAnswers, setInteractiveAnswers] = useState<Record<string, any>>({});
   const [showFeedback, setShowFeedback] = useState<Record<string, boolean>>({});
   const [validationResults, setValidationResults] = useState<Record<string, ValidationResult>>({});
+
+  // NEW: Track quiz completion status
+  const [quizCompletionStatus, setQuizCompletionStatus] = useState<Record<string, boolean>>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -21,44 +24,62 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
 
   useEffect(() => {
     if (slide) {
-      setSlideProgress(prev => new Set(prev).add(currentSlide));
-    }
-  }, [currentSlide, slide]);
-
-  // Enhanced fullscreen functionality
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = Boolean(document.fullscreenElement);
-      setIsFullscreen(isCurrentlyFullscreen);
-    };
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (isFullscreen) {
-        switch (e.key) {
-          case 'ArrowLeft':
-            handlePrevious();
-            break;
-          case 'ArrowRight':
-            handleNext();
-            break;
-          case 'Escape':
-            exitFullscreen();
-            break;
-        }
+      // Only mark slide as progressed if it's not a quiz or if quiz is completed
+      if (slide.content.type !== 'quiz' || isQuizCompleted(currentSlide)) {
+        setSlideProgress(prev => new Set(prev).add(currentSlide));
       }
-    };
+    }
+  }, [currentSlide, slide, quizCompletionStatus]);
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('keydown', handleKeyPress);
+  // Helper function to check if a quiz slide is completed
+  const isQuizCompleted = (slideIndex: number) => {
+    const slideAtIndex = slides[slideIndex];
+    if (slideAtIndex?.content.type !== 'quiz') return true;
 
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [isFullscreen, currentSlide]);
+    const quizId = `quiz-${slideAtIndex.id}`;
+    return quizCompletionStatus[quizId] === true;
+  };
 
+  // Helper function to check if navigation to next slide is allowed
+  const canNavigateToNext = () => {
+    // Check if current slide is a quiz
+    if (slide?.content.type === 'quiz') {
+      return isQuizCompleted(currentSlide);
+    }
+    return true;
+  };
+
+  // Enhanced handleNext with quiz validation
   const handleNext = () => {
     if (!isLastSlide) {
+      // Check if current slide is a quiz and if it's completed
+      if (!canNavigateToNext()) {
+        // Show warning message
+        const quizId = `quiz-${slide.id}`;
+        setValidationResults(prev => ({
+          ...prev,
+          [quizId]: {
+            isValid: false,
+            message: 'Please complete the quiz correctly before proceeding to the next slide.',
+            type: 'warning'
+          }
+        }));
+        setShowFeedback(prev => ({
+          ...prev,
+          [quizId]: true
+        }));
+
+        // Hide warning after 3 seconds
+        setTimeout(() => {
+          setShowFeedback(prev => ({
+            ...prev,
+            [quizId]: false
+          }));
+        }, 3000);
+
+        return;
+      }
+
       setCurrentSlide(currentSlide + 1);
     }
   };
@@ -70,32 +91,29 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
   };
 
   const handleComplete = () => {
-    if (slideProgress.size === slides.length) {
+    // Check if all slides are completed (including all quizzes)
+    let allCompleted = true;
+
+    for (let i = 0; i < slides.length; i++) {
+      if (slides[i].content.type === 'quiz' && !isQuizCompleted(i)) {
+        allCompleted = false;
+        break;
+      }
+    }
+
+    if (allCompleted && slideProgress.size === slides.length) {
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 }
       });
       onComplete();
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (!isFullscreen) {
-      if (containerRef.current) {
-        containerRef.current.requestFullscreen?.();
-      }
     } else {
-      exitFullscreen();
+      alert('Please complete all quizzes before finishing the lesson.');
     }
   };
 
-  const exitFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen?.();
-    }
-  };
-
+  // Enhanced checkAnswer with quiz completion tracking
   const checkAnswer = (slideId: string, userAnswer: any, correctAnswer: any, interactiveType?: string): boolean => {
     // First validate the answer
     const validation = validateAnswer(slideId, userAnswer, interactiveType || 'generic', slide);
@@ -132,7 +150,20 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
         spread: 60,
         origin: { y: 0.7 }
       });
-      setSlideProgress(prev => new Set(prev).add(currentSlide));
+
+      // Mark quiz as completed if it's a quiz
+      if (interactiveType === 'quiz') {
+        setQuizCompletionStatus(prev => ({
+          ...prev,
+          [slideId]: true
+        }));
+
+        // Now mark slide as progressed since quiz is completed
+        setSlideProgress(prev => new Set(prev).add(currentSlide));
+      } else {
+        setSlideProgress(prev => new Set(prev).add(currentSlide));
+      }
+
       setValidationResults(prev => ({
         ...prev,
         [slideId]: {
@@ -150,6 +181,14 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
           type: 'error'
         }
       }));
+
+      // Mark quiz as not completed
+      if (interactiveType === 'quiz') {
+        setQuizCompletionStatus(prev => ({
+          ...prev,
+          [slideId]: false
+        }));
+      }
     }
 
     setTimeout(() => {
@@ -162,7 +201,23 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     return isCorrect;
   };
 
+  // ... rest of the code remains the same ...
 
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      if (containerRef.current) {
+        containerRef.current.requestFullscreen?.();
+      }
+    } else {
+      exitFullscreen();
+    }
+  };
+
+  const exitFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+    }
+  };
 
   const slideComponentProps = {
     slide,
@@ -192,5 +247,7 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     handleNext,
     handleComplete,
     setCurrentSlide,
-  }
-}
+    canNavigateToNext, // Export this for UI feedback
+    quizCompletionStatus, // Export for debugging/UI
+  };
+};

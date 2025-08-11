@@ -1,4 +1,5 @@
-// components/SlideFooter.tsx
+// Resolved SlideFooter.tsx combining responsive design + quiz validation
+
 import React from 'react';
 import {
   Stack,
@@ -14,6 +15,7 @@ import {
   NavigateBefore,
   CheckCircle,
   MoreHoriz,
+  Lock,
 } from '@mui/icons-material';
 
 interface SlideFooterProps {
@@ -26,6 +28,8 @@ interface SlideFooterProps {
   onNext: () => void;
   onComplete: () => void;
   onSlideClick: (index: number) => void;
+  canNavigateToNext?: boolean; // Quiz validation prop
+  slides?: any[]; // Slide data for type checking
 }
 
 export const SlideFooter: React.FC<SlideFooterProps> = ({
@@ -38,14 +42,37 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   onNext,
   onComplete,
   onSlideClick,
+  canNavigateToNext = true,
+  slides = [],
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Function to get visible slide indices
+  // Check if a slide at given index is accessible
+  const isSlideAccessible = (index: number) => {
+    // Can always go back
+    if (index < currentSlide) return true;
+
+    // Current slide is always accessible
+    if (index === currentSlide) return true;
+
+    // For future slides, check if all previous slides (especially quizzes) are completed
+    for (let i = currentSlide; i < index; i++) {
+      if (slides[i]?.content?.type === 'quiz' && !slideProgress.has(i)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const currentSlideIsQuiz = slides[currentSlide]?.content?.type === 'quiz';
+  const isQuizIncomplete = currentSlideIsQuiz && !slideProgress.has(currentSlide);
+
+  // Function to get visible slide indices (for responsive design)
   const getVisibleSlides = () => {
-    const maxVisible = isMobile ? 5 : isTablet ? 6 : 7; // Fewer dots on smaller screens
+    const maxVisible = isMobile ? 5 : isTablet ? 6 : 7;
     
     if (totalSlides <= maxVisible) {
       return Array.from({ length: totalSlides }, (_, i) => i);
@@ -64,7 +91,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     if (start > 0) {
       visible.push(0);
       if (start > 1) {
-        visible.push(-1);
+        visible.push(-1); // ellipsis
       }
     }
     
@@ -74,7 +101,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     
     if (end < totalSlides - 1) {
       if (end < totalSlides - 2) {
-        visible.push(-2);
+        visible.push(-2); // ellipsis
       }
       visible.push(totalSlides - 1);
     }
@@ -85,6 +112,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const visibleSlides = getVisibleSlides();
 
   const renderDot = (index: number) => {
+    // Handle ellipsis dots
     if (index === -1 || index === -2) {
       return (
         <Box
@@ -103,10 +131,21 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
       );
     }
 
+    // Regular slide dots with accessibility check
+    const accessible = isSlideAccessible(index);
+    const isQuizSlide = slides[index]?.content?.type === 'quiz';
+    const isIncompleteQuiz = isQuizSlide && !slideProgress.has(index);
+
     return (
       <Tooltip
         key={index}
-        title={`Slide ${index + 1}${slideProgress.has(index) ? ' - Completed' : ''}`}
+        title={
+          !accessible
+            ? 'Complete previous quiz to unlock'
+            : isIncompleteQuiz && index === currentSlide
+              ? 'Complete this quiz to proceed'
+              : `Slide ${index + 1}${slideProgress.has(index) ? ' - Completed' : ''}`
+        }
         arrow
       >
         <Box
@@ -118,12 +157,15 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
               ? 'primary.main'
               : slideProgress.has(index)
                 ? 'success.main'
-                : 'grey.300',
-            cursor: 'pointer',
+                : accessible
+                  ? 'grey.300'
+                  : 'grey.100',
+            cursor: accessible ? 'pointer' : 'not-allowed',
             transition: 'all 0.3s ease',
             border: '2px solid transparent',
             flexShrink: 0,
-            '&:hover': {
+            position: 'relative',
+            '&:hover': accessible ? {
               transform: isMobile ? 'scale(1.2)' : 'scale(1.3)',
               boxShadow: 2,
               borderColor: index === currentSlide
@@ -131,16 +173,29 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
                 : slideProgress.has(index)
                   ? 'success.dark'
                   : 'grey.500'
-            }
+            } : {},
+            // Show lock icon overlay for inaccessible slides
+            '&::after': !accessible ? {
+              content: '""',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: isMobile ? 6 : 8,
+              height: isMobile ? 6 : 8,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z'/%3E%3C/svg%3E")`,
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+            } : {}
           }}
-          onClick={() => onSlideClick(index)}
+          onClick={() => accessible && onSlideClick(index)}
         />
       </Tooltip>
     );
   };
 
+  // Mobile Layout
   if (isMobile) {
-    // Mobile Layout - Stack vertically
     return (
       <Stack
         spacing={2}
@@ -217,32 +272,46 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
               {isLessonCompleted ? 'Done' : 'Complete'}
             </Button>
           ) : (
-            <Button
-              endIcon={<NavigateNext />}
-              onClick={onNext}
-              variant="contained"
-              disabled={currentSlide >= totalSlides - 1}
-              size="small"
-              sx={{
-                borderRadius: 2,
-                flex: 1,
-                fontWeight: 600,
-                background: 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
-                },
-                transition: 'all 0.2s ease'
-              }}
+            <Tooltip
+              title={isQuizIncomplete ? 'Complete the quiz to continue' : ''}
+              arrow
             >
-              Next
-            </Button>
+              <span>
+                <Button
+                  endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
+                  onClick={onNext}
+                  variant="contained"
+                  disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
+                  size="small"
+                  sx={{
+                    borderRadius: 2,
+                    flex: 1,
+                    fontWeight: 600,
+                    background: isQuizIncomplete
+                      ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
+                      : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
+                    '&:hover': {
+                      background: isQuizIncomplete
+                        ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
+                        : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
+                    },
+                    '&:disabled': {
+                      background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                    },
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {isQuizIncomplete ? 'Quiz' : 'Next'}
+                </Button>
+              </span>
+            </Tooltip>
           )}
         </Stack>
       </Stack>
     );
   }
 
-  // Desktop/Tablet Layout - Horizontal
+  // Desktop/Tablet Layout
   return (
     <Stack
       direction="row"
@@ -328,30 +397,44 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           {isLessonCompleted ? 'Completed' : (isTablet ? 'Complete' : 'Complete Lesson')}
         </Button>
       ) : (
-        <Button
-          endIcon={<NavigateNext />}
-          onClick={onNext}
-          variant="contained"
-          disabled={currentSlide >= totalSlides - 1}
-          size={isTablet ? "small" : "medium"}
-          sx={{
-            borderRadius: 2,
-            px: isTablet ? 3 : 4,
-            py: isTablet ? 1 : 1.5,
-            minWidth: isTablet ? 100 : 120,
-            flexShrink: 0,
-            fontWeight: 600,
-            background: 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
-              transform: 'translateY(-1px)',
-              boxShadow: 4,
-            },
-            transition: 'all 0.2s ease'
-          }}
+        <Tooltip
+          title={isQuizIncomplete ? 'Complete the quiz to continue' : ''}
+          arrow
         >
-          Next
-        </Button>
+          <span>
+            <Button
+              endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
+              onClick={onNext}
+              variant="contained"
+              disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
+              size={isTablet ? "small" : "medium"}
+              sx={{
+                borderRadius: 2,
+                px: isTablet ? 3 : 4,
+                py: isTablet ? 1 : 1.5,
+                minWidth: isTablet ? 100 : 120,
+                flexShrink: 0,
+                fontWeight: 600,
+                background: isQuizIncomplete
+                  ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
+                  : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
+                '&:hover': {
+                  background: isQuizIncomplete
+                    ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
+                    : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
+                  transform: isQuizIncomplete ? 'none' : 'translateY(-1px)',
+                  boxShadow: isQuizIncomplete ? 1 : 4,
+                },
+                '&:disabled': {
+                  background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {isQuizIncomplete ? (isTablet ? 'Quiz' : 'Complete Quiz First') : 'Next'}
+            </Button>
+          </span>
+        </Tooltip>
       )}
     </Stack>
   );
