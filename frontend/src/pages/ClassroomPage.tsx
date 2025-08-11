@@ -2016,6 +2016,7 @@ export const ClassroomPage: React.FC = () => {
                               mt: 4,
                               borderRadius: 3,
                               bgcolor: "background.default",
+                              display: "flex", justifyContent: "center",
                             }}
                           >
                             <Stack
