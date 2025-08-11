@@ -1,3 +1,4 @@
+// backend/src/infrastructure/web/routes/admin.routes.ts
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { AdminController } from '../controllers/admin.controller';
@@ -76,12 +77,22 @@ router.post(
   adminController.createSession
 );
 router.put('/sessions/:sessionId', adminController.updateSession);
-router.delete('/sessions/:sessionId', adminController.deleteSession);
 
-// NEW: Paginated sessions endpoint
+// UPDATED: Enhanced session deletion with delete options
+router.get('/sessions/:sessionId/delete-options', adminController.getDeleteOptions);
+router.delete(
+  '/sessions/:sessionId',
+  [
+    body('deleteOption').isIn(['single', 'promote', 'deleteAll', 'child'])
+  ],
+  validateRequest,
+  adminController.deleteSession
+);
+
+// Paginated sessions endpoint
 router.get('/sessions/paginated', adminController.getSessionsWithPagination);
 
-// NEW: Recurring session details
+// Recurring session details
 router.get('/sessions/:sessionId/recurring-details', adminController.getRecurringSessionDetails);
 
 // Analytics

@@ -20,17 +20,11 @@ import {
   Divider,
   Box,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Switch,
 } from '@mui/material';
 import {
   Add,
   Delete,
-  Quiz,
-  CheckCircle,
   RadioButtonChecked,
   CheckBox,
   DragIndicator,
@@ -107,6 +101,17 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
     updateQuizContent({ correctAnswers: newCorrect });
   };
 
+  // Initialize with default values if needed
+  React.useEffect(() => {
+    if (!quizContent.type) {
+      updateQuizContent({ 
+        type: 'single-choice',
+        options: ['Option 1', 'Option 2'],
+        correctAnswer: 0
+      });
+    }
+  }, []);
+
   return (
     <Stack spacing={3}>
       {/* Basic Quiz Info */}
@@ -131,7 +136,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
         placeholder="Enter your quiz question here..."
       />
 
-      {/* Quiz Type Selection */}
+      {/* Quiz Type Selection - Only Single and Multiple Choice */}
       <FormControl fullWidth>
         <InputLabel>Quiz Type</InputLabel>
         <Select
@@ -152,14 +157,6 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               const currentCorrect = quizContent.correctAnswer || 0;
               updates.correctAnswers = [currentCorrect];
               updates.correctAnswer = undefined;
-            } else if (newType === 'true-false') {
-              updates.options = ['True', 'False'];
-              updates.correctAnswer = 0;
-              updates.correctAnswers = undefined;
-            } else if (newType === 'fill-blank') {
-              updates.correctAnswer = '';
-              updates.options = undefined;
-              updates.correctAnswers = undefined;
             }
             
             updateQuizContent(updates);
@@ -167,7 +164,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
         >
           <MenuItem value="single-choice">
             <Stack direction="row" alignItems="center" spacing={1}>
-              <RadioButtonChecked />
+              <RadioButtonChecked color="primary" />
               <Box>
                 <Typography>Single Choice</Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -178,7 +175,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
           </MenuItem>
           <MenuItem value="multiple-choice">
             <Stack direction="row" alignItems="center" spacing={1}>
-              <CheckBox />
+              <CheckBox color="primary" />
               <Box>
                 <Typography>Multiple Choice</Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -187,179 +184,108 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               </Box>
             </Stack>
           </MenuItem>
-          <MenuItem value="true-false">
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <CheckCircle />
-              <Box>
-                <Typography>True / False</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Simple true or false question
-                </Typography>
-              </Box>
-            </Stack>
-          </MenuItem>
-          <MenuItem value="fill-blank">
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography sx={{ fontFamily: 'monospace' }}>___</Typography>
-              <Box>
-                <Typography>Fill in the Blank</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Students type their answer
-                </Typography>
-              </Box>
-            </Stack>
-          </MenuItem>
         </Select>
       </FormControl>
 
-      {/* Quiz Options for Single/Multiple Choice */}
-      {(quizContent.type === 'single-choice' || quizContent.type === 'multiple-choice' || quizContent.type === 'true-false') && (
-        <Card variant="outlined" sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6" fontWeight={600}>
-              Answer Options
-            </Typography>
-            {quizContent.type !== 'true-false' && (
-              <Button
-                variant="outlined"
-                startIcon={<Add />}
-                onClick={addOption}
-                size="small"
-                sx={{ borderRadius: 2 }}
-                disabled={(quizContent.options?.length || 0) >= 8}
-              >
-                Add Option
-              </Button>
-            )}
-          </Stack>
-
-          <Stack spacing={2}>
-            {(quizContent.options || []).map((option: string, optionIndex: number) => (
-              <Stack key={optionIndex} direction="row" spacing={2} alignItems="center">
-                <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 40 }}>
-                  {quizContent.type === 'single-choice' || quizContent.type === 'true-false' ? (
-                    <FormControlLabel
-                      control={
-                        <Radio
-                          checked={quizContent.correctAnswer === optionIndex}
-                          onChange={() => updateQuizContent({ correctAnswer: optionIndex })}
-                          color="success"
-                        />
-                      }
-                      label=""
-                      sx={{ mr: 0 }}
-                    />
-                  ) : (
-                    <FormControlLabel
-                      control={
-                        <input
-                          type="checkbox"
-                          checked={quizContent.correctAnswers?.includes(optionIndex) || false}
-                          onChange={() => toggleMultipleChoiceAnswer(optionIndex)}
-                          style={{ 
-                            width: 20, 
-                            height: 20, 
-                            accentColor: '#4caf50',
-                            cursor: 'pointer'
-                          }}
-                        />
-                      }
-                      label=""
-                      sx={{ mr: 0 }}
-                    />
-                  )}
-                </Box>
-
-                <TextField
-                  fullWidth
-                  label={`Option ${String.fromCharCode(65 + optionIndex)}`}
-                  value={option}
-                  onChange={(e) => updateOption(optionIndex, e.target.value)}
-                  error={!option.trim()}
-                  helperText={
-                    quizContent.type === 'single-choice' 
-                      ? (quizContent.correctAnswer === optionIndex ? 'Correct Answer' : '')
-                      : (quizContent.correctAnswers?.includes(optionIndex) ? 'Correct Answer' : '')
-                  }
-                  placeholder={`Enter option ${String.fromCharCode(65 + optionIndex)}...`}
-                />
-
-                {quizContent.type !== 'true-false' && (
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="Drag to reorder">
-                      <IconButton size="small">
-                        <DragIndicator />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Option">
-                      <IconButton
-                        color="error"
-                        size="small"
-                        onClick={() => removeOption(optionIndex)}
-                        disabled={(quizContent.options?.length || 0) <= 2}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                )}
-              </Stack>
-            ))}
-          </Stack>
-
-          <Alert severity="info" sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              {quizContent.type === 'single-choice' 
-                ? '💡 Select the radio button next to the correct answer. Students will see these options in random order.'
-                : quizContent.type === 'multiple-choice'
-                ? '💡 Check all correct answers. Students can select multiple options.'
-                : '💡 Select whether the statement is true or false.'
-              }
-            </Typography>
-          </Alert>
-        </Card>
-      )}
-
-      {/* Fill in the Blank */}
-      {quizContent.type === 'fill-blank' && (
-        <Card variant="outlined" sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Fill in the Blank Answer
+      {/* Quiz Options */}
+      <Card variant="outlined" sx={{ p: 3 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h6" fontWeight={600}>
+            Answer Options
           </Typography>
-          
-          <Stack spacing={2}>
-            <TextField
-              fullWidth
-              label="Correct Answer"
-              value={quizContent.correctAnswer || ''}
-              onChange={(e) => updateQuizContent({ correctAnswer: e.target.value })}
-              placeholder="Enter the correct answer"
-              helperText="This is the exact answer students need to provide"
-            />
-            
-            <TextField
-              fullWidth
-              label="Alternative Answers (comma-separated)"
-              value={quizContent.alternativeAnswers?.join(', ') || ''}
-              onChange={(e) => updateQuizContent({ 
-                alternativeAnswers: e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean)
-              })}
-              placeholder="e.g., answer1, answer2, answer3"
-              helperText="Alternative correct answers (optional)"
-            />
+          <Button
+            variant="outlined"
+            startIcon={<Add />}
+            onClick={addOption}
+            size="small"
+            sx={{ borderRadius: 2 }}
+            disabled={(quizContent.options?.length || 0) >= 8}
+          >
+            Add Option
+          </Button>
+        </Stack>
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={quizContent.caseSensitive || false}
-                  onChange={(e) => updateQuizContent({ caseSensitive: e.target.checked })}
-                />
-              }
-              label="Case sensitive"
-            />
-          </Stack>
-        </Card>
-      )}
+        <Stack spacing={2}>
+          {(quizContent.options || []).map((option: string, optionIndex: number) => (
+            <Stack key={optionIndex} direction="row" spacing={2} alignItems="center">
+              <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 40 }}>
+                {quizContent.type === 'single-choice' ? (
+                  <FormControlLabel
+                    control={
+                      <Radio
+                        checked={quizContent.correctAnswer === optionIndex}
+                        onChange={() => updateQuizContent({ correctAnswer: optionIndex })}
+                        color="success"
+                      />
+                    }
+                    label=""
+                    sx={{ mr: 0 }}
+                  />
+                ) : (
+                  <FormControlLabel
+                    control={
+                      <input
+                        type="checkbox"
+                        checked={quizContent.correctAnswers?.includes(optionIndex) || false}
+                        onChange={() => toggleMultipleChoiceAnswer(optionIndex)}
+                        style={{ 
+                          width: 20, 
+                          height: 20, 
+                          accentColor: '#4caf50',
+                          cursor: 'pointer'
+                        }}
+                      />
+                    }
+                    label=""
+                    sx={{ mr: 0 }}
+                  />
+                )}
+              </Box>
+
+              <TextField
+                fullWidth
+                label={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                value={option}
+                onChange={(e) => updateOption(optionIndex, e.target.value)}
+                error={!option.trim()}
+                helperText={
+                  quizContent.type === 'single-choice' 
+                    ? (quizContent.correctAnswer === optionIndex ? 'Correct Answer' : '')
+                    : (quizContent.correctAnswers?.includes(optionIndex) ? 'Correct Answer' : '')
+                }
+                placeholder={`Enter option ${String.fromCharCode(65 + optionIndex)}...`}
+              />
+
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Tooltip title="Drag to reorder">
+                  <IconButton size="small" color="default">
+                    <DragIndicator />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Option">
+                  <IconButton
+                    color="error"
+                    size="small"
+                    onClick={() => removeOption(optionIndex)}
+                    disabled={(quizContent.options?.length || 0) <= 2}
+                  >
+                    <Delete />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Stack>
+          ))}
+        </Stack>
+
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Typography variant="body2">
+            {quizContent.type === 'single-choice' 
+              ? '💡 Select the radio button next to the correct answer. Students will see these options in random order.'
+              : '💡 Check all correct answers. Students can select multiple options.'
+            }
+          </Typography>
+        </Alert>
+      </Card>
 
       {/* Quiz Settings */}
       <Card variant="outlined" sx={{ p: 3 }}>
@@ -438,8 +364,12 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
           <Divider sx={{ my: 2 }} />
           
           <Box sx={{ mb: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Chip label={quizContent.type || 'single-choice'} color="primary" size="small" />
+            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+              <Chip 
+                label={quizContent.type === 'single-choice' ? 'Single Choice' : 'Multiple Choice'} 
+                color="primary" 
+                size="small" 
+              />
               {quizContent.timeLimit > 0 && (
                 <Chip 
                   icon={<Timer />} 
@@ -506,15 +436,6 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
                 />
               ))}
             </Stack>
-          )}
-
-          {quizContent.type === 'fill-blank' && (
-            <TextField
-              disabled
-              placeholder="Student will type answer here..."
-              sx={{ mt: 1, bgcolor: 'white' }}
-              helperText={`Correct: ${quizContent.correctAnswer || 'Not set'}`}
-            />
           )}
 
           {quizContent.explanation && (

@@ -121,6 +121,98 @@ export class SessionRepository implements ISessionRepository {
     return result.affected !== 0;
   }
 
+  // NEW: Delete parent and promote first child to parent
+  async deleteParentAndPromoteChild(parentId: string): Promise<{ success: boolean; newParentId?: string; affectedCount: number }> {
+    return await AppDataSource.transaction(async (manager) => {
+      const sessionRepo = manager.getRepository(SessionEntity);
+
+      // 1. Find the parent session
+      const parentSession = await sessionRepo.findOne({ where: { id: parentId } });
+      if (!parentSession || !parentSession.isRecurring || parentSession.recurringParentId) {
+        throw new Error('Session is not a recurring parent session');
+      }
+
+      // 2. Find all child sessions ordered by scheduledAt
+      const childSessions = await sessionRepo.find({
+        where: { recurringParentId: parentId },
+        order: { scheduledAt: 'ASC' }
+      });
+
+      if (childSessions.length === 0) {
+        // No children, just delete the parent
+        await sessionRepo.delete(parentId);
+        return { success: true, affectedCount: 1 };
+      }
+
+      // 3. Get the first child (earliest scheduled)
+      const newParent = childSessions[0];
+      const remainingChildren = childSessions.slice(1);
+
+      // 4. Promote the first child to parent
+      newParent.recurringParentId = null; // Remove parent reference
+      newParent.recurringWeeks = parentSession.recurringWeeks; // Inherit parent properties
+      await sessionRepo.save(newParent);
+
+      // 5. Update remaining children to point to new parent
+      if (remainingChildren.length > 0) {
+        await sessionRepo.update(
+          { id: remainingChildren.map(s => s.id) as any },
+          { recurringParentId: newParent.id }
+        );
+      }
+
+      // 6. Delete the original parent
+      await sessionRepo.delete(parentId);
+
+      return {
+        success: true,
+        newParentId: newParent.id,
+        affectedCount: 1 + remainingChildren.length // Parent deleted + children updated
+      };
+    });
+  }
+
+  // NEW: Check if session is a recurring parent
+  async isRecurringParent(sessionId: string): Promise<boolean> {
+    const session = await this.repository.findOne({ where: { id: sessionId } });
+    return !!(session?.isRecurring && !session.recurringParentId);
+  }
+
+  // NEW: Get recurring series info
+  async getRecurringSeriesInfo(sessionId: string): Promise<{
+    isRecurring: boolean;
+    isParent: boolean;
+    parentId?: string;
+    childrenCount: number;
+    totalInSeries: number;
+  }> {
+    const session = await this.repository.findOne({ where: { id: sessionId } });
+    
+    if (!session?.isRecurring) {
+      return {
+        isRecurring: false,
+        isParent: false,
+        childrenCount: 0,
+        totalInSeries: 1
+      };
+    }
+
+    const isParent = !session.recurringParentId;
+    const parentId = isParent ? sessionId : session.recurringParentId!;
+    
+    const childrenCount = await this.repository.count({
+      where: { recurringParentId: parentId }
+    });
+
+    return {
+      isRecurring: true,
+      isParent,
+      parentId: isParent ? undefined : parentId,
+      childrenCount,
+      totalInSeries: childrenCount + 1 // Include parent
+    };
+  }
+
   async incrementParticipants(id: string): Promise<Session | null> {
     await this.repository.increment({ id }, 'currentParticipants', 1);
     return this.findById(id);
