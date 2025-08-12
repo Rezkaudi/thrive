@@ -140,7 +140,7 @@ export const KeywordFlashcards: React.FC<KeywordFlashcardsProps> = ({
   };
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: 0 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={600}>Keyword Practice</Typography>
         <Stack direction="row" spacing={1} alignItems="center">
