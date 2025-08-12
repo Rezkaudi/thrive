@@ -595,10 +595,9 @@ const VideoPlayer = ({ url }: { url: string }) => {
 
 
 const PDFViewer = ({ url }: { url: string }) => {
-  // const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-  //   navigator.userAgent
-  // );
-  const isMobile = false
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
 
   return (
     <Paper
