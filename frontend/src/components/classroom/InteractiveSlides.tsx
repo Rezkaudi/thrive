@@ -86,7 +86,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+          overflow: "auto",
           position: "relative",
         }}
       >
@@ -94,7 +94,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         <Box
           sx={{
             flexGrow: 1,
-            overflow: "hidden",
+            // overflow: "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

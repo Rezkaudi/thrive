@@ -71,7 +71,7 @@ export const SlideHeader: React.FC<SlideHeaderProps> = ({
           icon={getSlideIcon(slideType)}
           label={`Slide ${currentSlide + 1} of ${totalSlides}`}
           size="small"
-          sx={{ 
+          sx={{
             fontWeight: 600,
             bgcolor: 'primary.50',
             '& .MuiChip-icon': {
@@ -85,7 +85,7 @@ export const SlideHeader: React.FC<SlideHeaderProps> = ({
             label={`${pointsReward} points`}
             color="primary"
             size="small"
-            sx={{ 
+            sx={{
               color: 'white',
               fontWeight: 600,
               '& .MuiChip-icon': {
@@ -98,7 +98,7 @@ export const SlideHeader: React.FC<SlideHeaderProps> = ({
 
       {/* Right Side - Controls */}
       <Stack direction="row" spacing={1}>
-        {isFullscreen && (
+        {/* {isFullscreen && (
           <IconButton 
             onClick={onExitFullscreen} 
             sx={{ 
@@ -111,10 +111,10 @@ export const SlideHeader: React.FC<SlideHeaderProps> = ({
           >
             <Close />
           </IconButton>
-        )}
-        <IconButton 
-          onClick={onToggleFullscreen} 
-          sx={{ 
+        )} */}
+        <IconButton
+          onClick={onToggleFullscreen}
+          sx={{
             bgcolor: 'action.hover',
             '&:hover': {
               bgcolor: 'action.selected'
