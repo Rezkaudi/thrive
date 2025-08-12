@@ -1105,6 +1105,7 @@ export const ClassroomPage: React.FC = () => {
                           onClick={() => {
                             if (!isDisabled && !lesson.isLocked) {
                               setSelectedLesson(lesson);
+                              if (isMobile) setDrawerOpen(false)
                             } else if (lesson.lockReason === 'Subscribe to unlock') {
                               navigate("/subscription");
                             }
