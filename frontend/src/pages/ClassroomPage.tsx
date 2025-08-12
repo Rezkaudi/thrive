@@ -563,7 +563,43 @@ const VideoPlayer = ({ url }: { url: string }) => {
   );
 };
 
+// const PDFViewer = ({ url }: { url: string }) => {
+//   return (
+//     <Paper
+//       elevation={3}
+//       sx={{
+//         position: "relative",
+//         height: "80vh",
+//         bgcolor: "grey.100",
+//         borderRadius: 3,
+//         overflow: "hidden",
+//       }}
+//     >
+//       <object
+//         data={url}
+//         type="application/pdf"
+//         width="100%"
+//         height="100%"
+//       >
+//         <p>
+//           Your device may not support inline PDF viewing.
+//           <a href={url} target="_blank" rel="noopener noreferrer">
+//             Open PDF
+//           </a>
+//         </p>
+//       </object>
+//     </Paper>
+
+//   );
+// };
+
+
 const PDFViewer = ({ url }: { url: string }) => {
+  // const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  //   navigator.userAgent
+  // );
+  const isMobile = false
+
   return (
     <Paper
       elevation={3}
@@ -575,15 +611,38 @@ const PDFViewer = ({ url }: { url: string }) => {
         overflow: "hidden",
       }}
     >
-      <iframe
-        src={`${url}#toolbar=0`}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-        }}
-        title="PDF Viewer"
-      />
+      {isMobile ? (
+        // Mobile fallback - use iframe or download link
+        <iframe
+          title="pdf"
+          src={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
+          width="100%"
+          height="100%"
+          style={{ border: 'none' }}
+        >
+          <p>
+            Your device may not support inline PDF viewing.
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              Download PDF
+            </a>
+          </p>
+        </iframe>
+      ) : (
+        // Desktop - use object tag
+        <object
+          data={url}
+          type="application/pdf"
+          width="100%"
+          height="100%"
+        >
+          <p>
+            Your browser does not support inline PDF viewing.
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              Open PDF
+            </a>
+          </p>
+        </object>
+      )}
     </Paper>
   );
 };
