@@ -86,15 +86,16 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+          overflow: "auto",
           position: "relative",
+          top: "0"
         }}
       >
         {/* Slide Content */}
         <Box
           sx={{
             flexGrow: 1,
-            overflow: "hidden",
+            overflowX: isFullscreen ? "-moz-hidden-unscrollabl" : "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

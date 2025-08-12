@@ -61,10 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [openMenu, setOpenMenu] = useState<boolean>(false);
 
 
-  const [mobileOpen, setMobileOpen] = useState<boolean>(() => {
-    const stored = localStorage.getItem("mobileOpen");
-    return stored === "true";
-  });
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
   const [desktopDrawerOpen, setDesktopDrawerOpen] = useState<boolean>(() => {
     const stored = localStorage.getItem("desktopDrawerOpen");
@@ -89,7 +86,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleDrawerToggle = () => {
     if (isMobile) {
       setMobileOpen(!mobileOpen);
-      localStorage.setItem("mobileOpen", String(!mobileOpen))
     } else {
       setDesktopDrawerOpen(!desktopDrawerOpen);
       localStorage.setItem("desktopDrawerOpen", String(!desktopDrawerOpen))

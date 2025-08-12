@@ -204,6 +204,8 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
   // ... rest of the code remains the same ...
 
   const toggleFullscreen = () => {
+    setIsFullscreen(pre => !pre)
+
     if (!isFullscreen) {
       if (containerRef.current) {
         containerRef.current.requestFullscreen?.();

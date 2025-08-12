@@ -73,39 +73,39 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   // Function to get visible slide indices (for responsive design)
   const getVisibleSlides = () => {
     const maxVisible = isMobile ? 5 : isTablet ? 6 : 7;
-    
+
     if (totalSlides <= maxVisible) {
       return Array.from({ length: totalSlides }, (_, i) => i);
     }
-    
+
     const half = Math.floor(maxVisible / 2);
     let start = Math.max(0, currentSlide - half);
     let end = Math.min(totalSlides - 1, start + maxVisible - 1);
-    
+
     if (end - start < maxVisible - 1) {
       start = Math.max(0, end - maxVisible + 1);
     }
-    
+
     const visible = [];
-    
+
     if (start > 0) {
       visible.push(0);
       if (start > 1) {
         visible.push(-1); // ellipsis
       }
     }
-    
+
     for (let i = start; i <= end; i++) {
       visible.push(i);
     }
-    
+
     if (end < totalSlides - 1) {
       if (end < totalSlides - 2) {
         visible.push(-2); // ellipsis
       }
       visible.push(totalSlides - 1);
     }
-    
+
     return visible;
   };
 
@@ -123,9 +123,9 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
             px: isMobile ? 0.5 : 1,
           }}
         >
-          <MoreHoriz sx={{ 
-            color: 'grey.400', 
-            fontSize: isMobile ? 12 : 16 
+          <MoreHoriz sx={{
+            color: 'grey.400',
+            fontSize: isMobile ? 12 : 16
           }} />
         </Box>
       );
@@ -234,10 +234,11 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
             onClick={onPrevious}
             disabled={currentSlide === 0}
             variant="outlined"
-            size="small"
-            sx={{ 
+            size={isTablet ? "small" : "medium"}
+            sx={{
               borderRadius: 2,
-              flex: 1,
+              minWidth: isTablet ? 100 : 120,
+              flexShrink: 0,
               '&:disabled': {
                 opacity: 0.5
               }
@@ -253,11 +254,11 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
               onClick={onComplete}
               disabled={isLessonCompleted}
               endIcon={<CheckCircle />}
-              size="small"
+              size={isTablet ? "small" : "medium"}
               sx={{
                 borderRadius: 2,
-                flex: 1,
-                fontWeight: 600,
+                minWidth: isTablet ? 100 : 120,
+                flexShrink: 0,
                 background: 'linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)',
                 '&:hover': {
                   background: 'linear-gradient(45deg, #45a049 30%, #7cb342 90%)',
@@ -335,7 +336,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         disabled={currentSlide === 0}
         variant="outlined"
         size={isTablet ? "small" : "medium"}
-        sx={{ 
+        sx={{
           borderRadius: 2,
           minWidth: isTablet ? 100 : 120,
           flexShrink: 0,
@@ -352,7 +353,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         <Stack direction="row" spacing={1} alignItems="center">
           {visibleSlides.map(renderDot)}
         </Stack>
-        
+
         <Typography
           variant="caption"
           sx={{
