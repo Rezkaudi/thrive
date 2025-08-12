@@ -1,6 +1,29 @@
 import React from 'react';
-import { Stack, TextField, Grid, IconButton, Tooltip } from '@mui/material';
-import { CloudUpload, VolumeUp } from '@mui/icons-material';
+import {
+  Stack,
+  TextField,
+  Grid,
+  IconButton,
+  Tooltip,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Box,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Alert,
+  Divider,
+} from '@mui/material';
+import {
+  CloudUpload,
+  VolumeUp,
+  Add,
+  Delete,
+  DragIndicator,
+} from '@mui/icons-material';
+
 import { ListeningItem, PronunciationItem } from '../../../../../types/interactive-items.types';
 
 interface AudioEditorProps {
@@ -10,31 +33,65 @@ interface AudioEditorProps {
 }
 
 export const AudioEditor: React.FC<AudioEditorProps> = ({ item, onUpdate, type }) => {
+  const listeningItem = item as ListeningItem;
+  const pronunciationItem = item as PronunciationItem;
+
+  const addOption = () => {
+    const newOptions = [...(listeningItem.options || []), `Option ${(listeningItem.options?.length || 0) + 1}`];
+    onUpdate({ options: newOptions });
+  };
+
+  const updateOption = (optionIndex: number, value: string) => {
+    const newOptions = [...(listeningItem.options || [])];
+    newOptions[optionIndex] = value;
+    onUpdate({ options: newOptions });
+  };
+
+  const removeOption = (optionIndex: number) => {
+    if ((listeningItem.options?.length || 0) <= 2) return; // Keep minimum 2 options
+
+    const newOptions = listeningItem.options?.filter((_: any, i: number) => i !== optionIndex) || [];
+    let updates: any = { options: newOptions };
+
+    // Adjust correctAnswer if needed
+    if (listeningItem.correct >= optionIndex && listeningItem.correct > 0) {
+      updates.correct = listeningItem.correct - 1;
+    } else if (listeningItem.correct === optionIndex) {
+      updates.correct = 0; // Reset to first option if deleted option was selected
+    }
+
+    onUpdate(updates);
+  };
+
+  // Initialize with default values if needed - moved outside conditional
+  React.useEffect(() => {
+    if (type === 'listening' && (!listeningItem.options || listeningItem.options.length === 0)) {
+      onUpdate({
+        options: ['Option A', 'Option B'],
+        correct: 0
+      });
+    }
+  }, [type]);
+
+  // Handle pronunciation type
   if (type === 'pronunciation') {
-    const pronunciationItem = item as PronunciationItem;
     return (
       <Stack spacing={2}>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 6 }}>
-            <TextField
-              fullWidth
-              label="Text to Pronounce"
-              value={pronunciationItem.text || ''}
-              onChange={(e) => onUpdate({ text: e.target.value })}
-              placeholder="e.g., おはようございます"
-            />
-          </Grid>
-          <Grid size={{ xs: 6 }}>
-            <TextField
-              fullWidth
-              label="Romanization"
-              value={pronunciationItem.pronunciation || ''}
-              onChange={(e) => onUpdate({ pronunciation: e.target.value })}
-              placeholder="e.g., ohayou gozaimasu"
-            />
-          </Grid>
-        </Grid>
-        
+        <TextField
+          fullWidth
+          label="Text to Pronounce"
+          value={pronunciationItem.text || ''}
+          onChange={(e) => onUpdate({ text: e.target.value })}
+          placeholder="e.g., おはようございます"
+        />
+        <TextField
+          fullWidth
+          label="Pronunciation Guide"
+          value={pronunciationItem.pronunciation || ''}
+          onChange={(e) => onUpdate({ pronunciation: e.target.value })}
+          placeholder="e.g., ohayou gozaimasu"
+          helperText="Romanization or phonetic guide for pronunciation"
+        />
         <Stack direction="row" spacing={2} alignItems="center">
           <TextField
             fullWidth
@@ -48,22 +105,22 @@ export const AudioEditor: React.FC<AudioEditorProps> = ({ item, onUpdate, type }
               <CloudUpload />
             </IconButton>
           </Tooltip>
-          {pronunciationItem.audioUrl && (
-            <Tooltip title="Test Audio">
-              <IconButton color="success">
-                <VolumeUp />
-              </IconButton>
-            </Tooltip>
-          )}
+          <Tooltip title="Listen to Audio">
+            <IconButton 
+              color="success"
+              disabled={!pronunciationItem.audioUrl?.trim()}
+            >
+              <VolumeUp />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </Stack>
     );
   }
 
-  // Listening type
-  const listeningItem = item as ListeningItem;
   return (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
+      {/* Audio Upload Section */}
       <Stack direction="row" spacing={2} alignItems="center">
         <TextField
           fullWidth
@@ -71,48 +128,195 @@ export const AudioEditor: React.FC<AudioEditorProps> = ({ item, onUpdate, type }
           value={listeningItem.audioUrl || ''}
           onChange={(e) => onUpdate({ audioUrl: e.target.value })}
           placeholder="S3 URL for audio file"
+          error={!listeningItem.audioUrl?.trim()}
+          helperText={!listeningItem.audioUrl?.trim() ? 'Audio URL is required' : ''}
         />
         <Tooltip title="Upload Audio File">
           <IconButton color="primary">
             <CloudUpload />
           </IconButton>
         </Tooltip>
-        {listeningItem.audioUrl && (
-          <Tooltip title="Test Audio">
-            <IconButton color="success">
-              <VolumeUp />
-            </IconButton>
-          </Tooltip>
-        )}
+        <Tooltip title="Listen to Audio">
+          <IconButton 
+            color="success"
+            disabled={!listeningItem.audioUrl?.trim()}
+          >
+            <VolumeUp />
+          </IconButton>
+        </Tooltip>
       </Stack>
-      
+
+      {/* Question Section */}
       <TextField
         fullWidth
-        label="Question"
+        multiline
+        rows={3}
+        label="Listening Question"
         value={listeningItem.question || ''}
         onChange={(e) => onUpdate({ question: e.target.value })}
-        placeholder="What did you hear?"
+        error={!listeningItem.question?.trim()}
+        helperText={!listeningItem.question?.trim() ? 'Question is required' : ''}
+        placeholder="What did you hear in the audio? / Listen and choose the correct answer..."
       />
-      
+
+      {/* Answer Options Section */}
+      <Card variant="outlined" sx={{ p: 3 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h6" fontWeight={600}>
+            Answer Options (Single Choice)
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<Add />}
+            onClick={addOption}
+            size="small"
+            sx={{ borderRadius: 2 }}
+            disabled={(listeningItem.options?.length || 0) >= 6}
+          >
+            Add Option
+          </Button>
+        </Stack>
+
+        <Stack spacing={2}>
+          {(listeningItem.options || []).map((option: string, optionIndex: number) => (
+            <Stack key={optionIndex} direction="row" spacing={2} alignItems="center">
+              <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 40 }}>
+                <FormControlLabel
+                  control={
+                    <Radio
+                      checked={listeningItem.correct === optionIndex}
+                      onChange={() => onUpdate({ correct: optionIndex })}
+                      color="success"
+                    />
+                  }
+                  label=""
+                  sx={{ mr: 0 }}
+                />
+              </Box>
+
+              <TextField
+                fullWidth
+                label={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                value={option}
+                onChange={(e) => updateOption(optionIndex, e.target.value)}
+                error={!option.trim()}
+                helperText={
+                  listeningItem.correct === optionIndex ? '✓ Correct Answer' : ''
+                }
+                placeholder={`Enter option ${String.fromCharCode(65 + optionIndex)}...`}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: listeningItem.correct === optionIndex ? 'success.light' : 'transparent'
+                  }
+                }}
+              />
+
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Tooltip title="Drag to reorder">
+                  <IconButton size="small" color="default">
+                    <DragIndicator />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Option">
+                  <IconButton
+                    color="error"
+                    size="small"
+                    onClick={() => removeOption(optionIndex)}
+                    disabled={(listeningItem.options?.length || 0) <= 2}
+                  >
+                    <Delete />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Stack>
+          ))}
+        </Stack>
+
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Typography variant="body2">
+            💡 Select the radio button next to the correct answer. Students will listen to the audio and choose one answer.
+          </Typography>
+        </Alert>
+      </Card>
+
+      {/* Optional Notes Section - removing transcript since it doesn't exist in ListeningItem */}
       <TextField
         fullWidth
-        label="Answer Options (comma-separated)"
-        value={Array.isArray(listeningItem.options) ? listeningItem.options.join(', ') : ''}
-        onChange={(e) => onUpdate({ 
-          options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-        })}
-        placeholder="e.g., Hello, Goodbye, Thank you"
+        multiline
+        rows={2}
+        label="Additional Notes (optional)"
+        value={''}
+        onChange={(e) => {
+          // You can store this in a custom field if needed
+          // onUpdate({ notes: e.target.value });
+        }}
+        placeholder="Any additional notes about this listening exercise..."
+        helperText="Additional information about the exercise"
+        disabled
+        sx={{ opacity: 0.5 }}
       />
-      
-      <TextField
-        fullWidth
-        type="number"
-        label="Correct Answer Index (0-based)"
-        value={listeningItem.correct || 0}
-        onChange={(e) => onUpdate({ correct: parseInt(e.target.value) })}
-        inputProps={{ min: 0, max: (listeningItem.options?.length || 1) - 1 }}
-        helperText="Index of the correct option (starting from 0)"
-      />
+
+      {/* Listening Exercise Preview */}
+      <Card sx={{ bgcolor: 'grey.50', borderRadius: 2 }}>
+        <CardContent>
+          <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+            🎧 Listening Exercise Preview
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+          
+          {/* Audio Player Simulation */}
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: 'primary.main', 
+            color: 'white', 
+            borderRadius: 2, 
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <VolumeUp />
+              <Typography variant="body2">
+                {listeningItem.audioUrl ? 'Audio Ready' : 'No audio uploaded'}
+              </Typography>
+            </Box>
+            <Button 
+              variant="contained" 
+              color="secondary" 
+              size="small"
+              disabled={!listeningItem.audioUrl}
+            >
+              ▶ Play
+            </Button>
+          </Box>
+          
+          <Typography variant="h6" gutterBottom>
+            {listeningItem.question || 'Your listening question will appear here...'}
+          </Typography>
+
+          {/* Preview Options */}
+          <RadioGroup>
+            {(listeningItem.options || []).map((option: string, optionIndex: number) => (
+              <FormControlLabel
+                key={optionIndex}
+                value={optionIndex}
+                control={<Radio disabled />}
+                label={option || `Option ${String.fromCharCode(65 + optionIndex)}`}
+                sx={{
+                  bgcolor: listeningItem.correct === optionIndex ? 'success.light' : 'transparent',
+                  borderRadius: 1,
+                  px: 1,
+                  border: listeningItem.correct === optionIndex ? '2px solid' : 'none',
+                  borderColor: 'success.main'
+                }}
+              />
+            ))}
+          </RadioGroup>
+
+          {/* Removed transcript section since it doesn't exist in ListeningItem */}
+        </CardContent>
+      </Card>
     </Stack>
   );
 };
