@@ -209,7 +209,7 @@ export const Quiz: React.FC<QuizProps> = ({
     
     return (
       <Zoom in>
-        <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+        <Box sx={{ maxWidth: 800, mx: 'auto', p: 0 }}>
           <Card>
             <CardContent sx={{ textAlign: 'center', py: 5 }}>
               <motion.div
@@ -317,7 +317,7 @@ export const Quiz: React.FC<QuizProps> = ({
   }
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: 0 }}>
       <Stack spacing={3}>
         {/* Header */}
         <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -353,7 +353,7 @@ export const Quiz: React.FC<QuizProps> = ({
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.3 }}
           >
-            <CardContent sx={{ p: 4 }}>
+            <CardContent sx={{ p: "20px" }}>
               <Stack spacing={3}>
                 <Stack direction="row" justifyContent="space-between" alignItems="start">
                   <Box sx={{ flexGrow: 1 }}>

@@ -1675,7 +1675,7 @@ export const ClassroomPage: React.FC = () => {
           "& .MuiDrawer-paper": { width: 380 },
         }}
       >
-        <Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
+        <Box sx={{ p: 3, pt: "70px", pb: 1, borderBottom: "1px solid", borderColor: "divider" }}>
           <Button
             startIcon={<ArrowBack />}
             onClick={() => {
@@ -2016,6 +2016,7 @@ export const ClassroomPage: React.FC = () => {
                               mt: 4,
                               borderRadius: 3,
                               bgcolor: "background.default",
+                              display: "flex", justifyContent: "center",
                             }}
                           >
                             <Stack
