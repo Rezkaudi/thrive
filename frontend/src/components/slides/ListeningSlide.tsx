@@ -58,7 +58,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
   };
 
   return (
-    <Box sx={{ padding: 4, maxWidth: "800px", margin: "0 auto" }}>
+    <Box sx={{ padding: {xs:1,lg:4}, py: {xs:1, lg:4}, borderRadius: {xs:"25px", lg:"47px"}, maxWidth: "800px", margin: "0 auto" }}>
       <Typography
         variant="h4"
         gutterBottom
@@ -85,7 +85,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
         {content.items?.map((item: any, questionIndex: number) => (
           <Paper
             key={item.id}
-            sx={{ p: 4, borderRadius: 3, bgcolor: "background.paper" }}
+            sx={{ p: {xs:2, lg:4}, borderRadius: {xs:2,lg:3}, bgcolor: "background.paper" }}
           >
             <Stack
               direction="row"
@@ -100,7 +100,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
                 variant="contained"
                 startIcon={<VolumeUp />}
                 onClick={() => playAudio(item.audioUrl)}
-                sx={{ borderRadius: 3 }}
+                sx={{ borderRadius: 3, px: {xs: "12px", lg:""}, py:{xs: "6px", lg:""} }}
               >
                 Play Audio
               </Button>
@@ -124,8 +124,9 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
                   label={option}
                   sx={{
                     mb: 1,
-                    p: 2,
-                    borderRadius: 2,
+                    mx: 1,
+                    p: 1,
+                    borderRadius: 1,
                     border: "1px solid",
                     borderColor: "divider",
                     "&:hover": { bgcolor: "action.hover" },
@@ -147,8 +148,8 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
             Object.keys(userAnswer).length !== (content.items?.length || 0)
           }
           sx={{
-            px: 6,
-            py: 2,
+            px: {xs: 3, lg:6},
+            py: {xs:1, lg:2},
             fontSize: "1.1rem",
             borderRadius: 3,
             background: "linear-gradient(45deg, #8BC34A 30%, #CDDC39 90%)",
