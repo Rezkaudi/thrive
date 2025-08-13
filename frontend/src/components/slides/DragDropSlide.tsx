@@ -10,6 +10,8 @@ import {
   Fade,
   LinearProgress,
   Chip,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   CheckCircle,
@@ -70,6 +72,11 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const [localValidation, setLocalValidation] = useState<any>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Mobile detection
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const content = slide.content.content as DragDropContent;
   const slideId = `drag-drop-${slide.id}`;
@@ -428,7 +435,7 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
   // Handle empty or invalid content
   if (items.length === 0) {
     return (
-      <Box sx={{ padding: 4, maxWidth: "900px", margin: "0 auto" }}>
+      <Box sx={{ padding: { xs: 2, md: 4 }, maxWidth: "900px", margin: "0 auto" }}>
         <Alert severity="error" sx={{ borderRadius: 2 }}>
           <Typography variant="h6">Content Error</Typography>
           <Typography>
@@ -441,13 +448,17 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
   }
 
   return (
-    <Box sx={{ padding: 4, maxWidth: "900px", margin: "0 auto" }}>
+    <Box sx={{
+      padding: { xs: 2, sm: 3, md: 4 },
+      maxWidth: "900px",
+      margin: "0 auto"
+    }}>
       <Typography
-        variant="h4"
+        variant={isMobile ? "h5" : "h4"}
         gutterBottom
         fontWeight={600}
         textAlign="center"
-        sx={{ mb: 3 }}
+        sx={{ mb: { xs: 2, md: 3 } }}
       >
         {slide.content.title}
       </Typography>
@@ -456,9 +467,10 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         variant="body1"
         sx={{
           textAlign: "center",
-          mb: 4,
+          mb: { xs: 3, md: 4 },
           color: "text.secondary",
-          fontSize: "1.1rem",
+          fontSize: { xs: "1rem", md: "1.1rem" },
+          px: { xs: 1, sm: 0 }
         }}
       >
         {content.instruction ||
@@ -466,7 +478,7 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       {/* Progress indicator with visual progress bar */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: { xs: 3, md: 4 } }}>
         <Box
           sx={{
             display: "flex",
@@ -475,20 +487,25 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
             mb: 1,
           }}
         >
-          <Typography variant="h6" color="primary.main" fontWeight={600}>
+          <Typography
+            variant={isMobile ? "body1" : "h6"}
+            color="primary.main"
+            fontWeight={600}
+          >
             Progress: {matchedCount}/{totalCount} matched
           </Typography>
           <Chip
             label={`${Math.round(progressPercentage)}%`}
             color={isComplete ? "success" : "primary"}
             variant={isComplete ? "filled" : "outlined"}
+            size={isMobile ? "small" : "medium"}
           />
         </Box>
         <LinearProgress
           variant="determinate"
           value={progressPercentage}
           sx={{
-            height: 8,
+            height: { xs: 6, md: 8 },
             borderRadius: 4,
             bgcolor: "grey.200",
             "& .MuiLinearProgress-bar": {
@@ -499,19 +516,25 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         />
       </Box>
 
-      <Grid container spacing={4} sx={{ mb: 4 }}>
+      <Grid container spacing={{ xs: 2, md: 4 }} sx={{ mb: { xs: 3, md: 4 } }}>
         {/* Left side - Items to drag */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, bgcolor: "primary.50", borderRadius: 3 }}>
+        <Grid size={{ xs: 6, md: 6 }}>
+          <Paper sx={{
+            p: { xs: 2, md: 3 },
+            bgcolor: "primary.50",
+            borderRadius: { xs: 2, md: 3 },
+            height: '100%'
+          }}>
             <Typography
-              variant="h6"
+              variant={isMobile ? "body1" : "h6"}
               gutterBottom
               textAlign="center"
               fontWeight={600}
+              sx={{ mb: { xs: 1.5, md: 2 } }}
             >
-              🇯🇵 Japanese Words
+              🇯🇵 {isMobile ? "JP" : "Japanese Words"}
             </Typography>
-            <Stack spacing={2}>
+            <Stack spacing={{ xs: 1.5, md: 2 }}>
               {shuffledItems.map((item) => {
                 const isMatched = !!userAnswer[item.text];
                 const isDragging = draggedItem?.id === item.id;
@@ -523,26 +546,26 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                     onDragStart={(e) => handleDragStart(e, item)}
                     onDragEnd={handleDragEnd}
                     sx={{
-                      p: 2.5,
+                      p: { xs: 1.5, sm: 2, md: 2.5 },
                       cursor: isMatched || isValidating ? "default" : "grab",
                       textAlign: "center",
                       backgroundColor: isMatched
                         ? "success.light"
                         : isDragging
-                        ? "primary.light"
-                        : "background.paper",
+                          ? "primary.light"
+                          : "background.paper",
                       opacity: isDragging
                         ? 0.5
                         : isValidating && !isMatched
-                        ? 0.6
-                        : 1,
+                          ? 0.6
+                          : 1,
                       transition: "all 0.3s ease",
                       border: "2px solid",
                       borderColor: isMatched
                         ? "success.main"
                         : isDragging
-                        ? "primary.main"
-                        : "transparent",
+                          ? "primary.main"
+                          : "transparent",
                       transform: isDragging
                         ? "rotate(3deg) scale(0.98)"
                         : "none",
@@ -551,8 +574,8 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                           isMatched || isValidating
                             ? "none"
                             : isDragging
-                            ? "rotate(3deg) scale(0.98)"
-                            : "translateY(-2px)",
+                              ? "rotate(3deg) scale(0.98)"
+                              : isMobile ? "none" : "translateY(-2px)",
                         boxShadow: isMatched ? 1 : 3,
                       },
                       "&:active": {
@@ -562,7 +585,7 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                       position: "relative",
                     }}
                   >
-                    {!isMatched && !isValidating && (
+                    {!isMatched && !isValidating && !isMobile && (
                       <DragIndicator
                         sx={{
                           position: "absolute",
@@ -574,13 +597,16 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                       />
                     )}
                     <Typography
-                      variant="h6"
+                      variant={isMobile ? "body1" : "h6"}
                       fontWeight={500}
-                      sx={{ fontSize: "1.4rem" }}
+                      sx={{
+                        fontSize: { xs: "1.1rem", sm: "1.2rem", md: "1.4rem" },
+                        wordBreak: "break-word"
+                      }}
                     >
                       {item.text}
                     </Typography>
-                    {isMatched && (
+                    {isMatched && !isMobile && (
                       <Box
                         sx={{
                           mt: 1,
@@ -595,7 +621,7 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                           color="success.dark"
                           sx={{ fontWeight: 500 }}
                         >
-                          ✓ Matched with: {userAnswer[item.text]}
+                          ✓ Matched
                         </Typography>
                         {!isValidating && (
                           <Button
@@ -613,6 +639,17 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                         )}
                       </Box>
                     )}
+                    {isMatched && isMobile && (
+                      <CheckCircleOutline
+                        sx={{
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          color: "success.main",
+                          fontSize: "1rem"
+                        }}
+                      />
+                    )}
                   </Paper>
                 );
               })}
@@ -621,17 +658,23 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         </Grid>
 
         {/* Right side - Drop targets */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, bgcolor: "secondary.50", borderRadius: 3 }}>
+        <Grid size={{ xs: 6, md: 6 }}>
+          <Paper sx={{
+            p: { xs: 2, md: 3 },
+            bgcolor: "secondary.50",
+            borderRadius: { xs: 2, md: 3 },
+            height: '100%'
+          }}>
             <Typography
-              variant="h6"
+              variant={isMobile ? "body1" : "h6"}
               gutterBottom
               textAlign="center"
               fontWeight={600}
+              sx={{ mb: { xs: 1.5, md: 2 } }}
             >
-              🇬🇧 English Translations
+              🇬🇧 {isMobile ? "EN" : "English Translations"}
             </Typography>
-            <Stack spacing={2}>
+            <Stack spacing={{ xs: 1.5, md: 2 }}>
               {shuffledTargets.map((targetItem) => {
                 const isMatched = Object.values(userAnswer).includes(
                   targetItem.target
@@ -639,8 +682,8 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                 const isDraggedOver = isDragOver === targetItem.target;
                 const matchedItem = isMatched
                   ? Object.keys(userAnswer).find(
-                      (key) => userAnswer[key] === targetItem.target
-                    )
+                    (key) => userAnswer[key] === targetItem.target
+                  )
                   : null;
 
                 return (
@@ -659,20 +702,20 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                         : undefined
                     }
                     sx={{
-                      p: 2.5,
+                      p: { xs: 1.5, sm: 2, md: 2.5 },
                       textAlign: "center",
                       border: "2px dashed",
                       borderColor: isMatched
                         ? "success.main"
                         : isDraggedOver && !isValidating
-                        ? "primary.main"
-                        : "divider",
+                          ? "primary.main"
+                          : "divider",
                       backgroundColor: isMatched
                         ? "success.light"
                         : isDraggedOver && !isValidating
-                        ? "primary.light"
-                        : "grey.50",
-                      minHeight: "70px",
+                          ? "primary.light"
+                          : "grey.50",
+                      minHeight: { xs: "60px", md: "70px" },
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
@@ -685,24 +728,28 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                         borderColor: isMatched
                           ? "success.dark"
                           : !isValidating
-                          ? "primary.main"
-                          : "divider",
+                            ? "primary.main"
+                            : "divider",
                         backgroundColor: isMatched
                           ? "success.light"
-                          : !isValidating
-                          ? "primary.50"
-                          : "grey.50",
+                          : !isValidating && !isMobile
+                            ? "primary.50"
+                            : "grey.50",
                       },
+                      position: "relative",
                     }}
                   >
                     <Typography
-                      variant="h6"
+                      variant={isMobile ? "body2" : "h6"}
                       fontWeight={500}
-                      sx={{ fontSize: "1.2rem" }}
+                      sx={{
+                        fontSize: { xs: "0.95rem", sm: "1rem", md: "1.2rem" },
+                        wordBreak: "break-word"
+                      }}
                     >
                       {targetItem.target}
                     </Typography>
-                    {isMatched && matchedItem && (
+                    {isMatched && matchedItem && !isMobile && (
                       <Box
                         sx={{
                           display: "flex",
@@ -723,6 +770,20 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
                         </Typography>
                       </Box>
                     )}
+                    {isMatched && isMobile && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          position: 'absolute',
+                          bottom: 2,
+                          fontSize: '0.7rem',
+                          color: 'success.dark',
+                          fontWeight: 600
+                        }}
+                      >
+                        ✓
+                      </Typography>
+                    )}
                   </Paper>
                 );
               })}
@@ -739,31 +800,31 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       >
         <Button
           variant="outlined"
-          size="large"
+          size={isMobile ? "medium" : "large"}
           onClick={handleReset}
           disabled={isValidating}
           startIcon={<Refresh />}
           sx={{
-            px: 4,
-            py: 2,
-            fontSize: "1rem",
+            px: { xs: 3, md: 4 },
+            py: { xs: 1, md: 2 },
+            fontSize: { xs: "0.9rem", md: "1rem" },
             borderRadius: 3,
           }}
         >
           {localValidation?.type === "success"
-            ? "Reset & Practice Again"
-            : "Reset & Shuffle"}
+            ? isMobile ? "Reset" : "Reset & Practice Again"
+            : isMobile ? "Reset" : "Reset & Shuffle"}
         </Button>
         <Button
           variant="contained"
-          size="large"
+          size={isMobile ? "medium" : "large"}
           onClick={handleCheckAnswer}
           disabled={!isComplete || isValidating}
           startIcon={isComplete ? <CheckCircle /> : <CheckCircleOutline />}
           sx={{
-            px: 6,
-            py: 2,
-            fontSize: "1.1rem",
+            px: { xs: 4, md: 6 },
+            py: { xs: 1, md: 2 },
+            fontSize: { xs: "1rem", md: "1.1rem" },
             borderRadius: 3,
             background:
               isComplete && !isValidating
@@ -783,8 +844,8 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
           {isValidating
             ? "Checking..."
             : isComplete
-            ? "Check Answers"
-            : `Complete All (${matchedCount}/${totalCount})`}
+              ? isMobile ? "Check" : "Check Answers"
+              : `Complete (${matchedCount}/${totalCount})`}
         </Button>
       </Stack>
 
@@ -793,7 +854,11 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         <Fade in key={`${forceUpdate}-${localValidation.type}`}>
           <Alert
             severity={localValidation.type}
-            sx={{ mt: 3, borderRadius: 2, fontSize: "1rem" }}
+            sx={{
+              mt: { xs: 2, md: 3 },
+              borderRadius: 2,
+              fontSize: { xs: "0.9rem", md: "1rem" }
+            }}
             icon={
               localValidation.type === "success" ? (
                 <CheckCircle />
