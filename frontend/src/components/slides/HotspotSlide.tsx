@@ -21,6 +21,9 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
   checkAnswer,
 }) => {
   const [hotspotClicks, setHotspotClicks] = useState<Set<string>>(new Set());
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
   const content = slide.content.content;
   const slideId = `hotspot-${slide.id}`;
   const showSlideFeeback = showFeedback[slideId];
@@ -46,6 +49,24 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
   const resetHotspots = () => {
     setHotspotClicks(new Set());
   };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(false);
+  };
+
+  // Look for image URL in content.settings.imageUrl (slide level) or localStorage fallback
+  const savedImageUrl = typeof window !== 'undefined' ? localStorage.getItem('hotspot-temp-image-url') : null;
+  const imageUrl = content.settings?.imageUrl || savedImageUrl || "https://picsum.photos/800/600";
+  
+  console.log('Looking for image in content.settings.imageUrl:', content.settings?.imageUrl);
+  console.log('Fallback from localStorage:', savedImageUrl);
+  console.log('Using imageUrl (with fallbacks):', imageUrl);
 
   return (
     <Box sx={{ padding: 4, maxWidth: "1000px", margin: "0 auto" }}>
@@ -80,24 +101,44 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
           mb: 4,
         }}
       >
-        {content.settings?.imageUrl ? (
-          <Box sx={{ position: "relative", width: "100%", paddingTop: "60%" }}>
+        {imageUrl && !imageError ? (
+          <Box sx={{ position: "relative", width: "100%" }}>
+            {/* Loading state */}
+            {!imageLoaded && (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "400px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: "grey.100",
+                }}
+              >
+                <Typography variant="body1" color="text.secondary">
+                  Loading image...
+                </Typography>
+              </Box>
+            )}
+            
+            {/* Main image */}
             <Box
               component="img"
-              src={content.settings.imageUrl}
+              src={imageUrl}
               alt="Interactive image"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
               sx={{
-                position: "absolute",
-                top: 0,
-                left: 0,
                 width: "100%",
-                height: "100%",
-                objectFit: "cover",
+                height: "auto",
+                maxHeight: "600px",
+                objectFit: "contain",
+                display: imageLoaded ? "block" : "none",
               }}
             />
 
-            {/* Hotspot Indicators */}
-            {content.items?.map((item: any) => (
+            {/* Hotspot Indicators - only show when image is loaded */}
+            {imageLoaded && content.items?.map((item: any) => (
               <Tooltip
                 key={item.id}
                 title={
@@ -153,8 +194,13 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
           <Box sx={{ p: 8, textAlign: "center", bgcolor: "grey.100" }}>
             <Image sx={{ fontSize: 64, color: "text.secondary", mb: 2 }} />
             <Typography variant="h6" color="text.secondary">
-              No background image provided
+              {imageError ? "Failed to load image" : "No background image provided"}
             </Typography>
+            {imageError && imageUrl && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Image URL: {imageUrl}
+              </Typography>
+            )}
           </Box>
         )}
       </Paper>
