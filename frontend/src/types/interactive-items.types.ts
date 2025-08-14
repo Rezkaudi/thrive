@@ -20,6 +20,8 @@ export interface FillBlanksItem extends BaseItem {
 export interface MatchingItem extends BaseItem {
   left: string;
   right: string;
+  audioUrl?: string; // Audio file URL for the sound
+  pair?: string | number;
 }
 
 export interface SortingItem extends BaseItem {
@@ -65,7 +67,7 @@ export interface SentenceBuilderItem extends BaseItem {
   translation?: string;
 }
 
-export type InteractiveItem = 
+export type InteractiveItem =
   | DragDropItem
   | FillBlanksItem
   | MatchingItem
