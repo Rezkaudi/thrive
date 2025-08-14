@@ -67,6 +67,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store/store";
 // import { PDFViewer } from "../components/classroom/PDFViewer";
 import { SimplePDFViewer } from '../components/classroom/SimplePDFViewer';
+import { isYouTubeUrl, toYouTubeEmbedUrl } from "../utils/youtub";
 
 interface Course {
   id: string;
@@ -482,10 +483,13 @@ const CourseCard = ({
   );
 };
 
-const VideoPlayer = ({ url }: { url: string }) => {
+const VideoPlayer: React.FC<{ url: string }> = ({ url }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    // Apply anti-actions for HTML5 video only (iframes handle their own UI)
+    if (isYouTubeUrl(url)) return;
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -498,8 +502,7 @@ const VideoPlayer = ({ url }: { url: string }) => {
       if (
         (e.ctrlKey && (e.key === "s" || e.key === "a")) ||
         e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && e.key === "I") ||
-        (e.ctrlKey && e.shiftKey && e.key === "C") ||
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "C")) ||
         (e.ctrlKey && e.key === "u")
       ) {
         e.preventDefault();
@@ -521,14 +524,17 @@ const VideoPlayer = ({ url }: { url: string }) => {
       video.removeEventListener("dragstart", handleDragStart);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [url]);
+
+  const isYT = isYouTubeUrl(url);
+  const ytEmbed = isYT ? toYouTubeEmbedUrl(url) : null;
 
   return (
     <Paper
       elevation={3}
       sx={{
         position: "relative",
-        paddingTop: "56.25%",
+        paddingTop: "56.25%", // 16:9
         bgcolor: "black",
         borderRadius: 3,
         overflow: "hidden",
@@ -537,30 +543,46 @@ const VideoPlayer = ({ url }: { url: string }) => {
         MozUserSelect: "none",
         msUserSelect: "none",
       }}
-      onContextMenu={(e) => e.preventDefault()}
+      onContextMenu={(e) => !isYT && e.preventDefault()}
     >
-      <video
-        ref={videoRef}
-        controls
-        controlsList="nodownload noremoteplayback"
-        disablePictureInPicture
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "auto",
-        }}
-        src={url}
-        onLoadStart={() => {
-          if (videoRef.current) {
-            videoRef.current.removeAttribute("download");
-          }
-        }}
-        onContextMenu={(e) => e.preventDefault()}
-        onDragStart={(e) => e.preventDefault()}
-      />
+      {isYT ? (
+        <iframe
+          title="YouTube video player"
+          src={ytEmbed!}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            border: 0,
+          }}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          controls
+          controlsList="nodownload noremoteplayback"
+          disablePictureInPicture
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "auto",
+          }}
+          src={url}
+          onLoadStart={() => {
+            if (videoRef.current) {
+              videoRef.current.removeAttribute("download");
+            }
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+        />
+      )}
     </Paper>
   );
 };
