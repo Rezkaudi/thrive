@@ -138,6 +138,7 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
 
     // Check correctness
     const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
+    console.log(JSON.stringify(userAnswer), JSON.stringify(correctAnswer))
 
     setShowFeedback(prev => ({
       ...prev,
@@ -200,8 +201,6 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
 
     return isCorrect;
   };
-
-  // ... rest of the code remains the same ...
 
   const toggleFullscreen = () => {
     setIsFullscreen(pre => !pre)
