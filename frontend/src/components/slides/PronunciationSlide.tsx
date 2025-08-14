@@ -10,6 +10,8 @@ import {
   CircularProgress,
   Chip,
   LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   PlayArrow,
@@ -34,6 +36,10 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   setSlideProgress,
   currentSlide,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   // Track recording state for each item separately
   const [recordingStates, setRecordingStates] = useState<Record<string, RecordingState>>({});
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
@@ -172,13 +178,37 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   }, []);
 
   return (
-    <Box sx={{ padding: 4, maxWidth: "800px", margin: "0 auto" }}>
+    <Box 
+      sx={{ 
+        padding: { 
+          xs: 2,    // 16px on mobile
+          sm: 3,    // 24px on small screens
+          md: 4     // 32px on medium and larger
+        }, 
+        maxWidth: { 
+          xs: "100%",   // Full width on mobile
+          sm: "600px",  // Constrained on small screens
+          md: "800px"   // Original width on medium and up
+        }, 
+        margin: "0 auto",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column"
+      }}
+    >
       <Typography
-        variant="h4"
+        variant={isMobile ? "h5" : "h4"}
         gutterBottom
         fontWeight={600}
         textAlign="center"
-        sx={{ mb: 3 }}
+        sx={{ 
+          mb: { xs: 2, sm: 3 },
+          fontSize: {
+            xs: "1.5rem",   // 24px on mobile
+            sm: "1.75rem",  // 28px on small screens
+            md: "2.125rem"  // 34px on medium and up
+          }
+        }}
       >
         {slide.content.title}
       </Typography>
@@ -187,9 +217,14 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         variant="body1"
         sx={{
           textAlign: "center",
-          mb: 4,
+          mb: { xs: 3, sm: 4 },
           color: "text.secondary",
-          fontSize: "1.1rem",
+          fontSize: {
+            xs: "1rem",      // 16px on mobile
+            sm: "1.05rem",   // 17px on small screens
+            md: "1.1rem"     // 18px on medium and up
+          },
+          px: { xs: 1, sm: 2 }  // Extra padding on mobile for readability
         }}
       >
         {content.instruction}
@@ -198,33 +233,44 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
       {/* Progress Indicator */}
       <Paper
         sx={{
-          p: 2,
-          mb: 4,
+          p: { xs: 1.5, sm: 2 },
+          mb: { xs: 3, sm: 4 },
           bgcolor: "primary.50",
           borderRadius: 3,
         }}
       >
         <Stack
-          direction="row"
+          direction={isMobile ? "column" : "row"}
           justifyContent="space-between"
-          alignItems="center"
+          alignItems={isMobile ? "stretch" : "center"}
+          spacing={isMobile ? 1 : 0}
           mb={1}
         >
-          <Typography variant="body2" fontWeight={500}>
+          <Typography 
+            variant="body2" 
+            fontWeight={500}
+            textAlign={isMobile ? "center" : "left"}
+            sx={{ 
+              fontSize: { xs: "0.875rem", sm: "0.875rem" }
+            }}
+          >
             Progress: {completedCount} of {totalItems} items recorded
           </Typography>
           <Chip
             label={`${Math.round(progress)}%`}
             size="small"
             color={progress === 100 ? "success" : "primary"}
-            sx={{ fontWeight: 600 }}
+            sx={{ 
+              fontWeight: 600,
+              alignSelf: isMobile ? "center" : "auto"
+            }}
           />
         </Stack>
         <LinearProgress
           variant="determinate"
           value={progress}
           sx={{
-            height: 8,
+            height: { xs: 6, sm: 8 },
             borderRadius: 4,
             bgcolor: "primary.100",
             "& .MuiLinearProgress-bar": {
@@ -235,7 +281,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         />
       </Paper>
 
-      <Stack spacing={4}>
+      <Stack spacing={{ xs: 3, sm: 4 }} sx={{ flex: 1 }}>
         {content.items?.map((item: any, index: number) => {
           const itemId = item.id || `item-${index}`;
           const state = getRecordingState(itemId);
@@ -245,7 +291,11 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
             <Paper
               key={itemId}
               sx={{
-                p: 4,
+                p: { 
+                  xs: 2,    // 16px on mobile
+                  sm: 3,    // 24px on small screens
+                  md: 4     // 32px on medium and up
+                },
                 borderRadius: 3,
                 bgcolor: "background.paper",
                 border: isCompleted ? "2px solid" : "1px solid",
@@ -263,19 +313,27 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                   color="success"
                   sx={{
                     position: "absolute",
-                    top: 16,
-                    right: 16,
+                    top: { xs: 8, sm: 16 },
+                    right: { xs: 8, sm: 16 },
                     fontWeight: 600,
+                    fontSize: { xs: "0.75rem", sm: "0.8125rem" }
                   }}
                 />
               )}
 
               <Typography
-                variant="h5"
+                variant={isMobile ? "h6" : "h5"}
                 fontWeight={600}
                 textAlign="center"
                 gutterBottom
-                sx={{ mb: 3 }}
+                sx={{ 
+                  mb: { xs: 2, sm: 3 },
+                  fontSize: {
+                    xs: "1.25rem",   // 20px on mobile
+                    sm: "1.375rem",  // 22px on small screens
+                    md: "1.5rem"     // 24px on medium and up
+                  },
+                }}
               >
                 {item.text}
               </Typography>
@@ -284,73 +342,121 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                 variant="body1"
                 textAlign="center"
                 color="text.secondary"
-                sx={{ mb: 3, fontSize: "1.1rem" }}
+                sx={{ 
+                  mb: { xs: 2, sm: 3 }, 
+                  fontSize: {
+                    xs: "0.95rem",   // 15px on mobile
+                    sm: "1rem",      // 16px on small screens
+                    md: "1.1rem"     // 18px on medium and up
+                  }
+                }}
               >
                 Pronunciation: <strong>{item.pronunciation}</strong>
               </Typography>
 
-              <Stack
-                direction="row"
-                spacing={2}
-                justifyContent="center"
-                alignItems="center"
-                sx={{ mb: 3 }}
-                gap={1}
-                flexWrap="wrap"
-              >
-                {item.audioUrl && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<VolumeUp />}
-                    onClick={() => playAudio(item.audioUrl)}
-                    sx={{ borderRadius: 3, px: 3 }}
-                  >
-                    Listen to Reference
-                  </Button>
-                )}
-
-                <Button
-                  variant={state.isRecording ? "contained" : "outlined"}
-                  color={state.isRecording ? "error" : "primary"}
-                  startIcon={state.isRecording ? <Stop /> : <Mic />}
-                  onClick={() => state.isRecording ? stopRecording(itemId) : startRecording(itemId)}
-                  sx={{
-                    borderRadius: 3,
-                    px: 3,
-                    minWidth: 180,
-                  }}
+              {/* Button Stack - Responsive Layout */}
+              <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                {/* Main Action Buttons Row */}
+                <Stack
+                  direction={isMobile ? "column" : "row"}
+                  spacing={isMobile ? 1.5 : 2}
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{ mb: state.audioUrl && !isMobile ? 2 : 0 }}
                 >
-                  {state.isRecording ? "Stop Recording" : "Start Recording"}
-                </Button>
+                  {item.audioUrl && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<VolumeUp />}
+                      onClick={() => playAudio(item.audioUrl)}
+                      fullWidth={isMobile}
+                      sx={{ 
+                        borderRadius: 3, 
+                        px: { xs: 2, sm: 3 },
+                        py: { xs: 1, sm: 1.5 },
+                        fontSize: { xs: "0.875rem", sm: "0.875rem" },
+                        minWidth: isMobile ? "auto" : 180
+                      }}
+                    >
+                      {isMobile ? "Listen" : "Listen to Reference"}
+                    </Button>
+                  )}
 
+                  <Button
+                    variant={state.isRecording ? "contained" : "outlined"}
+                    color={state.isRecording ? "error" : "primary"}
+                    startIcon={state.isRecording ? <Stop /> : <Mic />}
+                    onClick={() => state.isRecording ? stopRecording(itemId) : startRecording(itemId)}
+                    fullWidth={isMobile}
+                    sx={{
+                      borderRadius: 3,
+                      px: { xs: 2, sm: 3 },
+                      py: { xs: 1, sm: 1.5 },
+                      fontSize: { xs: "0.875rem", sm: "0.875rem" },
+                      minWidth: isMobile ? "auto" : 180,
+                    }}
+                  >
+                    {state.isRecording ? "Stop Recording" : "Start Recording"}
+                  </Button>
+                </Stack>
+
+                {/* Recording Playback Buttons Row - Only show on mobile in column, or on md+ as separate row */}
                 {state.audioUrl && (
-                  <>
+                  <Stack 
+                    direction={isMobile ? "column" : "row"} 
+                    spacing={isMobile ? 1.5 : 2}
+                    justifyContent="center"
+                    alignItems="center"
+                    sx={{
+                      mt: isMobile ? "12px" : 0,
+                      width: isMobile ? "100%" : "auto"
+                    }}
+                  >
                     <Button
                       variant="outlined"
                       startIcon={<PlayArrow />}
                       onClick={() => playAudio(state.audioUrl!)}
-                      sx={{ borderRadius: 3, px: 3 }}
+                      fullWidth={isMobile}
+                      sx={{ 
+                        borderRadius: 3, 
+                        px: { xs: 2, sm: 3 },
+                        py: { xs: 1, sm: 1.5 },
+                        fontSize: { xs: "0.875rem", sm: "0.875rem" },
+                        minWidth: isMobile ? "auto" : 160
+                      }}
                     >
-                      Play My Recording
+                      {isMobile ? "Play Recording" : "Play My Recording"}
                     </Button>
                     <Button
                       variant="outlined"
                       color="secondary"
                       startIcon={<Refresh />}
                       onClick={() => resetRecording(itemId)}
-                      sx={{ borderRadius: 3, px: 2 }}
-                      size="small"
+                      fullWidth={isMobile}
+                      sx={{ 
+                        borderRadius: 3, 
+                        px: { xs: 2, sm: 2 },
+                        py: { xs: 1, sm: 1.5 },
+                        fontSize: { xs: "0.875rem", sm: "0.875rem" }
+                      }}
                     >
                       Re-record
                     </Button>
-                  </>
+                  </Stack>
                 )}
-              </Stack>
+              </Box>
 
               {state.isRecording && (
                 <Box sx={{ textAlign: "center", mb: 2 }}>
-                  <CircularProgress size={24} />
-                  <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>
+                  <CircularProgress size={isMobile ? 20 : 24} />
+                  <Typography 
+                    variant="body2" 
+                    color="error.main" 
+                    sx={{ 
+                      mt: 1,
+                      fontSize: { xs: "0.8125rem", sm: "0.875rem" }
+                    }}
+                  >
                     Recording... Speak clearly into your microphone
                   </Typography>
                 </Box>
@@ -361,8 +467,9 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                   severity="success"
                   sx={{
                     borderRadius: 2,
+                    fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                     "& .MuiAlert-icon": {
-                      fontSize: 28,
+                      fontSize: { xs: 24, sm: 28 },
                     },
                   }}
                 >
@@ -376,18 +483,20 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
       </Stack>
 
       {/* Complete Button */}
-      <Box sx={{ textAlign: "center", mt: 4 }}>
+      <Box sx={{ textAlign: "center", mt: { xs: 3, sm: 4 } }}>
         <Button
           variant="contained"
-          size="large"
+          size={isMobile ? "medium" : "large"}
           onClick={handleMarkComplete}
           disabled={completedCount === 0}
           startIcon={completedCount === totalItems ? <CheckCircle /> : null}
+          fullWidth={isMobile}
           sx={{
-            px: 6,
-            py: 2,
-            fontSize: "1.1rem",
+            px: { xs: 4, sm: 6 },
+            py: { xs: 1.5, sm: 2 },
+            fontSize: { xs: "1rem", sm: "1.1rem" },
             borderRadius: 3,
+            maxWidth: isMobile ? "100%" : "auto",
             background: completedCount === totalItems
               ? "linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)"
               : "linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)",
@@ -401,17 +510,37 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
             },
           }}
         >
-          {completedCount === 0
-            ? "Record at least one item to continue"
-            : completedCount === totalItems
-              ? "Complete Pronunciation Practice"
-              : `Complete Practice (${completedCount}/${totalItems} recorded)`}
+          {isMobile ? (
+            // Shorter text for mobile
+            completedCount === 0
+              ? "Record to continue"
+              : completedCount === totalItems
+                ? "Complete Practice"
+                : `Complete (${completedCount}/${totalItems})`
+          ) : (
+            // Full text for larger screens
+            completedCount === 0
+              ? "Record at least one item to continue"
+              : completedCount === totalItems
+                ? "Complete Pronunciation Practice"
+                : `Complete Practice (${completedCount}/${totalItems} recorded)`
+          )}
         </Button>
       </Box>
 
       {/* Instructions */}
-      <Alert severity="info" sx={{ mt: 3, borderRadius: 2 }}>
-        <Typography variant="body2">
+      <Alert 
+        severity="info" 
+        sx={{ 
+          mt: { xs: 2, sm: 3 }, 
+          borderRadius: 2,
+          fontSize: { xs: "0.8125rem", sm: "0.875rem" }
+        }}
+      >
+        <Typography 
+          variant="body2"
+          sx={{ fontSize: { xs: "0.8125rem", sm: "0.875rem" } }}
+        >
           💡 <strong>Tip:</strong> Record yourself pronouncing each word and compare with the reference audio.
           You can re-record as many times as you like. Record at least one item to complete this slide.
         </Typography>
