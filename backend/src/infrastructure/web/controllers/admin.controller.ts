@@ -244,8 +244,11 @@ export class AdminController {
           savedLesson.id,
           kw.englishText,
           kw.japaneseText,
+          kw.englishSentence || '',
+          kw.japaneseSentence || '',
           kw.englishAudioUrl,
           kw.japaneseAudioUrl,
+          kw.japaneseSentenceAudioUrl,
           index + 1,
           new Date(),
           new Date()
@@ -288,8 +291,11 @@ export class AdminController {
             lessonId,
             kw.englishText,
             kw.japaneseText,
+            kw.englishSentence || '',
+            kw.japaneseSentence || '',
             kw.englishAudioUrl,
             kw.japaneseAudioUrl,
+            kw.japaneseSentenceAudioUrl,
             index + 1,
             new Date(),
             new Date()
@@ -536,13 +542,13 @@ export class AdminController {
     }
   }
 
- async deleteSession(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  async deleteSession(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sessionId } = req.params;
       const { deleteOption } = req.body; // Get from request body instead of query
 
       if (!deleteOption) {
-        res.status(400).json({ 
+        res.status(400).json({
           error: 'Delete option is required',
           message: 'Please specify how you want to delete this session'
         });
@@ -563,7 +569,7 @@ export class AdminController {
       res.json(result);
     } catch (error: any) {
       console.error('Failed to delete session:', error);
-      res.status(400).json({ 
+      res.status(400).json({
         error: error.message || 'Failed to delete session'
       });
     }
@@ -583,7 +589,7 @@ export class AdminController {
       res.json(options);
     } catch (error: any) {
       console.error('Failed to get delete options:', error);
-      res.status(400).json({ 
+      res.status(400).json({
         error: error.message || 'Failed to get delete options'
       });
     }

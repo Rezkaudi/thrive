@@ -30,11 +30,20 @@ export class KeywordEntity {
   @Column()
   japaneseText!: string;
 
+  @Column()
+  englishSentence!: string;
+
+  @Column()
+  japaneseSentence!: string;
+
   @Column({ type: 'varchar', nullable: true })
   englishAudioUrl!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   japaneseAudioUrl!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  japaneseSentenceAudioUrl!: string | null;
 
   @Column()
   order!: number;

@@ -63,7 +63,7 @@ interface Course {
   icon: string;
   isActive: boolean;
   lessonCount?: number;
-  freeLessonCount: number
+  freeLessonCount: number;
 }
 
 interface Lesson {
@@ -85,6 +85,9 @@ interface Keyword {
   japaneseText: string;
   englishAudioUrl: string;
   japaneseAudioUrl: string;
+  englishSentence?: string;
+  japaneseSentence?: string;
+  japaneseSentenceAudioUrl?: string;
 }
 
 export const CourseManagement: React.FC = () => {
@@ -97,7 +100,7 @@ export const CourseManagement: React.FC = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [bulkAudioDialog, setBulkAudioDialog] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   // Drag and drop state
   const [draggedLesson, setDraggedLesson] = useState<Lesson | null>(null);
@@ -133,7 +136,10 @@ export const CourseManagement: React.FC = () => {
   });
 
   // Drag and Drop handlers
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, lesson: Lesson) => {
+  const handleDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    lesson: Lesson
+  ) => {
     setDraggedLesson(lesson);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", "");
@@ -154,7 +160,10 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+  const handleDragOver = (
+    e: React.DragEvent<HTMLDivElement>,
+    index: number
+  ) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setDragOverIndex(index);
@@ -171,12 +180,17 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
+  const handleDrop = async (
+    e: React.DragEvent<HTMLDivElement>,
+    dropIndex: number
+  ) => {
     e.preventDefault();
 
     if (!draggedLesson) return;
 
-    const dragIndex = lessons.findIndex(lesson => lesson.id === draggedLesson.id);
+    const dragIndex = lessons.findIndex(
+      (lesson) => lesson.id === draggedLesson.id
+    );
 
     if (dragIndex === dropIndex) {
       setDraggedLesson(null);
@@ -192,7 +206,7 @@ export const CourseManagement: React.FC = () => {
     // Update order numbers
     const reorderedLessons = newLessons.map((lesson, index) => ({
       ...lesson,
-      order: index + 1
+      order: index + 1,
     }));
 
     // Optimistically update UI
@@ -202,15 +216,15 @@ export const CourseManagement: React.FC = () => {
 
     try {
       // Update all affected lessons in the backend
-      const updatePromises = reorderedLessons.map(lesson =>
+      const updatePromises = reorderedLessons.map((lesson) =>
         api.put(`/admin/lessons/${lesson.id}`, {
           ...lesson,
-          order: lesson.order
+          order: lesson.order,
         })
       );
 
       await Promise.all(updatePromises);
-      console.log('Lessons reordered successfully');
+      console.log("Lessons reordered successfully");
     } catch (error) {
       console.error("Failed to reorder lessons:", error);
       // Revert on error
@@ -218,7 +232,6 @@ export const CourseManagement: React.FC = () => {
       alert("Failed to reorder lessons. Please try again.");
     }
   };
-
 
   // Helper function to reset course form to default values
   const resetCourseForm = () => {
@@ -284,7 +297,9 @@ export const CourseManagement: React.FC = () => {
       const response = await api.get(`/courses/${courseId}/lessons`);
       console.log("Lessons response:", response.data);
       // Sort lessons by order to ensure correct display
-      const sortedLessons = response.data.sort((a: Lesson, b: Lesson) => a.order - b.order);
+      const sortedLessons = response.data.sort(
+        (a: Lesson, b: Lesson) => a.order - b.order
+      );
       setLessons(sortedLessons);
     } catch (error) {
       console.error("Failed to fetch lessons:", error);
@@ -343,7 +358,8 @@ export const CourseManagement: React.FC = () => {
       }
     } else if (!lessonForm.contentUrl.trim()) {
       alert(
-        `Please provide a ${lessonForm.lessonType === "VIDEO" ? "video" : "PDF"
+        `Please provide a ${
+          lessonForm.lessonType === "VIDEO" ? "video" : "PDF"
         } URL`
       );
       return false;
@@ -400,7 +416,7 @@ export const CourseManagement: React.FC = () => {
       setLessonDialog(false);
       resetLessonForm();
       fetchLessons(selectedCourse!.id);
-      fetchCourses()
+      fetchCourses();
     } catch (error) {
       console.error("Failed to save lesson:", error);
       alert("Failed to save lesson. Please try again.");
@@ -463,6 +479,9 @@ export const CourseManagement: React.FC = () => {
           japaneseText: "",
           englishAudioUrl: "",
           japaneseAudioUrl: "",
+          englishSentence: "",
+          japaneseSentence: "",
+          japaneseSentenceAudioUrl: "",
         },
       ],
     });
@@ -505,7 +524,7 @@ export const CourseManagement: React.FC = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={handleAddNewLesson}
-            sx={{ color: 'white' }}
+            sx={{ color: "white" }}
           >
             Add Lesson
           </Button>
@@ -530,36 +549,42 @@ export const CourseManagement: React.FC = () => {
                       onDrop={(e) => handleDrop(e, index)}
                       sx={{
                         mb: 2,
-                        cursor: 'grab',
-                        transition: 'all 0.2s ease',
-                        transform: dragOverIndex === index && draggedLesson?.id !== lesson.id
-                          ? 'translateY(-2px)'
-                          : 'none',
-                        boxShadow: dragOverIndex === index && draggedLesson?.id !== lesson.id
-                          ? 3
-                          : 1,
-                        borderLeft: dragOverIndex === index && draggedLesson?.id !== lesson.id
-                          ? '4px solid #1976d2'
-                          : 'none',
-                        backgroundColor: draggedLesson?.id === lesson.id
-                          ? 'rgba(0,0,0,0.05)'
-                          : 'white',
-                        '&:hover': {
-                          boxShadow: 2
+                        cursor: "grab",
+                        transition: "all 0.2s ease",
+                        transform:
+                          dragOverIndex === index &&
+                          draggedLesson?.id !== lesson.id
+                            ? "translateY(-2px)"
+                            : "none",
+                        boxShadow:
+                          dragOverIndex === index &&
+                          draggedLesson?.id !== lesson.id
+                            ? 3
+                            : 1,
+                        borderLeft:
+                          dragOverIndex === index &&
+                          draggedLesson?.id !== lesson.id
+                            ? "4px solid #1976d2"
+                            : "none",
+                        backgroundColor:
+                          draggedLesson?.id === lesson.id
+                            ? "rgba(0,0,0,0.05)"
+                            : "white",
+                        "&:hover": {
+                          boxShadow: 2,
                         },
-                        '&:active': {
-                          cursor: 'grabbing'
-                        }
+                        "&:active": {
+                          cursor: "grabbing",
+                        },
                       }}
                     >
                       <ListItem>
                         <Stack direction="row" spacing={1} sx={{ mr: 1 }}>
-
                           <DragIndicator
                             sx={{
-                              color: 'action.active',
-                              alignSelf: 'center',
-                              ml: 0.5
+                              color: "action.active",
+                              alignSelf: "center",
+                              ml: 0.5,
                             }}
                           />
                         </Stack>
@@ -599,23 +624,23 @@ export const CourseManagement: React.FC = () => {
                                   lesson.lessonType === "KEYWORDS"
                                     ? "Keywords Practice"
                                     : lesson.lessonType === "QUIZ"
-                                      ? "Quiz"
-                                      : lesson.lessonType === "SLIDES"
-                                        ? "Interactive Slides"
-                                        : lesson.contentUrl
-                                          ? lesson.lessonType === "VIDEO"
-                                            ? "Has Video"
-                                            : "Has PDF"
-                                          : lesson.lessonType === "VIDEO"
-                                            ? "No Video"
-                                            : "No PDF"
+                                    ? "Quiz"
+                                    : lesson.lessonType === "SLIDES"
+                                    ? "Interactive Slides"
+                                    : lesson.contentUrl
+                                    ? lesson.lessonType === "VIDEO"
+                                      ? "Has Video"
+                                      : "Has PDF"
+                                    : lesson.lessonType === "VIDEO"
+                                    ? "No Video"
+                                    : "No PDF"
                                 }
                                 size="small"
                                 color={
                                   lesson.contentUrl ||
-                                    lesson.lessonType === "KEYWORDS" ||
-                                    lesson.lessonType === "QUIZ" ||
-                                    lesson.lessonType === "SLIDES"
+                                  lesson.lessonType === "KEYWORDS" ||
+                                  lesson.lessonType === "QUIZ" ||
+                                  lesson.lessonType === "SLIDES"
                                     ? "success"
                                     : "default"
                                 }
@@ -764,7 +789,7 @@ export const CourseManagement: React.FC = () => {
                 }
                 helperText="Change this number to reorder the lesson"
                 InputProps={{
-                  inputProps: { min: 1, max: lessons.length + 1 }
+                  inputProps: { min: 1, max: lessons.length + 1 },
                 }}
               />
 
@@ -982,6 +1007,14 @@ export const CourseManagement: React.FC = () => {
                               </IconButton>
                             </Stack>
 
+                            {/* Word Section */}
+                            <Typography
+                              variant="body2"
+                              fontWeight={500}
+                              color="primary"
+                            >
+                              Word/Phrase
+                            </Typography>
                             <Grid container spacing={2}>
                               <Grid size={{ xs: 12, md: 6 }}>
                                 <TextField
@@ -1027,10 +1060,90 @@ export const CourseManagement: React.FC = () => {
                                   }}
                                 />
                               </Grid>
+                            </Grid>
+
+                            {/* Sentence Section */}
+                            <Typography
+                              variant="body2"
+                              fontWeight={500}
+                              color="secondary"
+                            >
+                              Example Sentences
+                            </Typography>
+                            <Grid container spacing={2}>
                               <Grid size={{ xs: 12, md: 6 }}>
                                 <TextField
                                   fullWidth
-                                  label="Japanese Audio URL (S3)"
+                                  multiline
+                                  rows={2}
+                                  label="Japanese Sentence"
+                                  value={keyword.japaneseSentence}
+                                  onChange={(e) =>
+                                    updateKeyword(
+                                      index,
+                                      "japaneseSentence",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="こんにちは、元気ですか？"
+                                  InputProps={{
+                                    startAdornment: (
+                                      <Translate
+                                        sx={{
+                                          mr: 1,
+                                          color: "action.active",
+                                          alignSelf: "flex-start",
+                                          mt: 1,
+                                        }}
+                                      />
+                                    ),
+                                  }}
+                                />
+                              </Grid>
+                              <Grid size={{ xs: 12, md: 6 }}>
+                                <TextField
+                                  fullWidth
+                                  multiline
+                                  rows={2}
+                                  label="English Sentence"
+                                  value={keyword.englishSentence}
+                                  onChange={(e) =>
+                                    updateKeyword(
+                                      index,
+                                      "englishSentence",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="Hello, how are you?"
+                                  InputProps={{
+                                    startAdornment: (
+                                      <Translate
+                                        sx={{
+                                          mr: 1,
+                                          color: "action.active",
+                                          alignSelf: "flex-start",
+                                          mt: 1,
+                                        }}
+                                      />
+                                    ),
+                                  }}
+                                />
+                              </Grid>
+                            </Grid>
+
+                            {/* Audio Section */}
+                            <Typography
+                              variant="body2"
+                              fontWeight={500}
+                              color="info"
+                            >
+                              Audio Files
+                            </Typography>
+                            <Grid container spacing={2}>
+                              <Grid size={{ xs: 12, md: 4 }}>
+                                <TextField
+                                  fullWidth
+                                  label="Japanese Word Audio URL"
                                   value={keyword.japaneseAudioUrl}
                                   onChange={(e) =>
                                     updateKeyword(
@@ -1039,7 +1152,7 @@ export const CourseManagement: React.FC = () => {
                                       e.target.value
                                     )
                                   }
-                                  placeholder="https://s3.../japanese-audio.mp3"
+                                  placeholder="https://s3.../japanese-word.mp3"
                                   InputProps={{
                                     startAdornment: (
                                       <VolumeUp
@@ -1049,10 +1162,10 @@ export const CourseManagement: React.FC = () => {
                                   }}
                                 />
                               </Grid>
-                              <Grid size={{ xs: 12, md: 6 }}>
+                              <Grid size={{ xs: 12, md: 4 }}>
                                 <TextField
                                   fullWidth
-                                  label="English Audio URL (S3)"
+                                  label="English Word Audio URL"
                                   value={keyword.englishAudioUrl}
                                   onChange={(e) =>
                                     updateKeyword(
@@ -1061,7 +1174,29 @@ export const CourseManagement: React.FC = () => {
                                       e.target.value
                                     )
                                   }
-                                  placeholder="https://s3.../english-audio.mp3"
+                                  placeholder="https://s3.../english-word.mp3"
+                                  InputProps={{
+                                    startAdornment: (
+                                      <VolumeUp
+                                        sx={{ mr: 1, color: "action.active" }}
+                                      />
+                                    ),
+                                  }}
+                                />
+                              </Grid>
+                              <Grid size={{ xs: 12, md: 4 }}>
+                                <TextField
+                                  fullWidth
+                                  label="Japanese Sentence Audio URL"
+                                  value={keyword.japaneseSentenceAudioUrl}
+                                  onChange={(e) =>
+                                    updateKeyword(
+                                      index,
+                                      "japaneseSentenceAudioUrl",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="https://s3.../japanese-sentence.mp3"
                                   InputProps={{
                                     startAdornment: (
                                       <VolumeUp
@@ -1078,21 +1213,26 @@ export const CourseManagement: React.FC = () => {
                     </Stack>
                   )}
 
-                  {/* Summary */}
+                  {/* Updated Summary */}
                   {lessonForm.keywords.length > 0 && (
                     <Paper sx={{ p: 2, mt: 2, bgcolor: "grey.50" }}>
                       <Stack spacing={1}>
                         <Typography variant="subtitle2">Summary</Typography>
-                        <Stack direction={isMobile ? "column" : "row"} spacing={2}>
+                        <Stack
+                          direction={isMobile ? "column" : "row"}
+                          spacing={2}
+                          flexWrap="wrap"
+                        >
                           <Chip
                             label={`${lessonForm.keywords.length} total keywords`}
                             size="small"
                           />
                           <Chip
-                            label={`${lessonForm.keywords.filter(
-                              (k) => k.japaneseAudioUrl
-                            ).length
-                              } with JP audio`}
+                            label={`${
+                              lessonForm.keywords.filter(
+                                (k) => k.japaneseAudioUrl
+                              ).length
+                            } with JP word audio`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1103,10 +1243,11 @@ export const CourseManagement: React.FC = () => {
                             }
                           />
                           <Chip
-                            label={`${lessonForm.keywords.filter(
-                              (k) => k.englishAudioUrl
-                            ).length
-                              } with EN audio`}
+                            label={`${
+                              lessonForm.keywords.filter(
+                                (k) => k.englishAudioUrl
+                              ).length
+                            } with EN word audio`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1116,15 +1257,83 @@ export const CourseManagement: React.FC = () => {
                                 : "warning"
                             }
                           />
+                          <Chip
+                            label={`${
+                              lessonForm.keywords.filter(
+                                (k) => k.englishSentence
+                              ).length
+                            } with EN sentences`}
+                            size="small"
+                            color={
+                              lessonForm.keywords.filter(
+                                (k) => k.englishSentence
+                              ).length === lessonForm.keywords.length
+                                ? "success"
+                                : "warning"
+                            }
+                          />
+                          <Chip
+                            label={`${
+                              lessonForm.keywords.filter(
+                                (k) => k.japaneseSentence
+                              ).length
+                            } with JP sentences`}
+                            size="small"
+                            color={
+                              lessonForm.keywords.filter(
+                                (k) => k.japaneseSentence
+                              ).length === lessonForm.keywords.length
+                                ? "success"
+                                : "warning"
+                            }
+                          />
+                          <Chip
+                            label={`${
+                              lessonForm.keywords.filter(
+                                (k) => k.japaneseSentenceAudioUrl
+                              ).length
+                            } with JP sentence audio`}
+                            size="small"
+                            color={
+                              lessonForm.keywords.filter(
+                                (k) => k.japaneseSentenceAudioUrl
+                              ).length === lessonForm.keywords.length
+                                ? "success"
+                                : "warning"
+                            }
+                          />
                         </Stack>
+
+                        {/* Enhanced warning alerts */}
                         {lessonForm.keywords.some(
                           (k) => !k.japaneseAudioUrl || !k.englishAudioUrl
                         ) && (
-                            <Alert severity="warning" sx={{ mt: 1 }}>
-                              Some keywords are missing audio files. Consider
-                              using the Bulk Audio manager to import them.
-                            </Alert>
-                          )}
+                          <Alert severity="warning" sx={{ mt: 1 }}>
+                            Some keywords are missing word audio files. Consider
+                            using the Bulk Audio manager to import them.
+                          </Alert>
+                        )}
+
+                        {lessonForm.keywords.some(
+                          (k) => !k.englishSentence || !k.japaneseSentence
+                        ) && (
+                          <Alert severity="info" sx={{ mt: 1 }}>
+                            Some keywords are missing example sentences. Adding
+                            sentences helps learners understand context and
+                            usage.
+                          </Alert>
+                        )}
+
+                        {lessonForm.keywords.some(
+                          (k) =>
+                            k.japaneseSentence && !k.japaneseSentenceAudioUrl
+                        ) && (
+                          <Alert severity="warning" sx={{ mt: 1 }}>
+                            Some Japanese sentences are missing audio
+                            pronunciation. This audio helps with pronunciation
+                            practice.
+                          </Alert>
+                        )}
                       </Stack>
                     </Paper>
                   )}
@@ -1161,7 +1370,11 @@ export const CourseManagement: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseLessonDialog}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveLesson} sx={{ color: "white" }}>
+            <Button
+              variant="contained"
+              onClick={handleSaveLesson}
+              sx={{ color: "white" }}
+            >
               Save Lesson
             </Button>
           </DialogActions>
@@ -1209,9 +1422,11 @@ export const CourseManagement: React.FC = () => {
                 <Box
                   sx={{
                     height: 120,
-                    background: `linear-gradient(135deg, ${course.type === "JAPAN_IN_CONTEXT" ? "#5C633A" : "#A6531C"
-                      } 0%, ${course.type === "JAPAN_IN_CONTEXT" ? "#D4BC8C" : "#7ED4D0"
-                      } 100%)`,
+                    background: `linear-gradient(135deg, ${
+                      course.type === "JAPAN_IN_CONTEXT" ? "#5C633A" : "#A6531C"
+                    } 0%, ${
+                      course.type === "JAPAN_IN_CONTEXT" ? "#D4BC8C" : "#7ED4D0"
+                    } 100%)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1227,14 +1442,17 @@ export const CourseManagement: React.FC = () => {
                     alignItems="start"
                     mb={2}
                   >
-                    <Typography variant="h6" fontWeight={600}
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
                       sx={{
                         lineHeight: 1.6,
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
                         overflow: "hidden",
-                      }}>
+                      }}
+                    >
                       {course.title}
                     </Typography>
                     <Chip
@@ -1255,7 +1473,6 @@ export const CourseManagement: React.FC = () => {
                       WebkitBoxOrient: "vertical",
                       overflow: "hidden",
                     }}
-
                   >
                     {course.description}
                   </Typography>
@@ -1360,7 +1577,10 @@ export const CourseManagement: React.FC = () => {
               label="Free Lesson Count"
               value={courseForm.freeLessonCount}
               onChange={(e) =>
-                setCourseForm({ ...courseForm, freeLessonCount: parseInt(e.target.value) })
+                setCourseForm({
+                  ...courseForm,
+                  freeLessonCount: parseInt(e.target.value),
+                })
               }
             />
             <FormControlLabel

@@ -58,8 +58,11 @@ export class KeywordRepository implements IKeywordRepository {
       entity.lessonId,
       entity.englishText,
       entity.japaneseText,
+      entity.englishSentence,
+      entity.japaneseSentence,
       entity.englishAudioUrl ?? undefined,
       entity.japaneseAudioUrl ?? undefined,
+      entity.japaneseSentenceAudioUrl ?? undefined,
       entity.order,
       entity.createdAt,
       entity.updatedAt
@@ -72,8 +75,11 @@ export class KeywordRepository implements IKeywordRepository {
     entity.lessonId = keyword.lessonId;
     entity.englishText = keyword.englishText;
     entity.japaneseText = keyword.japaneseText;
+    entity.englishSentence = keyword.englishSentence;
+    entity.japaneseSentence = keyword.japaneseSentence;
     entity.englishAudioUrl = keyword.englishAudioUrl || null;
     entity.japaneseAudioUrl = keyword.japaneseAudioUrl || null;
+    entity.japaneseSentenceAudioUrl = keyword.japaneseSentenceAudioUrl || null;
     entity.order = keyword.order;
     entity.createdAt = keyword.createdAt;
     entity.updatedAt = keyword.updatedAt;
