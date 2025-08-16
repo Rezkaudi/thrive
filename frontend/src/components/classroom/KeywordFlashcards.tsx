@@ -29,8 +29,8 @@ interface Keyword {
   id: string;
   englishText: string;
   japaneseText: string;
-  englishSentence: string;
-  japaneseSentence: string;
+  englishSentence?: string;
+  japaneseSentence?: string;
   englishAudioUrl?: string;
   japaneseAudioUrl?: string;
   japaneseSentenceAudioUrl?: string;
