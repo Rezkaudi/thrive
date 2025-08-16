@@ -1,3 +1,4 @@
+// frontend/src/components/slides/FlashcardSlide.tsx
 import React, { useState } from "react";
 import {
   Box,
@@ -63,7 +64,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
           fontSize: "1.1rem",
         }}
       >
-        {content.instruction}
+        {content.instruction || "Click on each card to reveal the answer"}
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -71,132 +72,145 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
           const isFlipped = flashcardStates[item.id] || false;
           return (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.id}>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Box
+                sx={{
+                  height: 200,
+                  cursor: "pointer",
+                  position: "relative",
+                  perspective: "1000px",
+                }}
+                onClick={() => handleFlipCard(item.id)}
               >
-                <Card
-                  onClick={() => handleFlipCard(item.id)}
-                  sx={{
-                    height: 200,
-                    cursor: "pointer",
+                <motion.div
+                  style={{
+                    width: "100%",
+                    height: "100%",
                     position: "relative",
                     transformStyle: "preserve-3d",
-                    transition: "transform 0.6s",
-                    transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                    boxShadow: 4,
-                    "&:hover": {
-                      boxShadow: 8,
-                    },
                   }}
+                  transition={{ duration: 0.7 }}
+                  animate={{ rotateY: isFlipped ? 180 : 0 }}
                 >
                   {/* Front Side */}
-                  <CardContent
-                    sx={{
+                  <motion.div
+                    style={{
                       position: "absolute",
                       width: "100%",
                       height: "100%",
                       backfaceVisibility: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      textAlign: "center",
-                      background:
-                        "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
-                      p: 3,
                     }}
                   >
-                    <Typography variant="h4" fontWeight={600} gutterBottom>
-                      {item.front}
-                    </Typography>
-                    <Chip
-                      label={item.category}
-                      size="small"
-                      sx={{ mt: 2, bgcolor: "primary.main", color: "white" }}
-                    />
-                    <Typography variant="caption" sx={{ mt: 2, opacity: 0.7 }}>
-                      Click to flip
-                    </Typography>
-                  </CardContent>
+                    <Card
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        background:
+                          "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
+                        boxShadow: 3,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <CardContent
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          height: "100%",
+                          width: "100%",
+                          p: 3,
+                        }}
+                      >
+                        <Typography variant="h5" fontWeight={600} gutterBottom>
+                          {item.front}
+                        </Typography>
+                        {item.category && (
+                          <Chip
+                            label={item.category}
+                            size="small"
+                            sx={{
+                              mt: 2,
+                              bgcolor: "primary.main",
+                              color: "white",
+                            }}
+                          />
+                        )}
+                        <Typography
+                          variant="caption"
+                          sx={{ mt: 2, opacity: 0.7 }}
+                        >
+                          Click to flip
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
 
                   {/* Back Side */}
-                  <CardContent
-                    sx={{
+                  <motion.div
+                    style={{
                       position: "absolute",
                       width: "100%",
                       height: "100%",
                       backfaceVisibility: "hidden",
                       transform: "rotateY(180deg)",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      textAlign: "center",
-                      background:
-                        "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
-                      p: 3,
                     }}
                   >
-                    <Typography variant="body1" fontWeight={500} sx={{ mb: 2 }}>
-                      {item.back}
-                    </Typography>
-                    <CheckCircle
-                      sx={{ color: "success.main", fontSize: 32, mt: 1 }}
-                    />
-                  </CardContent>
-                </Card>
-              </motion.div>
+                    <Card
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        background:
+                          "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
+                        boxShadow: 3,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <CardContent
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          height: "100%",
+                          width: "100%",
+                          p: 3,
+                        }}
+                      >
+                        <Typography
+                          variant="body1"
+                          fontWeight={500}
+                          sx={{ mb: 2 }}
+                        >
+                          {item.back}
+                        </Typography>
+                        <CheckCircle
+                          sx={{ color: "success.main", fontSize: 32, mt: 1 }}
+                        />
+                        <Typography
+                          variant="caption"
+                          sx={{ mt: 2, opacity: 0.7 }}
+                        >
+                          Click to flip back
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </motion.div>
+              </Box>
             </Grid>
           );
         }) || []}
       </Grid>
-
-      {/* Progress Indicator */}
-      <Paper sx={{ p: 3, mb: 4, bgcolor: "success.50", borderRadius: 3 }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Typography variant="body1" fontWeight={500}>
-            Cards reviewed: {Object.keys(flashcardStates).length} of{" "}
-            {content.items?.length || 0}
-          </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={
-              (Object.keys(flashcardStates).length /
-                (content.items?.length || 1)) *
-              100
-            }
-            sx={{ width: 200, height: 8, borderRadius: 4 }}
-          />
-        </Stack>
-      </Paper>
-
-      <Box sx={{ textAlign: "center" }}>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleMarkComplete}
-          disabled={
-            Object.keys(flashcardStates).length !== (content.items?.length || 0)
-          }
-          sx={{
-            px: 6,
-            py: 2,
-            fontSize: "1.1rem",
-            borderRadius: 3,
-            background: "linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)",
-            "&:hover": {
-              background: "linear-gradient(45deg, #1565C0 30%, #2196F3 90%)",
-            },
-          }}
-        >
-          Complete Pronunciation Practice
-        </Button>
-      </Box>
     </Box>
   );
 };
