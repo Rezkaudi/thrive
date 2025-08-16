@@ -63,7 +63,8 @@ interface Course {
   icon: string;
   isActive: boolean;
   lessonCount?: number;
-  freeLessonCount: number
+  freeLessonCount: number;
+  order?: number; // Add order field
 }
 
 interface Lesson {
@@ -99,9 +100,13 @@ export const CourseManagement: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Drag and drop state
+  // Drag and drop state for lessons
   const [draggedLesson, setDraggedLesson] = useState<Lesson | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Drag and drop state for courses
+  const [draggedCourse, setDraggedCourse] = useState<Course | null>(null);
+  const [dragOverCourseIndex, setDragOverCourseIndex] = useState<number | null>(null);
 
   const [courseForm, setCourseForm] = useState<{
     title: string;
@@ -132,13 +137,96 @@ export const CourseManagement: React.FC = () => {
     keywords: [] as Keyword[],
   });
 
-  // Drag and Drop handlers
+  // Course Drag and Drop handlers
+  const handleCourseDragStart = (e: React.DragEvent<HTMLDivElement>, course: Course) => {
+    setDraggedCourse(course);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", "");
+
+    if (e.currentTarget) {
+      e.currentTarget.style.opacity = "0.5";
+    }
+  };
+
+  const handleCourseDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    setDraggedCourse(null);
+    setDragOverCourseIndex(null);
+
+    if (e.currentTarget) {
+      e.currentTarget.style.opacity = "1";
+    }
+  };
+
+  const handleCourseDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverCourseIndex(index);
+  };
+
+  const handleCourseDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverCourseIndex(null);
+    }
+  };
+
+  const handleCourseDrop = async (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+
+    if (!draggedCourse) return;
+
+    const dragIndex = courses.findIndex(course => course.id === draggedCourse.id);
+
+    if (dragIndex === dropIndex) {
+      setDraggedCourse(null);
+      setDragOverCourseIndex(null);
+      return;
+    }
+
+    // Create new array with reordered courses
+    const newCourses = [...courses];
+    const [draggedItem] = newCourses.splice(dragIndex, 1);
+    newCourses.splice(dropIndex, 0, draggedItem);
+
+    // Update order numbers
+    const reorderedCourses = newCourses.map((course, index) => ({
+      ...course,
+      order: index + 1
+    }));
+
+    // Optimistically update UI
+    setCourses(reorderedCourses);
+    setDraggedCourse(null);
+    setDragOverCourseIndex(null);
+
+    try {
+      // Update all affected courses in the backend
+      const updatePromises = reorderedCourses.map(course =>
+        api.put(`/admin/courses/${course.id}`, {
+          ...course,
+          order: course.order
+        })
+      );
+
+      await Promise.all(updatePromises);
+      console.log('Courses reordered successfully');
+    } catch (error) {
+      console.error("Failed to reorder courses:", error);
+      // Revert on error
+      fetchCourses();
+      alert("Failed to reorder courses. Please try again.");
+    }
+  };
+
+  // Lesson Drag and Drop handlers (existing code)
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, lesson: Lesson) => {
     setDraggedLesson(lesson);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", "");
 
-    // Add some visual feedback
     if (e.currentTarget) {
       e.currentTarget.style.opacity = "0.5";
     }
@@ -148,7 +236,6 @@ export const CourseManagement: React.FC = () => {
     setDraggedLesson(null);
     setDragOverIndex(null);
 
-    // Reset visual feedback
     if (e.currentTarget) {
       e.currentTarget.style.opacity = "1";
     }
@@ -161,7 +248,6 @@ export const CourseManagement: React.FC = () => {
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    // Only clear if we're leaving the entire drop zone, not just moving between children
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
@@ -184,24 +270,20 @@ export const CourseManagement: React.FC = () => {
       return;
     }
 
-    // Create new array with reordered lessons
     const newLessons = [...lessons];
     const [draggedItem] = newLessons.splice(dragIndex, 1);
     newLessons.splice(dropIndex, 0, draggedItem);
 
-    // Update order numbers
     const reorderedLessons = newLessons.map((lesson, index) => ({
       ...lesson,
       order: index + 1
     }));
 
-    // Optimistically update UI
     setLessons(reorderedLessons);
     setDraggedLesson(null);
     setDragOverIndex(null);
 
     try {
-      // Update all affected lessons in the backend
       const updatePromises = reorderedLessons.map(lesson =>
         api.put(`/admin/lessons/${lesson.id}`, {
           ...lesson,
@@ -213,14 +295,12 @@ export const CourseManagement: React.FC = () => {
       console.log('Lessons reordered successfully');
     } catch (error) {
       console.error("Failed to reorder lessons:", error);
-      // Revert on error
       fetchLessons(selectedCourse!.id);
       alert("Failed to reorder lessons. Please try again.");
     }
   };
 
-
-  // Helper function to reset course form to default values
+  // Helper functions (existing code)
   const resetCourseForm = () => {
     setCourseForm({
       title: "",
@@ -233,7 +313,6 @@ export const CourseManagement: React.FC = () => {
     setEditingCourse(null);
   };
 
-  // Helper function to reset lesson form to default values
   const resetLessonForm = () => {
     setLessonForm({
       title: "",
@@ -260,10 +339,8 @@ export const CourseManagement: React.FC = () => {
     }
   }, [selectedCourse]);
 
-  // Reset states when navigating back to course list
   useEffect(() => {
     if (!selectedCourse) {
-      // Reset all lesson-related states when going back to course list
       setLessons([]);
       setLessonDialog(false);
       resetLessonForm();
@@ -273,7 +350,14 @@ export const CourseManagement: React.FC = () => {
   const fetchCourses = async () => {
     try {
       const response = await api.get("/courses");
-      setCourses(response.data);
+      // Sort courses by order if they have it, otherwise by creation date
+      const sortedCourses = response.data.sort((a: Course, b: Course) => {
+        if (a.order !== undefined && b.order !== undefined) {
+          return a.order - b.order;
+        }
+        return 0;
+      });
+      setCourses(sortedCourses);
     } catch (error) {
       console.error("Failed to fetch courses:", error);
     }
@@ -283,7 +367,6 @@ export const CourseManagement: React.FC = () => {
     try {
       const response = await api.get(`/courses/${courseId}/lessons`);
       console.log("Lessons response:", response.data);
-      // Sort lessons by order to ensure correct display
       const sortedLessons = response.data.sort((a: Lesson, b: Lesson) => a.order - b.order);
       setLessons(sortedLessons);
     } catch (error) {
@@ -429,25 +512,21 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  // Fixed: Close course dialog handler
   const handleCloseCourseDialog = () => {
     setCourseDialog(false);
     resetCourseForm();
   };
 
-  // Fixed: Close lesson dialog handler
   const handleCloseLessonDialog = () => {
     setLessonDialog(false);
     resetLessonForm();
   };
 
-  // Fixed: Add new course handler
   const handleAddNewCourse = () => {
     resetCourseForm();
     setCourseDialog(true);
   };
 
-  // Fixed: Add new lesson handler
   const handleAddNewLesson = () => {
     resetLessonForm();
     setLessonDialog(true);
@@ -484,6 +563,7 @@ export const CourseManagement: React.FC = () => {
   };
 
   if (selectedCourse) {
+    // Lesson management view (existing code remains the same)
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Stack
@@ -721,11 +801,11 @@ export const CourseManagement: React.FC = () => {
           </Grid>
         </Grid>
 
-        {/* Lesson Dialog */}
+        {/* Lesson Dialog (existing code remains the same) */}
         <Dialog
           open={lessonDialog}
           onClose={handleCloseLessonDialog}
-          maxWidth="md"
+          maxWidth="lg"
           fullWidth
         >
           <DialogTitle>
@@ -1180,6 +1260,7 @@ export const CourseManagement: React.FC = () => {
     );
   }
 
+  // Course list view with drag and drop
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Stack
@@ -1202,10 +1283,61 @@ export const CourseManagement: React.FC = () => {
       </Stack>
 
       <Grid container spacing={3}>
-        {courses.map((course) => (
-          <Grid size={{ xs: 12, md: 4 }} key={course.id}>
-            <motion.div whileHover={{ y: -4 }}>
-              <Card>
+        {courses.map((course, index) => (
+          <Grid
+            size={{ xs: 12, md: 4 }}
+            key={course.id}
+            draggable
+            onDragStart={(e) => handleCourseDragStart(e, course)}
+            onDragEnd={handleCourseDragEnd}
+            onDragOver={(e) => handleCourseDragOver(e, index)}
+            onDragLeave={handleCourseDragLeave}
+            onDrop={(e) => handleCourseDrop(e, index)}
+          >
+            <motion.div
+              whileHover={{ y: -4 }}
+              style={{
+                cursor: 'grab',
+                transition: 'all 0.2s ease',
+                transform: dragOverCourseIndex === index && draggedCourse?.id !== course.id
+                  ? 'translateY(-8px)'
+                  : 'none',
+                opacity: draggedCourse?.id === course.id ? 0.5 : 1,
+              }}
+            >
+              <Card
+                sx={{
+                  position: 'relative',
+                  boxShadow: dragOverCourseIndex === index && draggedCourse?.id !== course.id
+                    ? 4
+                    : 1,
+                  border: dragOverCourseIndex === index && draggedCourse?.id !== course.id
+                    ? '2px solid #1976d2'
+                    : 'none',
+                  '&:active': {
+                    cursor: 'grabbing'
+                  }
+                }}
+              >
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    zIndex: 1,
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: 1,
+                    padding: '2px 8px',
+                  }}
+                >
+                  <DragIndicator sx={{ fontSize: 20, color: 'action.active' }} />
+                  <Typography variant="caption" fontWeight={600}>
+                    #{course.order || index + 1}
+                  </Typography>
+                </Box>
                 <Box
                   sx={{
                     height: 120,
@@ -1255,7 +1387,6 @@ export const CourseManagement: React.FC = () => {
                       WebkitBoxOrient: "vertical",
                       overflow: "hidden",
                     }}
-
                   >
                     {course.description}
                   </Typography>

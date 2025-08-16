@@ -70,6 +70,10 @@ export const useSlideManagement = ({ initialSlides, onChange }: UseSlideManageme
     updateSlideContent(index, getDefaultContent(newType));
   };
 
+  const reorderSlides = (newSlides: Slide[]) => {
+    updateSlides(newSlides);
+  };
+
   return {
     slides,
     activeSlide,
@@ -80,5 +84,6 @@ export const useSlideManagement = ({ initialSlides, onChange }: UseSlideManageme
     duplicateSlide,
     removeSlide,
     changeSlideType,
+    reorderSlides, // Export the new function
   };
 };

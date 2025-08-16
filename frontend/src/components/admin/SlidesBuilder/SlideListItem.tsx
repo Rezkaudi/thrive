@@ -1,4 +1,5 @@
-import React from 'react';
+// frontend/src/components/admin/SlidesBuilder/SlideListItem.tsx
+import React, { useRef } from 'react';
 import {
   Paper,
   Typography,
@@ -7,6 +8,7 @@ import {
   Avatar,
   Chip,
   Tooltip,
+  Box,
 } from '@mui/material';
 import {
   DragIndicator,
@@ -32,6 +34,8 @@ interface SlideListItemProps {
   onDuplicate: () => void;
   onRemove: () => void;
   canRemove: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
 }
 
 const getSlideIcon = (type: string) => {
@@ -68,7 +72,10 @@ export const SlideListItem: React.FC<SlideListItemProps> = ({
   onDuplicate,
   onRemove,
   canRemove,
+  isDragging = false,
+  isDragOver = false,
 }) => {
+  const dragHandleRef = useRef<HTMLDivElement>(null);
   const slideTypeColor = getSlideTypeColor(slide.content.type);
 
   return (
@@ -79,6 +86,8 @@ export const SlideListItem: React.FC<SlideListItemProps> = ({
         bgcolor: isActive ? 'primary.light' : 'background.paper',
         border: '2px solid',
         borderColor: hasErrors ? 'error.main' : isActive ? 'primary.main' : 'transparent',
+        opacity: isDragging ? 0.5 : 1,
+        transform: isDragOver ? 'translateY(2px)' : 'none',
         '&:hover': {
           bgcolor: isActive ? 'primary.light' : 'action.hover',
           borderColor: hasErrors ? 'error.main' : 'primary.main'
@@ -88,15 +97,21 @@ export const SlideListItem: React.FC<SlideListItemProps> = ({
       onClick={onSelect}
     >
       <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-        <IconButton
-          size="small"
+        <Box
+          ref={dragHandleRef}
           sx={{
             cursor: 'grab',
-            color: slideTypeColor
+            display: 'flex',
+            alignItems: 'center',
+            color: slideTypeColor,
+            '&:active': {
+              cursor: 'grabbing'
+            }
           }}
+          onClick={(e) => e.stopPropagation()} // Prevent slide selection when dragging
         >
           <DragIndicator />
-        </IconButton>
+        </Box>
         <Avatar
           sx={{
             width: 24,

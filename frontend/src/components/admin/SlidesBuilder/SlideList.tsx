@@ -1,4 +1,5 @@
-import React from 'react';
+// frontend/src/components/admin/SlidesBuilder/SlideList.tsx
+import React, { useState } from 'react';
 import {
   Paper,
   Typography,
@@ -10,6 +11,7 @@ import {
   IconButton,
   FormControlLabel,
   Switch,
+  Box,
 } from '@mui/material';
 import {
   Settings,
@@ -30,6 +32,7 @@ interface SlideListProps {
   onAddSlide: (type?: SlideContent['type']) => void;
   onDuplicateSlide: (index: number) => void;
   onRemoveSlide: (index: number) => void;
+  onReorderSlides?: (slides: Slide[]) => void; // New prop for reordering
   validationErrors: Record<string, string[]>;
   showAdvancedSettings: boolean;
   onToggleAdvancedSettings: () => void;
@@ -51,10 +54,96 @@ export const SlideList: React.FC<SlideListProps> = ({
   onAddSlide,
   onDuplicateSlide,
   onRemoveSlide,
+  onReorderSlides,
   validationErrors,
   showAdvancedSettings,
   onToggleAdvancedSettings,
 }) => {
+  // Drag and drop state
+  const [draggedSlide, setDraggedSlide] = useState<Slide | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Drag and Drop handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, slide: Slide, index: number) => {
+    setDraggedSlide(slide);
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', ''); // Required for Firefox
+
+    // Add visual feedback
+    if (e.currentTarget) {
+      e.currentTarget.style.opacity = '0.5';
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    setDraggedSlide(null);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+
+    // Reset visual feedback
+    if (e.currentTarget) {
+      e.currentTarget.style.opacity = '1';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Only clear if we're leaving the entire drop zone
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+
+    if (draggedSlide === null || draggedIndex === null) return;
+    if (draggedIndex === dropIndex) {
+      setDraggedSlide(null);
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Create new array with reordered slides
+    const newSlides = [...slides];
+    const [draggedItem] = newSlides.splice(draggedIndex, 1);
+    newSlides.splice(dropIndex, 0, draggedItem);
+
+    // Call the reorder callback if provided
+    if (onReorderSlides) {
+      onReorderSlides(newSlides);
+    }
+
+    // Update active slide index if needed
+    if (activeSlide === draggedIndex) {
+      onSlideSelect(dropIndex);
+    } else if (draggedIndex < activeSlide && dropIndex >= activeSlide) {
+      onSlideSelect(activeSlide - 1);
+    } else if (draggedIndex > activeSlide && dropIndex <= activeSlide) {
+      onSlideSelect(activeSlide + 1);
+    }
+
+    // Clean up
+    setDraggedSlide(null);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   return (
     <Paper sx={{ p: 2, height: 'fit-content', position: 'sticky', top: 20 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -74,18 +163,44 @@ export const SlideList: React.FC<SlideListProps> = ({
 
       <Stack spacing={1} sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
         {slides.map((slide, index) => (
-          <SlideListItem
+          <Box
             key={slide.id}
-            slide={slide}
-            index={index}
-            isActive={activeSlide === index}
-            hasErrors={(validationErrors[index] || []).length > 0}
-            errorCount={(validationErrors[index] || []).length}
-            onSelect={() => onSlideSelect(index)}
-            onDuplicate={() => onDuplicateSlide(index)}
-            onRemove={() => onRemoveSlide(index)}
-            canRemove={slides.length > 1}
-          />
+            draggable
+            onDragStart={(e) => handleDragStart(e, slide, index)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, index)}
+            sx={{
+              position: 'relative',
+              cursor: 'move',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: -4,
+                left: 0,
+                right: 0,
+                height: 4,
+                bgcolor: 'primary.main',
+                opacity: dragOverIndex === index && draggedIndex !== index ? 1 : 0,
+                transition: 'opacity 0.2s ease',
+              },
+            }}
+          >
+            <SlideListItem
+              slide={slide}
+              index={index}
+              isActive={activeSlide === index}
+              hasErrors={(validationErrors[index] || []).length > 0}
+              errorCount={(validationErrors[index] || []).length}
+              onSelect={() => onSlideSelect(index)}
+              onDuplicate={() => onDuplicateSlide(index)}
+              onRemove={() => onRemoveSlide(index)}
+              canRemove={slides.length > 1}
+              isDragging={draggedIndex === index}
+              isDragOver={dragOverIndex === index && draggedIndex !== index}
+            />
+          </Box>
         ))}
       </Stack>
 
