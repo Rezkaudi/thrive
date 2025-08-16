@@ -15,14 +15,14 @@ export const getDefaultContent = (type: SlideContent['type']): SlideContent => {
       return {
         type: 'image',
         content: { url: '', alt: '', caption: '' },
-        title: 'New Image Slide'
+        title: ''
       };
 
     case 'video':
       return {
         type: 'video',
         content: { url: '' },
-        title: 'New Video Slide'
+        title: ''
       };
 
     case 'quiz':
@@ -36,7 +36,7 @@ export const getDefaultContent = (type: SlideContent['type']): SlideContent => {
           correctAnswers: [0], // For multiple choice
           explanation: '',
         },
-        title: 'New Quiz Slide'
+        title: ''
       };
 
     case 'interactive':
@@ -52,7 +52,7 @@ export const getDefaultContent = (type: SlideContent['type']): SlideContent => {
             incorrect: 'Not quite right. Try again! 💪'
           }
         } as InteractiveContent,
-        title: 'New Interactive Slide',
+        title: '',
       };
 
     case 'code':
@@ -62,14 +62,14 @@ export const getDefaultContent = (type: SlideContent['type']): SlideContent => {
           code: '// Enter your code here\nconsole.log("Hello, World!");',
           language: 'javascript'
         },
-        title: 'New Code Slide',
+        title: '',
       };
 
     default:
       return {
         type: 'text',
         content: '',
-        title: 'New Slide',
+        title: '',
         subtitle: ''
       };
   }
