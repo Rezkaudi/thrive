@@ -11,7 +11,8 @@ export interface ICourse {
   type: CourseType;
   icon: string;
   isActive: boolean;
-  freeLessonCount: number; // NEW FIELD
+  freeLessonCount: number;
+  order: number; // NEW FIELD
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,7 +25,8 @@ export class Course implements ICourse {
     public type: CourseType,
     public icon: string,
     public isActive: boolean,
-    public freeLessonCount: number, // NEW FIELD
+    public freeLessonCount: number,
+    public order: number, // NEW FIELD
     public createdAt: Date,
     public updatedAt: Date
   ) { }

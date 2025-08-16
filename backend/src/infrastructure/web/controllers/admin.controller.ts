@@ -137,6 +137,12 @@ export class AdminController {
       const { title, description, type, icon, freeLessonCount = 0 } = req.body;
       const courseRepository = new CourseRepository();
 
+      // Get the highest order number to place new course at the end
+      const existingCourses = await courseRepository.findAll();
+      const maxOrder = existingCourses.length > 0
+        ? Math.max(...existingCourses.map(c => c.order || 0))
+        : 0;
+
       const course = new Course(
         `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
         title,
@@ -145,6 +151,7 @@ export class AdminController {
         icon,
         true,
         freeLessonCount,
+        maxOrder + 1, // Set order to be after all existing courses
         new Date(),
         new Date()
       );
@@ -155,7 +162,6 @@ export class AdminController {
       next(error);
     }
   }
-
   async updateCourse(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { courseId } = req.params;

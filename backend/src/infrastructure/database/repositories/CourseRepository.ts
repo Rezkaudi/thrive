@@ -25,7 +25,10 @@ export class CourseRepository implements ICourseRepository {
 
   async findAll(isActive?: boolean): Promise<Course[]> {
     const where = isActive !== undefined ? { isActive } : {};
-    const entities = await this.repository.find({ where, order: { createdAt: 'ASC' } });
+    const entities = await this.repository.find({
+      where,
+      order: { order: 'ASC' } // Changed from createdAt to order
+    });
     return entities.map(e => this.toDomain(e));
   }
 
@@ -34,7 +37,7 @@ export class CourseRepository implements ICourseRepository {
 
     const entities = await this.repository.find({
       where,
-      order: { createdAt: 'ASC' },
+      order: { order: 'ASC' }, // Changed from createdAt to order
       relations: ['lessons'] // Include lessons in the result
     });
 
@@ -63,7 +66,8 @@ export class CourseRepository implements ICourseRepository {
       entity.type,
       entity.icon,
       entity.isActive,
-      entity.freeLessonCount, // NEW FIELD
+      entity.freeLessonCount,
+      entity.order, // Added order field
       entity.createdAt,
       entity.updatedAt
     );
@@ -77,7 +81,8 @@ export class CourseRepository implements ICourseRepository {
     entity.type = course.type;
     entity.icon = course.icon;
     entity.isActive = course.isActive;
-    entity.freeLessonCount = course.freeLessonCount; // NEW FIELD
+    entity.freeLessonCount = course.freeLessonCount;
+    entity.order = course.order; // Added order field
     entity.createdAt = course.createdAt;
     entity.updatedAt = course.updatedAt;
     return entity;

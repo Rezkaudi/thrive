@@ -26,8 +26,11 @@ export class CourseEntity {
   @Column({ default: true })
   isActive!: boolean;
 
-  @Column({ default: 0 }) // NEW FIELD
+  @Column({ default: 0 })
   freeLessonCount!: number;
+
+  @Column({ default: 1 }) // NEW FIELD with default order
+  order!: number;
 
   @OneToMany(() => LessonEntity, lesson => lesson.course)
   lessons!: LessonEntity[];
