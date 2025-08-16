@@ -1,6 +1,4 @@
-// Resolved SlideFooter.tsx combining responsive design + quiz validation
-
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Stack,
   Button,
@@ -48,6 +46,8 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const footerRef = useRef<HTMLDivElement>(null);
 
   // Check if a slide at given index is accessible
   const isSlideAccessible = (index: number) => {
@@ -63,12 +63,45 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         return false;
       }
     }
-
     return true;
   };
 
   const currentSlideIsQuiz = slides[currentSlide]?.content?.type === 'quiz';
   const isQuizIncomplete = currentSlideIsQuiz && !slideProgress.has(currentSlide);
+
+  // Simple keyboard navigation
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    switch (event.key) {
+      case 'ArrowLeft':
+        event.preventDefault();
+        if (currentSlide > 0) {
+          onPrevious();
+        }
+        break;
+
+      case 'ArrowRight':
+        event.preventDefault();
+        if (canNavigateToNext && currentSlide < totalSlides - 1) {
+          onNext();
+        }
+        break;
+
+      case 'Enter':
+        event.preventDefault();
+        // If it's the last slide and all slides are completed, submit lesson
+        if (isLastSlide && slideProgress.size === totalSlides && !isLessonCompleted) {
+          onComplete();
+        }
+        break;
+    }
+  };
+
+  // Auto-focus on mount for keyboard events to work
+  useEffect(() => {
+    if (footerRef.current) {
+      footerRef.current.focus();
+    }
+  }, []);
 
   // Function to get visible slide indices (for responsive design)
   const getVisibleSlides = () => {
@@ -198,6 +231,9 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   if (isMobile) {
     return (
       <Stack
+        ref={footerRef}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
         spacing={2}
         sx={{
           p: 2,
@@ -208,6 +244,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           position: 'sticky',
           bottom: 0,
           zIndex: 100,
+          outline: 'none',
         }}
       >
         {/* Progress Section */}
@@ -315,9 +352,12 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   // Desktop/Tablet Layout
   return (
     <Stack
+      ref={footerRef}
       direction="row"
       justifyContent="space-between"
       alignItems="center"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       sx={{
         p: isTablet ? 2 : 3,
         bgcolor: 'rgba(255, 255, 255, 0.95)',
@@ -327,6 +367,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         position: 'sticky',
         bottom: 0,
         zIndex: 100,
+        outline: 'none',
       }}
     >
       {/* Previous Button */}
