@@ -191,7 +191,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
           md: "800px"   // Original width on medium and up
         }, 
         margin: "0 auto",
-        minHeight: "100vh",
         display: "flex",
         flexDirection: "column"
       }}

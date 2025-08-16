@@ -250,8 +250,11 @@ export class AdminController {
           savedLesson.id,
           kw.englishText,
           kw.japaneseText,
+          kw.englishSentence || '',
+          kw.japaneseSentence || '',
           kw.englishAudioUrl,
           kw.japaneseAudioUrl,
+          kw.japaneseSentenceAudioUrl,
           index + 1,
           new Date(),
           new Date()
@@ -294,8 +297,11 @@ export class AdminController {
             lessonId,
             kw.englishText,
             kw.japaneseText,
+            kw.englishSentence || '',
+            kw.japaneseSentence || '',
             kw.englishAudioUrl,
             kw.japaneseAudioUrl,
+            kw.japaneseSentenceAudioUrl,
             index + 1,
             new Date(),
             new Date()

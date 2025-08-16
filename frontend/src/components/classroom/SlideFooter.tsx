@@ -1,6 +1,4 @@
-// Resolved SlideFooter.tsx combining responsive design + quiz validation
-
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   Stack,
   Button,
@@ -48,6 +46,8 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const footerRef = useRef<HTMLDivElement>(null);
 
   // Check if a slide at given index is accessible
   const isSlideAccessible = (index: number) => {
@@ -63,12 +63,107 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         return false;
       }
     }
-
     return true;
   };
 
   const currentSlideIsQuiz = slides[currentSlide]?.content?.type === 'quiz';
   const isQuizIncomplete = currentSlideIsQuiz && !slideProgress.has(currentSlide);
+
+  // Simple keyboard navigation with only essential keys
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Only handle keyboard events if no input element is focused
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
+      (activeElement as HTMLElement).contentEditable === 'true'
+    );
+
+    // Don't handle keyboard events if an input is focused
+    if (isInputFocused) {
+      return;
+    }
+
+    // Prevent default for navigation keys to avoid page scrolling
+    if (['ArrowLeft', 'ArrowRight', 'Enter'].includes(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    switch (event.key) {
+      case 'ArrowLeft':
+        if (currentSlide > 0) {
+          onPrevious();
+        }
+        break;
+
+      case 'ArrowRight':
+        if (canNavigateToNext && currentSlide < totalSlides - 1) {
+          onNext();
+        }
+        break;
+
+      case 'Enter':
+        // If it's the last slide and all slides are completed, submit lesson
+        if (isLastSlide && slideProgress.size === totalSlides && !isLessonCompleted) {
+          onComplete();
+        } else if (canNavigateToNext && currentSlide < totalSlides - 1) {
+          // Otherwise, go to next slide if possible
+          onNext();
+        }
+        break;
+    }
+  }, [
+    currentSlide,
+    totalSlides,
+    canNavigateToNext,
+    isLastSlide,
+    slideProgress.size,
+    isLessonCompleted,
+    onPrevious,
+    onNext,
+    onComplete,
+  ]);
+
+  // Set up global keyboard event listeners
+  useEffect(() => {
+    // Add event listener to document for global keyboard navigation
+    document.addEventListener('keydown', handleKeyDown, true);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [handleKeyDown]);
+
+  // Focus management - ensure footer can receive focus
+  useEffect(() => {
+    if (footerRef.current && document.activeElement === document.body) {
+      // Only focus if no other element is focused
+      footerRef.current.focus();
+    }
+  }, [currentSlide]); // Re-focus when slide changes
+
+  // Handle click to focus footer for keyboard navigation
+  const handleFooterClick = useCallback(() => {
+    if (footerRef.current) {
+      footerRef.current.focus();
+    }
+  }, []);
+
+  // Prevent losing focus when clicking buttons
+  const handleButtonClick = useCallback((callback: () => void) => {
+    return (event: React.MouseEvent) => {
+      event.preventDefault();
+      callback();
+      // Restore focus to footer after button action
+      setTimeout(() => {
+        if (footerRef.current) {
+          footerRef.current.focus();
+        }
+      }, 0);
+    };
+  }, []);
 
   // Function to get visible slide indices (for responsive design)
   const getVisibleSlides = () => {
@@ -198,6 +293,9 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   if (isMobile) {
     return (
       <Stack
+        ref={footerRef}
+        tabIndex={0}
+        onClick={handleFooterClick}
         spacing={2}
         sx={{
           p: 2,
@@ -208,6 +306,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           position: 'sticky',
           bottom: 0,
           zIndex: 100,
+          outline: 'none',
         }}
       >
         {/* Progress Section */}
@@ -231,7 +330,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Button
             startIcon={<NavigateBefore />}
-            onClick={onPrevious}
+            onClick={handleButtonClick(onPrevious)}
             disabled={currentSlide === 0}
             variant="outlined"
             size={isTablet ? "small" : "medium"}
@@ -251,7 +350,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
             <Button
               variant="contained"
               color="success"
-              onClick={onComplete}
+              onClick={handleButtonClick(onComplete)}
               disabled={isLessonCompleted}
               endIcon={<CheckCircle />}
               size={isTablet ? "small" : "medium"}
@@ -280,7 +379,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
               <span>
                 <Button
                   endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
-                  onClick={onNext}
+                  onClick={handleButtonClick(onNext)}
                   variant="contained"
                   disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
                   size="small"
@@ -315,9 +414,12 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   // Desktop/Tablet Layout
   return (
     <Stack
+      ref={footerRef}
       direction="row"
       justifyContent="space-between"
       alignItems="center"
+      tabIndex={0}
+      onClick={handleFooterClick}
       sx={{
         p: isTablet ? 2 : 3,
         bgcolor: 'rgba(255, 255, 255, 0.95)',
@@ -327,12 +429,13 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         position: 'sticky',
         bottom: 0,
         zIndex: 100,
+        outline: 'none',
       }}
     >
       {/* Previous Button */}
       <Button
         startIcon={<NavigateBefore />}
-        onClick={onPrevious}
+        onClick={handleButtonClick(onPrevious)}
         disabled={currentSlide === 0}
         variant="outlined"
         size={isTablet ? "small" : "medium"}
@@ -371,7 +474,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         <Button
           variant="contained"
           color="success"
-          onClick={onComplete}
+          onClick={handleButtonClick(onComplete)}
           disabled={isLessonCompleted}
           endIcon={<CheckCircle />}
           size={isTablet ? "small" : "medium"}
@@ -405,7 +508,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           <span>
             <Button
               endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
-              onClick={onNext}
+              onClick={handleButtonClick(onNext)}
               variant="contained"
               disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
               size={isTablet ? "small" : "medium"}
