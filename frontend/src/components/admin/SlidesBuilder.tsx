@@ -8,7 +8,6 @@ import { SlideEditor } from './SlidesBuilder/SlideEditor';
 import { SlidesBuilderSummary } from './SlidesBuilder/SlidesBuilderSummary';
 import { PreviewDialog } from './SlidesBuilder/PreviewDialog';
 
-
 export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
   initialSlides = [],
   onChange,
@@ -26,6 +25,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
     duplicateSlide,
     removeSlide,
     changeSlideType,
+    reorderSlides, // Add this new function
   } = useSlideManagement({ initialSlides, onChange });
 
   const {
@@ -62,6 +62,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
             onAddSlide={addSlide}
             onDuplicateSlide={duplicateSlide}
             onRemoveSlide={removeSlide}
+            onReorderSlides={reorderSlides} // Pass the reorder function
             validationErrors={validationErrors}
             showAdvancedSettings={showAdvancedSettings}
             onToggleAdvancedSettings={() => setShowAdvancedSettings(!showAdvancedSettings)}

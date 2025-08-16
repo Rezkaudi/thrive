@@ -725,7 +725,7 @@ export const CourseManagement: React.FC = () => {
         <Dialog
           open={lessonDialog}
           onClose={handleCloseLessonDialog}
-          maxWidth="md"
+          maxWidth="lg"
           fullWidth
         >
           <DialogTitle>
