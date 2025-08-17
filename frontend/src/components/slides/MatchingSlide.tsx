@@ -305,12 +305,12 @@ export const MatchingSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: 4,
-          color: "text.secondary",
-          fontSize: { xs: "1rem", sm: "1.1rem" },
+          // color: "text.secondary",
+          // fontSize: { xs: "1rem", sm: "1.1rem" },
         }}
       >
         {content.instruction || "Listen to the sounds and match them with the correct characters"}

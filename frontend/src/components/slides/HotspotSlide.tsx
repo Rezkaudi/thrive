@@ -25,11 +25,11 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
   const [hotspotClicks, setHotspotClicks] = useState<Set<string>>(new Set());
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const content = slide.content.content;
   const slideId = `hotspot-${slide.id}`;
   const showSlideFeeback = showFeedback[slideId];
@@ -69,14 +69,14 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
   // Look for image URL in content.settings.imageUrl (slide level) or localStorage fallback
   const savedImageUrl = typeof window !== 'undefined' ? localStorage.getItem('hotspot-temp-image-url') : null;
   const imageUrl = content.settings?.imageUrl || savedImageUrl;
-  
+
   // Responsive hotspot size
   const hotspotSize = isMobile ? 32 : isTablet ? 36 : 40;
 
   return (
-    <Box sx={{ 
-      padding: { xs: 2, sm: 3, md: 4 }, 
-      maxWidth: "1000px", 
+    <Box sx={{
+      padding: { xs: 2, sm: 3, md: 4 },
+      maxWidth: "1000px",
       margin: "0 auto",
       width: "100%"
     }}>
@@ -85,7 +85,7 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
         gutterBottom
         fontWeight={600}
         textAlign="center"
-        sx={{ 
+        sx={{
           mb: { xs: 2, md: 3 },
           fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" }
         }}
@@ -94,12 +94,12 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: { xs: 3, md: 4 },
-          color: "text.secondary",
-          fontSize: { xs: "1rem", md: "1.1rem" },
+          // color: "text.secondary",
+          // fontSize: { xs: "1rem", md: "1.1rem" },
           px: { xs: 1, sm: 2 }
         }}
       >
@@ -130,8 +130,8 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
                   bgcolor: "grey.100",
                 }}
               >
-                <Typography 
-                  variant="body1" 
+                <Typography
+                  variant="body1"
                   color="text.secondary"
                   sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}
                 >
@@ -139,7 +139,7 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
                 </Typography>
               </Box>
             )}
-            
+
             {/* Main image */}
             <Box
               component="img"
@@ -193,7 +193,7 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
                     fontSize: { xs: "1rem", md: "1.25rem" },
                     animation:
                       content.settings?.showAllHotspots ||
-                      hotspotClicks.has(item.id.toString())
+                        hotspotClicks.has(item.id.toString())
                         ? "none"
                         : "pulse 2s infinite",
                     "&:hover": {
@@ -229,28 +229,28 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
             ))}
           </Box>
         ) : (
-          <Box sx={{ 
-            p: { xs: 4, md: 8 }, 
-            textAlign: "center", 
-            bgcolor: "grey.100" 
+          <Box sx={{
+            p: { xs: 4, md: 8 },
+            textAlign: "center",
+            bgcolor: "grey.100"
           }}>
-            <Image sx={{ 
-              fontSize: { xs: 48, md: 64 }, 
-              color: "text.secondary", 
-              mb: 2 
+            <Image sx={{
+              fontSize: { xs: 48, md: 64 },
+              color: "text.secondary",
+              mb: 2
             }} />
-            <Typography 
-              variant={isMobile ? "body1" : "h6"} 
+            <Typography
+              variant={isMobile ? "body1" : "h6"}
               color="text.secondary"
               sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}
             >
               {imageError ? "Failed to load image" : "No background image provided"}
             </Typography>
             {imageError && imageUrl && (
-              <Typography 
-                variant="body2" 
-                color="text.secondary" 
-                sx={{ 
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
                   mt: 1,
                   fontSize: { xs: "0.75rem", md: "0.875rem" },
                   wordBreak: "break-all"
@@ -264,10 +264,10 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
       </Paper>
 
       {/* Progress Indicator */}
-      <Paper sx={{ 
-        p: { xs: 2, md: 3 }, 
-        mb: { xs: 3, md: 4 }, 
-        bgcolor: "info.50", 
+      <Paper sx={{
+        p: { xs: 2, md: 3 },
+        mb: { xs: 3, md: 4 },
+        bgcolor: "info.50",
         borderRadius: { xs: 2, md: 3 }
       }}>
         <Stack
@@ -276,10 +276,10 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
           alignItems={{ xs: "stretch", sm: "center" }}
           spacing={{ xs: 2, sm: 0 }}
         >
-          <Typography 
-            variant="body1" 
+          <Typography
+            variant="body1"
             fontWeight={500}
-            sx={{ 
+            sx={{
               fontSize: { xs: "0.9rem", md: "1rem" },
               textAlign: { xs: "center", sm: "left" }
             }}
@@ -290,18 +290,18 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
           <LinearProgress
             variant="determinate"
             value={(hotspotClicks.size / (content.items?.length || 1)) * 100}
-            sx={{ 
-              width: { xs: "100%", sm: 200 }, 
-              height: { xs: 6, md: 8 }, 
-              borderRadius: 4 
+            sx={{
+              width: { xs: "100%", sm: 200 },
+              height: { xs: 6, md: 8 },
+              borderRadius: 4
             }}
           />
         </Stack>
       </Paper>
 
-      <Stack 
-        direction={{ xs: "column", sm: "row" }} 
-        spacing={2} 
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
         justifyContent="center"
         alignItems="stretch"
       >
@@ -309,10 +309,10 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
           variant="outlined"
           size={isMobile ? "medium" : "large"}
           onClick={resetHotspots}
-          sx={{ 
-            px: { xs: 3, md: 4 }, 
-            py: { xs: 1, md: 1.5 }, 
-            fontSize: { xs: "0.9rem", md: "1rem" }, 
+          sx={{
+            px: { xs: 3, md: 4 },
+            py: { xs: 1, md: 1.5 },
+            fontSize: { xs: "0.9rem", md: "1rem" },
             borderRadius: { xs: 2, md: 3 },
             minHeight: { xs: 44, md: 48 }
           }}
@@ -344,9 +344,9 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
         <Fade in>
           <Alert
             severity={validation.type}
-            sx={{ 
-              mt: 3, 
-              borderRadius: { xs: 1, md: 2 }, 
+            sx={{
+              mt: 3,
+              borderRadius: { xs: 1, md: 2 },
               fontSize: { xs: "0.9rem", md: "1rem" },
               "& .MuiAlert-message": {
                 width: "100%"

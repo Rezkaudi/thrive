@@ -68,12 +68,12 @@ export const TimelineSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: 4,
-          color: "text.secondary",
-          fontSize: "1.1rem",
+          // color: "text.secondary",
+          // fontSize: "1.1rem",
         }}
       >
         {content.instruction}

@@ -54,7 +54,7 @@ export const SlideRenderer: React.FC<SlideComponentProps> = (props) => {
         return (
           <Box sx={{ textAlign: "center", p: 4 }}>
             {content.title && (
-              <Typography variant="h4" fontWeight={600} gutterBottom>
+              <Typography variant="h3" fontWeight={600} gutterBottom>
                 {content.title}
               </Typography>
             )}
@@ -82,7 +82,7 @@ export const SlideRenderer: React.FC<SlideComponentProps> = (props) => {
         return (
           <Box sx={{ textAlign: "center", p: 4 }}>
             {content.title && (
-              <Typography variant="h4" fontWeight={600} gutterBottom>
+              <Typography variant="h3" fontWeight={600} gutterBottom>
                 {content.title}
               </Typography>
             )}
@@ -150,7 +150,7 @@ export const SlideRenderer: React.FC<SlideComponentProps> = (props) => {
         return (
           <Box sx={{ p: 4 }}>
             {content.title && (
-              <Typography variant="h4" fontWeight={600} gutterBottom>
+              <Typography variant="h3" fontWeight={600} gutterBottom>
                 {content.title}
               </Typography>
             )}
