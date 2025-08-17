@@ -81,7 +81,7 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
 
   return (
     <Box sx={{ p: 4, maxWidth: 800, mx: "auto" }}>
-      <Typography variant="h4" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
+      <Typography variant="h3" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
         {slide.content.title || "Quiz Question"}
       </Typography>
 

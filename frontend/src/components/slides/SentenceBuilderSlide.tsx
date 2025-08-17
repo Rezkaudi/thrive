@@ -25,7 +25,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 // Utility function to filter valid words
-const getValidWords = (words: string[]): string[] => 
+const getValidWords = (words: string[]): string[] =>
   words?.filter((word: string) => word && word.trim() !== "") || [];
 
 // Utility function to build correct sentence from order indices
@@ -58,10 +58,10 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const content = slide.content.content;
   const slideId = `sentence-builder-${slide.id}`;
-  
+
   // Get the first item or create a default one
   const currentItem = content.items?.[0] || {
     words: [],
@@ -81,13 +81,13 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const validation = validationResults[slideId];
 
   // Memoized calculations
-  const validWords = useMemo(() => 
-    getValidWords(currentItem?.words as string[]), 
+  const validWords = useMemo(() =>
+    getValidWords(currentItem?.words as string[]),
     [currentItem?.words]
   );
-  
-  const correctSentence = useMemo(() => 
-    buildCorrectSentence(currentItem?.words as string[], currentItem?.correctOrder || []), 
+
+  const correctSentence = useMemo(() =>
+    buildCorrectSentence(currentItem?.words as string[], currentItem?.correctOrder || []),
     [currentItem?.words, currentItem?.correctOrder]
   );
 
@@ -110,9 +110,9 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   // Validation logic
   const getValidationMessage = useCallback((): ValidationResult | null => {
     if (!currentItem || totalWords === 0) return null;
-    
+
     const userCount = sentenceState.selectedWords.length;
-    
+
     // First check if user has selected all words
     if (userCount < totalWords) {
       return {
@@ -121,7 +121,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         message: `Please use all ${totalWords} words to build the sentence.`
       };
     }
-    
+
     // If user has more words than expected (shouldn't happen, but defensive programming)
     if (userCount > totalWords) {
       return {
@@ -130,10 +130,10 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         message: `You've selected too many words. Please use exactly ${totalWords} words.`
       };
     }
-    
+
     // Check if the order is correct
     const isCorrectOrder = JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence);
-    
+
     if (isCorrectOrder) {
       return {
         isValid: true,
@@ -166,7 +166,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   // Word selection logic
   const handleWordClick = useCallback((word: string) => {
     const wordCount = getWordCount(word);
-    
+
     if (sentenceState.selectedWords.includes(word)) {
       // Remove word from sentence
       setSentenceState(prev => ({
@@ -191,14 +191,14 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
 
   const handleCheckAnswer = useCallback(() => {
     if (!currentItem || !isComplete) return;
-    
+
     // Detailed logging for debugging
     console.group('🔍 Sentence Builder Check Answer');
     console.log('User answer:', sentenceState.selectedWords);
     console.log('Correct answer:', correctSentence);
     console.log('Words match:', JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence));
     console.groupEnd();
-    
+
     checkAnswer(slideId, sentenceState.selectedWords, correctSentence, "sentence-builder");
   }, [currentItem, isComplete, correctSentence, slideId, checkAnswer, sentenceState.selectedWords]);
 
@@ -215,9 +215,9 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const getWordCount = useCallback((word: string) => {
     const totalCount = validWords.filter((w: string) => w === word).length;
     const usedCount = sentenceState.selectedWords.filter((w: string) => w === word).length;
-    return { 
-      used: usedCount, 
-      total: totalCount, 
+    return {
+      used: usedCount,
+      total: totalCount,
       remaining: Math.max(0, totalCount - usedCount)
     };
   }, [validWords, sentenceState.selectedWords]);
@@ -234,9 +234,9 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   }
 
   return (
-    <Box sx={{ 
-      padding: { xs: 2, sm: 3, md: 4 }, 
-      maxWidth: "900px", 
+    <Box sx={{
+      padding: { xs: 2, sm: 3, md: 4 },
+      maxWidth: "900px",
       margin: "0 auto",
       minHeight: { xs: 'auto', md: '100vh' },
     }}>
@@ -253,12 +253,12 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
 
       {/* Instructions */}
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: { xs: 3, md: 4 },
-          color: "text.secondary",
-          fontSize: { xs: "1rem", md: "1.1rem" },
+          // color: "text.secondary",
+          // fontSize: { xs: "1rem", md: "1.1rem" },
           px: { xs: 1, md: 0 },
         }}
       >
@@ -267,23 +267,23 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
 
       {/* Current sentence progress */}
       <Box sx={{ textAlign: "center", mb: 3 }}>
-        <Typography 
-          variant={isMobile ? "subtitle1" : "h6"} 
-          color="secondary.main" 
+        <Typography
+          variant={isMobile ? "subtitle1" : "h6"}
+          color="secondary.main"
           fontWeight={600}
           sx={{ mb: 1 }}
         >
           Progress: {progressCount}/{totalWords} words placed
         </Typography>
-        <LinearProgress 
-          variant="determinate" 
-          value={totalWords > 0 ? (progressCount / totalWords) * 100 : 0} 
+        <LinearProgress
+          variant="determinate"
+          value={totalWords > 0 ? (progressCount / totalWords) * 100 : 0}
           color="secondary"
-          sx={{ 
-            height: { xs: 8, md: 10 }, 
-            borderRadius: 5, 
-            maxWidth: { xs: 280, md: 400 }, 
-            mx: "auto" 
+          sx={{
+            height: { xs: 8, md: 10 },
+            borderRadius: 5,
+            maxWidth: { xs: 280, md: 400 },
+            mx: "auto"
           }}
         />
       </Box>
@@ -341,17 +341,17 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
               />
             ))}
             {/* Current sentence preview */}
-            <Box sx={{ 
-              position: "absolute", 
-              bottom: 8, 
-              left: { xs: 8, md: 16 }, 
+            <Box sx={{
+              position: "absolute",
+              bottom: 8,
+              left: { xs: 8, md: 16 },
               right: { xs: 8, md: 16 },
-              textAlign: "center" 
+              textAlign: "center"
             }}>
-              <Typography 
-                variant="body2" 
-                color="text.secondary" 
-                sx={{ 
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
                   fontStyle: "italic",
                   fontSize: { xs: "0.75rem", md: "0.875rem" }
                 }}
@@ -364,11 +364,11 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
       </Paper>
 
       {/* Available Words */}
-      <Paper sx={{ 
-        p: { xs: 2, md: 3 }, 
-        mb: { xs: 3, md: 4 }, 
-        borderRadius: 3, 
-        bgcolor: "background.paper" 
+      <Paper sx={{
+        p: { xs: 2, md: 3 },
+        mb: { xs: 3, md: 4 },
+        borderRadius: 3,
+        bgcolor: "background.paper"
       }}>
         <Typography
           variant={isMobile ? "subtitle1" : "h6"}
@@ -390,7 +390,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
           {sentenceState.shuffledWords.map((word: string, index: number) => {
             const wordCount = getWordCount(word);
             const isAvailable = wordCount.remaining > 0;
-            
+
             return (
               <Button
                 key={`word-${sentenceState.resetTrigger}-${index}-${word}`}
@@ -441,11 +441,11 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
             );
           })}
         </Box>
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          sx={{ 
-            mt: 2, 
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            mt: 2,
             textAlign: "center",
             fontSize: { xs: "0.75rem", md: "0.875rem" }
           }}
@@ -473,8 +473,8 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
           >
             💭 Translation
           </Typography>
-          <Typography 
-            variant="body1" 
+          <Typography
+            variant="body1"
             sx={{ fontSize: { xs: "1rem", md: "1.1rem" } }}
           >
             {currentItem.translation}
@@ -483,9 +483,9 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
       )}
 
       {/* Action Buttons */}
-      <Stack 
-        direction={{ xs: "column", sm: "row" }} 
-        spacing={2} 
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
         justifyContent="center"
         sx={{ mb: 3 }}
       >
@@ -537,19 +537,19 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         <Fade in>
           <Alert
             severity={displayValidation.type}
-            sx={{ 
-              mt: 3, 
-              borderRadius: 2, 
+            sx={{
+              mt: 3,
+              borderRadius: 2,
               fontSize: { xs: "1rem", md: "1.1rem" },
               fontWeight: 500,
             }}
           >
             {displayValidation.message}
             {displayValidation.type === "error" && (
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  mt: 1, 
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1,
                   opacity: 0.8,
                   fontSize: { xs: "0.85rem", md: "0.9rem" }
                 }}

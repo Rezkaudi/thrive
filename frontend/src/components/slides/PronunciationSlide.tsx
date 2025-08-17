@@ -178,18 +178,18 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   }, []);
 
   return (
-    <Box 
-      sx={{ 
-        padding: { 
+    <Box
+      sx={{
+        padding: {
           xs: 2,    // 16px on mobile
           sm: 3,    // 24px on small screens
           md: 4     // 32px on medium and larger
-        }, 
-        maxWidth: { 
+        },
+        maxWidth: {
           xs: "100%",   // Full width on mobile
           sm: "600px",  // Constrained on small screens
           md: "800px"   // Original width on medium and up
-        }, 
+        },
         margin: "0 auto",
         display: "flex",
         flexDirection: "column"
@@ -200,7 +200,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         gutterBottom
         fontWeight={600}
         textAlign="center"
-        sx={{ 
+        sx={{
           mb: { xs: 2, sm: 3 },
           fontSize: {
             xs: "1.5rem",   // 24px on mobile
@@ -213,16 +213,16 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: { xs: 3, sm: 4 },
-          color: "text.secondary",
-          fontSize: {
-            xs: "1rem",      // 16px on mobile
-            sm: "1.05rem",   // 17px on small screens
-            md: "1.1rem"     // 18px on medium and up
-          },
+          // color: "text.secondary",
+          // fontSize: {
+          //   xs: "1rem",      // 16px on mobile
+          //   sm: "1.05rem",   // 17px on small screens
+          //   md: "1.1rem"     // 18px on medium and up
+          // },
           px: { xs: 1, sm: 2 }  // Extra padding on mobile for readability
         }}
       >
@@ -245,11 +245,11 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
           spacing={isMobile ? 1 : 0}
           mb={1}
         >
-          <Typography 
-            variant="body2" 
+          <Typography
+            variant="body2"
             fontWeight={500}
             textAlign={isMobile ? "center" : "left"}
-            sx={{ 
+            sx={{
               fontSize: { xs: "0.875rem", sm: "0.875rem" }
             }}
           >
@@ -259,7 +259,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
             label={`${Math.round(progress)}%`}
             size="small"
             color={progress === 100 ? "success" : "primary"}
-            sx={{ 
+            sx={{
               fontWeight: 600,
               alignSelf: isMobile ? "center" : "auto"
             }}
@@ -290,7 +290,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
             <Paper
               key={itemId}
               sx={{
-                p: { 
+                p: {
                   xs: 2,    // 16px on mobile
                   sm: 3,    // 24px on small screens
                   md: 4     // 32px on medium and up
@@ -325,7 +325,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                 fontWeight={600}
                 textAlign="center"
                 gutterBottom
-                sx={{ 
+                sx={{
                   mb: { xs: 2, sm: 3 },
                   fontSize: {
                     xs: "1.25rem",   // 20px on mobile
@@ -341,8 +341,8 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                 variant="body1"
                 textAlign="center"
                 color="text.secondary"
-                sx={{ 
-                  mb: { xs: 2, sm: 3 }, 
+                sx={{
+                  mb: { xs: 2, sm: 3 },
                   fontSize: {
                     xs: "0.95rem",   // 15px on mobile
                     sm: "1rem",      // 16px on small screens
@@ -369,8 +369,8 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                       startIcon={<VolumeUp />}
                       onClick={() => playAudio(item.audioUrl)}
                       fullWidth={isMobile}
-                      sx={{ 
-                        borderRadius: 3, 
+                      sx={{
+                        borderRadius: 3,
                         px: { xs: 2, sm: 3 },
                         py: { xs: 1, sm: 1.5 },
                         fontSize: { xs: "0.875rem", sm: "0.875rem" },
@@ -401,8 +401,8 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
 
                 {/* Recording Playback Buttons Row - Only show on mobile in column, or on md+ as separate row */}
                 {state.audioUrl && (
-                  <Stack 
-                    direction={isMobile ? "column" : "row"} 
+                  <Stack
+                    direction={isMobile ? "column" : "row"}
                     spacing={isMobile ? 1.5 : 2}
                     justifyContent="center"
                     alignItems="center"
@@ -416,8 +416,8 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                       startIcon={<PlayArrow />}
                       onClick={() => playAudio(state.audioUrl!)}
                       fullWidth={isMobile}
-                      sx={{ 
-                        borderRadius: 3, 
+                      sx={{
+                        borderRadius: 3,
                         px: { xs: 2, sm: 3 },
                         py: { xs: 1, sm: 1.5 },
                         fontSize: { xs: "0.875rem", sm: "0.875rem" },
@@ -432,8 +432,8 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                       startIcon={<Refresh />}
                       onClick={() => resetRecording(itemId)}
                       fullWidth={isMobile}
-                      sx={{ 
-                        borderRadius: 3, 
+                      sx={{
+                        borderRadius: 3,
                         px: { xs: 2, sm: 2 },
                         py: { xs: 1, sm: 1.5 },
                         fontSize: { xs: "0.875rem", sm: "0.875rem" }
@@ -448,10 +448,10 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
               {state.isRecording && (
                 <Box sx={{ textAlign: "center", mb: 2 }}>
                   <CircularProgress size={isMobile ? 20 : 24} />
-                  <Typography 
-                    variant="body2" 
-                    color="error.main" 
-                    sx={{ 
+                  <Typography
+                    variant="body2"
+                    color="error.main"
+                    sx={{
                       mt: 1,
                       fontSize: { xs: "0.8125rem", sm: "0.875rem" }
                     }}
@@ -528,15 +528,15 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
       </Box>
 
       {/* Instructions */}
-      <Alert 
-        severity="info" 
-        sx={{ 
-          mt: { xs: 2, sm: 3 }, 
+      <Alert
+        severity="info"
+        sx={{
+          mt: { xs: 2, sm: 3 },
           borderRadius: 2,
           fontSize: { xs: "0.8125rem", sm: "0.875rem" }
         }}
       >
-        <Typography 
+        <Typography
           variant="body2"
           sx={{ fontSize: { xs: "0.8125rem", sm: "0.875rem" } }}
         >

@@ -25,18 +25,23 @@ export const InteractiveTypeSelector: React.FC<InteractiveTypeSelectorProps> = (
   const currentType = interactiveContent.type || 'drag-drop';
 
   const handleTypeChange = (typeValue: string) => {
-    onUpdateContent({
-      type: typeValue as any,
-      items: [],
-      settings: {},
-      instruction: getDefaultInstruction(typeValue),
-      feedback: {
-        correct: 'Excellent! You got it right! 🎉',
-        incorrect: 'Not quite right. Try again! 💪'
-      }
-    });
-  };
+    // Show confirmation dialog
+    const isConfirmed = window.confirm("Are you sure you want to change slide types?");
 
+    // Only proceed if user confirms
+    if (isConfirmed) {
+      onUpdateContent({
+        type: typeValue as any,
+        items: [],
+        settings: {},
+        instruction: getDefaultInstruction(typeValue),
+        feedback: {
+          correct: 'Excellent! You got it right! 🎉',
+          incorrect: 'Not quite right. Try again! 💪'
+        }
+      });
+    }
+  };
   return (
     <Card sx={{ mb: 3, border: '2px solid', borderColor: 'primary.main', borderRadius: 3 }}>
       <CardContent>

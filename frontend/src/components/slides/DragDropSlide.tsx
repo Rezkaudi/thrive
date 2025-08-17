@@ -454,7 +454,7 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       margin: "0 auto"
     }}>
       <Typography
-        variant={isMobile ? "h5" : "h4"}
+        variant="h3"
         gutterBottom
         fontWeight={600}
         textAlign="center"
@@ -464,12 +464,12 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: { xs: 3, md: 4 },
-          color: "text.secondary",
-          fontSize: { xs: "1rem", md: "1.1rem" },
+          // color: "text.secondary",
+          // fontSize: { xs: "1rem", md: "1.1rem" },
           px: { xs: 1, sm: 0 }
         }}
       >

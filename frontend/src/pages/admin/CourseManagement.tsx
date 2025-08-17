@@ -437,8 +437,7 @@ export const CourseManagement: React.FC = () => {
       }
     } else if (!lessonForm.contentUrl.trim()) {
       alert(
-        `Please provide a ${
-          lessonForm.lessonType === "VIDEO" ? "video" : "PDF"
+        `Please provide a ${lessonForm.lessonType === "VIDEO" ? "video" : "PDF"
         } URL`
       );
       return false;
@@ -629,17 +628,17 @@ export const CourseManagement: React.FC = () => {
                         transition: "all 0.2s ease",
                         transform:
                           dragOverIndex === index &&
-                          draggedLesson?.id !== lesson.id
+                            draggedLesson?.id !== lesson.id
                             ? "translateY(-2px)"
                             : "none",
                         boxShadow:
                           dragOverIndex === index &&
-                          draggedLesson?.id !== lesson.id
+                            draggedLesson?.id !== lesson.id
                             ? 3
                             : 1,
                         borderLeft:
                           dragOverIndex === index &&
-                          draggedLesson?.id !== lesson.id
+                            draggedLesson?.id !== lesson.id
                             ? "4px solid #1976d2"
                             : "none",
                         backgroundColor:
@@ -700,23 +699,23 @@ export const CourseManagement: React.FC = () => {
                                   lesson.lessonType === "KEYWORDS"
                                     ? "Keywords Practice"
                                     : lesson.lessonType === "QUIZ"
-                                    ? "Quiz"
-                                    : lesson.lessonType === "SLIDES"
-                                    ? "Interactive Slides"
-                                    : lesson.contentUrl
-                                    ? lesson.lessonType === "VIDEO"
-                                      ? "Has Video"
-                                      : "Has PDF"
-                                    : lesson.lessonType === "VIDEO"
-                                    ? "No Video"
-                                    : "No PDF"
+                                      ? "Quiz"
+                                      : lesson.lessonType === "SLIDES"
+                                        ? "Interactive Slides"
+                                        : lesson.contentUrl
+                                          ? lesson.lessonType === "VIDEO"
+                                            ? "Has Video"
+                                            : "Has PDF"
+                                          : lesson.lessonType === "VIDEO"
+                                            ? "No Video"
+                                            : "No PDF"
                                 }
                                 size="small"
                                 color={
                                   lesson.contentUrl ||
-                                  lesson.lessonType === "KEYWORDS" ||
-                                  lesson.lessonType === "QUIZ" ||
-                                  lesson.lessonType === "SLIDES"
+                                    lesson.lessonType === "KEYWORDS" ||
+                                    lesson.lessonType === "QUIZ" ||
+                                    lesson.lessonType === "SLIDES"
                                     ? "success"
                                     : "default"
                                 }
@@ -832,7 +831,7 @@ export const CourseManagement: React.FC = () => {
           <DialogTitle>
             {editingLesson ? "Edit Lesson" : "Add New Lesson"}
           </DialogTitle>
-          <DialogContent>
+          <DialogContent >
             <Stack spacing={3} sx={{ pt: 2 }}>
               <TextField
                 fullWidth
@@ -1304,11 +1303,10 @@ export const CourseManagement: React.FC = () => {
                             size="small"
                           />
                           <Chip
-                            label={`${
-                              lessonForm.keywords.filter(
-                                (k) => k.japaneseAudioUrl
-                              ).length
-                            } with JP word audio`}
+                            label={`${lessonForm.keywords.filter(
+                              (k) => k.japaneseAudioUrl
+                            ).length
+                              } with JP word audio`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1319,11 +1317,10 @@ export const CourseManagement: React.FC = () => {
                             }
                           />
                           <Chip
-                            label={`${
-                              lessonForm.keywords.filter(
-                                (k) => k.englishAudioUrl
-                              ).length
-                            } with EN word audio`}
+                            label={`${lessonForm.keywords.filter(
+                              (k) => k.englishAudioUrl
+                            ).length
+                              } with EN word audio`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1334,11 +1331,10 @@ export const CourseManagement: React.FC = () => {
                             }
                           />
                           <Chip
-                            label={`${
-                              lessonForm.keywords.filter(
-                                (k) => k.englishSentence
-                              ).length
-                            } with EN sentences`}
+                            label={`${lessonForm.keywords.filter(
+                              (k) => k.englishSentence
+                            ).length
+                              } with EN sentences`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1349,11 +1345,10 @@ export const CourseManagement: React.FC = () => {
                             }
                           />
                           <Chip
-                            label={`${
-                              lessonForm.keywords.filter(
-                                (k) => k.japaneseSentence
-                              ).length
-                            } with JP sentences`}
+                            label={`${lessonForm.keywords.filter(
+                              (k) => k.japaneseSentence
+                            ).length
+                              } with JP sentences`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1364,11 +1359,10 @@ export const CourseManagement: React.FC = () => {
                             }
                           />
                           <Chip
-                            label={`${
-                              lessonForm.keywords.filter(
-                                (k) => k.japaneseSentenceAudioUrl
-                              ).length
-                            } with JP sentence audio`}
+                            label={`${lessonForm.keywords.filter(
+                              (k) => k.japaneseSentenceAudioUrl
+                            ).length
+                              } with JP sentence audio`}
                             size="small"
                             color={
                               lessonForm.keywords.filter(
@@ -1384,32 +1378,32 @@ export const CourseManagement: React.FC = () => {
                         {lessonForm.keywords.some(
                           (k) => !k.japaneseAudioUrl || !k.englishAudioUrl
                         ) && (
-                          <Alert severity="warning" sx={{ mt: 1 }}>
-                            Some keywords are missing word audio files. Consider
-                            using the Bulk Audio manager to import them.
-                          </Alert>
-                        )}
+                            <Alert severity="warning" sx={{ mt: 1 }}>
+                              Some keywords are missing word audio files. Consider
+                              using the Bulk Audio manager to import them.
+                            </Alert>
+                          )}
 
                         {lessonForm.keywords.some(
                           (k) => !k.englishSentence || !k.japaneseSentence
                         ) && (
-                          <Alert severity="info" sx={{ mt: 1 }}>
-                            Some keywords are missing example sentences. Adding
-                            sentences helps learners understand context and
-                            usage.
-                          </Alert>
-                        )}
+                            <Alert severity="info" sx={{ mt: 1 }}>
+                              Some keywords are missing example sentences. Adding
+                              sentences helps learners understand context and
+                              usage.
+                            </Alert>
+                          )}
 
                         {lessonForm.keywords.some(
                           (k) =>
                             k.japaneseSentence && !k.japaneseSentenceAudioUrl
                         ) && (
-                          <Alert severity="warning" sx={{ mt: 1 }}>
-                            Some Japanese sentences are missing audio
-                            pronunciation. This audio helps with pronunciation
-                            practice.
-                          </Alert>
-                        )}
+                            <Alert severity="warning" sx={{ mt: 1 }}>
+                              Some Japanese sentences are missing audio
+                              pronunciation. This audio helps with pronunciation
+                              practice.
+                            </Alert>
+                          )}
                       </Stack>
                     </Paper>
                   )}
@@ -1550,11 +1544,9 @@ export const CourseManagement: React.FC = () => {
                 <Box
                   sx={{
                     height: 120,
-                    background: `linear-gradient(135deg, ${
-                      course.type === "JAPAN_IN_CONTEXT" ? "#5C633A" : "#A6531C"
-                    } 0%, ${
-                      course.type === "JAPAN_IN_CONTEXT" ? "#D4BC8C" : "#7ED4D0"
-                    } 100%)`,
+                    background: `linear-gradient(135deg, ${course.type === "JAPAN_IN_CONTEXT" ? "#5C633A" : "#A6531C"
+                      } 0%, ${course.type === "JAPAN_IN_CONTEXT" ? "#D4BC8C" : "#7ED4D0"
+                      } 100%)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
