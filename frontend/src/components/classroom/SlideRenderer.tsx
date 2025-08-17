@@ -7,7 +7,6 @@ import { SlideComponentProps } from "../../types/slide.types";
 import { QuizSlide } from "../slides/QuizSlide";
 import { DragDropSlide } from "../slides/DragDropSlide";
 import { FillBlanksSlide } from "../slides/FillBlanksSlide";
-import { SentenceBuilderSlide } from "../slides/SentenceBuilderSlide";
 import { SortingSlide } from "../slides/SortingSlide";
 import { MatchingSlide } from "../slides/MatchingSlide";
 import { HotspotSlide } from "../slides/HotspotSlide";
@@ -16,6 +15,7 @@ import { ListeningSlide } from "../slides/ListeningSlide";
 import { FlashcardSlide } from "../slides/FlashcardSlide";
 import { PronunciationSlide } from "../slides/PronunciationSlide";
 import { NotImplementedSlide } from "../slides/NotImplementedSlide";
+import { SentenceBuilderSlide } from "../slides/SentenceBuilderSlide";
 
 export const SlideRenderer: React.FC<SlideComponentProps> = (props) => {
   const { slide } = props;
