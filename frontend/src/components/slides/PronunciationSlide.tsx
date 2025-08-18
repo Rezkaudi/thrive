@@ -1,5 +1,5 @@
 // components/slides/PronunciationSlide.tsx
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -12,6 +12,7 @@ import {
   LinearProgress,
   useTheme,
   useMediaQuery,
+  Fade,
 } from "@mui/material";
 import {
   PlayArrow,
@@ -20,6 +21,7 @@ import {
   VolumeUp,
   CheckCircle,
   Refresh,
+  CheckCircleOutline,
 } from "@mui/icons-material";
 import confetti from "canvas-confetti";
 import { SlideComponentProps } from "../../types/slide.types";
@@ -33,8 +35,13 @@ interface RecordingState {
 
 export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   slide,
-  setSlideProgress,
   currentSlide,
+  interactiveAnswers,
+  setInteractiveAnswers,
+  showFeedback,
+  validationResults,
+  setSlideProgress,
+  checkAnswer,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -44,11 +51,29 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   const [recordingStates, setRecordingStates] = useState<Record<string, RecordingState>>({});
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
+  const [isSlideCompleted, setIsSlideCompleted] = useState(false);
+  const [isProcessingCompletion, setIsProcessingCompletion] = useState(false);
 
   const content = slide.content.content;
+  const slideId = `pronunciation-${slide.id}`;
   const totalItems = content.items?.length || 0;
   const completedCount = completedItems.size;
   const progress = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
+
+  // Get feedback and validation state
+  const userAnswer = interactiveAnswers[slideId];
+  const showSlideFeeback = showFeedback[slideId];
+  const validation = validationResults[slideId];
+
+  console.log('PronunciationSlide State:', {
+    slideId,
+    userAnswer,
+    completedCount,
+    totalItems,
+    isSlideCompleted,
+    validation,
+    showSlideFeeback
+  });
 
   // Get recording state for a specific item
   const getRecordingState = (itemId: string): RecordingState => {
@@ -71,7 +96,40 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
     }));
   };
 
+  // Load existing state when component mounts or userAnswer changes
+  useEffect(() => {
+    if (userAnswer && typeof userAnswer === 'object') {
+      console.log('Loading existing pronunciation answers:', userAnswer);
+      
+      const recordedItems = new Set<string>();
+      Object.keys(userAnswer).forEach(itemId => {
+        if (itemId !== 'completed' && userAnswer[itemId]) {
+          recordedItems.add(itemId);
+        }
+      });
+      
+      setCompletedItems(recordedItems);
+      
+      // Check if slide was marked as completed
+      if (userAnswer.completed === true) {
+        console.log('Slide was previously completed');
+        setIsSlideCompleted(true);
+      }
+    }
+  }, [userAnswer]);
+
+  // Check validation state for completion
+  useEffect(() => {
+    if (validation?.type === 'success' && validation?.isValid) {
+      console.log('Validation shows success, marking slide as completed');
+      setIsSlideCompleted(true);
+      setIsProcessingCompletion(false);
+    }
+  }, [validation]);
+
   const startRecording = async (itemId: string) => {
+    if (isSlideCompleted) return;
+
     try {
       // Stop any other recordings first
       Object.entries(recordingStates).forEach(([id, state]) => {
@@ -99,8 +157,25 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
           audioChunks: [],
         });
 
-        // Mark item as completed when recording is done
-        setCompletedItems(prev => new Set(prev).add(itemId));
+        // Mark item as completed and update answers
+        setCompletedItems(prev => {
+          const newSet = new Set(prev).add(itemId);
+          
+          // Update interactive answers immediately
+          setInteractiveAnswers(prevAnswers => {
+            const newAnswers = {
+              ...prevAnswers,
+              [slideId]: {
+                ...(prevAnswers[slideId] || {}),
+                [itemId]: audioUrl,
+              }
+            };
+            console.log('Updated answers after recording:', newAnswers);
+            return newAnswers;
+          });
+          
+          return newSet;
+        });
 
         stream.getTracks().forEach((track) => track.stop());
       };
@@ -135,6 +210,8 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   };
 
   const resetRecording = (itemId: string) => {
+    if (isSlideCompleted) return;
+
     const state = getRecordingState(itemId);
 
     // Revoke the old URL to free memory
@@ -149,25 +226,115 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
       audioChunks: [],
     });
 
-    // Remove from completed items
+    // Remove from completed items and update answers
     setCompletedItems(prev => {
       const newSet = new Set(prev);
       newSet.delete(itemId);
+      
+      // Update interactive answers
+      setInteractiveAnswers(prevAnswers => {
+        const newAnswers = { ...prevAnswers };
+        if (newAnswers[slideId]) {
+          const slideAnswers = { ...newAnswers[slideId] };
+          delete slideAnswers[itemId];
+          // If no items left, remove completed flag too
+          if (Object.keys(slideAnswers).filter(key => key !== 'completed').length === 0) {
+            delete slideAnswers.completed;
+          }
+          newAnswers[slideId] = slideAnswers;
+        }
+        console.log('Updated answers after reset:', newAnswers);
+        return newAnswers;
+      });
+      
       return newSet;
     });
   };
 
   const handleMarkComplete = () => {
-    setSlideProgress((prev) => new Set(prev).add(currentSlide));
+    if (completedCount === 0 || isSlideCompleted || isProcessingCompletion) {
+      console.log('Cannot complete - conditions not met:', {
+        completedCount,
+        isSlideCompleted,
+        isProcessingCompletion
+      });
+      return;
+    }
+
+    console.log('=== STARTING PRONUNCIATION COMPLETION ===');
+    setIsProcessingCompletion(true);
+
+    // Create the answer object with all recorded items
+    const completedAnswer: Record<string, any> = {
+      completed: true // Mark as completed
+    };
+    
+    completedItems.forEach(itemId => {
+      const state = getRecordingState(itemId);
+      if (state.audioUrl) {
+        completedAnswer[itemId] = state.audioUrl;
+      }
+    });
+
+    console.log('Completion answer object:', completedAnswer);
+
+    // Update the answers first
+    setInteractiveAnswers(prev => ({
+      ...prev,
+      [slideId]: completedAnswer
+    }));
+
+    // Mark slide as progressed
+    setSlideProgress(prev => new Set(prev).add(currentSlide));
+
+    // Show immediate confetti for user feedback
     confetti({
       particleCount: 50,
       spread: 60,
-      origin: { y: 0.7 },
+      origin: { y: 0.7 }
     });
+
+    // Use checkAnswer to integrate with the slide system
+    setTimeout(() => {
+      console.log('Calling checkAnswer for pronunciation...');
+      // For pronunciation, we don't need a "correct" answer since it's subjective
+      // Pass the completed answer as both user answer and correct answer
+      const success = checkAnswer(slideId, completedAnswer, completedAnswer, 'pronunciation');
+      console.log('CheckAnswer result:', success);
+      
+      if (success) {
+        console.log('Pronunciation marked as complete successfully');
+        setIsSlideCompleted(true);
+      }
+      setIsProcessingCompletion(false);
+    }, 100); // Small delay to ensure state is updated
   };
 
+  // Reset completion state if user removes all recordings
+  useEffect(() => {
+    if (completedCount === 0 && isSlideCompleted) {
+      console.log('All recordings removed, resetting completion state');
+      setIsSlideCompleted(false);
+      
+      // Clear the completed flag from answers
+      setInteractiveAnswers(prev => {
+        const newAnswers = { ...prev };
+        if (newAnswers[slideId]) {
+          const slideAnswers = { ...newAnswers[slideId] };
+          delete slideAnswers.completed;
+          if (Object.keys(slideAnswers).length === 0) {
+            delete newAnswers[slideId];
+          } else {
+            newAnswers[slideId] = slideAnswers;
+          }
+        }
+        return newAnswers;
+      });
+    }
+  }, [completedCount, isSlideCompleted, setInteractiveAnswers, slideId]);
+
   // Cleanup audio URLs when component unmounts
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       Object.values(recordingStates).forEach(state => {
         if (state.audioUrl) {
@@ -175,7 +342,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         }
       });
     };
-  }, []);
+  }, [recordingStates]);
 
   return (
     <Box 
@@ -192,7 +359,9 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         }, 
         margin: "0 auto",
         display: "flex",
-        flexDirection: "column"
+        flexDirection: "column",
+        opacity: isSlideCompleted ? 0.8 : 1,
+        transition: "opacity 0.3s ease"
       }}
     >
       <Typography
@@ -226,7 +395,10 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
           px: { xs: 1, sm: 2 }  // Extra padding on mobile for readability
         }}
       >
-        {content.instruction}
+        {isSlideCompleted 
+          ? "✅ Pronunciation practice completed successfully!"
+          : content.instruction
+        }
       </Typography>
 
       {/* Progress Indicator */}
@@ -234,7 +406,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         sx={{
           p: { xs: 1.5, sm: 2 },
           mb: { xs: 3, sm: 4 },
-          bgcolor: "primary.50",
+          bgcolor: isSlideCompleted ? "success.50" : "primary.50",
           borderRadius: 3,
         }}
       >
@@ -256,9 +428,9 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
             Progress: {completedCount} of {totalItems} items recorded
           </Typography>
           <Chip
-            label={`${Math.round(progress)}%`}
+            label={isSlideCompleted ? "Completed!" : `${Math.round(progress)}%`}
             size="small"
-            color={progress === 100 ? "success" : "primary"}
+            color={isSlideCompleted || progress === 100 ? "success" : "primary"}
             sx={{ 
               fontWeight: 600,
               alignSelf: isMobile ? "center" : "auto"
@@ -267,14 +439,14 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         </Stack>
         <LinearProgress
           variant="determinate"
-          value={progress}
+          value={isSlideCompleted ? 100 : progress}
           sx={{
             height: { xs: 6, sm: 8 },
             borderRadius: 4,
-            bgcolor: "primary.100",
+            bgcolor: isSlideCompleted ? "success.100" : "primary.100",
             "& .MuiLinearProgress-bar": {
               borderRadius: 4,
-              bgcolor: progress === 100 ? "success.main" : "primary.main",
+              bgcolor: isSlideCompleted || progress === 100 ? "success.main" : "primary.main",
             },
           }}
         />
@@ -301,6 +473,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                 borderColor: isCompleted ? "success.main" : "divider",
                 position: "relative",
                 overflow: "hidden",
+                opacity: isSlideCompleted ? 0.7 : 1,
               }}
             >
               {/* Completion Badge */}
@@ -387,6 +560,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                     startIcon={state.isRecording ? <Stop /> : <Mic />}
                     onClick={() => state.isRecording ? stopRecording(itemId) : startRecording(itemId)}
                     fullWidth={isMobile}
+                    disabled={isSlideCompleted}
                     sx={{
                       borderRadius: 3,
                       px: { xs: 2, sm: 3 },
@@ -399,7 +573,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                   </Button>
                 </Stack>
 
-                {/* Recording Playback Buttons Row - Only show on mobile in column, or on md+ as separate row */}
+                {/* Recording Playback Buttons Row */}
                 {state.audioUrl && (
                   <Stack 
                     direction={isMobile ? "column" : "row"} 
@@ -432,6 +606,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                       startIcon={<Refresh />}
                       onClick={() => resetRecording(itemId)}
                       fullWidth={isMobile}
+                      disabled={isSlideCompleted}
                       sx={{ 
                         borderRadius: 3, 
                         px: { xs: 2, sm: 2 },
@@ -461,7 +636,7 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                 </Box>
               )}
 
-              {state.audioUrl && !state.isRecording && (
+              {state.audioUrl && !state.isRecording && !isSlideCompleted && (
                 <Alert
                   severity="success"
                   sx={{
@@ -487,8 +662,8 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
           variant="contained"
           size={isMobile ? "medium" : "large"}
           onClick={handleMarkComplete}
-          disabled={completedCount === 0}
-          startIcon={completedCount === totalItems ? <CheckCircle /> : null}
+          disabled={completedCount === 0 || isSlideCompleted || isProcessingCompletion}
+          startIcon={isSlideCompleted ? <CheckCircle /> : isProcessingCompletion ? <CircularProgress size={16} /> : <CheckCircleOutline />}
           fullWidth={isMobile}
           sx={{
             px: { xs: 4, sm: 6 },
@@ -496,54 +671,93 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
             fontSize: { xs: "1rem", sm: "1.1rem" },
             borderRadius: 3,
             maxWidth: isMobile ? "100%" : "auto",
-            background: completedCount === totalItems
+            background: isSlideCompleted
               ? "linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)"
-              : "linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)",
+              : completedCount > 0 && !isProcessingCompletion
+                ? "linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)"
+                : "linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)",
             "&:hover": {
-              background: completedCount === totalItems
-                ? "linear-gradient(45deg, #45a049 30%, #7cb342 90%)"
-                : "linear-gradient(45deg, #1565C0 30%, #2196F3 90%)",
+              background: isSlideCompleted
+                ? "linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)"
+                : completedCount > 0 && !isProcessingCompletion
+                  ? "linear-gradient(45deg, #1565C0 30%, #2196F3 90%)"
+                  : "linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)",
             },
             "&:disabled": {
-              background: "linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)",
+              color: "white",
             },
           }}
         >
           {isMobile ? (
             // Shorter text for mobile
-            completedCount === 0
-              ? "Record to continue"
-              : completedCount === totalItems
-                ? "Complete Practice"
-                : `Complete (${completedCount}/${totalItems})`
+            isProcessingCompletion
+              ? "Processing..."
+              : isSlideCompleted
+                ? "✅ Completed"
+                : completedCount === 0
+                  ? "Record to continue"
+                  : `Complete (${completedCount}/${totalItems})`
           ) : (
             // Full text for larger screens
-            completedCount === 0
-              ? "Record at least one item to continue"
-              : completedCount === totalItems
-                ? "Complete Pronunciation Practice"
-                : `Complete Practice (${completedCount}/${totalItems} recorded)`
+            isProcessingCompletion
+              ? "Processing completion..."
+              : isSlideCompleted
+                ? "✅ Pronunciation Practice Completed"
+                : completedCount === 0
+                  ? "Record at least one item to continue"
+                  : `Complete Practice (${completedCount}/${totalItems} recorded)`
           )}
         </Button>
       </Box>
 
+      {/* Feedback display */}
+      {showSlideFeeback && validation && (
+        <Fade in>
+          <Alert
+            severity={validation.type}
+            sx={{
+              mt: { xs: 2, md: 3 },
+              borderRadius: 2,
+              fontSize: { xs: "0.9rem", md: "1rem" }
+            }}
+            icon={
+              validation.type === "success" ? <CheckCircle /> : undefined
+            }
+          >
+            <Typography variant="body1" fontWeight={500}>
+              {validation.message}
+            </Typography>
+            {validation.type === "success" && (
+              <Typography
+                variant="body2"
+                sx={{ mt: 1, opacity: 0.8, color: "success.dark" }}
+              >
+                🎯 Excellent pronunciation practice! Moving to next slide...
+              </Typography>
+            )}
+          </Alert>
+        </Fade>
+      )}
+
       {/* Instructions */}
-      <Alert 
-        severity="info" 
-        sx={{ 
-          mt: { xs: 2, sm: 3 }, 
-          borderRadius: 2,
-          fontSize: { xs: "0.8125rem", sm: "0.875rem" }
-        }}
-      >
-        <Typography 
-          variant="body2"
-          sx={{ fontSize: { xs: "0.8125rem", sm: "0.875rem" } }}
+      {!isSlideCompleted && (
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mt: { xs: 2, sm: 3 }, 
+            borderRadius: 2,
+            fontSize: { xs: "0.8125rem", sm: "0.875rem" }
+          }}
         >
-          💡 <strong>Tip:</strong> Record yourself pronouncing each word and compare with the reference audio.
-          You can re-record as many times as you like. Record at least one item to complete this slide.
-        </Typography>
-      </Alert>
+          <Typography 
+            variant="body2"
+            sx={{ fontSize: { xs: "0.8125rem", sm: "0.875rem" } }}
+          >
+            💡 <strong>Tip:</strong> Record yourself pronouncing each word and compare with the reference audio.
+            You can re-record as many times as you like. Record at least one item to complete this slide.
+          </Typography>
+        </Alert>
+      )}
     </Box>
   );
 };
