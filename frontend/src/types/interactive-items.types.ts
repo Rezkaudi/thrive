@@ -65,6 +65,7 @@ export interface SentenceBuilderItem extends BaseItem {
   words: string[];
   correctOrder: number[];
   translation?: string;
+  distractors?: string[]; 
 }
 
 export type InteractiveItem =

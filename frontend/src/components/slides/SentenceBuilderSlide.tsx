@@ -14,6 +14,14 @@ import {
 } from "@mui/material";
 import { SlideComponentProps } from "../../types/slide.types";
 
+// Enhanced interface to include distractors
+interface EnhancedSentenceBuilderItem {
+  words: string[];           // Words needed for the correct sentence
+  correctOrder: number[];    // Correct order indices
+  translation?: string;      // Translation of the sentence
+  distractors?: string[];    // Additional incorrect words to choose from
+}
+
 // Utility function to shuffle array - Fisher-Yates algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
@@ -40,7 +48,7 @@ const buildCorrectSentence = (words: string[], correctOrder: number[]): string[]
 interface SentenceState {
   selectedWords: string[];
   isCompleted: boolean;
-  shuffledWords: string[];
+  availableWords: string[];  // All words including distractors, shuffled
   resetTrigger: number;
 }
 
@@ -63,17 +71,18 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const slideId = `sentence-builder-${slide.id}`;
 
   // Get the first item or create a default one
-  const currentItem = content.items?.[0] || {
+  const currentItem = content.items?.[0] as EnhancedSentenceBuilderItem || {
     words: [],
     correctOrder: [],
-    translation: ""
+    translation: "",
+    distractors: []
   };
 
-  // Single sentence state
+  // Enhanced sentence state to include distractors
   const [sentenceState, setSentenceState] = useState<SentenceState>({
     selectedWords: [],
     isCompleted: false,
-    shuffledWords: [],
+    availableWords: [],
     resetTrigger: 0,
   });
 
@@ -86,101 +95,115 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
     [currentItem?.words]
   );
 
+  const validDistractors = useMemo(() =>
+    getValidWords(currentItem?.distractors as string[]),
+    [currentItem?.distractors]
+  );
+
   const correctSentence = useMemo(() =>
     buildCorrectSentence(currentItem?.words as string[], currentItem?.correctOrder || []),
     [currentItem?.words, currentItem?.correctOrder]
   );
 
-  const progressCount = sentenceState.selectedWords.length;
-  const totalWords = validWords.length;
-  const isComplete = progressCount === totalWords && totalWords > 0;
+  // Combine all available words (correct + distractors)
+  const allAvailableWords = useMemo(() => {
+    return [...validWords, ...validDistractors];
+  }, [validWords, validDistractors]);
 
-  // Initialize sentence state
+  const progressCount = sentenceState.selectedWords.length;
+  const totalCorrectWords = validWords.length;
+  const totalAvailableWords = allAvailableWords.length;
+  
+  // Student needs to select exactly the right number of words
+  const isComplete = progressCount === totalCorrectWords && totalCorrectWords > 0;
+
+  // Initialize sentence state with all available words shuffled
   useEffect(() => {
-    if (validWords.length > 0) {
+    if (allAvailableWords.length > 0) {
       setSentenceState({
         selectedWords: [],
         isCompleted: false,
-        shuffledWords: shuffleArray(validWords),
+        availableWords: shuffleArray(allAvailableWords),
         resetTrigger: 0,
       });
     }
-  }, [validWords]);
+  }, [allAvailableWords]);
 
-  // Validation logic
+  // Simplified validation logic - generic error message
   const getValidationMessage = useCallback((): ValidationResult | null => {
-    if (!currentItem || totalWords === 0) return null;
+    if (!currentItem || totalCorrectWords === 0) return null;
 
     const userCount = sentenceState.selectedWords.length;
 
-    // First check if user has selected all words
-    if (userCount < totalWords) {
+    // First check if user has selected the right number of words
+    if (userCount < totalCorrectWords) {
       return {
         isValid: false,
         type: 'warning',
-        message: `Please use all ${totalWords} words to build the sentence.`
+        message: `Please select exactly ${totalCorrectWords} words to build the sentence. (${userCount}/${totalCorrectWords} selected)`
       };
     }
 
-    // If user has more words than expected (shouldn't happen, but defensive programming)
-    if (userCount > totalWords) {
+    // If user has more words than needed
+    if (userCount > totalCorrectWords) {
       return {
         isValid: false,
         type: 'error',
-        message: `You've selected too many words. Please use exactly ${totalWords} words.`
+        message: `You've selected too many words! Use exactly ${totalCorrectWords} words. Remove ${userCount - totalCorrectWords} word${userCount - totalCorrectWords > 1 ? 's' : ''}.`
       };
     }
 
-    // Check if the order is correct
-    const isCorrectOrder = JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence);
-
-    if (isCorrectOrder) {
+    // Check if the selected words are correct and in the right order
+    const isCorrectSentence = JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence);
+    
+    if (isCorrectSentence) {
       return {
         isValid: true,
         type: 'success',
-        message: '🎉 Excellent! You built the sentence correctly!'
+        message: '🎉 Perfect! You chose the right words and put them in the correct order!'
       };
     } else {
+      // Generic error message - don't specify what's wrong
       return {
         isValid: false,
         type: 'error',
-        message: '❌ Not quite right. You have all the words, but the order is incorrect. Try again!'
+        message: '❌ Not quite right. Try again!'
       };
     }
-  }, [currentItem, sentenceState.selectedWords, totalWords, correctSentence]);
+  }, [currentItem, sentenceState.selectedWords, totalCorrectWords, correctSentence]);
 
   const displayValidation = getValidationMessage();
 
-  // Auto-reset effect with cleanup
+  // Auto-reset effect with cleanup - immediate reset on wrong answer
   useEffect(() => {
     if (displayValidation?.type === "error" && showSlideFeeback) {
       const resetTimer = setTimeout(() => {
         handleReset();
-      }, 2000);
+      }, 1500); // Immediate reset for wrong answers
       return () => clearTimeout(resetTimer);
     } else if (displayValidation?.type === "success" && showSlideFeeback) {
       setSentenceState(prev => ({ ...prev, isCompleted: true }));
     }
   }, [displayValidation?.type, showSlideFeeback]);
 
-  // Word selection logic
+  // Enhanced word selection logic
   const handleWordClick = useCallback((word: string) => {
-    const wordCount = getWordCount(word);
-
     if (sentenceState.selectedWords.includes(word)) {
       // Remove word from sentence
       setSentenceState(prev => ({
         ...prev,
         selectedWords: prev.selectedWords.filter((w: string) => w !== word)
       }));
-    } else if (wordCount.remaining > 0) {
-      // Add word to sentence only if available
-      setSentenceState(prev => ({
-        ...prev,
-        selectedWords: [...prev.selectedWords, word]
-      }));
+    } else {
+      // Add word to sentence only if we haven't reached the limit
+      if (sentenceState.selectedWords.length < totalCorrectWords) {
+        setSentenceState(prev => ({
+          ...prev,
+          selectedWords: [...prev.selectedWords, word]
+        }));
+      }
     }
-  }, [sentenceState.selectedWords]);
+  }, [sentenceState.selectedWords, totalCorrectWords]);
 
   const handleRemoveWordFromSentence = useCallback((index: number) => {
     setSentenceState(prev => ({
@@ -192,38 +215,45 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const handleCheckAnswer = useCallback(() => {
     if (!currentItem || !isComplete) return;
 
-    // Detailed logging for debugging
-    console.group('🔍 Sentence Builder Check Answer');
+    // Enhanced logging for debugging
+    console.group('🔍 Enhanced Sentence Builder Check Answer');
     console.log('User answer:', sentenceState.selectedWords);
     console.log('Correct answer:', correctSentence);
+    console.log('Available words:', allAvailableWords);
+    console.log('Distractors used:', sentenceState.selectedWords.filter(word => validDistractors.includes(word)));
     console.log('Words match:', JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence));
     console.groupEnd();
 
     checkAnswer(slideId, sentenceState.selectedWords, correctSentence, "sentence-builder");
-  }, [currentItem, isComplete, correctSentence, slideId, checkAnswer, sentenceState.selectedWords]);
+  }, [currentItem, isComplete, correctSentence, slideId, checkAnswer, sentenceState.selectedWords, allAvailableWords, validDistractors]);
 
   const handleReset = useCallback(() => {
     setSentenceState(prev => ({
       selectedWords: [],
-      shuffledWords: shuffleArray(validWords),
+      availableWords: shuffleArray(allAvailableWords),
       resetTrigger: prev.resetTrigger + 1,
       isCompleted: false,
     }));
-  }, [validWords]);
+  }, [allAvailableWords]);
 
-  // Word count calculator
-  const getWordCount = useCallback((word: string) => {
-    const totalCount = validWords.filter((w: string) => w === word).length;
-    const usedCount = sentenceState.selectedWords.filter((w: string) => w === word).length;
+  // Enhanced word status checker
+  const getWordStatus = useCallback((word: string) => {
+    const isSelected = sentenceState.selectedWords.includes(word);
+    const isCorrectWord = validWords.includes(word);
+    const isDistractor = validDistractors.includes(word);
+    const canSelect = !isSelected && sentenceState.selectedWords.length < totalCorrectWords;
+    
     return {
-      used: usedCount,
-      total: totalCount,
-      remaining: Math.max(0, totalCount - usedCount)
+      isSelected,
+      isCorrectWord,
+      isDistractor,
+      canSelect,
+      canInteract: isSelected || canSelect
     };
-  }, [validWords, sentenceState.selectedWords]);
+  }, [sentenceState.selectedWords, validWords, validDistractors, totalCorrectWords]);
 
   // Early return with better error handling
-  if (!currentItem || totalWords === 0) {
+  if (!currentItem || totalCorrectWords === 0) {
     return (
       <Box sx={{ textAlign: "center", p: 4 }}>
         <Typography variant="h6" color="text.secondary">
@@ -257,15 +287,13 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         sx={{
           textAlign: "center",
           mb: { xs: 3, md: 4 },
-          // color: "text.secondary",
-          // fontSize: { xs: "1rem", md: "1.1rem" },
           px: { xs: 1, md: 0 },
         }}
       >
         {content.instruction}
       </Typography>
 
-      {/* Current sentence progress */}
+      {/* Enhanced Progress Display */}
       <Box sx={{ textAlign: "center", mb: 3 }}>
         <Typography
           variant={isMobile ? "subtitle1" : "h6"}
@@ -273,11 +301,15 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
           fontWeight={600}
           sx={{ mb: 1 }}
         >
-          Progress: {progressCount}/{totalWords} words placed
+          Progress: {progressCount}/{totalCorrectWords} words selected
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Choose from {totalAvailableWords} available words
+          {validDistractors.length > 0 && ` (${validDistractors.length} are distractors)`}
         </Typography>
         <LinearProgress
           variant="determinate"
-          value={totalWords > 0 ? (progressCount / totalWords) * 100 : 0}
+          value={totalCorrectWords > 0 ? (progressCount / totalCorrectWords) * 100 : 0}
           color="secondary"
           sx={{
             height: { xs: 8, md: 10 },
@@ -314,32 +346,35 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
             color="text.secondary"
             sx={{ fontStyle: "italic", textAlign: "center" }}
           >
-            Click words below to build your sentence ⬇️
+            Choose {totalCorrectWords} words to build your sentence ⬇️
           </Typography>
         ) : (
           <>
-            {sentenceState.selectedWords.map((word, index) => (
-              <Chip
-                key={`selected-${index}-${word}`}
-                label={`${index + 1}. ${word}`}
-                onClick={() => handleRemoveWordFromSentence(index)}
-                sx={{
-                  fontSize: { xs: "0.9rem", md: "1.2rem" },
-                  fontWeight: 600,
-                  p: { xs: 1, md: 2 },
-                  height: "auto",
-                  backgroundColor: "primary.main",
-                  color: "white",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    backgroundColor: "primary.dark",
-                    transform: "scale(1.05)",
-                  },
-                }}
-                clickable
-              />
-            ))}
+            {sentenceState.selectedWords.map((word, index) => {
+              const wordStatus = getWordStatus(word);
+              return (
+                <Chip
+                  key={`selected-${index}-${word}`}
+                  label={`${index + 1}. ${word}`}
+                  onClick={() => handleRemoveWordFromSentence(index)}
+                  sx={{
+                    fontSize: { xs: "0.9rem", md: "1.2rem" },
+                    fontWeight: 600,
+                    p: { xs: 1, md: 2 },
+                    height: "auto",
+                    backgroundColor: "primary.main",
+                    color: "white",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      backgroundColor: "primary.dark",
+                      transform: "scale(1.05)",
+                    },
+                  }}
+                  clickable
+                />
+              );
+            })}
             {/* Current sentence preview */}
             <Box sx={{
               position: "absolute",
@@ -356,14 +391,14 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
                   fontSize: { xs: "0.75rem", md: "0.875rem" }
                 }}
               >
-                Current sentence: "{sentenceState.selectedWords.join(' ')}"
+                Current: "{sentenceState.selectedWords.join(' ')}"
               </Typography>
             </Box>
           </>
         )}
       </Paper>
 
-      {/* Available Words */}
+      {/* Enhanced Available Words */}
       <Paper sx={{
         p: { xs: 2, md: 3 },
         mb: { xs: 3, md: 4 },
@@ -377,7 +412,12 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
           fontWeight={600}
           sx={{ mb: { xs: 2, md: 3 } }}
         >
-          📝 Available Words (shuffled)
+          📝 Available Words
+          {validDistractors.length > 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Some words are distractors - choose carefully!
+            </Typography>
+          )}
         </Typography>
         <Box
           sx={{
@@ -387,42 +427,57 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
             justifyContent: "center",
           }}
         >
-          {sentenceState.shuffledWords.map((word: string, index: number) => {
-            const wordCount = getWordCount(word);
-            const isAvailable = wordCount.remaining > 0;
+          {sentenceState.availableWords.map((word: string, index: number) => {
+            const wordStatus = getWordStatus(word);
 
             return (
               <Button
                 key={`word-${sentenceState.resetTrigger}-${index}-${word}`}
-                variant={isAvailable ? "contained" : "outlined"}
+                variant={wordStatus.isSelected ? "outlined" : "contained"}
                 onClick={() => handleWordClick(word)}
-                disabled={!isAvailable}
+                disabled={!wordStatus.canInteract}
                 sx={{
                   fontSize: { xs: "0.9rem", md: "1.1rem" },
                   fontWeight: 600,
                   p: { xs: 1, md: 2 },
                   minWidth: { xs: "70px", md: "90px" },
                   position: "relative",
-                  backgroundColor: isAvailable ? "secondary.main" : "grey.200",
-                  color: isAvailable ? "white" : "text.disabled",
+                  backgroundColor: wordStatus.isSelected 
+                    ? "transparent"
+                    : wordStatus.canSelect 
+                      ? "secondary.main" 
+                      : "grey.300",
+                  color: wordStatus.isSelected 
+                    ? "secondary.main"
+                    : wordStatus.canSelect 
+                      ? "white" 
+                      : "text.disabled",
+                  borderColor: wordStatus.isSelected ? "secondary.main" : "transparent",
                   "&:hover": {
-                    backgroundColor: isAvailable ? "secondary.dark" : "grey.200",
-                    transform: isAvailable ? "scale(1.05)" : "none",
+                    backgroundColor: wordStatus.canInteract 
+                      ? wordStatus.isSelected 
+                        ? "secondary.light"
+                        : "secondary.dark"
+                      : "grey.300",
+                    transform: wordStatus.canInteract ? "scale(1.05)" : "none",
                   },
                   "&:disabled": {
-                    backgroundColor: "grey.200",
+                    backgroundColor: "grey.300",
                     color: "text.disabled",
                   },
+                  // Add subtle visual hint for distractors (but don't make it obvious)
+                  // opacity: wordStatus.isDistractor && !wordStatus.isSelected ? 0.85 : 1,
                 }}
               >
                 {word}
-                {wordCount.total > 1 && (
+                {/* Indicator when selected */}
+                {wordStatus.isSelected && (
                   <Box
                     sx={{
                       position: "absolute",
                       top: { xs: -6, md: -8 },
                       right: { xs: -6, md: -8 },
-                      backgroundColor: isAvailable ? "success.main" : "grey.400",
+                      backgroundColor: "secondary.main",
                       color: "white",
                       borderRadius: "50%",
                       width: { xs: 18, md: 22 },
@@ -434,7 +489,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
                       fontWeight: "bold",
                     }}
                   >
-                    {wordCount.remaining}
+                    ✓
                   </Box>
                 )}
               </Button>
@@ -450,7 +505,8 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
             fontSize: { xs: "0.75rem", md: "0.875rem" }
           }}
         >
-          Numbers show remaining uses for repeated words
+          Select exactly {totalCorrectWords} words to build the sentence
+          {validDistractors.length > 0 && " • Not all words should be used"}
         </Typography>
       </Paper>
 
@@ -482,7 +538,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         </Paper>
       )}
 
-      {/* Action Buttons */}
+      {/* Enhanced Action Buttons */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
@@ -528,11 +584,11 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
             },
           }}
         >
-          Check Sentence ({progressCount}/{totalWords})
+          Check Sentence ({progressCount}/{totalCorrectWords})
         </Button>
       </Stack>
 
-      {/* Feedback Alert */}
+      {/* Enhanced Feedback Alert */}
       {showSlideFeeback && displayValidation && (
         <Fade in>
           <Alert
@@ -554,7 +610,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
                   fontSize: { xs: "0.85rem", md: "0.9rem" }
                 }}
               >
-                Activity will reset and shuffle automatically in 2 seconds...
+                Activity will reset automatically in 1.5 seconds...
               </Typography>
             )}
           </Alert>

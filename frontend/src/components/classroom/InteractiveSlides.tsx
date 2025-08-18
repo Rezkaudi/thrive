@@ -1,4 +1,4 @@
-// Updated InteractiveSlides.tsx to pass new props to SlideFooter
+// Updated InteractiveSlides.tsx with auto-progression support
 
 import React from "react";
 import { Box, Card, CardContent, Typography } from "@mui/material";
@@ -34,7 +34,10 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
     handleNext,
     handleComplete,
     setCurrentSlide,
-    canNavigateToNext, // NEW: Get this from the hook
+    canNavigateToNext,
+    // NEW: Get validation state for auto-progression feedback
+    validationResults,
+    showFeedback,
   } = useInteractiveSlides(slides, onComplete);
 
   if (!slide) {
@@ -135,7 +138,7 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         </Box>
       </Box>
 
-      {/* Footer of Slide - Updated with new props */}
+      {/* Footer of Slide - Updated with new props for auto-progression */}
       <SlideFooter
         currentSlide={currentSlide}
         totalSlides={slides.length}
@@ -146,8 +149,11 @@ export const InteractiveSlides: React.FC<InteractiveSlidesProps> = ({
         onNext={handleNext}
         onComplete={handleComplete}
         onSlideClick={setCurrentSlide}
-        canNavigateToNext={canNavigateToNext()} // NEW: Pass this prop
-        slides={slides} // NEW: Pass slides for checking types
+        canNavigateToNext={canNavigateToNext()}
+        slides={slides}
+        // NEW: Pass validation state for auto-progression feedback
+        validationResults={validationResults}
+        showFeedback={showFeedback}
       />
     </Box>
   );

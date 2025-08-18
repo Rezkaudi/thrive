@@ -1,4 +1,4 @@
-// In useInteractiveSlides.ts, update the hook with quiz completion tracking
+// Enhanced useInteractiveSlides.ts with auto-progression for quiz types only and no timer
 
 import { useEffect, useRef, useState } from "react";
 import { Slide, ValidationResult } from "../types/slide.types";
@@ -13,8 +13,11 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
   const [showFeedback, setShowFeedback] = useState<Record<string, boolean>>({});
   const [validationResults, setValidationResults] = useState<Record<string, ValidationResult>>({});
 
-  // NEW: Track quiz completion status
+  // Enhanced: Track completion status for quiz slide types only
   const [quizCompletionStatus, setQuizCompletionStatus] = useState<Record<string, boolean>>({});
+
+  // Track auto-progression timers to clean them up if needed
+  const progressionTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -22,58 +25,82 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
   const progress = ((currentSlide + 1) / slides.length) * 100;
   const isLastSlide = currentSlide === slides.length - 1;
 
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(progressionTimers.current).forEach(timer => clearTimeout(timer));
+    };
+  }, []);
+
   useEffect(() => {
     if (slide) {
-      // Only mark slide as progressed if it's not a quiz or if quiz is completed
-      if (slide.content.type !== 'quiz' || isQuizCompleted(currentSlide)) {
+      // Mark slide as progressed if it's not a quiz or if quiz is completed
+      const shouldMarkProgressed = !isQuizSlide(slide) || isQuizCompleted(currentSlide);
+
+      if (shouldMarkProgressed) {
         setSlideProgress(prev => new Set(prev).add(currentSlide));
       }
     }
   }, [currentSlide, slide, quizCompletionStatus]);
 
+  // Helper function to check if a slide is a quiz (ONLY quiz type)
+  const isQuizSlide = (slide: Slide) => {
+    return slide.content.type === 'quiz';
+  };
+
   // Helper function to check if a quiz slide is completed
   const isQuizCompleted = (slideIndex: number) => {
     const slideAtIndex = slides[slideIndex];
-    if (slideAtIndex?.content.type !== 'quiz') return true;
+    if (!isQuizSlide(slideAtIndex)) return true; // Non-quiz slides are always "completed"
 
-    const quizId = `quiz-${slideAtIndex.id}`;
-    return quizCompletionStatus[quizId] === true;
+    const slideId = getSlideId(slideAtIndex);
+    return quizCompletionStatus[slideId] === true;
+  };
+
+  // Helper function to get consistent slide ID
+  const getSlideId = (slide: Slide) => {
+    if (slide.content.type === 'quiz') {
+      return `quiz-${slide.id}`;
+    } else if (slide.content.type === 'interactive') {
+      const interactiveContent = slide.content.content;
+      return `${interactiveContent.type}-${slide.id}`;
+    }
+    return slide.id;
   };
 
   // Helper function to check if navigation to next slide is allowed
   const canNavigateToNext = () => {
-    // Check if current slide is a quiz
-    if (slide?.content.type === 'quiz') {
+    if (isQuizSlide(slide)) {
       return isQuizCompleted(currentSlide);
     }
-    return true;
+    return true; // All non-quiz slides allow navigation
   };
 
-  // Enhanced handleNext with quiz validation
+  // Enhanced handleNext with quiz validation only
   const handleNext = () => {
     if (!isLastSlide) {
       // Check if current slide is a quiz and if it's completed
       if (!canNavigateToNext()) {
-        // Show warning message
-        const quizId = `quiz-${slide.id}`;
+        // Show warning message for quiz only
+        const slideId = getSlideId(slide);
         setValidationResults(prev => ({
           ...prev,
-          [quizId]: {
+          [slideId]: {
             isValid: false,
-            message: 'Please complete the quiz correctly before proceeding to the next slide.',
+            message: 'Please complete this quiz correctly before proceeding to the next slide.',
             type: 'warning'
           }
         }));
         setShowFeedback(prev => ({
           ...prev,
-          [quizId]: true
+          [slideId]: true
         }));
 
         // Hide warning after 3 seconds
         setTimeout(() => {
           setShowFeedback(prev => ({
             ...prev,
-            [quizId]: false
+            [slideId]: false
           }));
         }, 3000);
 
@@ -90,18 +117,20 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     }
   };
 
+  // FIXED: Remove slideProgress.size check to fix completion issue
   const handleComplete = () => {
-    // Check if all slides are completed (including all quizzes)
-    let allCompleted = true;
+    // Check if all quiz slides are completed
+    let allQuizzesCompleted = true;
 
     for (let i = 0; i < slides.length; i++) {
-      if (slides[i].content.type === 'quiz' && !isQuizCompleted(i)) {
-        allCompleted = false;
+      if (isQuizSlide(slides[i]) && !isQuizCompleted(i)) {
+        allQuizzesCompleted = false;
         break;
       }
     }
 
-    if (allCompleted && slideProgress.size === slides.length) {
+    // Only check if all quizzes are completed (removed slideProgress.size check)
+    if (allQuizzesCompleted) {
       confetti({
         particleCount: 100,
         spread: 70,
@@ -109,12 +138,18 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
       });
       onComplete();
     } else {
-      alert('Please complete all quizzes before finishing the lesson.');
+      alert('Please complete all quiz activities before finishing the lesson.');
     }
   };
 
-  // Enhanced checkAnswer with quiz completion tracking
+  // Enhanced checkAnswer with completion tracking and auto-progression (no timer)
   const checkAnswer = (slideId: string, userAnswer: any, correctAnswer: any, interactiveType?: string): boolean => {
+    // Clear any existing progression timer for this slide
+    if (progressionTimers.current[slideId]) {
+      clearTimeout(progressionTimers.current[slideId]);
+      delete progressionTimers.current[slideId];
+    }
+
     // First validate the answer
     const validation = validateAnswer(slideId, userAnswer, interactiveType || 'generic', slide);
     setValidationResults(prev => ({
@@ -136,9 +171,34 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
       return false;
     }
 
-    // Check correctness
-    const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
-    console.log(JSON.stringify(userAnswer), JSON.stringify(correctAnswer))
+    // Enhanced object comparison for different data types
+    let isCorrect = false;
+
+    // SPECIAL CASE: For slides where validation passing means success
+    if (interactiveType === 'pronunciation' || interactiveType === 'flashcard' || interactiveType === 'listening') {
+      // For these slide types, if validation passed with success type, it's correct
+      isCorrect = validation.type === 'success';
+      console.log(`${interactiveType} slide - using validation result:`, {
+        validationType: validation.type,
+        isCorrect,
+        message: validation.message
+      });
+    } else if (interactiveType === 'drag-drop') {
+      // For drag-drop, compare object properties regardless of key order
+      isCorrect = deepEqual(userAnswer, correctAnswer);
+    } else if (Array.isArray(userAnswer) && Array.isArray(correctAnswer)) {
+      // For arrays, compare elements
+      isCorrect = userAnswer.length === correctAnswer.length &&
+        userAnswer.every((val, index) => val === correctAnswer[index]);
+    } else if (typeof userAnswer === 'object' && typeof correctAnswer === 'object') {
+      // For other objects, use deep comparison
+      isCorrect = deepEqual(userAnswer, correctAnswer);
+    } else {
+      // For primitive values, direct comparison
+      isCorrect = userAnswer === correctAnswer;
+    }
+
+    console.log('Answer check:', { userAnswer, correctAnswer, isCorrect, interactiveType, validationType: validation.type });
 
     setShowFeedback(prev => ({
       ...prev,
@@ -152,58 +212,172 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
         origin: { y: 0.7 }
       });
 
-      // Mark quiz as completed if it's a quiz
-      if (interactiveType === 'quiz') {
+      // Mark quiz as completed (only for quiz types)
+      if (interactiveType === 'quiz' || slide.content.type === 'quiz') {
         setQuizCompletionStatus(prev => ({
           ...prev,
           [slideId]: true
         }));
 
-        // Now mark slide as progressed since quiz is completed
+        // Mark slide as progressed since quiz is completed
         setSlideProgress(prev => new Set(prev).add(currentSlide));
       } else {
+        // For non-quiz interactive types, mark slide as progressed immediately
         setSlideProgress(prev => new Set(prev).add(currentSlide));
       }
 
-      setValidationResults(prev => ({
-        ...prev,
-        [slideId]: {
-          isValid: true,
-          message: 'Perfect! Correct answer! 🎉',
-          type: 'success'
+      // For slides that already have success validation, keep that message
+      // Otherwise, set success validation message
+      if (validation.type === 'success') {
+        // Keep the existing success validation message
+        console.log('Keeping existing success validation message:', validation.message);
+      } else {
+        // Set new success validation message
+        setValidationResults(prev => ({
+          ...prev,
+          [slideId]: {
+            isValid: true,
+            message: getSuccessMessage(interactiveType),
+            type: 'success'
+          }
+        }));
+      }
+
+      // AUTO-PROGRESSION: Move to next slide after success message (no timer for quiz types)
+      const autoProgressionDelay = getAutoProgressionDelay(interactiveType);
+
+      progressionTimers.current[slideId] = setTimeout(() => {
+        // Hide feedback first
+        setShowFeedback(prev => ({
+          ...prev,
+          [slideId]: false
+        }));
+
+        // Then progress to next slide if not on last slide
+        if (!isLastSlide) {
+          setTimeout(() => {
+            setCurrentSlide(prev => prev + 1);
+          }, 500); // Small delay for smooth transition
         }
-      }));
+
+        delete progressionTimers.current[slideId];
+      }, autoProgressionDelay);
+
     } else {
       setValidationResults(prev => ({
         ...prev,
         [slideId]: {
           isValid: false,
-          message: 'Not quite right. Please try again! 💪',
+          message: getErrorMessage(interactiveType),
           type: 'error'
         }
       }));
 
-      // Mark quiz as not completed
-      if (interactiveType === 'quiz') {
+      // Mark quiz as not completed (only for quiz types)
+      if (interactiveType === 'quiz' || slide.content.type === 'quiz') {
         setQuizCompletionStatus(prev => ({
           ...prev,
           [slideId]: false
         }));
       }
-    }
 
-    setTimeout(() => {
-      setShowFeedback(prev => ({
-        ...prev,
-        [slideId]: false
-      }));
-    }, 3000);
+      // Hide error feedback after shorter delay
+      setTimeout(() => {
+        setShowFeedback(prev => ({
+          ...prev,
+          [slideId]: false
+        }));
+      }, 3000);
+    }
 
     return isCorrect;
   };
 
+  // Deep equality comparison function
+  const deepEqual = (obj1: any, obj2: any): boolean => {
+    if (obj1 === obj2) return true;
+
+    if (obj1 == null || obj2 == null) return false;
+
+    if (typeof obj1 !== typeof obj2) return false;
+
+    if (typeof obj1 !== 'object') return obj1 === obj2;
+
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+
+    if (keys1.length !== keys2.length) return false;
+
+    for (let key of keys1) {
+      if (!keys2.includes(key)) return false;
+      if (!deepEqual(obj1[key], obj2[key])) return false;
+    }
+
+    return true;
+  };
+
+  // Helper function to get success message based on interactive type
+  const getSuccessMessage = (interactiveType?: string): string => {
+    const messages = {
+      'quiz': '🎉 Perfect! Correct answer! Moving to next slide...',
+      'drag-drop': '🎯 Excellent! All matches are correct!',
+      'fill-blanks': '✨ Great job! All blanks filled correctly!',
+      'sentence-builder': '🎉 Perfect sentence! You got the order exactly right!',
+      'matching': '🔊 Outstanding! All audio matches are correct!',
+      'sorting': '📊 Perfect order! You sorted everything correctly!',
+      'hotspot': '🎯 Excellent! You found all the hotspots!',
+      'timeline': '⏰ Perfect chronology! All events in correct order!',
+      'listening': '👂 Great listening! All answers correct!',
+      'pronunciation': '🗣️ Excellent pronunciation practice!',
+      'flashcard': '🎴 All flashcards completed!',
+      'generic': '🎉 Perfect! Correct answer!'
+    };
+
+    return messages[interactiveType as keyof typeof messages] || messages.generic;
+  };
+
+  // Helper function to get error message based on interactive type
+  const getErrorMessage = (interactiveType?: string): string => {
+    const messages = {
+      'quiz': '❌ Not quite right. Please try again! 💪',
+      'drag-drop': '❌ Some matches are incorrect. Try again! 💪',
+      'fill-blanks': '❌ Some words are incorrect. Review and try again! 💪',
+      'sentence-builder': '❌ Word order is incorrect. Try rearranging! 💪',
+      'matching': '❌ Some audio matches are wrong. Listen again! 💪',
+      'sorting': '❌ Order is incorrect. Try sorting again! 💪',
+      'hotspot': '❌ Some hotspots are missing or incorrect. Try again! 💪',
+      'timeline': '❌ Chronological order is incorrect. Try again! 💪',
+      'listening': '❌ Some answers are incorrect. Listen again! 💪',
+      'pronunciation': '❌ Keep practicing! Try recording again! 💪',
+      'flashcard': '❌ Review the flashcards and try again! 💪',
+      'generic': '❌ Not quite right. Please try again! 💪'
+    };
+
+    return messages[interactiveType as keyof typeof messages] || messages.generic;
+  };
+
+  // Helper function to get auto-progression delay based on interactive type
+  const getAutoProgressionDelay = (interactiveType?: string): number => {
+    const delays = {
+      'quiz': 2500,           // Quick auto-progression for quizzes
+      'drag-drop': 0,         // No auto-progression for other interactive types
+      'fill-blanks': 0,       
+      'sentence-builder': 0,  
+      'matching': 0,          
+      'sorting': 0,           
+      'hotspot': 0,           
+      'timeline': 0,          
+      'listening': 0,         
+      'pronunciation': 0,     
+      'flashcard': 0,         
+      'generic': 0            
+    };
+
+    return delays[interactiveType as keyof typeof delays] || delays.generic;
+  };
+
   const toggleFullscreen = () => {
-    setIsFullscreen(pre => !pre)
+    setIsFullscreen(prev => !prev);
 
     if (!isFullscreen) {
       if (containerRef.current) {
@@ -248,7 +422,10 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     handleNext,
     handleComplete,
     setCurrentSlide,
-    canNavigateToNext, // Export this for UI feedback
-    quizCompletionStatus, // Export for debugging/UI
+    canNavigateToNext,
+    quizCompletionStatus, // Export for debugging/UI (renamed from interactiveCompletionStatus)
+    // NEW: Export validation state for auto-progression feedback
+    validationResults,
+    showFeedback,
   };
 };

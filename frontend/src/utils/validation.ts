@@ -6,7 +6,7 @@ export const validateAnswer = (
   interactiveType: string,
   slide: Slide
 ): ValidationResult => {
-  if (!userAnswer && interactiveType !== 'quiz') {
+  if (!userAnswer && interactiveType !== 'quiz' && interactiveType !== 'pronunciation') {
     return {
       isValid: false,
       message: 'Please provide an answer before submitting.',
@@ -147,14 +147,44 @@ export const validateAnswer = (
       break;
 
     case 'pronunciation':
-      if (!userAnswer) {
+      // For pronunciation, we check if the user has recorded something
+      if (!userAnswer || typeof userAnswer !== 'object') {
         return {
           isValid: false,
           message: 'Please record your pronunciation before completing the exercise.',
           type: 'warning'
         };
       }
-      break;
+      
+      // Check if slide is marked as completed and has recordings
+      if (userAnswer.completed === true) {
+        const recordedItems = Object.keys(userAnswer).filter(key => {
+          const value = userAnswer[key];
+          return value && key !== 'completed' && typeof value === 'string' && value.length > 0;
+        });
+        
+        if (recordedItems.length > 0) {
+          return {
+            isValid: true,
+            message: `🗣️ Excellent pronunciation practice! You recorded ${recordedItems.length} item(s). Moving to next slide...`,
+            type: 'success'
+          };
+        }
+      }
+      
+      // Check if at least one item has been recorded (for intermediate validation)
+      const recordedItems = Object.keys(userAnswer).filter(key => {
+        const value = userAnswer[key];
+        return value && key !== 'completed' && typeof value === 'string' && value.length > 0;
+      });
+      
+      if (recordedItems.length === 0) {
+        return {
+          isValid: false,
+          message: 'Please record at least one pronunciation before completing.',
+          type: 'warning'
+        };
+      }
   }
 
   return {

@@ -43,6 +43,7 @@ export interface SlideComponentProps {
   setValidationResults: React.Dispatch<React.SetStateAction<Record<string, ValidationResult>>>;
   setSlideProgress: React.Dispatch<React.SetStateAction<Set<number>>>;
   checkAnswer: (slideId: string, userAnswer: any, correctAnswer: any, interactiveType?: string) => boolean;
+  markSlideAsComplete?: (slideId: string) => void;
 }
 
 export interface SlidesBuilderProps {

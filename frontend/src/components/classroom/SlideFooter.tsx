@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import {
   Stack,
   Button,
@@ -7,6 +7,7 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
+  Fade,
 } from '@mui/material';
 import {
   NavigateNext,
@@ -14,6 +15,7 @@ import {
   CheckCircle,
   MoreHoriz,
   Lock,
+  AutoAwesome,
 } from '@mui/icons-material';
 
 interface SlideFooterProps {
@@ -26,8 +28,11 @@ interface SlideFooterProps {
   onNext: () => void;
   onComplete: () => void;
   onSlideClick: (index: number) => void;
-  canNavigateToNext?: boolean; // Quiz validation prop
-  slides?: any[]; // Slide data for type checking
+  canNavigateToNext?: boolean;
+  slides?: any[];
+  // NEW: Props for auto-progression feedback
+  validationResults?: Record<string, any>;
+  showFeedback?: Record<string, boolean>;
 }
 
 export const SlideFooter: React.FC<SlideFooterProps> = ({
@@ -42,6 +47,8 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   onSlideClick,
   canNavigateToNext = true,
   slides = [],
+  validationResults = {},
+  showFeedback = {},
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -49,29 +56,70 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   
   const footerRef = useRef<HTMLDivElement>(null);
 
+  // NEW: Track auto-progression state (simplified - no timer)
+  const [showAutoProgression, setShowAutoProgression] = useState(false);
+
   // Check if a slide at given index is accessible
   const isSlideAccessible = (index: number) => {
-    // Can always go back
     if (index < currentSlide) return true;
-
-    // Current slide is always accessible
     if (index === currentSlide) return true;
 
-    // For future slides, check if all previous slides (especially quizzes) are completed
     for (let i = currentSlide; i < index; i++) {
-      if (slides[i]?.content?.type === 'quiz' && !slideProgress.has(i)) {
+      const slide = slides[i];
+      if (slide && isQuizSlide(slide) && !slideProgress.has(i)) {
         return false;
       }
     }
     return true;
   };
 
-  const currentSlideIsQuiz = slides[currentSlide]?.content?.type === 'quiz';
+  // Helper to check if slide is ONLY quiz type (not other interactive types)
+  const isQuizSlide = (slide: any) => {
+    return slide?.content?.type === 'quiz';
+  };
+
+  const currentSlideIsQuiz = slides[currentSlide] && isQuizSlide(slides[currentSlide]);
   const isQuizIncomplete = currentSlideIsQuiz && !slideProgress.has(currentSlide);
 
-  // Simple keyboard navigation with only essential keys
+  // NEW: Monitor validation results for auto-progression feedback (simplified)
+  useEffect(() => {
+    if (!currentSlideIsQuiz) return;
+
+    const currentSlide_slide = slides[currentSlide];
+    const slideId = getSlideId(currentSlide_slide);
+    const validation = validationResults[slideId];
+    const isShowingFeedback = showFeedback[slideId];
+
+    if (validation?.type === 'success' && isShowingFeedback && !isLastSlide) {
+      setShowAutoProgression(true);
+      
+      // Auto-hide after a brief moment (no countdown)
+      const cleanup = setTimeout(() => {
+        setShowAutoProgression(false);
+      }, 2000); // Show for 2 seconds then hide
+
+      return () => {
+        clearTimeout(cleanup);
+      };
+    } else {
+      setShowAutoProgression(false);
+    }
+  }, [validationResults, showFeedback, currentSlide, currentSlideIsQuiz, isLastSlide, slides]);
+
+  // Helper function to get slide ID consistently
+  const getSlideId = (slide: any) => {
+    if (!slide) return '';
+    if (slide.content?.type === 'quiz') {
+      return `quiz-${slide.id}`;
+    } else if (slide.content?.type === 'interactive') {
+      const interactiveContent = slide.content.content;
+      return `${interactiveContent?.type || 'interactive'}-${slide.id}`;
+    }
+    return slide.id || '';
+  };
+
+  // Keyboard navigation (same as before)
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Only handle keyboard events if no input element is focused
     const activeElement = document.activeElement;
     const isInputFocused = activeElement && (
       activeElement.tagName === 'INPUT' ||
@@ -80,12 +128,8 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
       (activeElement as HTMLElement).contentEditable === 'true'
     );
 
-    // Don't handle keyboard events if an input is focused
-    if (isInputFocused) {
-      return;
-    }
+    if (isInputFocused) return;
 
-    // Prevent default for navigation keys to avoid page scrolling
     if (['ArrowLeft', 'ArrowRight', 'Enter'].includes(event.key)) {
       event.preventDefault();
       event.stopPropagation();
@@ -97,66 +141,45 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           onPrevious();
         }
         break;
-
       case 'ArrowRight':
         if (canNavigateToNext && currentSlide < totalSlides - 1) {
           onNext();
         }
         break;
-
       case 'Enter':
-        // If it's the last slide and all slides are completed, submit lesson
-        if (isLastSlide && slideProgress.size === totalSlides && !isLessonCompleted) {
+        // UPDATED: Show complete button on last slide regardless of progress
+        if (isLastSlide && !isLessonCompleted) {
           onComplete();
         } else if (canNavigateToNext && currentSlide < totalSlides - 1) {
-          // Otherwise, go to next slide if possible
           onNext();
         }
         break;
     }
-  }, [
-    currentSlide,
-    totalSlides,
-    canNavigateToNext,
-    isLastSlide,
-    slideProgress.size,
-    isLessonCompleted,
-    onPrevious,
-    onNext,
-    onComplete,
-  ]);
+  }, [currentSlide, totalSlides, canNavigateToNext, isLastSlide, isLessonCompleted, onPrevious, onNext, onComplete]);
 
-  // Set up global keyboard event listeners
   useEffect(() => {
-    // Add event listener to document for global keyboard navigation
     document.addEventListener('keydown', handleKeyDown, true);
-
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [handleKeyDown]);
 
-  // Focus management - ensure footer can receive focus
   useEffect(() => {
     if (footerRef.current && document.activeElement === document.body) {
-      // Only focus if no other element is focused
       footerRef.current.focus();
     }
-  }, [currentSlide]); // Re-focus when slide changes
+  }, [currentSlide]);
 
-  // Handle click to focus footer for keyboard navigation
   const handleFooterClick = useCallback(() => {
     if (footerRef.current) {
       footerRef.current.focus();
     }
   }, []);
 
-  // Prevent losing focus when clicking buttons
   const handleButtonClick = useCallback((callback: () => void) => {
     return (event: React.MouseEvent) => {
       event.preventDefault();
       callback();
-      // Restore focus to footer after button action
       setTimeout(() => {
         if (footerRef.current) {
           footerRef.current.focus();
@@ -165,7 +188,6 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     };
   }, []);
 
-  // Function to get visible slide indices (for responsive design)
   const getVisibleSlides = () => {
     const maxVisible = isMobile ? 5 : isTablet ? 6 : 7;
 
@@ -186,7 +208,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     if (start > 0) {
       visible.push(0);
       if (start > 1) {
-        visible.push(-1); // ellipsis
+        visible.push(-1);
       }
     }
 
@@ -196,7 +218,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
 
     if (end < totalSlides - 1) {
       if (end < totalSlides - 2) {
-        visible.push(-2); // ellipsis
+        visible.push(-2);
       }
       visible.push(totalSlides - 1);
     }
@@ -207,7 +229,6 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const visibleSlides = getVisibleSlides();
 
   const renderDot = (index: number) => {
-    // Handle ellipsis dots
     if (index === -1 || index === -2) {
       return (
         <Box
@@ -226,17 +247,16 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
       );
     }
 
-    // Regular slide dots with accessibility check
     const accessible = isSlideAccessible(index);
-    const isQuizSlide = slides[index]?.content?.type === 'quiz';
-    const isIncompleteQuiz = isQuizSlide && !slideProgress.has(index);
+    const isCurrentSlideQuizType = slides[index] && isQuizSlide(slides[index]);
+    const isIncompleteQuiz = isCurrentSlideQuizType && !slideProgress.has(index);
 
     return (
       <Tooltip
         key={index}
         title={
           !accessible
-            ? 'Complete previous quiz to unlock'
+            ? 'Complete previous quiz activities to unlock'
             : isIncompleteQuiz && index === currentSlide
               ? 'Complete this quiz to proceed'
               : `Slide ${index + 1}${slideProgress.has(index) ? ' - Completed' : ''}`
@@ -269,7 +289,6 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
                   ? 'success.dark'
                   : 'grey.500'
             } : {},
-            // Show lock icon overlay for inaccessible slides
             '&::after': !accessible ? {
               content: '""',
               position: 'absolute',
@@ -309,6 +328,26 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           outline: 'none',
         }}
       >
+        {/* NEW: Auto-progression indicator (simplified - no countdown) */}
+        {showAutoProgression && (
+          <Fade in={showAutoProgression}>
+            <Box sx={{ 
+              p: 2, 
+              bgcolor: 'success.light', 
+              borderRadius: 2,
+              textAlign: 'center',
+              mb: 1 
+            }}>
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+                <AutoAwesome sx={{ color: 'success.dark' }} />
+                <Typography variant="body2" color="success.dark" fontWeight={600}>
+                  Great job! Moving to next slide...
+                </Typography>
+              </Stack>
+            </Box>
+          </Fade>
+        )}
+
         {/* Progress Section */}
         <Stack alignItems="center" spacing={1}>
           <Stack direction="row" spacing={0.5} alignItems="center">
@@ -346,7 +385,8 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
             Prev
           </Button>
 
-          {isLastSlide && slideProgress.size === totalSlides ? (
+          {/* UPDATED: Show complete button on last slide regardless of progress */}
+          {isLastSlide ? (
             <Button
               variant="contained"
               color="success"
@@ -415,9 +455,8 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   return (
     <Stack
       ref={footerRef}
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
+      direction="column"
+      spacing={1}
       tabIndex={0}
       onClick={handleFooterClick}
       sx={{
@@ -432,114 +471,124 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         outline: 'none',
       }}
     >
-      {/* Previous Button */}
-      <Button
-        startIcon={<NavigateBefore />}
-        onClick={handleButtonClick(onPrevious)}
-        disabled={currentSlide === 0}
-        variant="outlined"
-        size={isTablet ? "small" : "medium"}
-        sx={{
-          borderRadius: 2,
-          minWidth: isTablet ? 100 : 120,
-          flexShrink: 0,
-          '&:disabled': {
-            opacity: 0.5
-          }
-        }}
+
+
+      {/* Main Navigation Row */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
       >
-        Previous
-      </Button>
-
-      {/* Center Section - Dots + Progress Text */}
-      <Stack alignItems="center" spacing={1} sx={{ flex: 1, mx: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          {visibleSlides.map(renderDot)}
-        </Stack>
-
-        <Typography
-          variant="caption"
-          sx={{
-            color: 'text.secondary',
-            fontSize: isTablet ? '0.7rem' : '0.75rem',
-            fontWeight: 500,
-          }}
-        >
-          {currentSlide + 1} of {totalSlides}
-        </Typography>
-      </Stack>
-
-      {/* Next/Complete Button */}
-      {isLastSlide && slideProgress.size === totalSlides ? (
+        {/* Previous Button */}
         <Button
-          variant="contained"
-          color="success"
-          onClick={handleButtonClick(onComplete)}
-          disabled={isLessonCompleted}
-          endIcon={<CheckCircle />}
+          startIcon={<NavigateBefore />}
+          onClick={handleButtonClick(onPrevious)}
+          disabled={currentSlide === 0}
+          variant="outlined"
           size={isTablet ? "small" : "medium"}
           sx={{
             borderRadius: 2,
-            px: isTablet ? 3 : 4,
-            py: isTablet ? 1 : 1.5,
             minWidth: isTablet ? 100 : 120,
             flexShrink: 0,
-            fontWeight: 600,
-            background: 'linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #45a049 30%, #7cb342 90%)',
-              transform: 'translateY(-1px)',
-              boxShadow: 4,
-            },
             '&:disabled': {
-              opacity: 0.6,
-              background: 'grey.400'
-            },
-            transition: 'all 0.2s ease'
+              opacity: 0.5
+            }
           }}
         >
-          {isLessonCompleted ? 'Completed' : (isTablet ? 'Complete' : 'Complete Lesson')}
+          Previous
         </Button>
-      ) : (
-        <Tooltip
-          title={isQuizIncomplete ? 'Complete the quiz to continue' : ''}
-          arrow
-        >
-          <span>
-            <Button
-              endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
-              onClick={handleButtonClick(onNext)}
-              variant="contained"
-              disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
-              size={isTablet ? "small" : "medium"}
-              sx={{
-                borderRadius: 2,
-                px: isTablet ? 3 : 4,
-                py: isTablet ? 1 : 1.5,
-                minWidth: isTablet ? 100 : 120,
-                flexShrink: 0,
-                fontWeight: 600,
-                background: isQuizIncomplete
-                  ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
-                  : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
-                '&:hover': {
+
+        {/* Center Section - Dots + Progress Text */}
+        <Stack alignItems="center" spacing={1} sx={{ flex: 1, mx: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {visibleSlides.map(renderDot)}
+          </Stack>
+
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontSize: isTablet ? '0.7rem' : '0.75rem',
+              fontWeight: 500,
+            }}
+          >
+            {currentSlide + 1} of {totalSlides}
+          </Typography>
+        </Stack>
+
+        {/* Next/Complete Button */}
+        {/* UPDATED: Show complete button on last slide regardless of progress */}
+        {isLastSlide ? (
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleButtonClick(onComplete)}
+            disabled={isLessonCompleted}
+            endIcon={<CheckCircle />}
+            size={isTablet ? "small" : "medium"}
+            sx={{
+              borderRadius: 2,
+              px: isTablet ? 3 : 4,
+              py: isTablet ? 1 : 1.5,
+              minWidth: isTablet ? 100 : 120,
+              flexShrink: 0,
+              fontWeight: 600,
+              background: 'linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049 30%, #7cb342 90%)',
+                transform: 'translateY(-1px)',
+                boxShadow: 4,
+              },
+              '&:disabled': {
+                opacity: 0.6,
+                background: 'grey.400'
+              },
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {isLessonCompleted ? 'Completed' : (isTablet ? 'Complete' : 'Complete Lesson')}
+          </Button>
+        ) : (
+          <Tooltip
+            title={isQuizIncomplete ? 'Complete the quiz to continue' : ''}
+            arrow
+          >
+            <span>
+              <Button
+                endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
+                onClick={handleButtonClick(onNext)}
+                variant="contained"
+                disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
+                size={isTablet ? "small" : "medium"}
+                sx={{
+                  borderRadius: 2,
+                  px: isTablet ? 3 : 4,
+                  py: isTablet ? 1 : 1.5,
+                  minWidth: isTablet ? 100 : 120,
+                  flexShrink: 0,
+                  fontWeight: 600,
                   background: isQuizIncomplete
                     ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
-                    : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
-                  transform: isQuizIncomplete ? 'none' : 'translateY(-1px)',
-                  boxShadow: isQuizIncomplete ? 1 : 4,
-                },
-                '&:disabled': {
-                  background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
-                },
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {isQuizIncomplete ? (isTablet ? 'Quiz' : 'Complete Quiz First') : 'Next'}
-            </Button>
-          </span>
-        </Tooltip>
-      )}
+                    : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
+                  '&:hover': {
+                    background: isQuizIncomplete
+                      ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
+                      : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
+                    transform: isQuizIncomplete ? 'none' : 'translateY(-1px)',
+                    boxShadow: isQuizIncomplete ? 1 : 4,
+                  },
+                  '&:disabled': {
+                    background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {isQuizIncomplete ? (isTablet ? 'Quiz' : 'Complete Quiz First') : 'Next'}
+              </Button>
+            </span>
+          </Tooltip>
+        )}
+      </Stack>
     </Stack>
   );
 };
