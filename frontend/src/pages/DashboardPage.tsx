@@ -167,10 +167,10 @@ export const DashboardPage: React.FC = () => {
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Box>
               <Typography variant="h4" gutterBottom fontWeight={600}>
-                Welcome back, {dashboardData?.user.name || dashboardData?.user.email.split('@')[0]}! 👋
+                Ready to Thrive, {dashboardData?.user.name || dashboardData?.user.email.split('@')[0]} ? 👋
               </Typography>
               <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                Continue your Japanese learning journey today
+                Learn Japanese, Truly belong, Live your purpose.
               </Typography>
             </Box>
             <IconButton

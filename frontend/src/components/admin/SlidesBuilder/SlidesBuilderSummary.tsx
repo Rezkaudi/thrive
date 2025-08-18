@@ -144,7 +144,7 @@ export const SlidesBuilderSummary: React.FC<SlidesBuilderSummaryProps> = ({
 
         <Grid size={{ xs: 12, sm: 4 }}>
           <Stack spacing={2}>
-            <Button
+            {/* <Button
               fullWidth
               variant="contained"
               size="large"
@@ -169,7 +169,7 @@ export const SlidesBuilderSummary: React.FC<SlidesBuilderSummaryProps> = ({
               sx={{ borderRadius: 2 }}
             >
               Save Draft
-            </Button>
+            </Button> */}
 
             {hasValidationErrors && (
               <Alert severity="warning" sx={{ borderRadius: 2 }}>

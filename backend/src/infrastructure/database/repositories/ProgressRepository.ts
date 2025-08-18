@@ -59,10 +59,10 @@ export class ProgressRepository implements IProgressRepository {
     }
 
     return await this.repository.count({
-      where: { 
-        userId, 
-        courseId: In(courseIds), 
-        isCompleted: true 
+      where: {
+        userId,
+        courseId: In(courseIds),
+        isCompleted: true
       }
     });
   }
@@ -74,9 +74,17 @@ export class ProgressRepository implements IProgressRepository {
   }
 
   async getCompletedLessonCount(userId: string, courseId: string): Promise<number> {
-    return await this.repository.count({
-      where: { userId, courseId, isCompleted: true }
-    });
+    const result = await this.repository
+      .createQueryBuilder('progress')
+      .select('COUNT(DISTINCT progress.lessonId)', 'count')
+      .where({
+        userId,
+        courseId,
+        isCompleted: true
+      })
+      .getRawOne();
+
+    return result ? parseInt(result.count) : 0;
   }
 
   // New method: Get recent completed lessons from enrolled courses only

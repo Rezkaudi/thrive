@@ -100,6 +100,8 @@ export class GetDashboardDataUseCase {
                     course.id
                 );
 
+                console.log(completedLessons, lessons.length, dto.userId, course.id)
+
                 totalLessonsAvailable += lessons.length;
                 totalLessonsCompleted += completedLessons;
 
