@@ -1464,7 +1464,7 @@ export const ClassroomPage: React.FC = () => {
                 mb: 2,
               }}
             >
-              Welcome to Your Classroom
+              Welcome to the Classroom
             </Typography>
             <Typography
               variant="h6"
@@ -1476,7 +1476,7 @@ export const ClassroomPage: React.FC = () => {
                 lineHeight: 1.6,
               }}
             >
-              Choose a course to begin your learning journey
+              All the tools to Thrive at your fingertips . . .
             </Typography>
           </Box>
         </motion.div>

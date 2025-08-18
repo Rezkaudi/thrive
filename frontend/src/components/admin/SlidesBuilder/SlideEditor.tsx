@@ -93,7 +93,7 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
               Edit Slide {index + 1}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {slide.content.title || 'Untitled slide'}
+              {slide.content.title || ''}
             </Typography>
           </Box>
 
@@ -144,7 +144,7 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
               </Select>
             </FormControl>
 
-            <Button
+            {/* <Button
               variant="outlined"
               startIcon={<Preview />}
               onClick={onPreview}
@@ -159,7 +159,7 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
               sx={{ borderRadius: 2 }}
             >
               Save
-            </Button>
+            </Button> */}
           </Stack>
         </Stack>
 

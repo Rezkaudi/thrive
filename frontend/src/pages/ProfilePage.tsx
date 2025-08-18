@@ -712,7 +712,7 @@ export const ProfilePage: React.FC = () => {
               <Grid size={{ xs: 12, md: 6 }}>
                 {editing ? (
                   <Stack
-                    direction={{ xs: "column", sm: "row" }}
+                    direction={{ xs: "column" }}
                     spacing={2}
                   >
                     <TextField
@@ -735,7 +735,7 @@ export const ProfilePage: React.FC = () => {
                       inputProps={{ maxLength: 500 }}
                       helperText={`${formData.bio?.length || 0}/500 characters`}
                     />
-                    <FormControl fullWidth disabled={updateLoading}>
+                    {/* <FormControl fullWidth disabled={updateLoading}>
                       <InputLabel>Language Level</InputLabel>
                       <Select
                         value={formData.languageLevel}
@@ -748,7 +748,7 @@ export const ProfilePage: React.FC = () => {
                         <MenuItem value="N2">N2 - Advanced</MenuItem>
                         <MenuItem value="N1">N1 - Proficient</MenuItem>
                       </Select>
-                    </FormControl>
+                    </FormControl> */}
                   </Stack>
                 ) : (
                   <Stack spacing={2}>
@@ -826,11 +826,11 @@ export const ProfilePage: React.FC = () => {
                             )}
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Settings">
+                        {user?.role !== "ADMIN" && <Tooltip title="Settings">
                           <IconButton onClick={handleOpenSettings}>
                             <Settings />
                           </IconButton>
-                        </Tooltip>
+                        </Tooltip>}
                       </Stack>
                     </>
                   )}
@@ -1184,7 +1184,7 @@ export const ProfilePage: React.FC = () => {
                       </Stack>
                     </Box>
 
-                    <Box>
+                    {/* <Box>
                       <Typography variant="h6" fontWeight={600} gutterBottom>
                         Weekly Study Time
                       </Typography>
@@ -1221,7 +1221,7 @@ export const ProfilePage: React.FC = () => {
                           ))}
                         </Grid>
                       </Paper>
-                    </Box>
+                    </Box> */}
                   </Stack>
                 </motion.div>
               )}
@@ -1348,7 +1348,7 @@ export const ProfilePage: React.FC = () => {
         <DialogContent>
           <Stack spacing={4}>
             {/* Notification Settings */}
-            <Box>
+            {/* <Box>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
                 <Notifications color="primary" />
                 <Typography variant="h6">Notifications</Typography>
@@ -1400,12 +1400,12 @@ export const ProfilePage: React.FC = () => {
                   label="Community updates"
                 />
               </Stack>
-            </Box>
+            </Box> */}
 
-            <Divider />
+            {/* <Divider /> */}
 
             {/* Privacy Settings */}
-            <Box>
+            {/* <Box>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
                 <Security color="primary" />
                 <Typography variant="h6">Privacy</Typography>
@@ -1466,12 +1466,12 @@ export const ProfilePage: React.FC = () => {
                   label="Allow messages from other users"
                 />
               </Stack>
-            </Box>
+            </Box> */}
 
-            <Divider />
+            {/* <Divider /> */}
 
             {/* Preferences */}
-            <Box>
+            {/* <Box>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
                 <Palette color="primary" />
                 <Typography variant="h6">Preferences</Typography>
@@ -1514,9 +1514,9 @@ export const ProfilePage: React.FC = () => {
                   </Select>
                 </FormControl>
               </Stack>
-            </Box>
+            </Box> */}
 
-            <Divider />
+            {/* <Divider /> */}
 
             {/* Payment Settings */}
             {user?.role !== "ADMIN" && <Box>
@@ -1556,12 +1556,12 @@ export const ProfilePage: React.FC = () => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSettingsDialog(false)}>
+          <Button variant="contained" onClick={() => setSettingsDialog(false)}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleSaveSettings}>
+          {/* <Button variant="contained" onClick={handleSaveSettings}>
             Save Settings
-          </Button>
+          </Button> */}
         </DialogActions>
       </Dialog>
 

@@ -134,7 +134,7 @@ export const CourseManagement: React.FC = () => {
     lessonType: "VIDEO" as "VIDEO" | "PDF" | "KEYWORDS" | "QUIZ" | "SLIDES",
     contentUrl: "",
     contentData: null as any,
-    pointsReward: 10,
+    pointsReward: 0,
     requiresReflection: false,
     passingScore: 70,
     keywords: [] as Keyword[],
@@ -332,7 +332,7 @@ export const CourseManagement: React.FC = () => {
       lessonType: "VIDEO",
       contentUrl: "",
       contentData: null,
-      pointsReward: 10,
+      pointsReward: 0,
       requiresReflection: false,
       passingScore: 70,
       keywords: [],
@@ -1422,7 +1422,7 @@ export const CourseManagement: React.FC = () => {
                   })
                 }
               />
-              <FormControlLabel
+              {/* <FormControlLabel
                 control={
                   <Switch
                     checked={lessonForm.requiresReflection}
@@ -1435,7 +1435,7 @@ export const CourseManagement: React.FC = () => {
                   />
                 }
                 label="Requires Reflection"
-              />
+              /> */}
             </Stack>
           </DialogContent>
           <DialogActions>

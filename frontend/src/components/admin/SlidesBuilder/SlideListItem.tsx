@@ -132,8 +132,8 @@ export const SlideListItem: React.FC<SlideListItemProps> = ({
         )}
       </Stack>
 
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-        {slide.content.title || 'Untitled'}
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3 }}>
+        {/* {slide.content.title || ''} */}
       </Typography>
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
