@@ -127,10 +127,9 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
         variant="h3"
         sx={{
           textAlign: "center",
-          mb: { xs: 3, md: 4 },
+          mb: 4,
           // color: "text.secondary",
-          // fontSize: { xs: "1rem", md: "1.1rem" },
-          px: { xs: 1, md: 0 }
+          // fontSize: "1.1rem",
         }}
       >
         {content.instruction || "Click on each card to reveal the answer"}

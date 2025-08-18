@@ -58,7 +58,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
   };
 
   return (
-    <Box sx={{ padding: {xs:1,lg:4}, py: {xs:1, lg:4}, borderRadius: {xs:"25px", lg:"47px"}, maxWidth: "800px", margin: "0 auto" }}>
+    <Box sx={{ padding: { xs: 1, lg: 4 }, py: { xs: 1, lg: 4 }, borderRadius: { xs: "25px", lg: "47px" }, maxWidth: "800px", margin: "0 auto" }}>
       <Typography
         variant="h4"
         gutterBottom
@@ -70,12 +70,12 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: 4,
-          color: "text.secondary",
-          fontSize: "1.1rem",
+          // color: "text.secondary",
+          // fontSize: "1.1rem",
         }}
       >
         {content.instruction}
@@ -85,7 +85,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
         {content.items?.map((item: any, questionIndex: number) => (
           <Paper
             key={item.id}
-            sx={{ p: {xs:2, lg:4}, borderRadius: {xs:2,lg:3}, bgcolor: "background.paper" }}
+            sx={{ p: { xs: 2, lg: 4 }, borderRadius: { xs: 2, lg: 3 }, bgcolor: "background.paper" }}
           >
             <Stack
               direction="row"
@@ -100,7 +100,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
                 variant="contained"
                 startIcon={<VolumeUp />}
                 onClick={() => playAudio(item.audioUrl)}
-                sx={{ borderRadius: 3, px: {xs: "12px", lg:""}, py:{xs: "6px", lg:""} }}
+                sx={{ borderRadius: 3, px: { xs: "12px", lg: "" }, py: { xs: "6px", lg: "" } }}
               >
                 Play Audio
               </Button>
@@ -148,8 +148,8 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
             Object.keys(userAnswer).length !== (content.items?.length || 0)
           }
           sx={{
-            px: {xs: 3, lg:6},
-            py: {xs:1, lg:2},
+            px: { xs: 3, lg: 6 },
+            py: { xs: 1, lg: 2 },
             fontSize: "1.1rem",
             borderRadius: 3,
             background: "linear-gradient(45deg, #8BC34A 30%, #CDDC39 90%)",

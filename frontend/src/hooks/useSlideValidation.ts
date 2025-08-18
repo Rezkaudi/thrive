@@ -9,9 +9,9 @@ export const useSlideValidation = (slides: Slide[]) => {
     const errors: string[] = [];
 
     // Basic validation
-    if (!slide.content.title?.trim() && slide.content.type !== 'code') {
-      errors.push('Title is required');
-    }
+    // if (!slide.content.title?.trim() && slide.content.type !== 'code') {
+    //   errors.push('Title is required');
+    // }
 
     // Type-specific validation
     switch (slide.content.type) {
@@ -20,13 +20,13 @@ export const useSlideValidation = (slides: Slide[]) => {
           errors.push('Image URL is required');
         }
         break;
-        
+
       case 'video':
         if (!slide.content.content?.url?.trim()) {
           errors.push('Video URL is required');
         }
         break;
-        
+
       case 'quiz':
         if (!slide.content.content?.question?.trim()) {
           errors.push('Quiz question is required');
@@ -46,7 +46,7 @@ export const useSlideValidation = (slides: Slide[]) => {
           errors.push('At least one correct answer must be selected for multiple choice');
         }
         break;
-        
+
       case 'interactive':
         const interactiveContent = slide.content.content as InteractiveContent;
         if (!interactiveContent?.instruction?.trim()) {
@@ -56,7 +56,7 @@ export const useSlideValidation = (slides: Slide[]) => {
           errors.push('At least one interactive item is required');
         }
         break;
-        
+
       case 'code':
         if (!slide.content.content?.code?.trim()) {
           errors.push('Code content is required');

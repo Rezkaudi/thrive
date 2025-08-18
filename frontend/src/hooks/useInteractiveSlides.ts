@@ -117,6 +117,7 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     }
   };
 
+  // FIXED: Remove slideProgress.size check to fix completion issue
   const handleComplete = () => {
     // Check if all quiz slides are completed
     let allQuizzesCompleted = true;
@@ -128,7 +129,8 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
       }
     }
 
-    if (allQuizzesCompleted && slideProgress.size === slides.length) {
+    // Only check if all quizzes are completed (removed slideProgress.size check)
+    if (allQuizzesCompleted) {
       confetti({
         particleCount: 100,
         spread: 70,

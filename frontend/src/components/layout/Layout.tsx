@@ -80,7 +80,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/login');
+    window.location.pathname = "/login"
+    // navigate('/login');
   };
 
   const handleDrawerToggle = () => {

@@ -28,7 +28,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
   const slideId = `sorting-${slide.id}`;
   const showSlideFeeback = showFeedback[slideId];
   const validation = validationResults[slideId];
-  
+
   // Mobile detection
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -56,18 +56,18 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
 
   // Available Items Component
   const AvailableItemsSection = () => (
-    <Paper sx={{ 
-      p: { xs: 2, sm: 3 }, 
-      mb: 4, 
-      borderRadius: 3, 
-      bgcolor: "grey.50" 
+    <Paper sx={{
+      p: { xs: 2, sm: 3 },
+      mb: 4,
+      borderRadius: 3,
+      bgcolor: "grey.50"
     }}>
       <Typography
         variant="h6"
         gutterBottom
         textAlign="center"
         fontWeight={600}
-        sx={{ 
+        sx={{
           mb: 3,
           fontSize: { xs: "1.1rem", sm: "1.25rem" }
         }}
@@ -122,7 +122,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         textAlign="center"
         gutterBottom
         fontWeight={600}
-        sx={{ 
+        sx={{
           mb: 3,
           fontSize: { xs: "1.1rem", sm: "1.25rem" }
         }}
@@ -135,13 +135,13 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
           variant="body1"
           color="text.secondary"
           textAlign="center"
-          sx={{ 
-            fontStyle: "italic", 
+          sx={{
+            fontStyle: "italic",
             mt: { xs: 2, sm: 4 },
             fontSize: { xs: "0.875rem", sm: "1rem" }
           }}
         >
-          {isMobile 
+          {isMobile
             ? "Tap items from above to arrange them in the correct order ⬆️"
             : "Drag items from below to arrange them in the correct order ⬇️"
           }
@@ -186,7 +186,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
                 <Typography
                   variant="body1"
                   fontWeight={500}
-                  sx={{ 
+                  sx={{
                     flexGrow: 1,
                     fontSize: { xs: "0.875rem", sm: "1rem" }
                   }}
@@ -198,7 +198,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
                   onClick={() =>
                     setSortedItems((prev) => prev.filter((i) => i !== item))
                   }
-                  sx={{ 
+                  sx={{
                     color: "error.main",
                     p: { xs: 0.5, sm: 1 }
                   }}
@@ -214,17 +214,17 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
   );
 
   return (
-    <Box sx={{ 
-      padding: { xs: 2, sm: 3, md: 4 }, 
-      maxWidth: "900px", 
-      margin: "0 auto" 
+    <Box sx={{
+      padding: { xs: 2, sm: 3, md: 4 },
+      maxWidth: "900px",
+      margin: "0 auto"
     }}>
       <Typography
         variant="h4"
         gutterBottom
         fontWeight={600}
         textAlign="center"
-        sx={{ 
+        sx={{
           mb: 3,
           fontSize: { xs: "1.75rem", sm: "2.125rem" }
         }}
@@ -233,12 +233,12 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="body1"
+        variant="h3"
         sx={{
           textAlign: "center",
           mb: 4,
-          color: "text.secondary",
-          fontSize: { xs: "1rem", sm: "1.1rem" },
+          // color: "text.secondary",
+          // fontSize: { xs: "1rem", sm: "1.1rem" },
           px: { xs: 1, sm: 0 }
         }}
       >
@@ -258,9 +258,9 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         </>
       )}
 
-      <Stack 
-        direction={{ xs: "column", sm: "row" }} 
-        spacing={2} 
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
         justifyContent="center"
         sx={{ mt: { xs: 2, sm: 0 } }}
       >
@@ -268,11 +268,11 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
           variant="outlined"
           size={isMobile ? "medium" : "large"}
           onClick={resetSort}
-          sx={{ 
-            px: { xs: 3, sm: 4 }, 
-            py: { xs: 1, sm: 1.5 }, 
-            fontSize: { xs: "0.9rem", sm: "1rem" }, 
-            borderRadius: 3 
+          sx={{
+            px: { xs: 3, sm: 4 },
+            py: { xs: 1, sm: 1.5 },
+            fontSize: { xs: "0.9rem", sm: "1rem" },
+            borderRadius: 3
           }}
         >
           🔄 Reset
@@ -301,9 +301,9 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         <Fade in>
           <Alert
             severity={validation.type}
-            sx={{ 
-              mt: 3, 
-              borderRadius: 2, 
+            sx={{
+              mt: 3,
+              borderRadius: 2,
               fontSize: { xs: "0.875rem", sm: "1rem" },
               mx: { xs: 1, sm: 0 }
             }}

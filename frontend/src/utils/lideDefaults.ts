@@ -7,7 +7,7 @@ export const getDefaultContent = (type: SlideContent['type']): SlideContent => {
       return {
         type: 'text',
         content: '',
-        title: 'New Text Slide',
+        title: '',
         subtitle: ''
       };
 
