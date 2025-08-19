@@ -429,7 +429,6 @@ const CourseCard = ({
   );
 };
 
-
 export const ClassroomPage: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -499,12 +498,12 @@ export const ClassroomPage: React.FC = () => {
   const handleEnroll = async (course: Course) => {
     try {
       await api.post(`/courses/${course.id}/enroll`);
-      await fetchData();
-      setEnrollDialog(null);
-      // setSelectedCourse(course);
+      // await fetchData();
+      // setEnrollDialog(null);
+      navigate(`/classroom/${course.id}`)
     } catch (error: any) {
       if (error.response?.status === 409) {
-        // setSelectedCourse(course);
+        navigate(`/classroom/${course.id}`)
       }
     }
   };
@@ -629,7 +628,8 @@ export const ClassroomPage: React.FC = () => {
                     if (isEnrolled(course.id)) {
                       navigate(`/classroom/${course.id}`)
                     } else {
-                      navigate(`/classroom/${course.id}`)
+                      setEnrollDialog(course);
+                      // navigate(`/classroom/${course.id}`)
                     }
                   }}
                 />
