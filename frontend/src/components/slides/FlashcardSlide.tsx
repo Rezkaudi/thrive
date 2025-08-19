@@ -33,11 +33,11 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
 
   const [flashcardStates, setFlashcardStates] = useState<Record<string, boolean>>({});
   const [hasTriggeredCompletion, setHasTriggeredCompletion] = useState(false);
-  
+
   const content = slide.content.content;
   const slideId = `flashcard-${slide.id}`;
   const totalCards = content.items?.length || 0;
-  
+
   // Calculate progress
   const flippedCards = Object.values(flashcardStates).filter(Boolean).length;
   const progress = totalCards > 0 ? (flippedCards / totalCards) * 100 : 0;
@@ -47,10 +47,10 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
   useEffect(() => {
     if (allCardsFlipped && !hasTriggeredCompletion && totalCards > 0) {
       setHasTriggeredCompletion(true);
-      
+
       // Mark slide as progressed
       setSlideProgress((prev) => new Set(prev).add(currentSlide));
-      
+
       // Trigger confetti
       confetti({
         particleCount: 50,
@@ -66,7 +66,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
         flippedCards,
         cardStates: flashcardStates
       };
-      
+
       // Trigger the validation and auto-progression system
       setTimeout(() => {
         checkAnswer(slideId, completionData, completionData, "flashcard");
@@ -89,8 +89,8 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
   // Early return if no cards
   if (!content.items || content.items.length === 0) {
     return (
-      <Box sx={{ 
-        textAlign: 'center', 
+      <Box sx={{
+        textAlign: 'center',
         p: 4,
         maxWidth: '600px',
         margin: '0 auto'
@@ -108,10 +108,10 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
   }
 
   return (
-    <Box sx={{ 
-      padding: { xs: 2, sm: 3, md: 4 }, 
-      maxWidth: "1200px", 
-      margin: "0 auto" 
+    <Box sx={{
+      padding: { xs: 2, sm: 3, md: 4 },
+      maxWidth: "1200px",
+      margin: "0 auto"
     }}>
       <Typography
         variant={isMobile ? "h5" : "h4"}
@@ -136,11 +136,11 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       {/* Progress Section */}
-      <Paper sx={{ 
-        p: { xs: 2, md: 3 }, 
-        mb: { xs: 3, md: 4 }, 
-        bgcolor: "primary.50", 
-        borderRadius: 3 
+      <Paper sx={{
+        p: { xs: 2, md: 3 },
+        mb: { xs: 3, md: 4 },
+        bgcolor: "primary.50",
+        borderRadius: 3
       }}>
         <Stack
           direction={{ xs: "column", sm: "row" }}
@@ -184,9 +184,9 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
       <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
         {content.items?.map((item: any, index: number) => {
           const isFlipped = flashcardStates[item.id] || false;
-          
+
           return (
-            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={item.id}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.id}>
               <Box
                 sx={{
                   height: { xs: 160, sm: 180, md: 200 },
@@ -247,12 +247,12 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
                           p: { xs: 2, md: 3 },
                         }}
                       >
-                        <Typography 
-                          variant={isMobile ? "h6" : "h5"} 
-                          fontWeight={600} 
+                        <Typography
+                          variant={isMobile ? "h6" : "h5"}
+                          fontWeight={600}
                           gutterBottom
                           sx={{
-                            fontSize: { xs: "1.1rem", sm: "1.25rem", md: "1.5rem" },
+                            fontSize: { xs: "0.9rem", sm: "1rem", md: "1.1rem" },
                             wordBreak: "break-word",
                             hyphens: "auto"
                           }}
@@ -273,8 +273,8 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
                         )}
                         <Typography
                           variant="caption"
-                          sx={{ 
-                            mt: 2, 
+                          sx={{
+                            mt: 2,
                             opacity: 0.7,
                             fontSize: { xs: "0.7rem", md: "0.75rem" }
                           }}
@@ -325,7 +325,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
                         <Typography
                           variant="body1"
                           fontWeight={500}
-                          sx={{ 
+                          sx={{
                             mb: 2,
                             fontSize: { xs: "0.9rem", sm: "1rem", md: "1.1rem" },
                             wordBreak: "break-word",
@@ -335,16 +335,16 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
                           {item.back}
                         </Typography>
                         <CheckCircle
-                          sx={{ 
-                            color: "success.main", 
-                            fontSize: { xs: 24, md: 32 }, 
-                            mt: 1 
+                          sx={{
+                            color: "success.main",
+                            fontSize: { xs: 24, md: 32 },
+                            mt: 1
                           }}
                         />
                         <Typography
                           variant="caption"
-                          sx={{ 
-                            mt: 1, 
+                          sx={{
+                            mt: 1,
                             opacity: 0.7,
                             fontSize: { xs: "0.7rem", md: "0.75rem" }
                           }}
@@ -436,7 +436,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
       )}
 
       {/* Instructions */}
-      {flippedCards === 0 && (
+      {/* {flippedCards === 0 && (
         <Paper
           sx={{
             p: { xs: 2, md: 3 },
@@ -462,7 +462,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
             </Typography>
           </Stack>
         </Paper>
-      )}
+      )} */}
     </Box>
   );
 };
