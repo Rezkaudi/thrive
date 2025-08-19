@@ -1,21 +1,21 @@
 // Enhanced SentenceBuilderEditor component
 import React, { useState, useEffect } from 'react';
-import { 
-  Stack, 
-  TextField, 
-  Box, 
-  Typography, 
-  Chip, 
+import {
+  Stack,
+  TextField,
+  Box,
+  Typography,
+  Chip,
   Paper,
   IconButton,
   Divider,
   Alert,
   Button
 } from '@mui/material';
-import { 
-  DragIndicator, 
-  Add as AddIcon, 
-  Close as CloseIcon 
+import {
+  DragIndicator,
+  Add as AddIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { SentenceBuilderItem } from '../../../../../types/interactive-items.types';
 
@@ -24,9 +24,9 @@ interface SentenceBuilderEditorProps {
   onUpdate: (updates: Partial<SentenceBuilderItem>) => void;
 }
 
-export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({ 
-  item, 
-  onUpdate 
+export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
+  item,
+  onUpdate
 }) => {
   const [newWord, setNewWord] = useState('');
   const [newDistractor, setNewDistractor] = useState('');
@@ -47,7 +47,7 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
           return word && word.trim() !== '' ? cleanWords.indexOf(word) : -1;
         })
         .filter(index => index >= 0);
-      
+
       onUpdate({
         words: cleanWords,
         correctOrder: cleanOrder
@@ -62,12 +62,12 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
       if (words.includes(trimmedWord) || distractors.includes(trimmedWord)) {
         return; // Don't add duplicate words
       }
-      
+
       const updatedWords = [...words, trimmedWord];
       const newIndex = words.length;
       const updatedOrder = [...correctOrder, newIndex];
-      
-      onUpdate({ 
+
+      onUpdate({
         words: updatedWords,
         correctOrder: updatedOrder
       });
@@ -82,7 +82,7 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
       if (words.includes(trimmedWord) || distractors.includes(trimmedWord)) {
         return; // Don't add duplicate words
       }
-      
+
       const updatedDistractors = [...distractors, trimmedWord];
       onUpdate({ distractors: updatedDistractors });
       setNewDistractor('');
@@ -96,14 +96,14 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
   };
 
   const handleRemoveWord = (indexToRemove: number) => {
-    if (words.length <= 2) return;
-    
+    if (words.length <= 0) return;
+
     const updatedWords = words.filter((_, i) => i !== indexToRemove);
     const updatedOrder = correctOrder
       .filter(orderIndex => orderIndex !== indexToRemove)
       .map(orderIndex => orderIndex > indexToRemove ? orderIndex - 1 : orderIndex);
-    
-    onUpdate({ 
+
+    onUpdate({
       words: updatedWords,
       correctOrder: updatedOrder
     });
@@ -137,7 +137,7 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
     return correctOrder.map(wordIndex => words[wordIndex]).filter(Boolean);
   };
 
-  const canDeleteWord = words.length > 2;
+  const canDeleteWord = words.length > 0;
   const totalWords = words.length + distractors.length;
 
   return (
@@ -169,17 +169,17 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
             placeholder="e.g., 私, です, 学生"
             sx={{ maxWidth: 300 }}
             helperText={
-              (words.includes(newWord.trim()) || distractors.includes(newWord.trim())) && newWord.trim() 
-                ? "Word already exists" 
+              (words.includes(newWord.trim()) || distractors.includes(newWord.trim())) && newWord.trim()
+                ? "Word already exists"
                 : ""
             }
             error={(words.includes(newWord.trim()) || distractors.includes(newWord.trim())) && newWord.trim() !== ""}
           />
-          <IconButton 
+          <IconButton
             onClick={handleAddWord}
             disabled={!newWord.trim() || words.includes(newWord.trim()) || distractors.includes(newWord.trim())}
             color="success"
-            sx={{ 
+            sx={{
               bgcolor: 'success.main',
               color: 'white',
               '&:hover': { bgcolor: 'success.dark' },
@@ -201,7 +201,7 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Drag and drop to arrange words in the correct sentence order.
         </Typography>
-        
+
         {correctOrder.length > 0 ? (
           <Stack spacing={1}>
             {correctOrder.map((wordIndex, orderIndex) => (
@@ -240,7 +240,7 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
                   size="small"
                   onClick={() => handleRemoveWord(wordIndex)}
                   disabled={!canDeleteWord}
-                  sx={{ 
+                  sx={{
                     color: canDeleteWord ? 'error.main' : 'grey.300',
                     '&:disabled': {
                       color: 'grey.300'
@@ -291,17 +291,17 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
             placeholder="e.g., 猫, 食べます, 本"
             sx={{ maxWidth: 300 }}
             helperText={
-              (words.includes(newDistractor.trim()) || distractors.includes(newDistractor.trim())) && newDistractor.trim() 
-                ? "Word already exists" 
+              (words.includes(newDistractor.trim()) || distractors.includes(newDistractor.trim())) && newDistractor.trim()
+                ? "Word already exists"
                 : ""
             }
             error={(words.includes(newDistractor.trim()) || distractors.includes(newDistractor.trim())) && newDistractor.trim() !== ""}
           />
-          <IconButton 
+          <IconButton
             onClick={handleAddDistractor}
             disabled={!newDistractor.trim() || words.includes(newDistractor.trim()) || distractors.includes(newDistractor.trim())}
             color="error"
-            sx={{ 
+            sx={{
               bgcolor: 'error.main',
               color: 'white',
               '&:hover': { bgcolor: 'error.dark' },
@@ -386,7 +386,7 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
               👀 Student View Preview
             </Typography>
-            
+
             {/* Correct Sentence */}
             {getOrderedWords().length > 0 && (
               <Paper
@@ -414,9 +414,9 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
                     />
                   ))}
                 </Stack>
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
+                <Typography
+                  variant="body1"
+                  sx={{
                     fontWeight: 600,
                     color: 'success.dark',
                     textAlign: 'center',
@@ -430,10 +430,10 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
                   "{getOrderedWords().join(' ')}"
                 </Typography>
                 {item.translation && (
-                  <Typography 
-                    variant="body2" 
+                  <Typography
+                    variant="body2"
                     color="text.secondary"
-                    sx={{ 
+                    sx={{
                       fontStyle: 'italic',
                       borderTop: '1px solid',
                       borderColor: 'success.200',
@@ -510,8 +510,8 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
           <Typography variant="body2" color="text.secondary">
             <strong>Difficulty:</strong> {
               distractors.length === 0 ? 'Easy (order only)' :
-              distractors.length < words.length ? 'Medium' :
-              distractors.length >= words.length ? 'Hard' : 'Custom'
+                distractors.length < words.length ? 'Medium' :
+                  distractors.length >= words.length ? 'Hard' : 'Custom'
             }
           </Typography>
         </Stack>
