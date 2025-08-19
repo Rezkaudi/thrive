@@ -113,7 +113,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const progressCount = sentenceState.selectedWords.length;
   const totalCorrectWords = validWords.length;
   const totalAvailableWords = allAvailableWords.length;
-  
+
   // Student needs to select exactly the right number of words
   const isComplete = progressCount === totalCorrectWords && totalCorrectWords > 0;
 
@@ -155,7 +155,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
 
     // Check if the selected words are correct and in the right order
     const isCorrectSentence = JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence);
-    
+
     if (isCorrectSentence) {
       return {
         isValid: true,
@@ -242,7 +242,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
     const isCorrectWord = validWords.includes(word);
     const isDistractor = validDistractors.includes(word);
     const canSelect = !isSelected && sentenceState.selectedWords.length < totalCorrectWords;
-    
+
     return {
       isSelected,
       isCorrectWord,
@@ -293,32 +293,33 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         {content.instruction}
       </Typography>
 
-      {/* Enhanced Progress Display */}
-      <Box sx={{ textAlign: "center", mb: 3 }}>
-        <Typography
-          variant={isMobile ? "subtitle1" : "h6"}
-          color="secondary.main"
-          fontWeight={600}
-          sx={{ mb: 1 }}
-        >
-          Progress: {progressCount}/{totalCorrectWords} words selected
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Choose from {totalAvailableWords} available words
-          {validDistractors.length > 0 && ` (${validDistractors.length} are distractors)`}
-        </Typography>
-        <LinearProgress
-          variant="determinate"
-          value={totalCorrectWords > 0 ? (progressCount / totalCorrectWords) * 100 : 0}
-          color="secondary"
+      {/* Translation */}
+      {currentItem.translation && (
+        <Paper
           sx={{
-            height: { xs: 8, md: 10 },
-            borderRadius: 5,
-            maxWidth: { xs: 280, md: 400 },
-            mx: "auto"
+            p: { xs: 2, md: 3 },
+            mb: { xs: 3, md: 4 },
+            bgcolor: "info.50",
+            border: "1px solid",
+            borderColor: "info.200",
+            borderRadius: 3,
+            textAlign: "center",
           }}
-        />
-      </Box>
+        >
+          <Typography
+            variant={isMobile ? "subtitle1" : "h6"}
+            sx={{ mb: 1, fontWeight: 600, color: "info.dark" }}
+          >
+            💭 Translation
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ fontSize: { xs: "1rem", md: "1.1rem" } }}
+          >
+            {currentItem.translation}
+          </Typography>
+        </Paper>
+      )}
 
       {/* Sentence Building Area */}
       <Paper
@@ -442,20 +443,20 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
                   p: { xs: 1, md: 2 },
                   minWidth: { xs: "70px", md: "90px" },
                   position: "relative",
-                  backgroundColor: wordStatus.isSelected 
+                  backgroundColor: wordStatus.isSelected
                     ? "transparent"
-                    : wordStatus.canSelect 
-                      ? "secondary.main" 
+                    : wordStatus.canSelect
+                      ? "secondary.main"
                       : "grey.300",
-                  color: wordStatus.isSelected 
+                  color: wordStatus.isSelected
                     ? "secondary.main"
-                    : wordStatus.canSelect 
-                      ? "white" 
+                    : wordStatus.canSelect
+                      ? "white"
                       : "text.disabled",
                   borderColor: wordStatus.isSelected ? "secondary.main" : "transparent",
                   "&:hover": {
-                    backgroundColor: wordStatus.canInteract 
-                      ? wordStatus.isSelected 
+                    backgroundColor: wordStatus.canInteract
+                      ? wordStatus.isSelected
                         ? "secondary.light"
                         : "secondary.dark"
                       : "grey.300",
@@ -510,33 +511,33 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         </Typography>
       </Paper>
 
-      {/* Translation */}
-      {currentItem.translation && (
-        <Paper
-          sx={{
-            p: { xs: 2, md: 3 },
-            mb: { xs: 3, md: 4 },
-            bgcolor: "info.50",
-            border: "1px solid",
-            borderColor: "info.200",
-            borderRadius: 3,
-            textAlign: "center",
-          }}
+
+      {/* Enhanced Progress Display */}
+      <Box sx={{ textAlign: "center", mb: 3 }}>
+        <Typography
+          variant={isMobile ? "subtitle1" : "h6"}
+          color="secondary.main"
+          fontWeight={600}
+          sx={{ mb: 1 }}
         >
-          <Typography
-            variant={isMobile ? "subtitle1" : "h6"}
-            sx={{ mb: 1, fontWeight: 600, color: "info.dark" }}
-          >
-            💭 Translation
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ fontSize: { xs: "1rem", md: "1.1rem" } }}
-          >
-            {currentItem.translation}
-          </Typography>
-        </Paper>
-      )}
+          Progress: {progressCount}/{totalCorrectWords} words selected
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Choose from {totalAvailableWords} available words
+          {validDistractors.length > 0 && ` (${validDistractors.length} are distractors)`}
+        </Typography>
+        <LinearProgress
+          variant="determinate"
+          value={totalCorrectWords > 0 ? (progressCount / totalCorrectWords) * 100 : 0}
+          color="secondary"
+          sx={{
+            height: { xs: 8, md: 10 },
+            borderRadius: 5,
+            maxWidth: { xs: 280, md: 400 },
+            mx: "auto"
+          }}
+        />
+      </Box>
 
       {/* Enhanced Action Buttons */}
       <Stack
