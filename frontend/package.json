@@ -25,6 +25,7 @@
     "canvas-confetti": "^1.9.3",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.18.1",
+    "heic2any": "^0.0.4",
     "pdfjs-dist": "^5.4.54",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

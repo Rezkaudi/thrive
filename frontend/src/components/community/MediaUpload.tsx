@@ -33,6 +33,7 @@ import {
   Info,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import heic2any from 'heic2any';
 
 export interface SelectedMedia {
   file: File;
@@ -51,7 +52,7 @@ interface MediaUploadProps {
 }
 
 const SUPPORTED_FORMATS = {
-  images: ['JPEG', 'PNG', 'GIF', 'WebP'],
+  images: ['JPEG', 'PNG', 'GIF', 'WebP', 'HEIC'],
   videos: ['MP4', 'MOV', 'AVI', 'WebM'],
 };
 
@@ -76,7 +77,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = useCallback((file: File): string | null => {
-    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
     const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm'];
     const allowedTypes = [...allowedImageTypes, ...allowedVideoTypes];
 
@@ -109,7 +110,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }, []);
 
-  const handleFileSelect = useCallback((files: FileList | File[]) => {
+  const handleFileSelect = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     const currentTotal = selectedMedia.length;
 
@@ -125,21 +126,38 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     const validFiles: SelectedMedia[] = [];
     const newErrors: { [key: string]: string } = {};
 
-    fileArray.forEach((file) => {
+    for (const file of fileArray) {
       const fileId = generateFileId();
-      const error = validateFile(file);
+      let fileToProcess = file;
+      const isHeic = file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic');
+
+      if (isHeic) {
+        try {
+          const conversionResult: any = await heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.8,
+          });
+          const fileName = file.name.replace(/\.[^/.]+$/, "") + ".jpeg";
+          fileToProcess = new File([conversionResult], fileName, { type: 'image/jpeg' });
+        } catch (error) {
+          newErrors[fileId] = `${file.name}: Failed to convert HEIC image.`;
+          continue;
+        }
+      }
+      const error = validateFile(fileToProcess);
 
       if (error) {
-        newErrors[fileId] = `${file.name}: ${error}`;
+        newErrors[fileId] = `${fileToProcess.name}: ${error}`;
       } else {
         const fileWithPreview: SelectedMedia = {
-          file: file,
-          preview: createPreview(file),
+          file: fileToProcess,
+          preview: createPreview(fileToProcess),
           id: fileId,
         };
         validFiles.push(fileWithPreview);
       }
-    });
+    };
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -227,7 +245,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           type="file"
           ref={fileInputRef}
           multiple
-          accept="image/*,video/*"
+          accept="image/*,video/*,.heic,.heif"
           onChange={handleInputChange}
           style={{ display: 'none' }}
           disabled={disabled || !canAddMore}
@@ -369,7 +387,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
         type="file"
         ref={fileInputRef}
         multiple
-        accept="image/*,video/*"
+        accept="image/*,video/*,.heic,.heif"
         onChange={handleInputChange}
         style={{ display: 'none' }}
         disabled={disabled || !canAddMore}
