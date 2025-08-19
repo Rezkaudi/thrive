@@ -42,6 +42,8 @@ import { SubscriptionPage } from './pages/SubscriptionPage';
 // Components
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { CourseDetailPage } from './pages/CourseDetailPage';
+import { AdminCourseDetailPage } from './pages/admin/AdminCourseDetailPage';
 
 
 function AppContent() {
@@ -116,6 +118,17 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/classroom/:courseId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CourseDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/community"
           element={
@@ -175,6 +188,17 @@ function AppContent() {
             <ProtectedRoute requiredRole="ADMIN">
               <Layout>
                 <CourseManagement />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/courses/:courseId"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <Layout>
+                <AdminCourseDetailPage />
               </Layout>
             </ProtectedRoute>
           }
