@@ -304,6 +304,7 @@ export const UserManagement: React.FC = () => {
               type="number"
               label="Points to Add/Remove"
               value={pointsData.points}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) => setPointsData({ ...pointsData, points: parseInt(e.target.value) })}
               helperText="Use negative values to remove points"
             />

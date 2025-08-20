@@ -32,6 +32,7 @@ export const InstructorNotes: React.FC<InstructorNotesProps> = ({
             type="number"
             label="Estimated Duration (minutes)"
             value={slide.duration || ''}
+            onWheel={(e) => (e.target as HTMLInputElement).blur()}
             onChange={(e) => onUpdate(index, { duration: parseInt(e.target.value) || 0 })}
             inputProps={{ min: 0, max: 60 }}
             helperText="How long should this slide take?"

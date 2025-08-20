@@ -191,12 +191,14 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
               type="number"
               label="Passing Score (%)"
               value={settings.passingScore}
+              onWheel={e => e.currentTarget.blur()}
               onChange={(e) => updateSettings('passingScore', parseInt(e.target.value))}
               inputProps={{ min: 0, max: 100 }}
               sx={{ width: 150 }}
             />
             <TextField
               type="number"
+              onWheel={e => e.currentTarget.blur()}
               label="Time Limit (minutes)"
               value={settings.timeLimit || ''}
               onChange={(e) => updateSettings('timeLimit', e.target.value ? parseInt(e.target.value) : undefined)}
@@ -309,6 +311,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({
                   type="number"
                   label="Points"
                   value={question.points || 1}
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   onChange={(e) => updateQuestion(qIndex, 'points', parseInt(e.target.value))}
                   inputProps={{ min: 1 }}
                   sx={{ width: 100 }}
