@@ -1121,6 +1121,7 @@ export const SessionManagement: React.FC = () => {
                     type="number"
                     label="Duration (minutes)"
                     value={sessionForm.duration}
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => handleFormChange('duration', parseInt(e.target.value) || 30)}
                     inputProps={{ min: 15, max: 180 }}
                     helperText="15-180 minutes"
@@ -1132,6 +1133,7 @@ export const SessionManagement: React.FC = () => {
                     type="number"
                     label="Max Participants"
                     value={sessionForm.maxParticipants}
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => handleFormChange('maxParticipants', parseInt(e.target.value) || 1)}
                     inputProps={{ min: 1, max: 100 }}
                     helperText="1-100 people"
@@ -1144,6 +1146,7 @@ export const SessionManagement: React.FC = () => {
                 type="number"
                 label="Points Required"
                 value={sessionForm.pointsRequired}
+                onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 onChange={(e) => handleFormChange('pointsRequired', parseInt(e.target.value) || 0)}
                 helperText="Set to 0 for free sessions. Premium sessions typically cost 10-50 points."
                 inputProps={{ min: 0 }}
@@ -1179,6 +1182,7 @@ export const SessionManagement: React.FC = () => {
                       type="number"
                       label="Number of Weeks"
                       value={sessionForm.recurringWeeks}
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       onChange={(e) => handleFormChange('recurringWeeks', parseInt(e.target.value) || 4)}
                       inputProps={{ min: 2, max: 52 }}
                       helperText={`Will create ${sessionForm.recurringWeeks} sessions, one each week starting from the selected date`}

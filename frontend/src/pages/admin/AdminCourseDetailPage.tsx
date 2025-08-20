@@ -700,6 +700,7 @@ export const AdminCourseDetailPage: React.FC = () => {
                             fullWidth
                             type="number"
                             label="Order"
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             value={lessonForm.order}
                             onChange={(e) =>
                                 setLessonForm({
@@ -1260,6 +1261,7 @@ export const AdminCourseDetailPage: React.FC = () => {
                             type="number"
                             label="Points Reward"
                             value={lessonForm.pointsReward}
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             onChange={(e) =>
                                 setLessonForm({
                                     ...lessonForm,

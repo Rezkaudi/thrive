@@ -194,6 +194,7 @@ export const VideoSlideEditor: React.FC<VideoSlideEditorProps> = ({
               label="Start Time (seconds)"
               type="number"
               value={videoSettings.startTime || ''}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) => updateVideoSettings({ startTime: parseInt(e.target.value) || 0 })}
               inputProps={{ min: 0 }}
               helperText="Video will start at this time"
@@ -204,6 +205,7 @@ export const VideoSlideEditor: React.FC<VideoSlideEditorProps> = ({
               label="End Time (seconds)"
               type="number"
               value={videoSettings.endTime || ''}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) => updateVideoSettings({ endTime: parseInt(e.target.value) || 0 })}
               inputProps={{ min: 0 }}
               helperText="Video will stop at this time (leave empty for full video)"
