@@ -1105,9 +1105,9 @@ export const CommunityPage: React.FC = () => {
   );
 
   const filteredPosts = posts.filter((post) => {
-    if (tabValue === 0) return !post.isAnnouncement;
-    if (tabValue === 1) return post.isAnnouncement;
-    if (tabValue === 2) return post.likesCount > 15;
+    if (tabValue === 0) return post.isAnnouncement;
+    if (tabValue === 1) return !post.isAnnouncement;
+    // if (tabValue === 2) return post.likesCount > 15;
     return true;
   });
 
@@ -1378,9 +1378,9 @@ export const CommunityPage: React.FC = () => {
 
       {/* Tabs */}
       <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
-        <Tab label="All Posts" />
         <Tab label="Announcements" />
-        <Tab label="Trending" icon={<TrendingUp />} iconPosition="end" />
+        <Tab label="Community Posts" />
+        {/* <Tab label="Trending" icon={<TrendingUp />} iconPosition="end" /> */}
       </Tabs>
 
       {/* Posts */}
