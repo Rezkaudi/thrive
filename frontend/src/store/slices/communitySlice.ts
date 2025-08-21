@@ -1,3 +1,4 @@
+// frontend/src/store/slices/communitySlice.ts (Updated - Remove isAnnouncement)
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
 import { commentService, Comment, CreateCommentData, UpdateCommentData } from '../../services/commentService';
@@ -13,7 +14,6 @@ interface Post {
   };
   content: string;
   mediaUrls: string[];
-  isAnnouncement: boolean;
   likesCount: number;
   isLiked: boolean;
   createdAt: string;
@@ -32,8 +32,8 @@ interface CommunityState {
   totalPosts: number;
   currentPage: number;
   loading: boolean;
-  loadingMore: boolean; // New loading state for infinite scroll
-  hasMorePosts: boolean; // New computed state
+  loadingMore: boolean;
+  hasMorePosts: boolean;
   error: string | null;
   editError: string | null;
   deleteError: string | null;
@@ -59,7 +59,7 @@ export const fetchPosts = createAsyncThunk(
   async ({ page = 1, limit = 20, append = false }: { 
     page?: number; 
     limit?: number; 
-    append?: boolean; // New parameter to indicate if we should append or replace
+    append?: boolean;
   }) => {
     const response = await api.get('/community/posts', { params: { page, limit } });
     return { ...response.data, append };
@@ -81,14 +81,14 @@ export const loadMorePosts = createAsyncThunk(
   }
 );
 
+// Updated createPost - removed isAnnouncement
 export const createPost = createAsyncThunk(
   'community/createPost',
-  async ({ content, mediaUrls = [], isAnnouncement = false }: {
+  async ({ content, mediaUrls = [] }: {
     content: string;
     mediaUrls?: string[];
-    isAnnouncement?: boolean;
   }) => {
-    const response = await api.post('/community/posts', { content, mediaUrls, isAnnouncement });
+    const response = await api.post('/community/posts', { content, mediaUrls });
     return response.data;
   }
 );
@@ -285,7 +285,6 @@ const findAndDeleteComment = (comments: Comment[], commentId: string): Comment[]
     }));
 };
 
-// FIXED: Only add replies to their parent comments, not to top-level
 const findAndAddReply = (comments: Comment[], parentId: string, newReply: Comment): Comment[] => {
   return comments.map(comment => {
     if (comment.id === parentId) {
@@ -334,7 +333,6 @@ const markCommentAsDeleting = (comments: Comment[], commentId: string, isDeletin
   });
 };
 
-// FIXED: Count replies recursively
 const countAllComments = (comments: Comment[]): number => {
   let count = comments.length;
   comments.forEach(comment => {
@@ -438,7 +436,7 @@ const communitySlice = createSlice({
     builder
       // Posts - Modified to handle both initial load and infinite scroll
       .addCase(fetchPosts.pending, (state, action) => {
-        const page = action.meta.arg.page ?? 1; // Fix: Handle undefined page
+        const page = action.meta.arg.page ?? 1;
         const append = action.meta.arg.append ?? false;
         
         if (append || page > 1) {
@@ -452,24 +450,21 @@ const communitySlice = createSlice({
         state.loading = false;
         state.loadingMore = false;
         
-        const page = action.meta.arg.page ?? 1; // Fix: Handle undefined page
+        const page = action.meta.arg.page ?? 1;
         const append = action.meta.arg.append ?? false;
         
         if (append || page > 1) {
-          // Append posts for infinite scroll
           const newPosts = action.payload.posts.filter(
-            (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id) // Fix: Add type annotation
+            (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id)
           );
           state.posts = [...state.posts, ...newPosts];
         } else {
-          // Replace posts for initial load or refresh
           state.posts = action.payload.posts;
         }
         
         state.totalPosts = action.payload.total;
         state.currentPage = action.payload.page;
         
-        // Calculate if there are more posts to load
         const totalLoadedPosts = state.posts.length;
         state.hasMorePosts = totalLoadedPosts < state.totalPosts;
       })
@@ -487,16 +482,14 @@ const communitySlice = createSlice({
       .addCase(loadMorePosts.fulfilled, (state, action) => {
         state.loadingMore = false;
         
-        // Append new posts, avoiding duplicates
         const newPosts = action.payload.posts.filter(
-          (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id) // Fix: Add type annotation
+          (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id)
         );
         state.posts = [...state.posts, ...newPosts];
         
         state.totalPosts = action.payload.total;
         state.currentPage = action.payload.page;
         
-        // Calculate if there are more posts to load
         const totalLoadedPosts = state.posts.length;
         state.hasMorePosts = totalLoadedPosts < state.totalPosts;
       })
@@ -568,7 +561,7 @@ const communitySlice = createSlice({
         state.deleteError = action.payload as string;
       })
       
-      // Comments
+      // Comments (same as before)
       .addCase(fetchComments.pending, (state, action) => {
         const postIndex = state.posts.findIndex(p => p.id === action.meta.arg.postId);
         if (postIndex !== -1) {
@@ -583,7 +576,6 @@ const communitySlice = createSlice({
           
           console.log('Updating post comments:', { postId: action.payload.postId, comments, pagination });
           
-          // Mark as initialized and set comments
           state.posts[postIndex].commentsInitialized = true;
           state.posts[postIndex].commentsLoading = false;
           
@@ -599,7 +591,6 @@ const communitySlice = createSlice({
           state.posts[postIndex].commentsPage = pagination.page;
           state.posts[postIndex].commentsHasMore = pagination.hasNextPage;
           
-          // FIXED: Use total with replies for accurate count
           if (pagination.totalWithReplies !== undefined) {
             state.posts[postIndex].commentsCount = pagination.totalWithReplies;
           } else if (pagination.total !== undefined) {
@@ -621,7 +612,6 @@ const communitySlice = createSlice({
       .addCase(createComment.fulfilled, (state, action) => {
         const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
         if (postIndex !== -1) {
-          // Ensure comments array exists
           if (!state.posts[postIndex].comments) {
             state.posts[postIndex].comments = [];
           }
@@ -631,18 +621,15 @@ const communitySlice = createSlice({
           const newComment = action.payload.comment;
           
           if (newComment.parentCommentId) {
-            // FIXED: Handle reply - only add to parent comment's replies, not to top-level
             state.posts[postIndex].comments = findAndAddReply(
               state.posts[postIndex].comments!,
               newComment.parentCommentId,
               newComment
             );
           } else {
-            // Handle top-level comment - add to beginning of comments array
             state.posts[postIndex].comments!.unshift(newComment);
           }
           
-          // FIXED: Count all comments including nested replies
           const totalComments = countAllComments(state.posts[postIndex].comments!);
           state.posts[postIndex].commentsCount = totalComments;
         }
@@ -651,7 +638,6 @@ const communitySlice = createSlice({
         state.commentError = action.payload as string;
       })
       .addCase(updateComment.pending, (state, action) => {
-        // Find and mark comment as editing across all posts
         for (const post of state.posts) {
           if (post.comments) {
             post.comments = markCommentAsEditing(post.comments, action.meta.arg.commentId, true);
@@ -660,7 +646,6 @@ const communitySlice = createSlice({
         state.commentError = null;
       })
       .addCase(updateComment.fulfilled, (state, action) => {
-        // Find and update the comment in all posts, clearing loading state
         for (const post of state.posts) {
           if (post.comments) {
             post.comments = findAndUpdateComment(post.comments, action.payload.id, action.payload);
@@ -669,7 +654,6 @@ const communitySlice = createSlice({
         state.commentError = null;
       })
       .addCase(updateComment.rejected, (state, action) => {
-        // Remove editing state from the specific comment
         for (const post of state.posts) {
           if (post.comments) {
             post.comments = markCommentAsEditing(post.comments, action.meta.arg.commentId, false);
@@ -693,19 +677,15 @@ const communitySlice = createSlice({
         const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
         if (postIndex !== -1 && state.posts[postIndex].comments) {
           
-          // Count comments before deletion (including nested)
           const beforeCount = countAllComments(state.posts[postIndex].comments!);
           
-          // Remove comment from nested structure
           state.posts[postIndex].comments = findAndDeleteComment(
             state.posts[postIndex].comments!,
             action.payload.commentId
           );
           
-          // Count comments after deletion
           const afterCount = countAllComments(state.posts[postIndex].comments!);
           
-          // Update comment count based on actual difference
           const deletedCount = beforeCount - afterCount;
           state.posts[postIndex].commentsCount = Math.max(
             0, 
@@ -718,7 +698,6 @@ const communitySlice = createSlice({
         const { postId, commentId } = action.meta.arg;
         const postIndex = state.posts.findIndex(p => p.id === postId);
         if (postIndex !== -1 && state.posts[postIndex].comments) {
-          // Remove deleting state
           state.posts[postIndex].comments = markCommentAsDeleting(
             state.posts[postIndex].comments!,
             commentId,

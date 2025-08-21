@@ -1,9 +1,8 @@
-// backend/src/infrastructure/database/entities/Post.entity.ts (Updated - Remove isAnnouncement)
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { UserEntity } from './User.entity';
 
-@Entity('posts')
-export class PostEntity {
+@Entity('announcements')
+export class AnnouncementEntity {
   @PrimaryColumn()
   id!: string;
 
@@ -19,9 +18,6 @@ export class PostEntity {
 
   @Column('text')
   content!: string;
-
-  @Column({ default: '' })
-    mediaUrls!: string;
 
   @Column({ default: 0 })
   likesCount!: number;
