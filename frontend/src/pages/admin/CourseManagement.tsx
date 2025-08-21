@@ -501,6 +501,7 @@ export const CourseManagement: React.FC = () => {
               type="number"
               label="Free Lesson Count"
               value={courseForm.freeLessonCount}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) =>
                 setCourseForm({
                   ...courseForm,

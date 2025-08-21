@@ -1,3 +1,4 @@
+// frontend/src/components/Comments.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -42,24 +43,53 @@ import {
   updateComment,
   deleteComment,
 } from '../../store/slices/communitySlice';
-import { Comment } from '../../services/commentService';
+import {
+  fetchAnnouncementComments,
+  createAnnouncementComment,
+  updateAnnouncementComment,
+  deleteAnnouncementComment,
+} from '../../store/slices/announcementSlice';
 import { linkifyText } from '../../utils/linkify';
+// Import or define the Comment interface
+interface Comment {
+  id: string;
+  userId: string;
+  postId: string;
+  content: string;
+  parentCommentId?: string;
+  author?: {
+    userId: string;
+    name: string;
+    email: string;
+    avatar: string;
+    level: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+  replies?: Comment[];
+  isEditing?: boolean;
+  isDeleting?: boolean;
+  isReplying?: boolean;
+  likesCount?: number;
+  isLiked?: boolean;
+}
+
 
 // Format date utility
 const formatCommentDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-  
+
   if (diffInMinutes < 1) return 'just now';
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours}h ago`;
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) return `${diffInDays}d ago`;
-  
+
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: '2-digit',
@@ -73,6 +103,7 @@ interface CommentItemProps {
   currentUserId?: string;
   onReply: (parentId: string) => void;
   isReply?: boolean;
+  isAnnouncement?: boolean; // New prop
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -80,7 +111,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
   postId,
   currentUserId,
   onReply,
-  isReply = false
+  isReply = false,
+  isAnnouncement = false // New prop with default
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -128,10 +160,19 @@ const CommentItem: React.FC<CommentItemProps> = ({
     if (editContent.trim() && editContent !== comment.content) {
       setIsUpdating(true);
       try {
-        await dispatch(updateComment({
-          commentId: comment.id,
-          data: { content: editContent.trim() }
-        })).unwrap();
+        if (isAnnouncement) {
+          // Dispatch the new action for announcements
+          await dispatch(updateAnnouncementComment({
+            commentId: comment.id,
+            data: { content: editContent.trim() }
+          })).unwrap();
+        } else {
+          // Dispatch the existing action for posts
+          await dispatch(updateComment({
+            commentId: comment.id,
+            data: { content: editContent.trim() }
+          })).unwrap();
+        }
         setIsEditing(false);
         setIsUpdating(false);
       } catch (error) {
@@ -158,10 +199,17 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
-      await dispatch(deleteComment({
-        commentId: comment.id,
-        postId
-      })).unwrap();
+      if (isAnnouncement) {
+        await dispatch(deleteAnnouncementComment({
+          commentId: comment.id,
+          announcementId: postId,
+        })).unwrap();
+      } else {
+        await dispatch(deleteComment({
+          commentId: comment.id,
+          postId
+        })).unwrap();
+      }
       setDeleteDialogOpen(false);
       setIsDeleting(false);
     } catch (error) {
@@ -211,7 +259,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               {!comment.author?.avatar && comment.author?.name?.[0]}
             </Avatar>
           </Badge>
-          
+
           <Box flexGrow={1}>
             <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
               <Typography
@@ -230,7 +278,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 </Typography>
               )}
             </Stack>
-            
+
             {isEditing ? (
               <Box sx={{ mb: 1 }}>
                 <TextField
@@ -274,7 +322,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 {linkifyText(comment.content)}
               </Typography>
             )}
-            
+
             {!isEditing && (
               <Stack direction="row" spacing={1} alignItems="center">
                 {!isReply && (
@@ -293,7 +341,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                     Reply
                   </Button>
                 )}
-                
+
                 {comment.replies && comment.replies.length > 0 && !isReply && (
                   <Button
                     size="small"
@@ -312,7 +360,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               </Stack>
             )}
           </Box>
-          
+
           <IconButton
             size="small"
             onClick={handleMenuClick}
@@ -321,7 +369,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           >
             <MoreVert fontSize="small" />
           </IconButton>
-          
+
           {/* Options Menu */}
           <Menu
             anchorEl={anchorEl}
@@ -337,8 +385,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
             }}
           >
             {isOwnComment && (
-              <MenuItem 
-                onClick={handleEdit} 
+              <MenuItem
+                onClick={handleEdit}
                 disabled={actuallyEditing || isEditing || actuallyDeleting}
               >
                 <ListItemIcon>
@@ -347,11 +395,11 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 <ListItemText>Edit</ListItemText>
               </MenuItem>
             )}
-            
+
             {isOwnComment && (
-              <MenuItem 
-                onClick={handleDeleteClick} 
-                sx={{ color: 'error.main' }} 
+              <MenuItem
+                onClick={handleDeleteClick}
+                sx={{ color: 'error.main' }}
                 disabled={actuallyDeleting || isEditing}
               >
                 <ListItemIcon>
@@ -362,7 +410,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             )}
           </Menu>
         </Stack>
-        
+
         {/* Replies */}
         {comment.replies && comment.replies.length > 0 && !isReply && (
           <Collapse in={showReplies}>
@@ -376,13 +424,14 @@ const CommentItem: React.FC<CommentItemProps> = ({
                     currentUserId={currentUserId}
                     onReply={onReply}
                     isReply={true}
+                    isAnnouncement={isAnnouncement} // Pass through the prop
                   />
                 ))}
               </AnimatePresence>
             </Box>
           </Collapse>
         )}
-        
+
         {/* Delete Confirmation Dialog */}
         <Dialog
           open={deleteDialogOpen}
@@ -419,6 +468,7 @@ interface CommentsProps {
   commentsCount?: number;
   isOpen: boolean;
   onToggle: () => void;
+  isAnnouncement?: boolean; // New prop to distinguish between posts and announcements
 }
 
 export const Comments: React.FC<CommentsProps> = ({
@@ -426,6 +476,7 @@ export const Comments: React.FC<CommentsProps> = ({
   commentsCount = 0,
   isOpen,
   onToggle,
+  isAnnouncement = false, // New prop with default
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [newComment, setNewComment] = useState('');
@@ -433,17 +484,23 @@ export const Comments: React.FC<CommentsProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
-  const post = useSelector((state: RootState) =>
-    state.community.posts.find(p => p.id === postId)
-  );
+  // Get the appropriate item and state based on type - moved outside function and using hooks properly
+  const announcements = useSelector((state: RootState) => state.announcements?.announcements || []);
+  const posts = useSelector((state: RootState) => state.community.posts);
   const currentUserId = useSelector((state: RootState) => state.auth.user?.id);
   const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
   const name = useSelector((state: RootState) => state.dashboard.data?.user.name);
 
-  const comments = post?.comments || [];
-  const commentsLoading = post?.commentsLoading || false;
-  const commentsHasMore = post?.commentsHasMore || false;
-  const commentsInitialized = post?.commentsInitialized || false;
+  // Get item data based on type
+  const item = isAnnouncement 
+    ? announcements.find((a: any) => a.id === postId)
+    : posts.find(p => p.id === postId);
+
+  const comments = (item as any)?.comments || [];
+  const commentsLoading = (item as any)?.commentsLoading || false;
+  const commentsHasMore = (item as any)?.commentsHasMore || false;
+  const commentsInitialized = (item as any)?.commentsInitialized || false;
+  const commentsPage = (item as any)?.commentsPage || 1;
 
   // Debug logging
   useEffect(() => {
@@ -455,31 +512,53 @@ export const Comments: React.FC<CommentsProps> = ({
       commentsLoading,
       commentsInitialized,
       hasAttemptedFetch,
-      post: !!post
+      item: !!item,
+      isAnnouncement
     });
-  }, [postId, isOpen, commentsCount, comments.length, commentsLoading, commentsInitialized, hasAttemptedFetch, post]);
+  }, [postId, isOpen, commentsCount, comments.length, commentsLoading, commentsInitialized, hasAttemptedFetch, item, isAnnouncement]);
 
   // Fetch comments when section is opened
   useEffect(() => {
     if (isOpen && !hasAttemptedFetch && !commentsLoading) {
-      console.log('Attempting to fetch comments for post:', postId);
+      console.log(`Attempting to fetch comments for ${isAnnouncement ? 'announcement' : 'post'}:`, postId);
       setHasAttemptedFetch(true);
-      dispatch(fetchComments({ postId, page: 1, limit: 20 }));
+      
+      if (isAnnouncement) {
+        dispatch(fetchAnnouncementComments({
+          announcementId: postId,
+          page: 1,
+          limit: 20,
+          includeReplies: true,
+        }));
+      } else {
+        dispatch(fetchComments({ postId, page: 1, limit: 20 }));
+      }
     }
-  }, [isOpen, hasAttemptedFetch, commentsLoading, dispatch, postId]);
+  }, [isOpen, hasAttemptedFetch, commentsLoading, dispatch, postId, isAnnouncement]);
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
 
     setIsSubmitting(true);
     try {
-      await dispatch(createComment({
-        postId,
-        data: {
-          content: newComment.trim(),
-          parentCommentId: replyTo || undefined
-        }
-      })).unwrap();
+      if (isAnnouncement) {
+        await dispatch(createAnnouncementComment({
+          announcementId: postId,
+          data: {
+            content: newComment.trim(),
+            parentCommentId: replyTo || undefined
+          }
+        })).unwrap();
+      } else {
+        await dispatch(createComment({
+          postId,
+          data: {
+            content: newComment.trim(),
+            parentCommentId: replyTo || undefined
+          }
+        })).unwrap();
+      }
+      
       setNewComment('');
       setReplyTo(null);
       
@@ -499,12 +578,21 @@ export const Comments: React.FC<CommentsProps> = ({
   };
 
   const handleLoadMore = () => {
-    if (post && !commentsLoading && commentsHasMore) {
-      dispatch(fetchComments({
-        postId,
-        page: (post.commentsPage || 1) + 1,
-        limit: 20
-      }));
+    if (item && !commentsLoading && commentsHasMore) {
+      if (isAnnouncement) {
+        dispatch(fetchAnnouncementComments({
+          announcementId: postId,
+          page: commentsPage + 1,
+          limit: 20,
+          includeReplies: true,
+        }));
+      } else {
+        dispatch(fetchComments({
+          postId,
+          page: commentsPage + 1,
+          limit: 20
+        }));
+      }
     }
   };
 
@@ -515,20 +603,6 @@ export const Comments: React.FC<CommentsProps> = ({
 
   return (
     <Box>
-      {/* <Button
-        fullWidth
-        onClick={onToggle}
-        sx={{
-          justifyContent: 'flex-start',
-          textTransform: 'none',
-          color: 'text.secondary',
-          py: 1,
-        }}
-      >
-        {commentsCount || 0} {commentsCount === 1 ? 'Comment' : 'Comments'}
-        {isOpen ? <ExpandLess sx={{ ml: 'auto' }} /> : <ExpandMore sx={{ ml: 'auto' }} />}
-      </Button> */}
-      
       <Collapse in={isOpen}>
         <Box sx={{ p: 2 }}>
           {/* New Comment Form */}
@@ -553,7 +627,7 @@ export const Comments: React.FC<CommentsProps> = ({
                 fullWidth
                 multiline
                 rows={2}
-                placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
+                placeholder={replyTo ? "Write a reply..." : `Write a comment on this ${isAnnouncement ? 'announcement' : 'post'}...`}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 variant="outlined"
@@ -598,13 +672,14 @@ export const Comments: React.FC<CommentsProps> = ({
           ) : shouldShowComments ? (
             <Box>
               <AnimatePresence>
-                {comments.map((comment) => (
+                {comments.map((comment: any) => (
                   <CommentItem
                     key={comment.id}
                     comment={comment}
                     postId={postId}
                     currentUserId={currentUserId}
                     onReply={handleReply}
+                    isAnnouncement={isAnnouncement} // Pass the prop
                   />
                 ))}
               </AnimatePresence>
@@ -625,7 +700,7 @@ export const Comments: React.FC<CommentsProps> = ({
           ) : shouldShowEmpty ? (
             <Box sx={{ textAlign: 'center', py: 3 }}>
               <Typography variant="body2" color="text.secondary">
-                No comments yet. Be the first to comment!
+                No comments yet. Be the first to comment on this {isAnnouncement ? 'announcement' : 'post'}!
               </Typography>
             </Box>
           ) : (

@@ -1,3 +1,4 @@
+// backend/src/infrastructure/database/repositories/PostRepository.ts (Updated)
 import { Repository } from 'typeorm';
 import { AppDataSource } from '../config/database.config';
 import { PostEntity } from '../entities/Post.entity';
@@ -92,31 +93,6 @@ export class PostRepository implements IPostRepository {
     ));
   }
 
-  async findAnnouncements(currentUserId?: string): Promise<Post[]> {
-    const entities = await this.repository.find({
-      where: { isAnnouncement: true },
-      order: { createdAt: 'DESC' },
-    });
-    
-    const postIds = entities.map(e => e.id);
-    const likedPostIds = currentUserId ? 
-      await this.postLikeRepository.findLikedPostsByUser(currentUserId, postIds) : [];
-    
-    // Get comments count for all posts
-    const commentsCountMap = await this.getCommentsCountForPosts(postIds);
-    
-    const posts = await Promise.all(
-      entities.map(async (entity) => {
-        const author = await this.getAuthorInfo(entity.userId);
-        const isLiked = likedPostIds.includes(entity.id);
-        const commentsCount = commentsCountMap.get(entity.id) || 0;
-        return this.toDomain(entity, author, isLiked, commentsCount);
-      })
-    );
-    
-    return posts;
-  }
-
   async update(post: Post): Promise<Post> {
     const entity = this.toEntity(post);
     const saved = await this.repository.save(entity);
@@ -150,9 +126,12 @@ export class PostRepository implements IPostRepository {
 
   // Comments count methods
   async getCommentsCount(postId: string): Promise<number> {
-    return await this.commentRepository.count({
+    const count = await this.commentRepository.count({
       where: { postId }
     });
+    
+    // Ensure it's a number
+    return typeof count === 'string' ? parseInt(count, 10) : count;
   }
 
   async getCommentsCountForPosts(postIds: string[]): Promise<Map<string, number>> {
@@ -220,18 +199,18 @@ export class PostRepository implements IPostRepository {
     }
   }
 
+  // FIXED: Parameter order and ensure commentsCount is a number
   private toDomain(entity: PostEntity, author: IAuthor, isLiked: boolean, commentsCount: number): Post {
     return new Post(
       entity.id,
       author,
       entity.content,
       entity.mediaUrls.split(',').filter(url => url),
-      entity.isAnnouncement,
       entity.likesCount,
       isLiked,
       entity.createdAt,
       entity.updatedAt,
-      commentsCount
+      commentsCount  // This should be last parameter and should be a number
     );
   }
 
@@ -241,7 +220,6 @@ export class PostRepository implements IPostRepository {
     entity.userId = post.author.userId;
     entity.content = post.content;
     entity.mediaUrls = post.mediaUrls.join(',');
-    entity.isAnnouncement = post.isAnnouncement;
     entity.likesCount = post.likesCount;
     entity.createdAt = post.createdAt;
     entity.updatedAt = post.updatedAt;

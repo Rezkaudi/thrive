@@ -1001,7 +1001,6 @@ export class AdminController {
       const post = await createPostUseCase.execute({
         userId: req.user!.userId,
         content,
-        isAnnouncement: true
       });
 
       res.status(201).json(post);

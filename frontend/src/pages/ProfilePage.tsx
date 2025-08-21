@@ -93,6 +93,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { chackPayment } from '../store/slices/authSlice';
 import { fetchUserActivities } from '../store/slices/activitySlice';
 import { ActivityFeed } from '../components/activity/ActivityFeed';
+import heic2any from 'heic2any';
 
 interface Achievement {
   id: string;
@@ -294,10 +295,20 @@ export const ProfilePage: React.FC = () => {
   };
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    let file = event.target.files?.[0];
     if (!file) return;
 
     try {
+      const isHeic = file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic');
+      if (isHeic) {
+        const conversionResult: any = await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.8,
+        });
+        const fileName = file.name.replace(/\.[^/.]+$/, "") + ".jpeg";
+        file = new File([conversionResult], fileName, { type: 'image/jpeg' });
+      }
       await dispatch(uploadProfilePhoto(file)).unwrap();
       setSnackbar({ open: true, message: 'Profile photo updated successfully!', severity: 'success' });
       setPhotoMenuAnchor(null);
@@ -703,7 +714,7 @@ export const ProfilePage: React.FC = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  accept="image/jpeg,image/png,image/webp,image/gif,.heic,.heif"
                   style={{ display: 'none' }}
                   onChange={handlePhotoUpload}
                 />

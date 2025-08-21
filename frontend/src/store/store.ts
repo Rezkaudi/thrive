@@ -7,12 +7,14 @@ import calendarReducer from './slices/calendarSlice';
 import dashboardReducer from './slices/dashboardSlice';
 import activityReducer from './slices/activitySlice';
 import sessionsReducer from './slices/sessionSlice'
+import announcementReducer from './slices/announcementSlice'
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     course: courseReducer,
-    community: communityReducer,
+    community: communityReducer,  
+    announcements: announcementReducer,
     profile: profileReducer,
     calendar: calendarReducer,
     dashboard: dashboardReducer,

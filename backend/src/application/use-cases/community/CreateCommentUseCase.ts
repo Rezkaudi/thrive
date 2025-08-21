@@ -1,8 +1,9 @@
+// backend/src/application/use-cases/community/CreateCommentUseCase.ts (Updated)
 import { Comment } from "../../../domain/entities/Comment";
 import { ICommentRepository } from "../../../domain/repositories/ICommentRepository";
-import { IPostRepository } from "../../../domain/repositories/IPostRepository";
 import { IProfileRepository } from "../../../domain/repositories/IProfileRepository";
 import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { ICommentableRepository } from "../../../infrastructure/database/repositories/ICommentableRepository";
 
 export interface CreateCommentDTO {
   userId: string;
@@ -14,16 +15,16 @@ export interface CreateCommentDTO {
 export class CreateCommentUseCase {
   constructor(
     private commentRepository: ICommentRepository,
-    private postRepository: IPostRepository,
+    private commentableRepository: ICommentableRepository, // Changed from IPostRepository
     private userRepository: IUserRepository,
     private profileRepository: IProfileRepository
   ) { }
 
   async execute(dto: CreateCommentDTO): Promise<Comment> {
-    // 1. Validate post exists
-    const post = await this.postRepository.findById(dto.postId);
-    if (!post) {
-      throw new Error('Post not found');
+    // 1. Validate post/announcement exists
+    const commentableItem = await this.commentableRepository.findById(dto.postId);
+    if (!commentableItem) {
+      throw new Error('Post or announcement not found');
     }
 
     // 2. Validate user exists and get user info in parallel with profile
@@ -44,9 +45,9 @@ export class CreateCommentUseCase {
         throw new Error("Parent comment not found");
       }
       
-      // Ensure the parent comment belongs to the same post
+      // Ensure the parent comment belongs to the same post/announcement
       if (parentComment.postId !== dto.postId) {
-        throw new Error("Parent comment does not belong to this post");
+        throw new Error("Parent comment does not belong to this post or announcement");
       }
     }
 

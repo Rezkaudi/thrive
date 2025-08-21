@@ -100,7 +100,7 @@ export class CommunityController {
 
   async createPost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { content, mediaUrls, isAnnouncement } = req.body;
+      const { content, mediaUrls   } = req.body;
 
       const createPostUseCase = new CreatePostUseCase(
         new PostRepository(),
@@ -113,7 +113,6 @@ export class CommunityController {
         userId: req.user!.userId,
         content,
         mediaUrls: mediaUrls || [],
-        isAnnouncement
       });
 
       res.status(201).json(post);
@@ -300,59 +299,59 @@ export class CommunityController {
   }
 
   async createComment(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const { postId } = req.params;
-      const { content, parentCommentId } = req.body;
-      const userId = req.user?.userId;
+  try {
+    const { postId } = req.params;
+    const { content, parentCommentId } = req.body;
+    const userId = req.user?.userId;
 
-      console.log('Creating comment:', { postId, userId, content, parentCommentId });
+    console.log('Creating comment:', { postId, userId, content, parentCommentId });
 
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required"
-        });
-      }
-
-      if (!content || content.trim().length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Comment content is required"
-        });
-      }
-
-      if (content.trim().length > 1000) {
-        return res.status(400).json({
-          success: false,
-          message: "Comment content must not exceed 1000 characters"
-        });
-      }
-
-      const createCommentUseCase = new CreateCommentUseCase(
-        new CommentRepository(),
-        new PostRepository(),
-        new UserRepository(),
-        new ProfileRepository()
-      );
-
-      const comment = await createCommentUseCase.execute({
-        userId,
-        postId,
-        content: content.trim(),
-        parentCommentId
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required"
       });
-
-      console.log('Comment created:', comment);
-
-      res.status(201).json({
-        success: true,
-        data: comment
-      });
-    } catch (error) {
-      console.error('Error in createComment:', error);
-      next(error);
     }
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment content is required"
+      });
+    }
+
+    if (content.trim().length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment content must not exceed 1000 characters"
+      });
+    }
+
+    const createCommentUseCase = new CreateCommentUseCase(
+      new CommentRepository(),
+      new PostRepository(), // PostRepository implements ICommentableRepository
+      new UserRepository(),
+      new ProfileRepository()
+    );
+
+    const comment = await createCommentUseCase.execute({
+      userId,
+      postId,
+      content: content.trim(),
+      parentCommentId
+    });
+
+    console.log('Comment created:', comment);
+
+    res.status(201).json({
+      success: true,
+      data: comment
+    });
+  } catch (error) {
+    console.error('Error in createComment:', error);
+    next(error);
   }
+}
 
   async getCommentById(req: AuthRequest, res: Response, next: NextFunction) {
     try {

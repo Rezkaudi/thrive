@@ -300,6 +300,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               type="number"
               label="Time Limit (seconds)"
               value={quizContent.timeLimit || ''}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) => updateQuizContent({ timeLimit: parseInt(e.target.value) || 0 })}
               inputProps={{ min: 0 }}
               helperText="0 = no time limit"
@@ -312,6 +313,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               type="number"
               label="Points"
               value={quizContent.points || 1}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) => updateQuizContent({ points: parseInt(e.target.value) || 1 })}
               inputProps={{ min: 1 }}
             />

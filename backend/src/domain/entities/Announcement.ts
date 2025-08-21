@@ -6,10 +6,9 @@ export interface IAuthor {
   level: number;
 }
 
-export interface IPost {
+export interface IAnnouncement {
   id: string;
   content: string;
-  mediaUrls: string[];
   likesCount: number;
   author: IAuthor;
   isLiked: boolean;
@@ -18,12 +17,11 @@ export interface IPost {
   updatedAt: Date;
 }
 
-export class Post implements IPost {
+export class Announcement implements IAnnouncement {
   constructor(
     public id: string,
     public author: IAuthor,
     public content: string,
-    public mediaUrls: string[],
     public likesCount: number,
     public isLiked: boolean,
     public createdAt: Date,
@@ -48,7 +46,6 @@ export class Post implements IPost {
     this.isLiked = !this.isLiked;
   }
 
-  // Add methods for comments count
   incrementCommentsCount(): void {
     this.commentsCount++;
   }

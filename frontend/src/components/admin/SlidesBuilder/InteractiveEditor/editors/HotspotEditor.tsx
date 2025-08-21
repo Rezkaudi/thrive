@@ -154,6 +154,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
               type="number"
               label="X Position (%)"
               value={item.x || 50}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) => onUpdate({ x: parseInt(e.target.value) })}
               inputProps={{ min: 0, max: 100 }}
             />
@@ -164,6 +165,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
               type="number"
               label="Y Position (%)"
               value={item.y || 50}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onChange={(e) => onUpdate({ y: parseInt(e.target.value) })}
               inputProps={{ min: 0, max: 100 }}
             />

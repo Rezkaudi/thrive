@@ -150,6 +150,7 @@ export const SortingEditor: React.FC<SortingEditorProps> = ({ item, onUpdate }) 
           type="number"
           label="Correct Position"
           value={item.correctOrder || 0}
+          onWheel={(e) => (e.target as HTMLInputElement).blur()}
           onChange={(e) => onUpdate({ correctOrder: parseInt(e.target.value) })}
           inputProps={{ min: 1 }}
           helperText="Position in final order"

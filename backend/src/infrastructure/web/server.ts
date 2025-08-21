@@ -21,6 +21,7 @@ import { publicProfileRouter } from './routes/publicProfile.routes'; // Add this
 
 import { setupSwagger } from './swagger/swagger.setup';
 import { activityRouter } from './routes/activity.routes';
+import { announcementRouter } from './routes/announcement.routes';
 
 export class Server {
   private app: Application;
@@ -87,6 +88,7 @@ export class Server {
     this.app.use('/api/subscriptions', subscriptionRouter);
     this.app.use('/api/dashboard', dashboardRouter);
     this.app.use('/api/activities', activityRouter);
+    this.app.use('/api/announcements', announcementRouter)
 
     // Health check
     this.app.get('/', (_, res) => {
