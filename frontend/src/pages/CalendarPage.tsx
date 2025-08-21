@@ -70,6 +70,7 @@ import { useSweetAlert } from "../utils/sweetAlert";
 import { subscriptionService } from "../services/subscriptionService";
 import { chackPayment } from "../store/slices/authSlice";
 import { sleep } from "../utils/sleep";
+import { useNavigate } from "react-router-dom";
 
 export const CalendarPage: React.FC = () => {
   const { showConfirm, showError } = useSweetAlert();
@@ -79,6 +80,7 @@ export const CalendarPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingStart, setLoadingStart] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate()
 
   const [bookingDialog, setBookingDialog] = useState<CalendarSession | null>(
     null
@@ -97,7 +99,7 @@ export const CalendarPage: React.FC = () => {
 
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const profile = useSelector((state: RootState) => state.dashboard.data);
-  const { user, status } = useSelector((state: RootState) => state.auth);
+  const { user, status, hasAccessToCourses } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     fetchCalendarData();
@@ -839,11 +841,11 @@ export const CalendarPage: React.FC = () => {
           </Button> :
             <Button
               variant="contained"
-              onClick={handleSubscription}
+              onClick={hasAccessToCourses ? handleSubscription : () => navigate("/subscription")}
               disabled={loadingStart || !agreeToTerms}
               startIcon={loadingStart && <CircularProgress size={20} />}
             >
-              Pay Now
+              {hasAccessToCourses ? "Pay Now" : "Subscribe Now"}
             </Button>
           }
         </DialogActions>

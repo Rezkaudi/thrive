@@ -80,12 +80,9 @@ export const VerifyEmailPage: React.FC = () => {
 
         try {
             await api.post('/auth/verify-email-code', { email, code });
-            await dispatch(checkAuth());
-
-            // Tokens are now set in cookies, redirect to profile
             sessionStorage.removeItem('registration_email');
-            // navigate('/subscription')
             window.location.href = '/subscription'
+            await dispatch(checkAuth());
 
         } catch (err: any) {
             setError(err.response?.data?.error || 'Invalid verification code');

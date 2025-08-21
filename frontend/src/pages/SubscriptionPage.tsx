@@ -104,7 +104,7 @@ export const SubscriptionPage: React.FC = () => {
     const [error, setError] = useState('');
     const [discountStatus, setDiscountStatus] = useState<DiscountStatus | null>(null);
     const [loadingDiscount, setLoadingDiscount] = useState(true);
-    const { hasTrailingSubscription } = useSelector((state: RootState) => state.auth);
+    const { hasSubscription } = useSelector((state: RootState) => state.auth);
 
     useEffect(() => {
         fetchDiscountStatus();
@@ -507,11 +507,11 @@ export const SubscriptionPage: React.FC = () => {
                                                                 Claim Your Discount
                                                             </Typography>
                                                             <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                                                                {hasTrailingSubscription ? 'Subscribe Now' : '14-Day Free Trial'}
+                                                                {hasSubscription ? 'Subscribe Now' : '14-Day Free Trial'}
                                                             </Typography>
                                                         </Stack>
                                                     ) : (
-                                                        hasTrailingSubscription ? 'Subscribe Now' : 'Start 14-Day Free Trial'
+                                                        hasSubscription ? 'Subscribe Now' : 'Start 14-Day Free Trial'
                                                     )}
                                                 </motion.div>
                                             )}

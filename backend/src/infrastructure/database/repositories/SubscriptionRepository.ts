@@ -24,42 +24,41 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     }
 
     async getAllAcivePayment(): Promise<Subscription[]> {
-        const entities = await this.repository.find();
-        return entities.map(e => this.toDomain(e));
-        // {
-        //     where: {
-        //         status: In(['active'])
-        //     }
-        // }
-    }
-
-    async findByUserId(userId: string): Promise<Subscription[]> {
-        const entities = await this.repository.find({
-            where: { userId },
-            order: { createdAt: 'DESC' }
-        });
-        return entities.map(e => this.toDomain(e));
-    }
-    async findActiveByUserId(userId: string): Promise<Subscription[]> {
         const entities = await this.repository.find({
             where: {
-                userId,
                 status: In(['active', 'trialing'])
-            },
-            order: { createdAt: 'DESC' }
+            }
         });
         return entities.map(e => this.toDomain(e));
     }
 
-    async findByTrailingUserId(userId: string): Promise<Subscription[]> {
-        const entities = await this.repository.find({
+    // Updated to return single subscription or null (one-to-one)
+    async findByUserId(userId: string): Promise<Subscription | null> {
+        const entity = await this.repository.findOne({
+            where: { userId }
+        });
+        return entity ? this.toDomain(entity) : null;
+    }
+
+    // Updated to return single subscription or empty array (one-to-one)
+    async findActiveByUserId(userId: string): Promise<Subscription | null> {
+        const entity = await this.repository.findOne({
             where: {
                 userId,
                 status: In(['active', 'trialing'])
-            },
-            order: { createdAt: 'DESC' }
+            }
         });
-        return entities.map(e => this.toDomain(e));
+        return entity ? this.toDomain(entity) : null;
+    }
+
+    async findByTrailingUserId(userId: string): Promise<Subscription | null> {
+        const entity = await this.repository.findOne({
+            where: {
+                userId,
+                status: In(['active', 'trialing'])
+            }
+        });
+        return entity ? this.toDomain(entity) : null;
     }
 
     async findByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription | null> {
@@ -69,12 +68,39 @@ export class SubscriptionRepository implements ISubscriptionRepository {
         return entity ? this.toDomain(entity) : null;
     }
 
-    async findByStripeCustomerId(stripeCustomerId: string): Promise<Subscription[]> {
-        const entities = await this.repository.find({
+    async findByStripeCustomerId(stripeCustomerId: string): Promise<Subscription | null> {
+        const entity = await this.repository.findOne({
             where: { stripeCustomerId },
             order: { createdAt: 'DESC' }
         });
-        return entities.map(e => this.toDomain(e));
+        return entity ? this.toDomain(entity) : null;
+    }
+
+    // NEW METHOD: Find by email
+    async findByEmail(email: string): Promise<Subscription | null> {
+        const entity = await this.repository.findOne({
+            where: { email }
+        });
+        return entity ? this.toDomain(entity) : null;
+    }
+
+    // NEW METHOD: Upsert - create or update based on userId
+    async upsert(subscription: Subscription): Promise<Subscription> {
+        const existingEntity = await this.repository.findOne({
+            where: { userId: subscription.userId }
+        });
+
+        if (existingEntity) {
+            // Update existing subscription
+            const updatedEntity = this.toEntity(subscription);
+            updatedEntity.id = existingEntity.id; // Keep the same ID
+            updatedEntity.createdAt = existingEntity.createdAt; // Keep original creation date
+            const saved = await this.repository.save(updatedEntity);
+            return this.toDomain(saved);
+        } else {
+            // Create new subscription
+            return this.create(subscription);
+        }
     }
 
     async update(subscription: Subscription): Promise<Subscription> {
@@ -92,6 +118,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
         return new Subscription(
             entity.id,
             entity.userId,
+            entity.email,
             entity.stripeCustomerId,
             entity.stripeSubscriptionId ?? undefined,
             entity.stripePaymentIntentId ?? undefined,
@@ -108,6 +135,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
         const entity = new SubscriptionEntity();
         entity.id = subscription.id;
         entity.userId = subscription.userId;
+        entity.email = subscription.email;
         entity.stripeCustomerId = subscription.stripeCustomerId;
         entity.stripeSubscriptionId = subscription.stripeSubscriptionId || null;
         entity.stripePaymentIntentId = subscription.stripePaymentIntentId || null;

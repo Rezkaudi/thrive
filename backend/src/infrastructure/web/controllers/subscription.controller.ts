@@ -8,7 +8,6 @@ import { UserRepository } from '../../database/repositories/UserRepository';
 export class SubscriptionController {
     async checkSubscription(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
         try {
-
             const checkSubscriptionUseCase = new CheckUserSubscriptionUseCase(
                 new SubscriptionRepository(),
                 new UserRepository()
@@ -19,17 +18,6 @@ export class SubscriptionController {
             });
 
             res.json(status);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async getMySubscriptions(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const subscriptionRepository = new SubscriptionRepository();
-            const subscriptions = await subscriptionRepository.findByUserId(req.user!.userId);
-
-            res.json(subscriptions);
         } catch (error) {
             next(error);
         }

@@ -15,7 +15,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated, loading, user, authChecking, hasTrailingSubscription } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, loading, user, authChecking, hasSubscription } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,7 +48,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <Navigate to="/login" replace />;
   }
 
-  if (!hasTrailingSubscription) {
+  if (!hasSubscription) {
     return <Navigate to="/subscription" replace />;
   }
 

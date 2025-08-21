@@ -5,29 +5,33 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
-    ManyToOne,
+    OneToOne,
     JoinColumn,
-    Index
+    Index,
+    Unique
 } from 'typeorm';
 import { UserEntity } from './User.entity';
 import { SubscriptionPlan, SubscriptionStatus } from '../../../domain/entities/Subscription';
 
 @Entity('subscriptions')
 @Index(['userId', 'status'])
-// @Index(['stripeSubscriptionId'], { unique: true, where: 'stripeSubscriptionId IS NOT NULL' })
+@Unique(['userId']) // MAKE userId UNIQUE for one-to-one relationship
 export class SubscriptionEntity {
     @PrimaryColumn()
     id!: string;
 
-    @Column()
+    @Column({ unique: true }) // UNIQUE constraint
     userId!: string;
 
-    @ManyToOne(() => UserEntity, {
+    @OneToOne(() => UserEntity, {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
     })
     @JoinColumn({ name: 'userId' })
     user!: UserEntity;
+
+    @Column() // NEW FIELD
+    email!: string;
 
     @Column()
     stripeCustomerId!: string;

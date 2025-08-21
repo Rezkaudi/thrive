@@ -78,8 +78,9 @@ export class PaymentService implements IPaymentService {
     successUrl: string;
     cancelUrl: string;
     metadata?: any;
+    customerId?: string | null; // Added customerId as optional parameter
   }): Promise<Stripe.Checkout.Session> {
-    const session = await this.stripe.checkout.sessions.create({
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       line_items: [
         {
@@ -91,14 +92,26 @@ export class PaymentService implements IPaymentService {
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
       automatic_tax: { enabled: true },
-      // locale: "ja",
       metadata: params.metadata,
-      customer_email: params.metadata.email,
-      subscription_data: {
-        trial_end: daysToSecondsFromNow(Number(process.env.STRIPE_FREE_DAYS)) + 200  // Adding extra 200 seconds
-      }
-    });
+    };
 
+    // Add customer if customerId is provided
+    if (params.customerId) {
+      sessionConfig.customer = params.customerId;
+    }
+
+    else {
+      sessionConfig.customer_email = params.metadata?.email
+    }
+
+    // Add subscription_data only for subscription mode
+    if (params.mode === 'subscription' && !params.customerId) {
+      sessionConfig.subscription_data = {
+        trial_end: daysToSecondsFromNow(Number(process.env.STRIPE_FREE_DAYS)) + 200
+      };
+    }
+
+    const session = await this.stripe.checkout.sessions.create(sessionConfig);
     return session;
   }
 

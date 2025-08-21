@@ -15,8 +15,8 @@ interface AuthState {
   user: User | null;
   csrfToken: string | null;
   isAuthenticated: boolean;
-  hasActiveSubscription: boolean;
-  hasTrailingSubscription: boolean;
+  hasAccessToCourses: boolean;
+  hasSubscription: boolean;
   status: string | null,
   loading: boolean;
   authChecking: boolean;
@@ -29,8 +29,8 @@ const initialState: AuthState = {
   csrfToken: null,
   isAuthenticated: false,
   loading: true,
-  hasActiveSubscription: false,
-  hasTrailingSubscription: false,
+  hasAccessToCourses: false,
+  hasSubscription: false,
   status: null,
   authChecking: true,
   paymentChecking: true,
@@ -144,14 +144,14 @@ const authSlice = createSlice({
         state.paymentChecking = false;
         state.loading = false;
         state.status = action.payload.status;
-        state.hasActiveSubscription = action.payload.hasActiveSubscription;
-        state.hasTrailingSubscription = action.payload.hasTrailingSubscription;
+        state.hasAccessToCourses = action.payload.hasAccessToCourses;
+        state.hasSubscription = action.payload.hasSubscription;
       })
       .addCase(chackPayment.rejected, (state) => {
         state.paymentChecking = false;
         state.loading = false;
-        state.hasActiveSubscription = false
-        state.hasTrailingSubscription = false
+        state.hasAccessToCourses = false
+        state.hasSubscription = false
       })
   },
 });
