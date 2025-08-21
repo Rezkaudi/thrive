@@ -1,5 +1,4 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn, UpdateDateColumn } from "typeorm";
-import { PostEntity } from "./Post.entity";
 import { UserEntity } from "./User.entity";
 
 @Entity('comment')
@@ -8,14 +7,7 @@ export class CommentEntity {
   id!: string;
 
   @Column()
-  postId!: string;
-
-  @ManyToOne(() => PostEntity, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
-  })
-  @JoinColumn({ name: 'postId' })
-  post!: PostEntity;
+  postId!: string; // This now correctly holds either a post ID or an announcement ID
 
   @Column()
   userId!: string
@@ -24,7 +16,7 @@ export class CommentEntity {
     onDelete: "CASCADE",
     onUpdate: 'CASCADE'
   })
-  @JoinColumn({name: "userId"})
+  @JoinColumn({ name: "userId" })
   user!: UserEntity
 
   @Column()

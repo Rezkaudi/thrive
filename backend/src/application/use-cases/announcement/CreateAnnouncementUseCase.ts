@@ -1,28 +1,33 @@
-// backend/src/application/use-cases/community/CreatePostUseCase.ts (Updated - Remove isAnnouncement)
-import { IPostRepository } from '../../../domain/repositories/IPostRepository';
+// backend/src/application/use-cases/announcement/CreateAnnouncementUseCase.ts
+import { IAnnouncementRepository } from '../../../domain/repositories/IAnnouncementRepository';
 import { IUserRepository } from '../../../domain/repositories/IUserRepository';
 import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
-import { Post, IAuthor } from '../../../domain/entities/Post';
+import { Announcement, IAuthor } from '../../../domain/entities/Announcement';
+import { UserRole } from '../../../domain/entities/User';
 import { ActivityService } from '../../../infrastructure/services/ActivityService';
 
-export interface CreatePostDTO {
+export interface CreateAnnouncementDTO {
   userId: string;
   content: string;
-  mediaUrls?: string[];
 }
 
-export class CreatePostUseCase {
+export class CreateAnnouncementUseCase {
   constructor(
-    private postRepository: IPostRepository,
+    private announcementRepository: IAnnouncementRepository,
     private userRepository: IUserRepository,
     private profileRepository: IProfileRepository,
     private activityService: ActivityService
   ) { }
 
-  async execute(dto: CreatePostDTO): Promise<Post> {
+  async execute(dto: CreateAnnouncementDTO): Promise<Announcement> {
     const user = await this.userRepository.findById(dto.userId);
     if (!user) {
       throw new Error('User not found');
+    }
+
+    // Only admins can create announcements
+    if (user.role !== UserRole.ADMIN) {
+      throw new Error('Only admins can create announcements');
     }
 
     // Get user profile for author info
@@ -36,20 +41,19 @@ export class CreatePostUseCase {
       level: profile?.level || 0
     };
 
-    const post = new Post(
-      `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+    const announcement = new Announcement(
+      `announcement_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
       author,
       dto.content,
-      dto.mediaUrls || [],
       0,
       false,
       new Date(),
       new Date()
     );
 
-    // #activity
-    await this.activityService.logPostCreated(dto.userId, post.id);
+    // Log activity
+    await this.activityService.logPostCreated(dto.userId, announcement.id); // Reuse post activity logging
 
-    return await this.postRepository.create(post);
+    return await this.announcementRepository.create(announcement);
   }
 }

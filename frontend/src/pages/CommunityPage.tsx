@@ -1,4 +1,4 @@
-// frontend/src/pages/CommunityPage.tsx - Complete Improved Version
+// frontend/src/pages/CommunityPage.tsx - Updated to dedicate the input card for posts
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
@@ -82,11 +82,21 @@ import {
   toggleLike,
   resetPosts,
 } from "../store/slices/communitySlice";
+import {
+  fetchAnnouncements,
+  loadMoreAnnouncements,
+  toggleAnnouncementLike,
+  editAnnouncement,
+  deleteAnnouncement,
+  resetAnnouncements,
+  toggleAnnouncementCommentsSection,
+} from "../store/slices/announcementSlice";
 import { clearError } from "../store/slices/authSlice";
 import { linkifyText } from "../utils/linkify";
 import { communityService } from "../services/communityService";
 
-interface ComponentPost {
+// Unified interface for both posts and announcements
+interface ComponentItem {
   id: string;
   author?: {
     userId: string;
@@ -96,7 +106,7 @@ interface ComponentPost {
     level?: number;
   };
   content: string;
-  mediaUrls: string[];
+  mediaUrls?: string[];
   isAnnouncement: boolean;
   likesCount: number;
   createdAt: string;
@@ -128,12 +138,12 @@ const formatPostTime = (timeString: string): string => {
   });
 };
 
-interface PostCardProps {
-  post: ComponentPost;
-  onToggleLike: (postId: string) => void;
-  onEdit: (postId: string, newContent: string, mediaUrls?: string[]) => void;
-  onDelete: (postId: string) => void;
-  onReport: (postId: string, reason: string) => void;
+interface ItemCardProps {
+  item: ComponentItem;
+  onToggleLike: (itemId: string) => void;
+  onEdit: (itemId: string, newContent: string, mediaUrls?: string[]) => void;
+  onDelete: (itemId: string) => void;
+  onReport: (itemId: string, reason: string) => void;
   currentUserId?: string;
   onShowSnackbar: (
     message: string,
@@ -142,8 +152,8 @@ interface PostCardProps {
   isHighlighted?: boolean;
 }
 
-const PostCard = ({
-  post,
+const ItemCard = ({
+  item,
   onToggleLike,
   onEdit,
   onDelete,
@@ -151,12 +161,14 @@ const PostCard = ({
   currentUserId,
   onShowSnackbar,
   isHighlighted = false,
-}: PostCardProps) => {
+}: ItemCardProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(post.content);
-  const [editSelectedMedia, setEditSelectedMedia] = useState<SelectedMedia[]>([]);
+  const [editContent, setEditContent] = useState(item.content);
+  const [editSelectedMedia, setEditSelectedMedia] = useState<SelectedMedia[]>(
+    []
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -169,7 +181,9 @@ const PostCard = ({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const shareToSocial = (platform: string) => {
-    const message = `Check out this post from the Thrive in Japan community!`;
+    const message = `Check out this ${
+      item.isAnnouncement ? "announcement" : "post"
+    } from the Thrive in Japan community!`;
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedMessage = encodeURIComponent(message);
 
@@ -194,17 +208,18 @@ const PostCard = ({
   };
 
   const menuOpen = Boolean(anchorEl);
-  const isOwnPost = currentUserId === post.author?.userId;
+  const isOwnItem = currentUserId === item.author?.userId;
 
-  // Initialize edit media from existing URLs
+  // Initialize edit media from existing URLs (only for posts)
   useEffect(() => {
     if (
       isEditing &&
+      !item.isAnnouncement &&
       editSelectedMedia.length === 0 &&
-      post.mediaUrls.length > 0
+      item.mediaUrls &&
+      item.mediaUrls.length > 0
     ) {
-      // Convert existing URLs to SelectedMedia format for editing
-      const existingMedia: SelectedMedia[] = post.mediaUrls.map(
+      const existingMedia: SelectedMedia[] = item.mediaUrls.map(
         (url, index) => ({
           id: `existing-${index}-${Date.now()}`,
           preview: url,
@@ -218,9 +233,12 @@ const PostCard = ({
       );
       setEditSelectedMedia(existingMedia);
     }
-  }, [isEditing, post.mediaUrls, editSelectedMedia.length]);
-
-  // ... (keep all existing useEffects for comment count, etc.)
+  }, [
+    isEditing,
+    item.isAnnouncement,
+    item.mediaUrls,
+    editSelectedMedia.length,
+  ]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -232,50 +250,64 @@ const PostCard = ({
 
   const handleEdit = () => {
     setIsEditing(true);
-    setEditContent(post.content);
+    setEditContent(item.content);
     setEditSelectedMedia([]);
     handleMenuClose();
   };
 
   const handleShareClick = () => {
-    const postUrl = `${window.location.origin}/community?highlight=${post.id}`;
-    setShareUrl(postUrl);
+    const itemUrl = `${window.location.origin}/community?highlight=${item.id}`;
+    setShareUrl(itemUrl);
     setShareDialog(true);
   };
 
   const copyShareUrl = () => {
     navigator.clipboard.writeText(shareUrl);
-    onShowSnackbar("Post URL copied to clipboard!", "success");
+    onShowSnackbar(
+      `${
+        item.isAnnouncement ? "Announcement" : "Post"
+      } URL copied to clipboard!`,
+      "success"
+    );
   };
 
   const handleSaveEdit = async () => {
-    if (editContent.trim() || editSelectedMedia.length > 0) {
+    if (
+      editContent.trim() ||
+      (!item.isAnnouncement && editSelectedMedia.length > 0)
+    ) {
       try {
-        // For editing, we'll need to handle both existing and new media
-        const mediaUrls: string[] = [];
+        let mediaUrls: string[] = [];
 
-        // Handle new files that need uploading
-        const newFiles = editSelectedMedia.filter(
-          (media) => !media.preview.startsWith("http") && media.file.size > 0
-        );
+        // Handle media for posts only
+        if (!item.isAnnouncement && editSelectedMedia.length > 0) {
+          const newFiles = editSelectedMedia.filter(
+            (media) => !media.preview.startsWith("http") && media.file.size > 0
+          );
 
-        if (newFiles.length > 0) {
-          const files = newFiles.map((media) => media.file);
-          const uploadResponse = await communityService.uploadMedia(files);
-          mediaUrls.push(...uploadResponse.files.map((file) => file.url));
+          if (newFiles.length > 0) {
+            const files = newFiles.map((media) => media.file);
+            const uploadResponse = await communityService.uploadMedia(files);
+            mediaUrls.push(...uploadResponse.files.map((file) => file.url));
+          }
+
+          const existingUrls = editSelectedMedia
+            .filter((media) => media.preview.startsWith("http"))
+            .map((media) => media.preview);
+          mediaUrls.push(...existingUrls);
         }
 
-        // Add existing URLs (those that start with http)
-        const existingUrls = editSelectedMedia
-          .filter((media) => media.preview.startsWith("http"))
-          .map((media) => media.preview);
-        mediaUrls.push(...existingUrls);
+        // Call appropriate edit function based on item type
+        if (item.isAnnouncement) {
+          await onEdit(item.id, editContent);
+        } else {
+          await onEdit(item.id, editContent, mediaUrls);
+        }
 
-        await onEdit(post.id, editContent, mediaUrls);
         setIsEditing(false);
         setEditSelectedMedia([]);
       } catch (error) {
-        setEditContent(post.content);
+        setEditContent(item.content);
         setEditSelectedMedia([]);
         console.error("Failed to save edit:", error);
       }
@@ -284,7 +316,7 @@ const PostCard = ({
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditContent(post.content);
+    setEditContent(item.content);
     setEditSelectedMedia([]);
   };
 
@@ -295,10 +327,13 @@ const PostCard = ({
 
   const handleDeleteConfirm = async () => {
     try {
-      await onDelete(post.id);
+      await onDelete(item.id);
       setDeleteDialogOpen(false);
     } catch (error) {
-      console.error("Failed to delete post:", error);
+      console.error(
+        `Failed to delete ${item.isAnnouncement ? "announcement" : "post"}:`,
+        error
+      );
     }
   };
 
@@ -310,7 +345,7 @@ const PostCard = ({
 
   const handleReportSubmit = () => {
     if (reportReason.trim()) {
-      onReport(post.id, reportReason);
+      onReport(item.id, reportReason);
       setReportDialogOpen(false);
       setReportReason("");
     }
@@ -318,7 +353,11 @@ const PostCard = ({
 
   const handleCommentsToggle = () => {
     if (!commentsOpen) {
-      dispatch(toggleCommentsSection(post.id));
+      if (item.isAnnouncement) {
+        dispatch(toggleAnnouncementCommentsSection(item.id));
+      } else {
+        dispatch(toggleCommentsSection(item.id));
+      }
     }
     setCommentsOpen(!commentsOpen);
   };
@@ -328,11 +367,11 @@ const PostCard = ({
   };
 
   const displayCommentsCount =
-    post.commentsCount !== undefined
-      ? post.commentsCount
-      : post.commentsInitialized
-        ? 0
-        : "...";
+    item.commentsCount !== undefined
+      ? item.commentsCount
+      : item.commentsInitialized
+      ? 0
+      : "...";
 
   return (
     <motion.div
@@ -342,12 +381,12 @@ const PostCard = ({
       layout
     >
       <Card
-        id={`post-${post.id}`}
+        id={`${item.isAnnouncement ? "announcement" : "post"}-${item.id}`}
         sx={{
           mb: 3,
           position: "relative",
-          opacity: post.isDeleting ? 0.5 : 1,
-          ...(post.isAnnouncement && {
+          opacity: item.isDeleting ? 0.5 : 1,
+          ...(item.isAnnouncement && {
             border: "2px solid",
             borderColor: "primary.main",
           }),
@@ -360,7 +399,7 @@ const PostCard = ({
         }}
       >
         {/* Loading overlay for deleting */}
-        {post.isDeleting && (
+        {item.isDeleting && (
           <Backdrop
             sx={{
               position: "absolute",
@@ -378,19 +417,22 @@ const PostCard = ({
           <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
             <Badge
               badgeContent={
-                post.author?.level ? `L${post.author.level}` : undefined
+                item.author?.level ? `L${item.author.level}` : undefined
               }
               color="primary"
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             >
-              <Avatar src={post.author?.avatar} sx={{ width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
-                {!post.author?.avatar && post.author?.name?.[0]}
+              <Avatar
+                src={item.author?.avatar}
+                sx={{ width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}
+              >
+                {!item.author?.avatar && item.author?.name?.[0]}
               </Avatar>
             </Badge>
             <Box flexGrow={1}>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Link
-                  to={`/profile/${post.author?.userId}`}
+                  to={`/profile/${item.author?.userId}`}
                   target="_blank"
                   style={{ textDecoration: "none" }}
                 >
@@ -405,10 +447,10 @@ const PostCard = ({
                       transition: "color 0.2s ease-in-out",
                     }}
                   >
-                    {post.author?.name || "Unknown User"}
+                    {item.author?.name || "Unknown User"}
                   </Typography>
                 </Link>
-                {post.isAnnouncement && (
+                {item.isAnnouncement && (
                   <Chip
                     icon={<Campaign />}
                     label="Announcement"
@@ -416,7 +458,7 @@ const PostCard = ({
                     color="primary"
                   />
                 )}
-                {(post.isEditing || isEditing) && (
+                {(item.isEditing || isEditing) && (
                   <Chip
                     label="Editing..."
                     size="small"
@@ -425,16 +467,19 @@ const PostCard = ({
                   />
                 )}
               </Stack>
-              <Typography sx={{ fontSize: { xs: "0.5rem", md: "0.8rem" } }} color="text.secondary">
-                {post.author?.email} • {formatPostDate(post.createdAt)}{" "} {formatPostTime(post.createdAt)}
+              <Typography
+                sx={{ fontSize: { xs: "0.5rem", md: "0.8rem" } }}
+                color="text.secondary"
+              >
+                {item.author?.email} • {formatPostDate(item.createdAt)}{" "}
+                {formatPostTime(item.createdAt)}
               </Typography>
             </Box>
-
 
             <IconButton
               size="small"
               onClick={handleMenuClick}
-              disabled={post.isDeleting}
+              disabled={item.isDeleting}
               sx={{
                 color: "text.secondary",
                 "&:hover": {
@@ -460,10 +505,10 @@ const PostCard = ({
                 horizontal: "right",
               }}
             >
-              {isOwnPost && (
+              {isOwnItem && (
                 <MenuItem
                   onClick={handleEdit}
-                  disabled={post.isEditing || isEditing}
+                  disabled={item.isEditing || isEditing}
                 >
                   <ListItemIcon>
                     <Edit fontSize="small" />
@@ -472,11 +517,11 @@ const PostCard = ({
                 </MenuItem>
               )}
 
-              {isOwnPost && (
+              {isOwnItem && (
                 <MenuItem
                   onClick={handleDeleteClick}
                   sx={{ color: "error.main" }}
-                  disabled={post.isDeleting}
+                  disabled={item.isDeleting}
                 >
                   <ListItemIcon>
                     <Delete fontSize="small" color="error" />
@@ -485,7 +530,7 @@ const PostCard = ({
                 </MenuItem>
               )}
 
-              {!isOwnPost && (
+              {!isOwnItem && (
                 <MenuItem
                   onClick={handleReportClick}
                   sx={{ color: "warning.main" }}
@@ -499,7 +544,7 @@ const PostCard = ({
             </Menu>
           </Stack>
 
-          {/* Post Content - Editable or Display */}
+          {/* Content - Editable or Display */}
           {isEditing ? (
             <Box sx={{ mb: 2 }}>
               <TextField
@@ -510,51 +555,58 @@ const PostCard = ({
                 onChange={(e) => setEditContent(e.target.value)}
                 variant="outlined"
                 sx={{ mb: 2 }}
-                disabled={post.isEditing}
-                placeholder="Edit your post content..."
+                disabled={item.isEditing}
+                placeholder={`Edit your ${
+                  item.isAnnouncement ? "announcement" : "post"
+                } content...`}
               />
 
-              {/* Media Upload Section for Editing */}
-              <Box sx={{ mb: 2 }}>
-                <Button
-                  size="small"
-                  onClick={() => setMediaExpanded(!mediaExpanded)}
-                  endIcon={mediaExpanded ? <ExpandLess /> : <ExpandMore />}
-                  sx={{ mb: 1 }}
-                >
-                  Media ({editSelectedMedia.length})
-                </Button>
-                <Collapse in={mediaExpanded}>
-                  <MediaUpload
-                    onMediaChange={handleEditMediaChange}
-                    selectedMedia={editSelectedMedia}
-                    maxFiles={5}
-                    disabled={post.isEditing}
-                  />
-                </Collapse>
-              </Box>
+              {/* Media Upload Section for Editing (Posts only) */}
+              {!item.isAnnouncement && (
+                <Box sx={{ mb: 2 }}>
+                  <Button
+                    size="small"
+                    onClick={() => setMediaExpanded(!mediaExpanded)}
+                    endIcon={mediaExpanded ? <ExpandLess /> : <ExpandMore />}
+                    sx={{ mb: 1 }}
+                  >
+                    Media ({editSelectedMedia.length})
+                  </Button>
+                  <Collapse in={mediaExpanded}>
+                    <MediaUpload
+                      onMediaChange={handleEditMediaChange}
+                      selectedMedia={editSelectedMedia}
+                      maxFiles={5}
+                      disabled={item.isEditing}
+                    />
+                  </Collapse>
+                </Box>
+              )}
 
               <Stack direction="row" spacing={1}>
                 <Button
                   size="small"
                   variant="contained"
                   startIcon={
-                    post.isEditing ? <CircularProgress size={16} /> : <Save />
+                    item.isEditing ? <CircularProgress size={16} /> : <Save />
                   }
                   onClick={handleSaveEdit}
                   disabled={
-                    (!editContent.trim() && editSelectedMedia.length === 0) ||
-                    post.isEditing
+                    (!editContent.trim() &&
+                      (!item.isAnnouncement
+                        ? editSelectedMedia.length === 0
+                        : true)) ||
+                    item.isEditing
                   }
                 >
-                  {post.isEditing ? "Saving..." : "Save"}
+                  {item.isEditing ? "Saving..." : "Save"}
                 </Button>
                 <Button
                   size="small"
                   variant="outlined"
                   startIcon={<Cancel />}
                   onClick={handleCancelEdit}
-                  disabled={post.isEditing}
+                  disabled={item.isEditing}
                 >
                   Cancel
                 </Button>
@@ -562,14 +614,15 @@ const PostCard = ({
             </Box>
           ) : (
             <Typography variant="body1" sx={{ mb: 2, whiteSpace: "pre-wrap" }}>
-              {linkifyText(post.content)}
+              {linkifyText(item.content)}
             </Typography>
           )}
 
-          {/* Media Display */}
-          {post.mediaUrls.length > 0 && !isEditing && (
-            <PostMedia mediaUrls={post.mediaUrls} />
-          )}
+          {/* Media Display (Posts only) */}
+          {!item.isAnnouncement &&
+            item.mediaUrls &&
+            item.mediaUrls.length > 0 &&
+            !isEditing && <PostMedia mediaUrls={item.mediaUrls} />}
         </CardContent>
 
         <Divider />
@@ -579,19 +632,19 @@ const PostCard = ({
             <Button
               startIcon={<ThumbUp />}
               size="small"
-              color={post.isLiked ? "primary" : "inherit"}
+              color={item.isLiked ? "primary" : "inherit"}
               sx={{ textTransform: "none", p: { xs: 1, md: 2 } }}
-              onClick={() => onToggleLike(post.id)}
-              disabled={post.isDeleting}
+              onClick={() => onToggleLike(item.id)}
+              disabled={item.isDeleting}
             >
-              {post.likesCount} {post.likesCount === 1 ? "Like" : "Likes"}
+              {item.likesCount} {item.likesCount === 1 ? "Like" : "Likes"}
             </Button>
             <Button
               startIcon={<Comment />}
               size="small"
               sx={{ textTransform: "none", p: { xs: 1, md: 2 } }}
               onClick={handleCommentsToggle}
-              disabled={post.isDeleting}
+              disabled={item.isDeleting}
               color={commentsOpen ? "primary" : "inherit"}
             >
               {displayCommentsCount}{" "}
@@ -602,7 +655,7 @@ const PostCard = ({
               size="small"
               sx={{ textTransform: "none", p: { xs: 1, md: 2 } }}
               onClick={handleShareClick}
-              disabled={post.isDeleting}
+              disabled={item.isDeleting}
             >
               Share
             </Button>
@@ -611,10 +664,11 @@ const PostCard = ({
 
         {/* Comments Section */}
         <Comments
-          postId={post.id}
-          commentsCount={post.commentsCount}
+          postId={item.id}
+          commentsCount={item.commentsCount}
           isOpen={commentsOpen}
           onToggle={handleCommentsToggle}
+          isAnnouncement={item.isAnnouncement}
         />
       </Card>
 
@@ -623,11 +677,14 @@ const PostCard = ({
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
       >
-        <DialogTitle>Delete Post</DialogTitle>
+        <DialogTitle>
+          Delete {item.isAnnouncement ? "Announcement" : "Post"}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this post? This action cannot be
-            undone.
+            Are you sure you want to delete this{" "}
+            {item.isAnnouncement ? "announcement" : "post"}? This action cannot
+            be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -636,17 +693,17 @@ const PostCard = ({
             onClick={handleDeleteConfirm}
             color="error"
             variant="contained"
-            disabled={post.isDeleting}
+            disabled={item.isDeleting}
             startIcon={
-              post.isDeleting ? <CircularProgress size={16} /> : undefined
+              item.isDeleting ? <CircularProgress size={16} /> : undefined
             }
           >
-            {post.isDeleting ? "Deleting..." : "Delete"}
+            {item.isDeleting ? "Deleting..." : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Share Post Dialog */}
+      {/* Share Dialog */}
       <Dialog
         open={shareDialog}
         onClose={() => setShareDialog(false)}
@@ -659,7 +716,7 @@ const PostCard = ({
             justifyContent="space-between"
             alignItems="center"
           >
-            Share This Post
+            Share This {item.isAnnouncement ? "Announcement" : "Post"}
             <IconButton onClick={() => setShareDialog(false)}>
               <Close />
             </IconButton>
@@ -669,8 +726,9 @@ const PostCard = ({
           <Stack spacing={3}>
             <Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Share this post - the link will open the community page and
-                highlight this post
+                Share this {item.isAnnouncement ? "announcement" : "post"} - the
+                link will open the community page and highlight this{" "}
+                {item.isAnnouncement ? "announcement" : "post"}
               </Typography>
               <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
                 <Stack direction="row" spacing={2} alignItems="center">
@@ -747,16 +805,21 @@ const PostCard = ({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Report Post</DialogTitle>
+        <DialogTitle>
+          Report {item.isAnnouncement ? "Announcement" : "Post"}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Please provide a reason for reporting this post:
+            Please provide a reason for reporting this{" "}
+            {item.isAnnouncement ? "announcement" : "post"}:
           </DialogContentText>
           <TextField
             fullWidth
             multiline
             rows={isMobile ? 3 : 4}
-            placeholder="Describe why you're reporting this post..."
+            placeholder={`Describe why you're reporting this ${
+              item.isAnnouncement ? "announcement" : "post"
+            }...`}
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
             variant="outlined"
@@ -828,24 +891,40 @@ export const CommunityPage: React.FC = () => {
     severity: "success" as "success" | "error" | "info" | "warning",
   });
   const [mediaExpanded, setMediaExpanded] = useState(false);
-  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(
     null
   );
   const [dragOver, setDragOver] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
+
+  // Community state (posts)
   const {
     posts,
-    loading,
-    loadingMore,
+    loading: postsLoading,
+    loadingMore: postsLoadingMore,
     hasMorePosts,
-    error,
-    editError,
-    deleteError,
-    commentError,
-    currentPage,
+    error: postsError,
+    editError: postsEditError,
+    deleteError: postsDeleteError,
+    commentError: postsCommentError,
+    currentPage: postsCurrentPage,
     totalPosts,
   } = useSelector((state: RootState) => state.community);
+
+  // Announcements state
+  const {
+    announcements,
+    loading: announcementsLoading,
+    loadingMore: announcementsLoadingMore,
+    hasMoreAnnouncements,
+    error: announcementsError,
+    editError: announcementsEditError,
+    deleteError: announcementsDeleteError,
+    commentError: announcementsCommentError,
+    currentPage: announcementsCurrentPage,
+    totalAnnouncements,
+  } = useSelector((state: RootState) => state.announcements);
 
   const profilePhoto = useSelector(
     (state: RootState) => state.dashboard.data?.user.profilePhoto
@@ -854,45 +933,70 @@ export const CommunityPage: React.FC = () => {
     (state: RootState) => state.dashboard.data?.user.name
   );
   const currentUserId = useSelector((state: RootState) => state.auth.user?.id);
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
+
+  // Determine current loading state and hasMore based on active tab
+  const loading = tabValue === 0 ? announcementsLoading : postsLoading;
+  const loadingMore =
+    tabValue === 0 ? announcementsLoadingMore : postsLoadingMore;
+  const hasMore = tabValue === 0 ? hasMoreAnnouncements : hasMorePosts;
+  const error = tabValue === 0 ? announcementsError : postsError;
+  const editError = tabValue === 0 ? announcementsEditError : postsEditError;
+  const deleteError =
+    tabValue === 0 ? announcementsDeleteError : postsDeleteError;
+  const commentError =
+    tabValue === 0 ? announcementsCommentError : postsCommentError;
 
   // Infinite scroll callback
   const loadMore = useCallback(() => {
-    if (hasMorePosts && !loadingMore) {
-      dispatch(loadMorePosts());
+    if (hasMore && !loadingMore) {
+      if (tabValue === 0) {
+        dispatch(loadMoreAnnouncements());
+      } else {
+        dispatch(loadMorePosts());
+      }
     }
-  }, [dispatch, hasMorePosts, loadingMore]);
+  }, [dispatch, hasMore, loadingMore, tabValue]);
 
-  const [isFetching] = useInfiniteScroll(loadMore, hasMorePosts, loadingMore);
+  const [isFetching] = useInfiniteScroll(loadMore, hasMore, loadingMore);
 
-  // Fetch posts when component mounts
+  // Fetch initial data when component mounts
   useEffect(() => {
+    dispatch(fetchAnnouncements({ page: 1, limit: 20 }));
     dispatch(fetchPosts({ page: 1, limit: 20 }));
   }, [dispatch]);
 
-  // Reset posts when changing tabs
+  // Reset data when changing tabs
   useEffect(() => {
-    dispatch(resetPosts());
-    dispatch(fetchPosts({ page: 1, limit: 20 }));
+    if (tabValue === 0) {
+      dispatch(resetAnnouncements());
+      dispatch(fetchAnnouncements({ page: 1, limit: 20 }));
+    } else {
+      dispatch(resetPosts());
+      dispatch(fetchPosts({ page: 1, limit: 20 }));
+    }
   }, [tabValue, dispatch]);
 
-  // Handle URL highlight parameter for shared posts
+  // Handle URL highlight parameter for shared items
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const highlightParam = urlParams.get("highlight");
 
     if (highlightParam) {
-      setHighlightedPostId(highlightParam);
+      setHighlightedItemId(highlightParam);
 
       const timer = setTimeout(() => {
-        const postElement = document.getElementById(`post-${highlightParam}`);
-        if (postElement) {
-          postElement.scrollIntoView({
+        const itemElement =
+          document.getElementById(`post-${highlightParam}`) ||
+          document.getElementById(`announcement-${highlightParam}`);
+        if (itemElement) {
+          itemElement.scrollIntoView({
             behavior: "smooth",
             block: "center",
           });
 
           setTimeout(() => {
-            setHighlightedPostId(null);
+            setHighlightedItemId(null);
             const newUrl = window.location.pathname;
             window.history.replaceState({}, "", newUrl);
           }, 3000);
@@ -901,7 +1005,7 @@ export const CommunityPage: React.FC = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [posts]);
+  }, [posts, announcements]);
 
   // Handle errors with snackbar
   useEffect(() => {
@@ -932,7 +1036,7 @@ export const CommunityPage: React.FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  // NEW: Enhanced handleCreatePost with seamless upload
+  // Enhanced handleCreatePost - only creates posts (not announcements)
   const handleCreatePost = async () => {
     if (!newPost.trim() && selectedMedia.length === 0) return;
 
@@ -984,40 +1088,80 @@ export const CommunityPage: React.FC = () => {
     }
   };
 
-  const handleToggleLike = (postId: string) => {
-    dispatch(toggleLike(postId));
+  const handleToggleLike = (itemId: string) => {
+    // Determine if it's an announcement or post based on current tab
+    if (tabValue === 0) {
+      dispatch(toggleAnnouncementLike(itemId));
+    } else {
+      dispatch(toggleLike(itemId));
+    }
   };
 
-  const handleEditPost = async (
-    postId: string,
+  const handleEditItem = async (
+    itemId: string,
     newContent: string,
     mediaUrls?: string[]
   ) => {
     try {
-      await dispatch(
-        editPost({ postId, content: newContent ? newContent : " ", mediaUrls })
-      ).unwrap();
-      handleShowSnackbar("Post updated successfully!", "success");
+      if (tabValue === 0) {
+        // Edit announcement
+        await dispatch(
+          editAnnouncement({ announcementId: itemId, content: newContent })
+        ).unwrap();
+      } else {
+        // Edit post
+        await dispatch(
+          editPost({ postId: itemId, content: newContent, mediaUrls })
+        ).unwrap();
+      }
+      handleShowSnackbar(
+        `${tabValue === 0 ? "Announcement" : "Post"} updated successfully!`,
+        "success"
+      );
     } catch (error: any) {
-      handleShowSnackbar(error || "Failed to edit post", "error");
+      handleShowSnackbar(
+        error || `Failed to edit ${tabValue === 0 ? "announcement" : "post"}`,
+        "error"
+      );
     }
   };
 
-  const handleDeletePost = async (postId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
     try {
-      await dispatch(deletePost(postId)).unwrap();
-      handleShowSnackbar("Post deleted successfully!", "success");
+      if (tabValue === 0) {
+        // Delete announcement
+        await dispatch(deleteAnnouncement(itemId)).unwrap();
+      } else {
+        // Delete post
+        await dispatch(deletePost(itemId)).unwrap();
+      }
+      handleShowSnackbar(
+        `${tabValue === 0 ? "Announcement" : "Post"} deleted successfully!`,
+        "success"
+      );
     } catch (error: any) {
-      handleShowSnackbar(error || "Failed to delete post", "error");
+      handleShowSnackbar(
+        error || `Failed to delete ${tabValue === 0 ? "announcement" : "post"}`,
+        "error"
+      );
     }
   };
 
-  const handleReportPost = async (postId: string, reason: string) => {
+  const handleReportItem = async (itemId: string, reason: string) => {
     try {
-      handleShowSnackbar("Post reported successfully!", "info");
+      handleShowSnackbar(
+        `${tabValue === 0 ? "Announcement" : "Post"} reported successfully!`,
+        "info"
+      );
     } catch (error) {
-      console.error("Failed to report post:", error);
-      handleShowSnackbar("Failed to report post", "error");
+      console.error(
+        `Failed to report ${tabValue === 0 ? "announcement" : "post"}:`,
+        error
+      );
+      handleShowSnackbar(
+        `Failed to report ${tabValue === 0 ? "announcement" : "post"}`,
+        "error"
+      );
     }
   };
 
@@ -1046,7 +1190,7 @@ export const CommunityPage: React.FC = () => {
       event.preventDefault();
       setDragOver(false);
 
-      if (isSubmitting) return;
+      if (isSubmitting) return; // Simplified check
 
       const files = Array.from(event.dataTransfer.files);
       if (files.length > 0) {
@@ -1078,7 +1222,7 @@ export const CommunityPage: React.FC = () => {
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-      if (!isSubmitting) {
+      if (!isSubmitting) { // Simplified check
         setDragOver(true);
       }
     },
@@ -1104,21 +1248,36 @@ export const CommunityPage: React.FC = () => {
     []
   );
 
-  const filteredPosts = posts.filter((post) => {
-    if (tabValue === 0) return post.isAnnouncement;
-    if (tabValue === 1) return !post.isAnnouncement;
-    // if (tabValue === 2) return post.likesCount > 15;
-    return true;
-  });
+  // Get filtered items based on current tab
+  const getFilteredItems = (): ComponentItem[] => {
+    if (tabValue === 0) {
+      return announcements.map((announcement) => ({
+        ...announcement,
+        isAnnouncement: true,
+        mediaUrls: [],
+      }));
+    } else {
+      return posts.map((post) => ({
+        ...post,
+        isAnnouncement: false,
+        mediaUrls: post.mediaUrls || [],
+      }));
+    }
+  };
+
+  const filteredItems = getFilteredItems();
 
   const hasContent = newPost.trim() || selectedMedia.length > 0;
+  // **MODIFIED**: Simplified postButtonText to remove announcement logic
   const postButtonText =
     selectedMedia.length > 0
-      ? `Post with ${selectedMedia.length} ${selectedMedia.length === 1 ? "file" : "files"
-      }`
+      ? `Post with ${selectedMedia.length} ${
+          selectedMedia.length === 1 ? "file" : "files"
+        }`
       : "Post";
 
-  if (loading && posts.length === 0) {
+  // Show loading only on initial load
+  if (loading && filteredItems.length === 0) {
     return (
       <Container
         maxWidth="md"
@@ -1129,9 +1288,11 @@ export const CommunityPage: React.FC = () => {
     );
   }
 
-
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+    <Container
+      maxWidth="md"
+      sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+    >
       <Typography variant="h3" gutterBottom fontWeight={700}>
         Community
       </Typography>
@@ -1142,295 +1303,315 @@ export const CommunityPage: React.FC = () => {
         </Alert>
       )}
 
-      {/* Enhanced Create Post Card */}
-      <Card
-        sx={{
-          mb: 4,
-          position: "relative",
-          overflow: "visible",
-          border: dragOver ? "2px dashed" : "1px solid",
-          borderColor: dragOver ? "primary.main" : "divider",
-          bgcolor: dragOver ? "primary.50" : "background.paper",
-          transition: "all 0.3s ease",
-        }}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-      >
-        {/* Upload progress bar */}
-        {isSubmitting && uploadProgress > 0 && (
-          <LinearProgress
-            variant="determinate"
-            value={uploadProgress}
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 3,
-              zIndex: 1,
-            }}
-          />
-        )}
-
-        <CardContent sx={{ pb: 1 }}>
-          <Stack direction="row" spacing={2} mb={2}>
-            <Avatar src={profilePhoto} sx={{ width: 48, height: 48 }}>
-              {!profilePhoto ? name?.[0] : "U"}
-            </Avatar>
-            <Box sx={{ flexGrow: 1 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={hasContent ? 3 : 2}
-                placeholder={
-                  dragOver
-                    ? "Drop files here or type your message..."
-                    : "Share your thoughts, ask questions, or celebrate achievements..."
-                }
-                value={newPost}
-                onChange={(e) => setNewPost(e.target.value)}
-                variant="outlined"
-                disabled={isSubmitting}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                    fontSize: "1rem",
-                    bgcolor: dragOver ? "primary.50" : "background.paper",
-                    transition: "all 0.3s ease",
-                  },
-                }}
-              />
-
-              {/* Media attachment indicator */}
-              {selectedMedia.length > 0 && !mediaExpanded && (
-                <Box sx={{ mt: 1 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<AttachFile />}
-                    endIcon={mediaExpanded ? <ExpandLess /> : <ExpandMore />}
-                    onClick={() => setMediaExpanded(!mediaExpanded)}
-                    sx={{
-                      borderRadius: 6,
-                      bgcolor: "success.50",
-                      borderColor: "success.main",
-                      color: "success.main",
-                      "&:hover": {
-                        bgcolor: "success.100",
-                      },
-                    }}
-                  >
-                    {selectedMedia.length}{" "}
-                    {selectedMedia.length === 1 ? "file" : "files"} attached
-                  </Button>
-                </Box>
-              )}
-            </Box>
-          </Stack>
-
-          {/* Media Upload Section - Compact by default */}
-          <Collapse in={mediaExpanded}>
-            <Box sx={{ mb: 2 }}>
-              <MediaUpload
-                onMediaChange={handleMediaChange}
-                selectedMedia={selectedMedia}
-                maxFiles={5}
-                disabled={isSubmitting}
-                showPreview={true}
-              />
-            </Box>
-          </Collapse>
-
-          {dragOver && (
-            <Box
+      {/* **MODIFIED**: Enhanced Create Post Card (now only shows for posts tab) */}
+      {tabValue === 1 && (
+        <Card
+          sx={{
+            mb: 4,
+            position: "relative",
+            overflow: "visible",
+            border: dragOver ? "2px dashed" : "1px solid",
+            borderColor: dragOver ? "primary.main" : "divider",
+            bgcolor: dragOver ? "primary.50" : "background.paper",
+            transition: "all 0.3s ease",
+          }}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          {/* Upload progress bar */}
+          {isSubmitting && uploadProgress > 0 && (
+            <LinearProgress
+              variant="determinate"
+              value={uploadProgress}
               sx={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: 0,
-                bgcolor: "rgba(25, 118, 210, 0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 2,
-                borderRadius: 1,
+                height: 3,
+                zIndex: 1,
               }}
-            >
-              <Paper
-                sx={{
-                  p: 3,
-                  textAlign: "center",
-                  bgcolor: "primary.main",
-                  color: "white",
-                  borderRadius: 2,
-                }}
-              >
-                <AttachFile sx={{ fontSize: 48, mb: 1 }} />
-                <Typography variant="h6" fontWeight={600}>
-                  Drop files to attach
-                </Typography>
-                <Typography variant="body2">
-                  They'll be uploaded when you post
-                </Typography>
-              </Paper>
-            </Box>
+            />
           )}
-        </CardContent>
 
-        <Divider />
+          <CardContent sx={{ pb: 1 }}>
+            <Stack direction="row" spacing={2} mb={2}>
+              <Avatar src={profilePhoto} sx={{ width: 48, height: 48 }}>
+                {!profilePhoto ? name?.[0] : "U"}
+              </Avatar>
+              <Box sx={{ flexGrow: 1 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={hasContent ? 3 : 2}
+                  // **MODIFIED**: Simplified placeholder text
+                  placeholder={
+                    dragOver
+                      ? "Drop files here or type your message..."
+                      : "Share your thoughts, ask questions, or celebrate achievements..."
+                  }
+                  value={newPost}
+                  onChange={(e) => setNewPost(e.target.value)}
+                  variant="outlined"
+                  disabled={isSubmitting}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                      fontSize: "1rem",
+                      bgcolor: dragOver ? "primary.50" : "background.paper",
+                      transition: "all 0.3s ease",
+                    },
+                  }}
+                />
 
-        <CardActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Add photos/videos">
-              <IconButton
-                size="medium"
-                color="primary"
-                disabled={isSubmitting}
-                onClick={() => setMediaExpanded(!mediaExpanded)}
+                {/* Media attachment indicator */}
+                {selectedMedia.length > 0 && !mediaExpanded && (
+                  <Box sx={{ mt: 1 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AttachFile />}
+                      endIcon={
+                        mediaExpanded ? <ExpandLess /> : <ExpandMore />
+                      }
+                      onClick={() => setMediaExpanded(!mediaExpanded)}
+                      sx={{
+                        borderRadius: 6,
+                        bgcolor: "success.50",
+                        borderColor: "success.main",
+                        color: "success.main",
+                        "&:hover": {
+                          bgcolor: "success.100",
+                        },
+                      }}
+                    >
+                      {selectedMedia.length}{" "}
+                      {selectedMedia.length === 1 ? "file" : "files"} attached
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </Stack>
+
+            {/* Media Upload Section */}
+            <Collapse in={mediaExpanded}>
+              <Box sx={{ mb: 2 }}>
+                <MediaUpload
+                  onMediaChange={handleMediaChange}
+                  selectedMedia={selectedMedia}
+                  maxFiles={5}
+                  disabled={isSubmitting}
+                  showPreview={true}
+                />
+              </Box>
+            </Collapse>
+
+            {dragOver && (
+              <Box
                 sx={{
-                  "&:hover": {
-                    bgcolor: "primary.50",
-                    transform: "scale(1.1)",
-                  },
-                  transition: "all 0.2s ease",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  bgcolor: "rgba(25, 118, 210, 0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 2,
+                  borderRadius: 1,
                 }}
               >
-                <Badge
-                  badgeContent={selectedMedia.length || null}
-                  color="secondary"
+                <Paper
+                  sx={{
+                    p: 3,
+                    textAlign: "center",
+                    bgcolor: "primary.main",
+                    color: "white",
+                    borderRadius: 2,
+                  }}
                 >
-                  <PhotoCamera />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+                  <AttachFile sx={{ fontSize: 48, mb: 1 }} />
+                  <Typography variant="h6" fontWeight={600}>
+                    Drop files to attach
+                  </Typography>
+                  <Typography variant="body2">
+                    They'll be uploaded when you post
+                  </Typography>
+                </Paper>
+              </Box>
+            )}
+          </CardContent>
 
-            {hasContent && (
-              <Tooltip title="Clear post">
+          <Divider />
+
+          <CardActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Add photos/videos">
                 <IconButton
                   size="medium"
-                  color="error"
+                  color="primary"
                   disabled={isSubmitting}
-                  onClick={handleClearPost}
+                  onClick={() => setMediaExpanded(!mediaExpanded)}
                   sx={{
                     "&:hover": {
-                      bgcolor: "error.50",
+                      bgcolor: "primary.50",
                       transform: "scale(1.1)",
                     },
                     transition: "all 0.2s ease",
                   }}
                 >
-                  <Close />
+                  <Badge
+                    badgeContent={selectedMedia.length || null}
+                    color="secondary"
+                  >
+                    <PhotoCamera />
+                  </Badge>
                 </IconButton>
               </Tooltip>
-            )}
-          </Stack>
 
-          <Stack direction="row" spacing={2} alignItems="center">
-            {isSubmitting && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <CircularProgress size={16} />
-                <Typography variant="caption" color="text.secondary">
-                  {uploadProgress < 25
-                    ? "Preparing..."
-                    : uploadProgress < 75
+              {hasContent && (
+                <Tooltip title="Clear post">
+                  <IconButton
+                    size="medium"
+                    color="error"
+                    disabled={isSubmitting}
+                    onClick={handleClearPost}
+                    sx={{
+                      "&:hover": {
+                        bgcolor: "error.50",
+                        transform: "scale(1.1)",
+                      },
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <Close />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Stack>
+
+            <Stack direction="row" spacing={2} alignItems="center">
+              {isSubmitting && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CircularProgress size={16} />
+                  <Typography variant="caption" color="text.secondary">
+                    {/* **MODIFIED**: Simplified loading text */}
+                    {uploadProgress < 25
+                      ? "Preparing..."
+                      : uploadProgress < 75
                       ? "Uploading media..."
                       : uploadProgress < 95
-                        ? "Creating post..."
-                        : "Almost done..."}
-                </Typography>
-              </Stack>
-            )}
-
-            <Button
-              variant="contained"
-              disabled={!hasContent || isSubmitting}
-              onClick={handleCreatePost}
-              startIcon={isSubmitting ? undefined : <Send />}
-              sx={{
-                borderRadius: 8,
-                minWidth: 120,
-                fontWeight: 600,
-                bgcolor:
-                  selectedMedia.length > 0 ? "success.main" : "primary.main",
-                "&:hover": {
-                  bgcolor:
-                    selectedMedia.length > 0 ? "success.dark" : "primary.dark",
-                  transform: "translateY(-1px)",
-                  boxShadow: 3,
-                },
-                "&:disabled": {
-                  bgcolor: "action.disabledBackground",
-                },
-                transition: "all 0.3s ease",
-              }}
-            >
-              {isSubmitting ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                postButtonText
+                      ? "Creating post..."
+                      : "Almost done..."}
+                  </Typography>
+                </Stack>
               )}
-            </Button>
-          </Stack>
-        </CardActions>
-      </Card>
+
+              <Button
+                variant="contained"
+                disabled={!hasContent || isSubmitting}
+                onClick={handleCreatePost}
+                startIcon={isSubmitting ? undefined : <Send />}
+                sx={{
+                  borderRadius: 8,
+                  minWidth: 120,
+                  fontWeight: 600,
+                  // **MODIFIED**: Simplified button color logic
+                  bgcolor:
+                    selectedMedia.length > 0
+                      ? "success.main"
+                      : "primary.main",
+                  "&:hover": {
+                    bgcolor:
+                      selectedMedia.length > 0
+                        ? "success.dark"
+                        : "primary.dark",
+                    transform: "translateY(-1px)",
+                    boxShadow: 3,
+                  },
+                  "&:disabled": {
+                    bgcolor: "action.disabledBackground",
+                  },
+                  transition: "all 0.3s ease",
+                }}
+              >
+                {isSubmitting ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  postButtonText
+                )}
+              </Button>
+            </Stack>
+          </CardActions>
+        </Card>
+      )}
 
       {/* Tabs */}
-      <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
-        <Tab label="Announcements" />
-        <Tab label="Community Posts" />
-        {/* <Tab label="Trending" icon={<TrendingUp />} iconPosition="end" /> */}
+      <Tabs
+        value={tabValue}
+        onChange={(e, v) => setTabValue(v)}
+        sx={{ mb: 3 }}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        <Tab
+          label={`Announcements`}
+          icon={<Campaign />}
+          iconPosition="start"
+        />
+        <Tab label={`Community Posts`} />
       </Tabs>
 
-      {/* Posts */}
+      {/* Items */}
       <AnimatePresence>
-        {filteredPosts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
+        {filteredItems.map((item) => (
+          <ItemCard
+            key={item.id}
+            item={item}
             onToggleLike={handleToggleLike}
-            onEdit={handleEditPost}
-            onDelete={handleDeletePost}
-            onReport={handleReportPost}
+            onEdit={handleEditItem}
+            onDelete={handleDeleteItem}
+            onReport={handleReportItem}
             currentUserId={currentUserId}
             onShowSnackbar={handleShowSnackbar}
-            isHighlighted={highlightedPostId === post.id}
+            isHighlighted={highlightedItemId === item.id}
           />
         ))}
       </AnimatePresence>
 
-      {
-        filteredPosts.length === 0 && !loading && (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="h6" color="text.secondary">
-              No posts found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Be the first to share something!
-            </Typography>
-          </Box>
-        )
-      }
+      {filteredItems.length === 0 && !loading && (
+        <Box sx={{ textAlign: "center", py: 4 }}>
+          <Typography variant="h6" color="text.secondary">
+            No {tabValue === 0 ? "announcements" : "posts"} found
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {tabValue === 0
+              ? userRole === "ADMIN"
+                ? "No announcements yet." // Modified this for clarity
+                : "No announcements yet."
+              : "Be the first to share something!"}
+          </Typography>
+        </Box>
+      )}
 
       {/* Loading More Indicator */}
-      {
-        loadingMore && (
-          <Fade in={loadingMore}>
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-              <Stack alignItems="center" spacing={2}>
-                <CircularProgress size={32} />
-                <Typography variant="body2" color="text.secondary">
-                  Loading more posts...
-                </Typography>
-              </Stack>
-            </Box>
-          </Fade>
-        )
-      }
+      {loadingMore && (
+        <Fade in={loadingMore}>
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <Stack alignItems="center" spacing={2}>
+              <CircularProgress size={32} />
+              <Typography variant="body2" color="text.secondary">
+                Loading more {tabValue === 0 ? "announcements" : "posts"}...
+              </Typography>
+            </Stack>
+          </Box>
+        </Fade>
+      )}
 
-      {/* End of Posts Indicator */}
-      {!hasMorePosts && posts.length > 0 && !loading && (
+      {/* End of Items Indicator */}
+      {!hasMore && filteredItems.length > 0 && !loading && (
         <Fade in={true}>
           <Box sx={{ textAlign: "center", py: 4 }}>
             <Typography variant="body2" color="text.secondary">
@@ -1455,6 +1636,6 @@ export const CommunityPage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container >
+    </Container>
   );
 };
