@@ -60,4 +60,20 @@ router.post(
   announcementController.createComment.bind(announcementController)
 );
 
+router.delete('/comments/:commentId', announcementController.deleteComment.bind(announcementController));
+
+// New route for editing a comment on an announcement
+router.put(
+  '/comments/:commentId',
+  [
+    body('content')
+      .notEmpty()
+      .trim()
+      .isLength({ min: 1, max: 1000 })
+      .withMessage('Comment content must be between 1 and 1000 characters'),
+  ],
+  validateRequest,
+  announcementController.updateComment.bind(announcementController)
+);
+
 export { router as announcementRouter };

@@ -32,9 +32,9 @@ const initialState: AnnouncementState = {
 // Fetch announcements
 export const fetchAnnouncements = createAsyncThunk(
   'announcements/fetchAnnouncements',
-  async ({ page = 1, limit = 20, append = false }: { 
-    page?: number; 
-    limit?: number; 
+  async ({ page = 1, limit = 20, append = false }: {
+    page?: number;
+    limit?: number;
     append?: boolean;
   }) => {
     const response = await announcementService.getAnnouncements(page, limit);
@@ -48,7 +48,7 @@ export const loadMoreAnnouncements = createAsyncThunk(
   async (_, { getState }) => {
     const state = getState() as { announcements: AnnouncementState };
     const nextPage = state.announcements.currentPage + 1;
-    
+
     const response = await announcementService.getAnnouncements(nextPage, 20);
     return { ...response, page: nextPage, append: true };
   }
@@ -74,15 +74,15 @@ export const toggleAnnouncementLike = createAsyncThunk(
 
 // Edit announcement
 export const editAnnouncement = createAsyncThunk(
-  'announcements/editAnnouncement', 
+  'announcements/editAnnouncement',
   async ({ announcementId, content }: {
     announcementId: string;
     content: string;
   }, { rejectWithValue }) => {
     try {
       const response = await announcementService.updateAnnouncement(announcementId, { content });
-      return { 
-        announcementId, 
+      return {
+        announcementId,
         updatedAnnouncement: response,
         content,
       };
@@ -94,7 +94,7 @@ export const editAnnouncement = createAsyncThunk(
 
 // Delete announcement
 export const deleteAnnouncement = createAsyncThunk(
-  'announcements/deleteAnnouncement', 
+  'announcements/deleteAnnouncement',
   async (announcementId: string, { rejectWithValue }) => {
     try {
       const response = await announcementService.deleteAnnouncement(announcementId);
@@ -116,7 +116,7 @@ export const fetchAnnouncementComments = createAsyncThunk(
   }, { rejectWithValue }) => {
     try {
       const response = await announcementService.getComments(announcementId, page, limit, includeReplies);
-      
+
       if (response.success) {
         return { announcementId, ...response.data };
       } else {
@@ -133,15 +133,15 @@ export const createAnnouncementComment = createAsyncThunk(
   async ({ announcementId, data }: { announcementId: string; data: CreateCommentData }, { rejectWithValue, getState }) => {
     try {
       const response = await announcementService.createComment(announcementId, data);
-      
+
       if (response.success) {
         const comment = response.data;
-        
+
         // Get current user info from state for optimistic UI updates
         const state = getState() as any;
         const currentUserId = state.auth.user?.id;
         const userProfile = state.dashboard.data?.user;
-        
+
         // Ensure the comment has author info for immediate display
         const commentWithAuthor = {
           ...comment,
@@ -153,13 +153,43 @@ export const createAnnouncementComment = createAsyncThunk(
             level: userProfile?.level || 1
           }
         };
-        
+
         return { announcementId, comment: commentWithAuthor };
       } else {
         throw new Error(response.message || 'Failed to create comment');
       }
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to create comment');
+    }
+  }
+);
+
+// New thunk for updating an announcement comment
+export const updateAnnouncementComment = createAsyncThunk(
+  'announcements/updateComment',
+  async ({ commentId, data }: { commentId: string; data: UpdateCommentData }, { rejectWithValue }) => {
+    try {
+      const response = await announcementService.updateComment(commentId, data);
+      if (response.success) {
+        return { updatedComment: response.data };
+      }
+      throw new Error(response.message || 'Failed to update comment');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update comment');
+    }
+  }
+);
+
+// Updated async thunk for deleting a comment on an announcement
+export const deleteAnnouncementComment = createAsyncThunk(
+  'announcements/deleteComment',
+  async ({ commentId, announcementId }: { commentId: string, announcementId: string }, { rejectWithValue }) => {
+    try {
+      // The API call returns the new total count
+      const response = await announcementService.deleteComment(commentId);
+      return { commentId, announcementId, newCommentsCount: response.newCommentsCount };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete comment');
     }
   }
 );
@@ -267,7 +297,7 @@ const announcementSlice = createSlice({
       .addCase(fetchAnnouncements.pending, (state, action) => {
         const page = action.meta.arg.page ?? 1;
         const append = action.meta.arg.append ?? false;
-        
+
         if (append || page > 1) {
           state.loadingMore = true;
         } else {
@@ -278,10 +308,10 @@ const announcementSlice = createSlice({
       .addCase(fetchAnnouncements.fulfilled, (state, action) => {
         state.loading = false;
         state.loadingMore = false;
-        
+
         const page = action.meta.arg.page ?? 1;
         const append = action.meta.arg.append ?? false;
-        
+
         if (append || page > 1) {
           const newAnnouncements = action.payload.announcements.filter(
             (newAnnouncement: Announcement) => !state.announcements.find(existing => existing.id === newAnnouncement.id)
@@ -290,10 +320,10 @@ const announcementSlice = createSlice({
         } else {
           state.announcements = action.payload.announcements;
         }
-        
+
         state.totalAnnouncements = action.payload.total;
         state.currentPage = action.payload.page;
-        
+
         const totalLoadedAnnouncements = state.announcements.length;
         state.hasMoreAnnouncements = totalLoadedAnnouncements < state.totalAnnouncements;
       })
@@ -302,7 +332,7 @@ const announcementSlice = createSlice({
         state.loadingMore = false;
         state.error = action.error.message || 'Failed to fetch announcements';
       })
-      
+
       // Load more announcements
       .addCase(loadMoreAnnouncements.pending, (state) => {
         state.loadingMore = true;
@@ -310,15 +340,15 @@ const announcementSlice = createSlice({
       })
       .addCase(loadMoreAnnouncements.fulfilled, (state, action) => {
         state.loadingMore = false;
-        
+
         const newAnnouncements = action.payload.announcements.filter(
           (newAnnouncement: Announcement) => !state.announcements.find(existing => existing.id === newAnnouncement.id)
         );
         state.announcements = [...state.announcements, ...newAnnouncements];
-        
+
         state.totalAnnouncements = action.payload.total;
         state.currentPage = action.payload.page;
-        
+
         const totalLoadedAnnouncements = state.announcements.length;
         state.hasMoreAnnouncements = totalLoadedAnnouncements < state.totalAnnouncements;
       })
@@ -326,13 +356,13 @@ const announcementSlice = createSlice({
         state.loadingMore = false;
         state.error = action.error.message || 'Failed to load more announcements';
       })
-      
+
       // Create announcement
       .addCase(createAnnouncement.fulfilled, (state, action) => {
         state.announcements.unshift(action.payload);
         state.totalAnnouncements++;
       })
-      
+
       // Toggle like
       .addCase(toggleAnnouncementLike.fulfilled, (state, action) => {
         const announcementIndex = state.announcements.findIndex(a => a.id === action.payload.announcementId);
@@ -341,7 +371,7 @@ const announcementSlice = createSlice({
           state.announcements[announcementIndex].isLiked = action.payload.isLiked;
         }
       })
-      
+
       // Edit announcement
       .addCase(editAnnouncement.pending, (state, action) => {
         const announcementIndex = state.announcements.findIndex(a => a.id === action.meta.arg.announcementId);
@@ -358,11 +388,11 @@ const announcementSlice = createSlice({
             content: action.payload.content,
             isEditing: false,
           };
-          
+
           if (action.payload.updatedAnnouncement) {
             Object.assign(updatedAnnouncement, action.payload.updatedAnnouncement);
           }
-          
+
           state.announcements[announcementIndex] = updatedAnnouncement;
         }
         state.editError = null;
@@ -374,7 +404,7 @@ const announcementSlice = createSlice({
         }
         state.editError = action.payload as string;
       })
-      
+
       // Delete announcement
       .addCase(deleteAnnouncement.pending, (state, action) => {
         const announcementIndex = state.announcements.findIndex(a => a.id === action.meta.arg);
@@ -395,7 +425,7 @@ const announcementSlice = createSlice({
         }
         state.deleteError = action.payload as string;
       })
-      
+
       // Comments
       .addCase(fetchAnnouncementComments.pending, (state, action) => {
         const announcementIndex = state.announcements.findIndex(a => a.id === action.meta.arg.announcementId);
@@ -408,11 +438,11 @@ const announcementSlice = createSlice({
         const announcementIndex = state.announcements.findIndex(a => a.id === action.payload.announcementId);
         if (announcementIndex !== -1) {
           const { comments, pagination } = action.payload;
-          
+
           // Mark as initialized and set comments
           (state.announcements[announcementIndex] as any).commentsInitialized = true;
           (state.announcements[announcementIndex] as any).commentsLoading = false;
-          
+
           if (pagination.page === 1) {
             (state.announcements[announcementIndex] as any).comments = comments;
           } else {
@@ -421,10 +451,10 @@ const announcementSlice = createSlice({
               ...comments
             ];
           }
-          
+
           (state.announcements[announcementIndex] as any).commentsPage = pagination.page;
           (state.announcements[announcementIndex] as any).commentsHasMore = pagination.hasNextPage;
-          
+
           if (pagination.totalWithReplies !== undefined) {
             state.announcements[announcementIndex].commentsCount = pagination.totalWithReplies;
           } else if (pagination.total !== undefined) {
@@ -440,7 +470,7 @@ const announcementSlice = createSlice({
         }
         state.commentError = action.payload as string;
       })
-      
+
       // Create comment
       .addCase(createAnnouncementComment.fulfilled, (state, action) => {
         const announcementIndex = state.announcements.findIndex(a => a.id === action.payload.announcementId);
@@ -448,11 +478,11 @@ const announcementSlice = createSlice({
           if (!(state.announcements[announcementIndex] as any).comments) {
             (state.announcements[announcementIndex] as any).comments = [];
           }
-          
+
           (state.announcements[announcementIndex] as any).commentsInitialized = true;
-          
+
           const newComment = action.payload.comment;
-          
+
           if (newComment.parentCommentId) {
             (state.announcements[announcementIndex] as any).comments = findAndAddReply(
               (state.announcements[announcementIndex] as any).comments!,
@@ -462,23 +492,62 @@ const announcementSlice = createSlice({
           } else {
             (state.announcements[announcementIndex] as any).comments!.unshift(newComment);
           }
-          
+
           const totalComments = countAllComments((state.announcements[announcementIndex] as any).comments!);
           state.announcements[announcementIndex].commentsCount = totalComments;
         }
       })
       .addCase(createAnnouncementComment.rejected, (state, action) => {
         state.commentError = action.payload as string;
+      })
+
+      // Handle update announcement comment
+      .addCase(updateAnnouncementComment.fulfilled, (state, action) => {
+        const { updatedComment } = action.payload;
+        for (const announcement of state.announcements) {
+          if ((announcement as any).comments) {
+            (announcement as any).comments = findAndUpdateComment(
+              (announcement as any).comments,
+              updatedComment.id,
+              updatedComment
+            );
+          }
+        }
+      })
+      .addCase(updateAnnouncementComment.rejected, (state, action) => {
+        state.commentError = action.payload as string;
+      })
+
+      // Handle delete announcement comment
+      .addCase(deleteAnnouncementComment.fulfilled, (state, action) => {
+        const { commentId, announcementId, newCommentsCount } = action.payload;
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+
+        if (announcementIndex !== -1) {
+          const announcement = state.announcements[announcementIndex];
+          // Remove the comment from the local state
+          const updatedComments = findAndDeleteComment(
+            (announcement as any).comments || [],
+            commentId
+          );
+          (announcement as any).comments = updatedComments;
+
+          // Update the comment count with the correct value from the backend
+          announcement.commentsCount = newCommentsCount;
+        }
+      })
+      .addCase(deleteAnnouncementComment.rejected, (state, action) => {
+        state.commentError = action.payload as string;
       });
   },
 });
 
-export const { 
-  setCurrentPage, 
-  clearError, 
+export const {
+  setCurrentPage,
+  clearError,
   resetAnnouncements,
-  startEditAnnouncement, 
-  startDeleteAnnouncement, 
+  startEditAnnouncement,
+  startDeleteAnnouncement,
   toggleAnnouncementCommentsSection,
 } = announcementSlice.actions;
 

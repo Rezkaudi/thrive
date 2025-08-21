@@ -1,3 +1,4 @@
+// frontend/src/components/Comments.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -45,6 +46,8 @@ import {
 import {
   fetchAnnouncementComments,
   createAnnouncementComment,
+  updateAnnouncementComment,
+  deleteAnnouncementComment,
 } from '../../store/slices/announcementSlice';
 import { linkifyText } from '../../utils/linkify';
 // Import or define the Comment interface
@@ -77,16 +80,16 @@ const formatCommentDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-  
+
   if (diffInMinutes < 1) return 'just now';
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours}h ago`;
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) return `${diffInDays}d ago`;
-  
+
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: '2-digit',
@@ -157,10 +160,19 @@ const CommentItem: React.FC<CommentItemProps> = ({
     if (editContent.trim() && editContent !== comment.content) {
       setIsUpdating(true);
       try {
-        await dispatch(updateComment({
-          commentId: comment.id,
-          data: { content: editContent.trim() }
-        })).unwrap();
+        if (isAnnouncement) {
+          // Dispatch the new action for announcements
+          await dispatch(updateAnnouncementComment({
+            commentId: comment.id,
+            data: { content: editContent.trim() }
+          })).unwrap();
+        } else {
+          // Dispatch the existing action for posts
+          await dispatch(updateComment({
+            commentId: comment.id,
+            data: { content: editContent.trim() }
+          })).unwrap();
+        }
         setIsEditing(false);
         setIsUpdating(false);
       } catch (error) {
@@ -187,10 +199,17 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
-      await dispatch(deleteComment({
-        commentId: comment.id,
-        postId
-      })).unwrap();
+      if (isAnnouncement) {
+        await dispatch(deleteAnnouncementComment({
+          commentId: comment.id,
+          announcementId: postId,
+        })).unwrap();
+      } else {
+        await dispatch(deleteComment({
+          commentId: comment.id,
+          postId
+        })).unwrap();
+      }
       setDeleteDialogOpen(false);
       setIsDeleting(false);
     } catch (error) {
@@ -240,7 +259,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               {!comment.author?.avatar && comment.author?.name?.[0]}
             </Avatar>
           </Badge>
-          
+
           <Box flexGrow={1}>
             <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
               <Typography
@@ -259,7 +278,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 </Typography>
               )}
             </Stack>
-            
+
             {isEditing ? (
               <Box sx={{ mb: 1 }}>
                 <TextField
@@ -303,7 +322,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 {linkifyText(comment.content)}
               </Typography>
             )}
-            
+
             {!isEditing && (
               <Stack direction="row" spacing={1} alignItems="center">
                 {!isReply && (
@@ -322,7 +341,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                     Reply
                   </Button>
                 )}
-                
+
                 {comment.replies && comment.replies.length > 0 && !isReply && (
                   <Button
                     size="small"
@@ -341,7 +360,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               </Stack>
             )}
           </Box>
-          
+
           <IconButton
             size="small"
             onClick={handleMenuClick}
@@ -350,7 +369,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           >
             <MoreVert fontSize="small" />
           </IconButton>
-          
+
           {/* Options Menu */}
           <Menu
             anchorEl={anchorEl}
@@ -366,8 +385,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
             }}
           >
             {isOwnComment && (
-              <MenuItem 
-                onClick={handleEdit} 
+              <MenuItem
+                onClick={handleEdit}
                 disabled={actuallyEditing || isEditing || actuallyDeleting}
               >
                 <ListItemIcon>
@@ -376,11 +395,11 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 <ListItemText>Edit</ListItemText>
               </MenuItem>
             )}
-            
+
             {isOwnComment && (
-              <MenuItem 
-                onClick={handleDeleteClick} 
-                sx={{ color: 'error.main' }} 
+              <MenuItem
+                onClick={handleDeleteClick}
+                sx={{ color: 'error.main' }}
                 disabled={actuallyDeleting || isEditing}
               >
                 <ListItemIcon>
@@ -391,7 +410,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             )}
           </Menu>
         </Stack>
-        
+
         {/* Replies */}
         {comment.replies && comment.replies.length > 0 && !isReply && (
           <Collapse in={showReplies}>
@@ -412,7 +431,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             </Box>
           </Collapse>
         )}
-        
+
         {/* Delete Confirmation Dialog */}
         <Dialog
           open={deleteDialogOpen}

@@ -1,5 +1,6 @@
 // frontend/src/services/announcementService.ts
 import api from './api';
+import { Comment, CreateCommentData, UpdateCommentData } from './commentService';
 
 export interface Announcement {
   id: string;
@@ -82,6 +83,17 @@ export const announcementService = {
 
   async getCommentCount(announcementId: string) {
     const response = await api.get(`/announcements/${announcementId}/comments/count`);
+    return response.data;
+  },
+
+  // New method for editing a comment on an announcement
+  async updateComment(commentId: string, data: { content: string }) {
+    const response = await api.put(`/announcements/comments/${commentId}`, data);
+    return response.data;
+  },
+
+  async deleteComment(commentId: string): Promise<{ message: string, newCommentsCount: number }> {
+    const response = await api.delete(`/announcements/comments/${commentId}`);
     return response.data;
   },
 

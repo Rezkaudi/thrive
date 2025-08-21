@@ -291,4 +291,104 @@ export class AnnouncementController {
       next(error);
     }
   }
+
+  async deleteComment(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { commentId } = req.params;
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required"
+        });
+      }
+
+      const commentRepository = new CommentRepository();
+      const announcementRepository = new AnnouncementRepository();
+
+      const existingComment = await commentRepository.findById(commentId);
+      if (!existingComment) {
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found"
+        });
+      }
+
+      // Check if user owns the comment
+      if (existingComment.userId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only delete your own comments"
+        });
+      }
+
+      const deleted = await commentRepository.delete(commentId);
+
+      if (!deleted) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete comment"
+        });
+      }
+
+      // After successful deletion, re-calculate the total comment count
+      const newTotalCommentCount = await commentRepository.countByPost(existingComment.postId);
+
+      // Update the commentsCount on the parent announcement directly
+      const announcement = await announcementRepository.findById(existingComment.postId);
+      if (announcement) {
+        announcement.commentsCount = newTotalCommentCount;
+        await announcementRepository.update(announcement);
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Comment deleted successfully",
+        newCommentsCount: newTotalCommentCount // Return the new count
+      });
+    } catch (error) {
+      console.error('Error in deleteComment for announcement:', error);
+      next(error);
+    }
+  }
+
+  // New method to update a comment on an announcement
+  async updateComment(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { commentId } = req.params;
+      const { content } = req.body;
+      const userId = req.user?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const commentRepository = new CommentRepository();
+      const existingComment = await commentRepository.findById(commentId);
+      
+      if (!existingComment) {
+        return res.status(404).json({ success: false, message: "Comment not found" });
+      }
+
+      if (existingComment.userId !== userId) {
+        return res.status(403).json({ success: false, message: "You can only edit your own comments" });
+      }
+
+      existingComment.content = content.trim();
+      existingComment.updatedAt = new Date();
+
+      const updatedComment = await commentRepository.update(existingComment);
+
+      res.status(200).json({
+        success: true,
+        message: "Comment updated successfully",
+        data: updatedComment,
+      });
+      
+    } catch (error) {
+      console.error('Error in updateComment for announcement:', error);
+      next(error);
+    }
+  }
 }
