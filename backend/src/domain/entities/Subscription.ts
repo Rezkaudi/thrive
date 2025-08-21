@@ -5,6 +5,7 @@ export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' |
 export interface ISubscription {
     id: string;
     userId: string;
+    email: string; // NEW FIELD
     stripeCustomerId: string;
     stripeSubscriptionId?: string; // Optional for one-time payments
     stripePaymentIntentId?: string;
@@ -20,6 +21,7 @@ export class Subscription implements ISubscription {
     constructor(
         public id: string,
         public userId: string,
+        public email: string, // NEW FIELD
         public stripeCustomerId: string,
         public stripeSubscriptionId: string | undefined,
         public stripePaymentIntentId: string | undefined,

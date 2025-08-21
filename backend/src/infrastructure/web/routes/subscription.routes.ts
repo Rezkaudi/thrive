@@ -9,6 +9,5 @@ const subscriptionController = new SubscriptionController();
 router.use(authenticate);
 
 router.get('/check', subscriptionController.checkSubscription);
-router.get('/my-subscriptions', subscriptionController.getMySubscriptions);
 
 export { router as subscriptionRouter };

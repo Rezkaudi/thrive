@@ -73,12 +73,12 @@ export class HandleSubscriptionWebhookUseCase {
 
         // Handle one-time payment (one-time plan)
         if (session.mode === 'payment') {
-            await this.handleOneTimePayment(session, userId);
+            await this.handleOneTimePayment(session, userId, email);
         }
         // Subscription will be handled by customer.subscription.created event
     }
 
-    private async handleOneTimePayment(session: Stripe.Checkout.Session, userId: string): Promise<void> {
+    private async handleOneTimePayment(session: Stripe.Checkout.Session, userId: string, email: string): Promise<void> {
         console.log('💳 Processing one-time payment for one-time access');
 
         // Create or get customer
@@ -92,26 +92,46 @@ export class HandleSubscriptionWebhookUseCase {
         const currentPeriodEnd = new Date();
         currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 100);
 
-        const subscription = new Subscription(
-            this.generateSubscriptionId(),
-            userId,
-            customerId,
-            undefined, // No subscription ID for one-time payments
-            session.payment_intent as string,
-            'one-time' as SubscriptionPlan,
-            'active',
-            currentPeriodStart,
-            currentPeriodEnd,
-            new Date(),
-            new Date()
-        );
+        // Check if user already has a subscription
+        const existingSubscription = await this.subscriptionRepository.findByUserId(userId);
 
-        await this.subscriptionRepository.create(subscription);
-        console.log('✅ one-time subscription created:', subscription.id);
+        if (existingSubscription) {
+            // Update existing subscription
+            existingSubscription.email = email;
+            existingSubscription.stripeCustomerId = customerId;
+            existingSubscription.stripePaymentIntentId = session.payment_intent as string;
+            existingSubscription.subscriptionPlan = 'one-time' as SubscriptionPlan;
+            existingSubscription.status = 'active';
+            existingSubscription.currentPeriodStart = currentPeriodStart;
+            existingSubscription.currentPeriodEnd = currentPeriodEnd;
+            existingSubscription.updatedAt = new Date();
+
+            await this.subscriptionRepository.update(existingSubscription);
+            console.log('✅ Existing subscription updated to one-time:', existingSubscription.id);
+        } else {
+            // Create new subscription
+            const subscription = new Subscription(
+                this.generateSubscriptionId(),
+                userId,
+                email,
+                customerId,
+                undefined, // No subscription ID for one-time payments
+                session.payment_intent as string,
+                'one-time' as SubscriptionPlan,
+                'active',
+                currentPeriodStart,
+                currentPeriodEnd,
+                new Date(),
+                new Date()
+            );
+
+            await this.subscriptionRepository.create(subscription);
+            console.log('✅ One-time subscription created:', subscription.id);
+        }
     }
 
     private async handleSubscriptionCreated(stripeSubscription: Stripe.Subscription): Promise<void> {
-        console.log('🔔test Processing customer.subscription.created:', stripeSubscription);
+        console.log('🔔 Processing customer.subscription.created:', stripeSubscription.id);
 
         const email = await this.getEmailFromCustomer(stripeSubscription.customer as string);
         if (!email) {
@@ -120,41 +140,55 @@ export class HandleSubscriptionWebhookUseCase {
         }
 
         const user = await this.userRepository.findByEmail(email);
-        const userId = user?.id
+        const userId = user?.id;
 
         if (!userId) {
             console.error('❌ Missing userId in subscription metadata');
             return;
         }
 
-        // Check if subscription already exists
-        const existingSubscription = await this.subscriptionRepository.findByStripeSubscriptionId(stripeSubscription.id);
-        if (existingSubscription) {
-            console.log('Subscription already exists, skipping...');
-            return;
-        }
+        // Check if user already has a subscription (one-to-one relationship)
+        const existingSubscription = await this.subscriptionRepository.findByUserId(userId);
 
         // Get plan details
         const plan = this.extractPlanFromSubscription(stripeSubscription);
         const status = this.mapStripeStatusToSubscriptionStatus(stripeSubscription.status);
 
-        const subscription = new Subscription(
-            this.generateSubscriptionId(),
-            userId,
-            stripeSubscription.customer as string,
-            stripeSubscription.id,
-            undefined, // Payment intent will be linked in invoice.payment_succeeded
-            plan,
-            status,
-            new Date(stripeSubscription.items.data[0].current_period_start * 1000),
-            new Date(stripeSubscription.items.data[0].current_period_end * 1000),
-            new Date(),
-            new Date()
-        );
+        if (existingSubscription) {
+            // Update existing subscription
 
-        await this.subscriptionRepository.create(subscription);
-        console.log('✅ Subscription created:', subscription.id);
+            // Update subscription details
+            existingSubscription.email = email;
+            existingSubscription.stripeCustomerId = stripeSubscription.customer as string;
+            existingSubscription.stripeSubscriptionId = stripeSubscription.id;
+            existingSubscription.subscriptionPlan = plan;
+            existingSubscription.status = status;
+            existingSubscription.currentPeriodStart = new Date(stripeSubscription.items.data[0].current_period_start * 1000);
+            existingSubscription.currentPeriodEnd = new Date(stripeSubscription.items.data[0].current_period_end * 1000);
+            existingSubscription.updatedAt = new Date();
 
+            await this.subscriptionRepository.update(existingSubscription);
+            console.log('✅ Existing subscription updated:', existingSubscription.id);
+        } else {
+            // Create new subscription
+            const subscription = new Subscription(
+                this.generateSubscriptionId(),
+                userId,
+                email,
+                stripeSubscription.customer as string,
+                stripeSubscription.id,
+                undefined, // Payment intent will be linked in invoice.payment_succeeded
+                plan,
+                status,
+                new Date(stripeSubscription.items.data[0].current_period_start * 1000),
+                new Date(stripeSubscription.items.data[0].current_period_end * 1000),
+                new Date(),
+                new Date()
+            );
+
+            await this.subscriptionRepository.create(subscription);
+            console.log('✅ Subscription created:', subscription.id);
+        }
     }
 
     private async getEmailFromCustomer(customerId: string): Promise<string | null> {
@@ -283,6 +317,8 @@ export class HandleSubscriptionWebhookUseCase {
             [process.env.STRIPE_MONTHLY_PRICE_ID || '']: 'monthly',
             [process.env.STRIPE_YEARLY_PRICE_ID || '']: 'yearly',
             [process.env.STRIPE_ONE_TIME_PRICE_ID || '']: 'one-time',
+            [process.env.STRIPE_MONTHLY_DISCOUNT_PRICE_ID || '']: 'monthly',
+            [process.env.STRIPE_YEARLY_DISCOUNT_PRICE_ID || '']: 'yearly',
         };
 
         // Try to get plan from price ID mapping

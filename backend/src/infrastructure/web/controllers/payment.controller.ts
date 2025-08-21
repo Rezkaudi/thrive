@@ -110,6 +110,8 @@ export class PaymentController {
         finalPriceId = this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES].regular;
       }
 
+      const subscription = await this.subscriptionRepository.findByUserId(userId)
+
       const sessionData = {
         priceId: finalPriceId,
         mode,
@@ -122,6 +124,7 @@ export class PaymentController {
           isDiscounted: isEligible ? 'true' : 'false',
           planType: planType || 'unknown'
         },
+        customerId: subscription ? subscription.stripeCustomerId : null
       };
 
       const session = await this.paymentService.createCheckoutSession(sessionData);
@@ -412,23 +415,27 @@ export class PaymentController {
   private generatePaymentId(): string {
     return `pay_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   }
-
   endTrial = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-    const userId = req.user!.userId
+    const userId = req.user!.userId;
     if (!userId) {
       res.status(400).json({ error: 'User Not Found' });
       return;
     }
 
     try {
-      const subscription = await this.subscriptionRepository.findByUserId(userId)
-      const subscriptionId = subscription[0].stripeSubscriptionId
+      const subscription = await this.subscriptionRepository.findByUserId(userId);
+
+      if (!subscription) {
+        res.status(404).json({ error: 'Subscription not found' });
+        return;
+      }
+
+      const subscriptionId = subscription.stripeSubscriptionId;
 
       if (!subscriptionId) {
         res.status(400).json({ error: 'subscriptionId Not Found' });
         return;
       }
-
 
       const data = await this.paymentService.cancelTrialAndActivatePayment(subscriptionId);
 
@@ -445,15 +452,21 @@ export class PaymentController {
   }
 
   createCustomerPortal = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-
-    const userId = req.user!.userId
+    const userId = req.user!.userId;
     if (!userId) {
       res.status(400).json({ error: 'User Not Found' });
       return;
     }
+
     try {
-      const subscription = await this.subscriptionRepository.findByUserId(userId)
-      const stripeCustomerId = subscription[0].stripeCustomerId
+      const subscription = await this.subscriptionRepository.findByUserId(userId);
+
+      if (!subscription) {
+        res.status(404).json({ error: 'Subscription not found' });
+        return;
+      }
+
+      const stripeCustomerId = subscription.stripeCustomerId;
 
       if (!stripeCustomerId) {
         res.status(400).json({ error: 'stripeCustomerId Not Found' });
@@ -467,7 +480,7 @@ export class PaymentController {
         return;
       }
 
-      res.status(200).json({ message: 'Create Customer Portal Session  Succsessfull', session });
+      res.status(200).json({ message: 'Create Customer Portal Session Successful', session });
     }
     catch (error) {
       next(error);

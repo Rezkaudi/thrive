@@ -309,7 +309,7 @@ export const CourseDetailPage: React.FC = () => {
         return stored === "true";
     });
     const [progressExpanded, setProgressExpanded] = useState(true);
-    const { hasActiveSubscription } = useSelector((state: RootState) => state.auth);
+    const { hasAccessToCourses } = useSelector((state: RootState) => state.auth);
 
     const dispatch = useDispatch<AppDispatch>();
 
@@ -469,7 +469,7 @@ export const CourseDetailPage: React.FC = () => {
             let isLocked = false;
             let lockReason = '';
 
-            if (hasActiveSubscription) {
+            if (hasAccessToCourses) {
                 // If user has subscription, only lock if previous lesson isn't completed
                 if (index > 0) {
                     const previousLesson = sortedLessons[index - 1];
@@ -989,7 +989,7 @@ export const CourseDetailPage: React.FC = () => {
                                                                             size="small"
                                                                             label={lesson.lockReason === 'Subscribe to unlock' ? 'Pro' : 'Locked'}
                                                                             icon={lesson.lockReason === 'Subscribe to unlock' ?
-                                                                                <LockOutlined sx={{ fontSize: '12px !important' }} /> : undefined
+                                                                                <LockOutlined color="inherit" sx={{ fontSize: '12px !important', color: "white" }} /> : undefined
                                                                             }
                                                                             sx={{
                                                                                 height: 18,

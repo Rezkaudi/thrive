@@ -2,9 +2,8 @@
 import api from './api';
 
 export interface SubscriptionStatus {
-    hasActiveSubscription: boolean;
-    hasTrailingSubscription: boolean;
-    hasAccessToCourse: boolean;
+    hasAccessToCourses: boolean;
+    hasSubscription: boolean;
     status: string | null
     subscriptions: {
         id: string;
@@ -32,11 +31,6 @@ export interface Subscription {
 export const subscriptionService = {
     async checkSubscriptionStatus(): Promise<SubscriptionStatus> {
         const response = await api.get('/subscriptions/check', {});
-        return response.data;
-    },
-
-    async getMySubscriptions(): Promise<Subscription[]> {
-        const response = await api.get('/subscriptions/my-subscriptions');
         return response.data;
     },
 

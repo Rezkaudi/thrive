@@ -7,15 +7,15 @@ export interface CheckUserSubscriptionDTO {
 }
 
 export interface SubscriptionStatusResponse {
-    hasActiveSubscription: boolean;
-    hasTrailingSubscription: boolean;
-    status: string | null
-    subscriptions: Array<{
+    hasSubscription: boolean;
+    hasAccessToCourses: boolean;
+    status: string | null;
+    subscription: {
         id: string;
         plan: string;
         status: string;
         currentPeriodEnd: Date;
-    }>;
+    } | null;
 }
 
 export class CheckUserSubscriptionUseCase {
@@ -31,28 +31,30 @@ export class CheckUserSubscriptionUseCase {
             throw new Error('User not found');
         }
 
-        // Get all active subscriptions for the user
-        const activeSubscriptions = await this.subscriptionRepository.findActiveByUserId(dto.userId);
-        const trailingSubscriptions = await this.subscriptionRepository.findByUserId(dto.userId);
+        // Get the user's subscription (one-to-one relationship)
+        const subscription = await this.subscriptionRepository.findByUserId(dto.userId);
+        const acccessSubscription = await this.subscriptionRepository.findActiveByUserId(dto.userId);
 
-        console.log(activeSubscriptions)
-        console.log(trailingSubscriptions)
 
-        // Check if user has any active subscription
-        const hasActiveSubscription = user.role === "ADMIN" ? true : activeSubscriptions.length > 0;
-        const hasTrailingSubscription = user.role === "ADMIN" ? true : trailingSubscriptions.length > 0;
-        const status = user.role === "ADMIN" ? "active" : trailingSubscriptions ? trailingSubscriptions[0]?.status : null
+        console.log('User subscription:', subscription);
+
+        // Check if user has an active subscription
+        const hasSubscription = user.role === "ADMIN" ? true : subscription !== null;
+        const hasAccessToCourses = user.role === "ADMIN" ? true : acccessSubscription !== null;
+
+        const status = user.role === "ADMIN" ? "active" :
+            (subscription ? subscription.status : null);
 
         return {
-            hasActiveSubscription,
-            hasTrailingSubscription,
+            hasSubscription,
+            hasAccessToCourses,
             status,
-            subscriptions: activeSubscriptions.map(sub => ({
-                id: sub.id,
-                plan: sub.subscriptionPlan,
-                status: sub.status,
-                currentPeriodEnd: sub.currentPeriodEnd
-            })),
+            subscription: subscription ? {
+                id: subscription.id,
+                plan: subscription.subscriptionPlan,
+                status: subscription.status,
+                currentPeriodEnd: subscription.currentPeriodEnd
+            } : null,
         };
     }
 }
