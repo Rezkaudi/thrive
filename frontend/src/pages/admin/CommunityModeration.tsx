@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/CommunityModeration.tsx - Updated for consistent styling
+// frontend/src/pages/admin/CommunityModeration.tsx - Updated with pagination
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -23,6 +23,8 @@ import {
   Menu,
   MenuItem,
   Snackbar,
+  Pagination,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search,
@@ -73,6 +75,13 @@ interface Announcement {
   isFlagged?: boolean;
 }
 
+interface PaginationData {
+  currentPage: number;
+  totalPages: number;
+  total: number;
+  limit: number;
+}
+
 export const CommunityModeration: React.FC = () => {
   const { showConfirm, showError } = useSweetAlert();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -88,36 +97,150 @@ export const CommunityModeration: React.FC = () => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
 
+  // Pagination states
+  const [announcementsPagination, setAnnouncementsPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    limit: 10 // Items per page
+  });
+
+  const [postsPagination, setPostsPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    limit: 10 // Items per page
+  });
+
+  const [flaggedPagination, setFlaggedPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    limit: 10 // Items per page
+  });
+
   useEffect(() => {
     fetchData();
   }, [tabValue]);
 
-  const fetchData = async () => {
+  // Reset pagination when tab changes
+  useEffect(() => {
+    if (tabValue === 0) {
+      setAnnouncementsPagination(prev => ({ ...prev, currentPage: 1 }));
+    } else if (tabValue === 1) {
+      setPostsPagination(prev => ({ ...prev, currentPage: 1 }));
+    } else if (tabValue === 2) {
+      setFlaggedPagination(prev => ({ ...prev, currentPage: 1 }));
+    }
+  }, [tabValue]);
+
+  // Fetch data when pagination changes
+  useEffect(() => {
+    if (tabValue === 0) {
+      fetchAnnouncements(announcementsPagination.currentPage);
+    }
+  }, [announcementsPagination.currentPage]);
+
+  useEffect(() => {
+    if (tabValue === 1) {
+      fetchPosts(postsPagination.currentPage);
+    }
+  }, [postsPagination.currentPage]);
+
+  useEffect(() => {
+    if (tabValue === 2) {
+      fetchFlaggedContent(flaggedPagination.currentPage);
+    }
+  }, [flaggedPagination.currentPage]);
+
+  const fetchAnnouncements = async (page: number = 1) => {
     try {
       setLoading(true);
-      
-      if (tabValue === 0) {
-        // Fetch announcements
-        const response = await announcementService.getAnnouncements(1, 50);
-        setAnnouncements(response.announcements);
-      } else if (tabValue === 1) {
-        // Fetch posts
-        const response = await api.get('/community/posts?limit=50');
-        setPosts(response.data.posts || []);
-      } else if (tabValue === 2) {
-        // Fetch flagged content (you'll need to implement this endpoint)
-        const [flaggedPosts, flaggedAnnouncements] = await Promise.all([
-          api.get('/admin/posts/flagged').catch(() => ({ data: [] })),
-          api.get('/admin/announcements/flagged').catch(() => ({ data: [] }))
-        ]);
-        setPosts(flaggedPosts.data);
-        setAnnouncements(flaggedAnnouncements.data);
-      }
+      const response = await announcementService.getAnnouncements(page, announcementsPagination.limit);
+      setAnnouncements(response.announcements);
+      setAnnouncementsPagination(prev => ({
+        ...prev,
+        currentPage: page,
+        totalPages: response.totalPages || Math.ceil(response.total / prev.limit),
+        total: response.total
+      }));
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('Failed to fetch announcements:', error);
+      showError('Error', 'Failed to fetch announcements');
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchPosts = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/community/posts?page=${page}&limit=${postsPagination.limit}`);
+      setPosts(response.data.posts || []);
+      setPostsPagination(prev => ({
+        ...prev,
+        currentPage: page,
+        totalPages: response.data.totalPages || Math.ceil(response.data.total / prev.limit),
+        total: response.data.total || 0
+      }));
+    } catch (error) {
+      console.error('Failed to fetch posts:', error);
+      showError('Error', 'Failed to fetch posts');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFlaggedContent = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const [flaggedPosts, flaggedAnnouncements] = await Promise.all([
+        api.get(`/admin/posts/flagged?page=${page}&limit=${Math.ceil(flaggedPagination.limit / 2)}`).catch(() => ({ data: { posts: [], total: 0, totalPages: 0 } })),
+        api.get(`/admin/announcements/flagged?page=${page}&limit=${Math.ceil(flaggedPagination.limit / 2)}`).catch(() => ({ data: { announcements: [], total: 0, totalPages: 0 } }))
+      ]);
+      
+      setPosts(flaggedPosts.data.posts || []);
+      setAnnouncements(flaggedAnnouncements.data.announcements || []);
+      
+      const totalItems = (flaggedPosts.data.total || 0) + (flaggedAnnouncements.data.total || 0);
+      setFlaggedPagination(prev => ({
+        ...prev,
+        currentPage: page,
+        totalPages: Math.ceil(totalItems / prev.limit),
+        total: totalItems
+      }));
+    } catch (error) {
+      console.error('Failed to fetch flagged content:', error);
+      showError('Error', 'Failed to fetch flagged content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchData = async () => {
+    if (tabValue === 0) {
+      await fetchAnnouncements(1);
+    } else if (tabValue === 1) {
+      await fetchPosts(1);
+    } else if (tabValue === 2) {
+      await fetchFlaggedContent(1);
+    }
+  };
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    if (tabValue === 0) {
+      setAnnouncementsPagination(prev => ({ ...prev, currentPage: page }));
+    } else if (tabValue === 1) {
+      setPostsPagination(prev => ({ ...prev, currentPage: page }));
+    } else if (tabValue === 2) {
+      setFlaggedPagination(prev => ({ ...prev, currentPage: page }));
+    }
+  };
+
+  const getCurrentPagination = () => {
+    if (tabValue === 0) return announcementsPagination;
+    if (tabValue === 1) return postsPagination;
+    return flaggedPagination;
   };
 
   const handlePostAction = async (action: string, item: Post | Announcement, isAnnouncement: boolean = false) => {
@@ -143,7 +266,16 @@ export const CommunityModeration: React.FC = () => {
               await api.delete(`/admin/posts/${item.id}`);
             }
             successMessage = `${isAnnouncement ? 'Announcement' : 'Post'} deleted successfully`;
-            fetchData();
+            
+            // Refresh current page data
+            if (tabValue === 0) {
+              fetchAnnouncements(announcementsPagination.currentPage);
+            } else if (tabValue === 1) {
+              fetchPosts(postsPagination.currentPage);
+            } else {
+              fetchFlaggedContent(flaggedPagination.currentPage);
+            }
+            
             setSnackbar({
               open: true,
               message: successMessage,
@@ -170,7 +302,16 @@ export const CommunityModeration: React.FC = () => {
             const endpoint = isAnnouncement ? `/admin/announcements/${item.id}/unflag` : `/admin/posts/${item.id}/unflag`;
             await api.post(endpoint);
             successMessage = `${isAnnouncement ? 'Announcement' : 'Post'} unflagged successfully`;
-            fetchData();
+            
+            // Refresh current page data
+            if (tabValue === 0) {
+              fetchAnnouncements(announcementsPagination.currentPage);
+            } else if (tabValue === 1) {
+              fetchPosts(postsPagination.currentPage);
+            } else {
+              fetchFlaggedContent(flaggedPagination.currentPage);
+            }
+            
             setSnackbar({
               open: true,
               message: successMessage,
@@ -199,7 +340,16 @@ export const CommunityModeration: React.FC = () => {
           try {
             await api.put(`/admin/users/${userId}/status`, { isActive: false });
             successMessage = 'User blocked successfully';
-            fetchData();
+            
+            // Refresh current page data
+            if (tabValue === 0) {
+              fetchAnnouncements(announcementsPagination.currentPage);
+            } else if (tabValue === 1) {
+              fetchPosts(postsPagination.currentPage);
+            } else {
+              fetchFlaggedContent(flaggedPagination.currentPage);
+            }
+            
             setSnackbar({
               open: true,
               message: successMessage,
@@ -227,9 +377,6 @@ export const CommunityModeration: React.FC = () => {
     try {
       const newAnnouncement = await announcementService.createAnnouncement({ content: announcementContent });
       
-      // Add the new announcement to the local state immediately for better UX
-      setAnnouncements(prev => [newAnnouncement, ...prev]);
-      
       setSnackbar({
         open: true,
         message: 'Announcement posted successfully!',
@@ -238,9 +385,10 @@ export const CommunityModeration: React.FC = () => {
       setAnnouncementDialog(false);
       setAnnouncementContent('');
       
-      // Refresh data to ensure consistency
+      // Refresh announcements data
       if (tabValue === 0) {
-        fetchData();
+        fetchAnnouncements(1); // Go to first page to see the new announcement
+        setAnnouncementsPagination(prev => ({ ...prev, currentPage: 1 }));
       }
     } catch (error) {
       console.error('Failed to create announcement:', error);
@@ -277,7 +425,7 @@ export const CommunityModeration: React.FC = () => {
     }
   };
 
-   const ItemCard = ({ item, isAnnouncement = false }: { item: any; isAnnouncement?: boolean }) => {
+  const ItemCard = ({ item, isAnnouncement = false }: { item: any; isAnnouncement?: boolean }) => {
     const [itemAnchorEl, setItemAnchorEl] = useState<null | HTMLElement>(null);
     
     return (
@@ -411,7 +559,50 @@ export const CommunityModeration: React.FC = () => {
             {item.content}
           </Typography>
 
-          {/* ✅ IMPROVED LIKES AND COMMENTS DISPLAY ✅ */}
+          {/* Media display for posts */}
+          {!isAnnouncement && item.mediaUrls && item.mediaUrls.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {item.mediaUrls.slice(0, 3).map((url: string, index: number) => (
+                  <Box
+                    key={index}
+                    component="img"
+                    src={url}
+                    alt={`Media ${index + 1}`}
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      objectFit: 'cover',
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  />
+                ))}
+                {item.mediaUrls.length > 3 && (
+                  <Box
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'grey.100',
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      +{item.mediaUrls.length - 3} more
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          )}
+
+          {/* Likes and Comments Display */}
           <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
             <Stack direction="row" spacing={3} sx={{ color: 'text.secondary', alignItems: 'center' }}>
               {/* Likes Count */}
@@ -433,13 +624,13 @@ export const CommunityModeration: React.FC = () => {
               )}
             </Stack>
           </Box>
-          {/* ✅ END OF IMPROVEMENT ✅ */}
         </CardContent>
       </Card>
     );
   };
 
   const filteredItems = getFilteredItems();
+  const currentPagination = getCurrentPagination();
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -458,7 +649,7 @@ export const CommunityModeration: React.FC = () => {
 
       {tabValue === 2 && filteredItems.length > 0 && (
         <Alert severity="warning" sx={{ mb: 3 }}>
-          {filteredItems.length} items require review
+          {currentPagination.total} items require review
         </Alert>
       )}
 
@@ -480,26 +671,77 @@ export const CommunityModeration: React.FC = () => {
           />
 
           <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }}>
-            <Tab label={`Announcements`} />
-            <Tab label={`Posts`} />
-            <Tab label="Flagged Content" icon={<Flag />} iconPosition="end" />
+            <Tab 
+              label={`Announcements ${currentPagination.total > 0 && tabValue === 0 ? `(${currentPagination.total})` : ''}`} 
+            />
+            <Tab 
+              label={`Posts ${currentPagination.total > 0 && tabValue === 1 ? `(${currentPagination.total})` : ''}`} 
+            />
+            <Tab 
+              label="Flagged Content" 
+              icon={<Flag />} 
+              iconPosition="end"
+            />
           </Tabs>
 
           <Box>
             {loading ? (
-              <Typography>Loading...</Typography>
+              <Box display="flex" justifyContent="center" py={4}>
+                <CircularProgress />
+              </Box>
             ) : filteredItems.length === 0 ? (
               <Typography color="text.secondary" textAlign="center" py={4}>
                 No {tabValue === 0 ? 'announcements' : tabValue === 1 ? 'posts' : 'flagged content'} found
               </Typography>
             ) : (
-              filteredItems.map((item: any) => (
-                <ItemCard 
-                  key={item.id} 
-                  item={item} 
-                  isAnnouncement={tabValue === 0 || item.isAnnouncement} 
-                />
-              ))
+              <>
+                {filteredItems.map((item: any) => (
+                  <ItemCard 
+                    key={item.id} 
+                    item={item} 
+                    isAnnouncement={tabValue === 0 || item.isAnnouncement} 
+                  />
+                ))}
+
+                {/* Pagination */}
+                {currentPagination.totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    <Pagination
+                      count={currentPagination.totalPages}
+                      page={currentPagination.currentPage}
+                      onChange={handlePageChange}
+                      color="primary"
+                      size="large"
+                      showFirstButton
+                      showLastButton
+                      sx={{
+                        '& .MuiPaginationItem-root': {
+                          fontSize: '1rem',
+                          fontWeight: 500,
+                        },
+                        '& .Mui-selected': {
+                          backgroundColor: 'primary.main',
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: 'primary.dark',
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
+
+                {/* Pagination Info */}
+                {currentPagination.total > 0 && (
+                  <Box sx={{ mt: 2, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Showing {((currentPagination.currentPage - 1) * currentPagination.limit) + 1} to{' '}
+                      {Math.min(currentPagination.currentPage * currentPagination.limit, currentPagination.total)} of{' '}
+                      {currentPagination.total} results
+                    </Typography>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </CardContent>
