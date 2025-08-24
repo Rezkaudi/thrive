@@ -57,9 +57,10 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   
   const footerRef = useRef<HTMLDivElement>(null);
 
-  // NEW: Track auto-progression state and validation processing
+  // NEW: Enhanced state management for processing and transitions
   const [showAutoProgression, setShowAutoProgression] = useState(false);
   const [isProcessingValidation, setIsProcessingValidation] = useState(false);
+  const [processingSlideIndex, setProcessingSlideIndex] = useState<number | null>(null);
 
   // Check if a slide at given index is accessible
   const isSlideAccessible = (index: number) => {
@@ -83,38 +84,6 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const currentSlideIsQuiz = slides[currentSlide] && isQuizSlide(slides[currentSlide]);
   const isQuizIncomplete = currentSlideIsQuiz && !slideProgress.has(currentSlide);
 
-  // NEW: Monitor validation results for auto-progression feedback and processing state
-  useEffect(() => {
-    if (!currentSlideIsQuiz) return;
-
-    const currentSlide_slide = slides[currentSlide];
-    const slideId = getSlideId(currentSlide_slide);
-    const validation = validationResults[slideId];
-    const isShowingFeedback = showFeedback[slideId];
-
-    if (validation?.type === 'success' && isShowingFeedback && !isLastSlide) {
-      setIsProcessingValidation(true);
-      setShowAutoProgression(true);
-      
-      // Auto-hide and enable next button after a brief moment
-      const cleanup = setTimeout(() => {
-        setShowAutoProgression(false);
-        setIsProcessingValidation(false);
-      }, 2500); // Show for 2.5 seconds then enable next
-
-      return () => {
-        clearTimeout(cleanup);
-      };
-    } else if (validation?.type === 'error' && isShowingFeedback) {
-      // Reset processing state on error
-      setIsProcessingValidation(false);
-      setShowAutoProgression(false);
-    } else {
-      setShowAutoProgression(false);
-      // Don't reset processing state immediately to prevent flickering
-    }
-  }, [validationResults, showFeedback, currentSlide, currentSlideIsQuiz, isLastSlide, slides]);
-
   // Helper function to get slide ID consistently
   const getSlideId = (slide: any) => {
     if (!slide) return '';
@@ -127,12 +96,67 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     return slide.id || '';
   };
 
+  // NEW: Enhanced validation monitoring with persistent processing state
+  useEffect(() => {
+    if (!currentSlideIsQuiz) {
+      // Reset processing state when not on a quiz slide
+      if (processingSlideIndex !== currentSlide) {
+        setIsProcessingValidation(false);
+        setShowAutoProgression(false);
+        setProcessingSlideIndex(null);
+      }
+      return;
+    }
+
+    const currentSlide_slide = slides[currentSlide];
+    const slideId = getSlideId(currentSlide_slide);
+    const validation = validationResults[slideId];
+    const isShowingFeedback = showFeedback[slideId];
+
+    if (validation?.type === 'success' && isShowingFeedback && !isLastSlide) {
+      setIsProcessingValidation(true);
+      setShowAutoProgression(true);
+      setProcessingSlideIndex(currentSlide);
+      
+      // Auto-advance after showing success feedback
+      const advanceTimer = setTimeout(() => {
+        onNext(); // This will trigger slide transition
+        // Don't reset processing state here - let slide change handle it
+      }, 2500);
+
+      return () => {
+        clearTimeout(advanceTimer);
+      };
+    } else if (validation?.type === 'error' && isShowingFeedback) {
+      // Reset processing state on error
+      setIsProcessingValidation(false);
+      setShowAutoProgression(false);
+      setProcessingSlideIndex(null);
+    }
+  }, [validationResults, showFeedback, currentSlide, currentSlideIsQuiz, isLastSlide, slides, onNext, processingSlideIndex]);
+
+  // NEW: Handle slide change completion - reset processing state after transition
+  useEffect(() => {
+    if (processingSlideIndex !== null && processingSlideIndex !== currentSlide) {
+      // Slide has changed, reset processing state after a brief delay to ensure smooth transition
+      const resetTimer = setTimeout(() => {
+        setIsProcessingValidation(false);
+        setShowAutoProgression(false);
+        setProcessingSlideIndex(null);
+      }, 300); // Brief delay to complete any transitions
+
+      return () => {
+        clearTimeout(resetTimer);
+      };
+    }
+  }, [currentSlide, processingSlideIndex]);
+
   // Determine if next button should be disabled
   const shouldDisableNext = () => {
     if (currentSlide >= totalSlides - 1) return true;
     if (!canNavigateToNext) return true;
     if (isQuizIncomplete) return true;
-    if (isProcessingValidation) return true; // NEW: Disable during validation processing
+    if (isProcessingValidation) return true; // Keep disabled during processing
     return false;
   };
 
@@ -329,9 +353,15 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const getNextButtonConfig = () => {
     if (isProcessingValidation) {
       return {
-        text: isMobile ? 'Wait' : 'Processing...',
-        icon: <HourglassEmpty />,
-        tooltip: 'Answer is being validated...'
+        text: isMobile ? 'Moving...' : 'Moving to next slide...',
+        icon: <HourglassEmpty sx={{ 
+          animation: 'rotate 2s linear infinite',
+          '@keyframes rotate': {
+            '0%': { transform: 'rotate(0deg)' },
+            '100%': { transform: 'rotate(360deg)' }
+          }
+        }} />,
+        tooltip: 'Transitioning to next slide...'
       };
     }
     if (isQuizIncomplete) {
@@ -469,20 +499,20 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
                     flex: 1,
                     fontWeight: 600,
                     background: isProcessingValidation
-                      ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                      ? 'linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)'
                       : isQuizIncomplete
                         ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
                         : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
                     '&:hover': {
                       background: isProcessingValidation
-                        ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                        ? 'linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)'
                         : isQuizIncomplete
                           ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
                           : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
                     },
                     '&:disabled': {
                       background: isProcessingValidation
-                        ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                        ? 'linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)'
                         : 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
                     },
                     transition: 'all 0.2s ease'
@@ -632,13 +662,13 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
                   flexShrink: 0,
                   fontWeight: 600,
                   background: isProcessingValidation
-                    ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                    ? 'linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)'
                     : isQuizIncomplete
                       ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
                       : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
                   '&:hover': {
                     background: isProcessingValidation
-                      ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                      ? 'linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)'
                       : isQuizIncomplete
                         ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
                         : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
@@ -647,7 +677,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
                   },
                   '&:disabled': {
                     background: isProcessingValidation
-                      ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                      ? 'linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)'
                       : 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
                   },
                   transition: 'all 0.2s ease'
