@@ -286,6 +286,35 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         {content.instruction}
       </Typography>
 
+       {/* Enhanced Feedback Alert */}
+      {showSlideFeeback && displayValidation && (
+        <Fade in>
+          <Alert
+            severity={displayValidation.type}
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              fontSize: { xs: "1rem", md: "1.1rem" },
+              fontWeight: 500,
+            }}
+          >
+            {displayValidation.message}
+            {displayValidation.type === "error" && (
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1,
+                  opacity: 0.8,
+                  fontSize: { xs: "0.85rem", md: "0.9rem" }
+                }}
+              >
+                Activity will reset automatically in 1.5 seconds...
+              </Typography>
+            )}
+          </Alert>
+        </Fade>
+      )}
+
       {/* Translation */}
       {currentItem.translation && (
         <Paper
@@ -582,34 +611,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         </Button>
       </Stack>
 
-      {/* Enhanced Feedback Alert */}
-      {showSlideFeeback && displayValidation && (
-        <Fade in>
-          <Alert
-            severity={displayValidation.type}
-            sx={{
-              mt: 3,
-              borderRadius: 2,
-              fontSize: { xs: "1rem", md: "1.1rem" },
-              fontWeight: 500,
-            }}
-          >
-            {displayValidation.message}
-            {displayValidation.type === "error" && (
-              <Typography
-                variant="body2"
-                sx={{
-                  mt: 1,
-                  opacity: 0.8,
-                  fontSize: { xs: "0.85rem", md: "0.9rem" }
-                }}
-              >
-                Activity will reset automatically in 1.5 seconds...
-              </Typography>
-            )}
-          </Alert>
-        </Fade>
-      )}
+      
     </Box>
   );
 };

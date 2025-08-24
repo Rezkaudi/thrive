@@ -116,6 +116,24 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
         {content.instruction}
       </Typography>
 
+      {showSlideFeeback && validation && (
+        <Fade in>
+          <Alert
+            severity={validation.type}
+            sx={{
+              mt: 3,
+              borderRadius: 2,
+              fontSize: "1rem",
+              "& .MuiAlert-icon": {
+                fontSize: "1.5rem",
+              },
+            }}
+          >
+            {validation.message}
+          </Alert>
+        </Fade>
+      )}
+
       <Stack spacing={4} sx={{ mb: 4 }}>
         {content.items?.map((item: any, index: number) => (
           <Paper
@@ -181,23 +199,6 @@ export const FillBlanksSlide: React.FC<SlideComponentProps> = ({
         </Button>
       </Box>
 
-      {showSlideFeeback && validation && (
-        <Fade in>
-          <Alert
-            severity={validation.type}
-            sx={{
-              mt: 3,
-              borderRadius: 2,
-              fontSize: "1rem",
-              "& .MuiAlert-icon": {
-                fontSize: "1.5rem",
-              },
-            }}
-          >
-            {validation.message}
-          </Alert>
-        </Fade>
-      )}
     </Box>
   );
 };

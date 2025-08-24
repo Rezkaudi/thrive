@@ -179,32 +179,68 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
         {content.question}
       </Typography>
 
-      {/* Detailed Feedback (only show after validation) */}
-      {showQuizFeedback && validation && (
-        <Fade in>
-          <Alert
-            severity={validation.type}
-            sx={{
-              mb: 3,
-              borderRadius: 2,
-              fontSize: "1rem",
+     {/* Detailed Feedback (only show after validation) */}
+    {showQuizFeedback && validation && (
+      <Fade in>
+        <Alert
+          severity={validation.type}
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            fontSize: "1rem",
+            // Conditional styling based on validation type
+            ...(validation.type === "success" ? {
+              // Green styling for correct answers
+              backgroundColor: "#e8f5e8",    // Light green background
+              borderColor: "#4caf50",        // Green border
+              color: "#000000",              // Black text for correct answers
               "& .MuiAlert-message": {
                 fontSize: "1rem",
+                color: "#000000",            // Black text for message
               },
+              "& .MuiAlert-icon": {
+                color: "#4caf50",            // Green icon
+              },
+            } : {
+              // Red styling for incorrect answers  
+              backgroundColor: "#f44336",    // Red background
+              borderColor: "#d32f2f",        // Darker red border
+              color: "#ffffff",              // White text for incorrect answers
+              "& .MuiAlert-message": {
+                fontSize: "1rem",
+                color: "#ffffff",            // White text for message
+              },
+              "& .MuiAlert-icon": {
+                color: "#ffffff",            // White icon
+              },
+            }),
+          }}
+          icon={validation.type === "success" ? <CheckCircle /> : <Error />}
+        >
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontWeight: 500,
+              color: "inherit", // Inherit the alert's text color
             }}
-            icon={validation.type === "success" ? <CheckCircle /> : <Error />}
           >
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              {validation.message}
+            {validation.message}
+          </Typography>
+          {content.explanation && validation.type === "success" && (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mt: 1, 
+                opacity: 0.9,
+                color: "inherit", // Inherit the alert's text color
+              }}
+            >
+              💡 {content.explanation}
             </Typography>
-            {content.explanation && validation.type === "success" && (
-              <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
-                💡 {content.explanation}
-              </Typography>
-            )}
-          </Alert>
-        </Fade>
-      )}
+          )}
+        </Alert>
+      </Fade>
+    )}
 
       {/* Single Choice - Radio Buttons */}
       {content.type === "single-choice" && (

@@ -466,6 +466,46 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         />
       </Box>
 
+            {/* Feedback display - Prioritize local validation */}
+      {showSlideFeeback && localValidation && (
+        <Fade in key={`${forceUpdate}-${localValidation.type}`}>
+          <Alert
+            severity={localValidation.type}
+            sx={{
+              mt: { xs: 2, md: 3 },
+              borderRadius: 2,
+              fontSize: { xs: "0.9rem", md: "1rem" }
+            }}
+            icon={
+              localValidation.type === "success" ? (
+                <CheckCircle />
+              ) : localValidation.type === "error" ? (
+                <Error />
+              ) : (
+                <Warning />
+              )
+            }
+          >
+            <Typography variant="body1" fontWeight={500}>
+              {localValidation.message}
+            </Typography>
+            {localValidation.type === "error" && (
+              <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+                Activity will reset automatically in 2 seconds to try again...
+              </Typography>
+            )}
+            {localValidation.type === "success" && (
+              <Typography
+                variant="body2"
+                sx={{ mt: 1, opacity: 0.8, color: "success.dark" }}
+              >
+                🎯 Perfect match! Resetting in 3 seconds for next practice...
+              </Typography>
+            )}
+          </Alert>
+        </Fade>
+      )}
+
       <Grid container spacing={{ xs: 2, md: 4 }} sx={{ mb: { xs: 3, md: 4 } }}>
         {/* Left side - Items to drag */}
         <Grid size={{ xs: 6, md: 6 }}>
@@ -798,46 +838,6 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
               : `Complete (${matchedCount}/${totalCount})`}
         </Button>
       </Stack>
-
-      {/* Feedback display - Prioritize local validation */}
-      {showSlideFeeback && localValidation && (
-        <Fade in key={`${forceUpdate}-${localValidation.type}`}>
-          <Alert
-            severity={localValidation.type}
-            sx={{
-              mt: { xs: 2, md: 3 },
-              borderRadius: 2,
-              fontSize: { xs: "0.9rem", md: "1rem" }
-            }}
-            icon={
-              localValidation.type === "success" ? (
-                <CheckCircle />
-              ) : localValidation.type === "error" ? (
-                <Error />
-              ) : (
-                <Warning />
-              )
-            }
-          >
-            <Typography variant="body1" fontWeight={500}>
-              {localValidation.message}
-            </Typography>
-            {localValidation.type === "error" && (
-              <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-                Activity will reset automatically in 2 seconds to try again...
-              </Typography>
-            )}
-            {localValidation.type === "success" && (
-              <Typography
-                variant="body2"
-                sx={{ mt: 1, opacity: 0.8, color: "success.dark" }}
-              >
-                🎯 Perfect match! Resetting in 3 seconds for next practice...
-              </Typography>
-            )}
-          </Alert>
-        </Fade>
-      )}
     </Box>
   );
 };
