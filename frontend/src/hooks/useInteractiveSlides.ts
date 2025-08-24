@@ -366,23 +366,52 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     return delays[interactiveType as keyof typeof delays] || delays.generic;
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(prev => !prev);
+  // In frontend/src/hooks/useInteractiveSlides.ts
 
+  const toggleFullscreen = () => {
     if (!isFullscreen) {
+      // Entering fullscreen
+      setIsFullscreen(true);
       if (containerRef.current) {
         containerRef.current.requestFullscreen?.();
       }
     } else {
+      // Exiting fullscreen
       exitFullscreen();
     }
   };
 
   const exitFullscreen = () => {
+    setIsFullscreen(false);
+    // Only call exitFullscreen if the document is actually in fullscreen mode
     if (document.fullscreenElement) {
-      document.exitFullscreen?.();
+      document.exitFullscreen?.().catch((err) => {
+        // Silently catch the error if document is not active
+        console.log('Exit fullscreen error (likely already exited):', err);
+      });
     }
   };
+
+  // Add an effect to listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // Update state when fullscreen mode changes (e.g., when ESC is pressed)
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    // Listen for fullscreen change events
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
 
   const slideComponentProps = {
     slide,

@@ -57,10 +57,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const profile = useSelector((state: RootState) => state.dashboard.data);
   const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
 
-  // const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [openMenu, setOpenMenu] = useState<boolean>(false);
-
-
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
   const [desktopDrawerOpen, setDesktopDrawerOpen] = useState<boolean>(() => {
@@ -69,19 +66,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   });
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    // setAnchorElUser(event.currentTarget);
     setOpenMenu(prev => !prev)
   };
 
   const handleCloseUserMenu = () => {
-    // setAnchorElUser(null);
     setOpenMenu(prev => !prev)
   };
 
   const handleLogout = () => {
     dispatch(logout());
     window.location.pathname = "/login"
-    // navigate('/login');
   };
 
   const handleDrawerToggle = () => {
@@ -96,7 +90,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const menuItems = [
     { title: 'Dashboard', icon: <Dashboard sx={{ fontSize: 20 }} />, path: '/dashboard' },
     { title: 'Classroom', icon: <School sx={{ fontSize: 20 }} />, path: '/classroom' },
-    { title: 'Community', icon: <Groups sx={{ fontSize: 20 }} />, path: '/community' },
+    {
+      title: 'Community',
+      icon: <Groups sx={{ fontSize: 20 }} />,
+      path: '/community',
+      isSpecial: true
+    },
     { title: 'Calendar', icon: <CalendarMonth sx={{ fontSize: 20 }} />, path: '/calendar' },
     { title: 'Profile', icon: <Person sx={{ fontSize: 20 }} />, path: '/profile' },
   ];
@@ -127,7 +126,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <List sx={{ flexGrow: 1 }}>
         {menuItems.map((item) => (
           <ListItem key={item.title} disablePadding>
-            <Tooltip title={!desktopDrawerOpen && !isMobile ? item.title : ''} placement="right">
+            <Tooltip
+              title={!desktopDrawerOpen && !isMobile ? item.title : ''}
+              placement="right"
+            >
               <ListItemButton
                 selected={location.pathname === item.path}
                 onClick={() => {
@@ -157,7 +159,29 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     justifyContent: 'center',
                   }}
                 >
-                  {item.icon}
+                  {item.isSpecial && (
+                    <Badge
+                      badgeContent="NEW"
+                      color="warning"
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          fontSize: '0.6rem',
+                          height: 16,
+                          minWidth: 30,
+                          top: "-15px",
+                          animation: 'pulse 2s infinite',
+                          '@keyframes pulse': {
+                            '0%': { transform: 'scale(1)', opacity: 1 },
+                            '50%': { transform: 'scale(1.2)', opacity: 0.7 },
+                            '100%': { transform: 'scale(1)', opacity: 1 },
+                          },
+                        },
+                      }}
+                    >
+                      {item.icon}
+                    </Badge>
+                  )}
+                  {!item.isSpecial && item.icon}
                 </ListItemIcon>
                 {(desktopDrawerOpen || isMobile) && (
                   <ListItemText primary={item.title} />
@@ -230,12 +254,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Typography>
 
           <Stack direction="row" spacing={2} alignItems="center">
-            {/* <IconButton color="inherit">
-              <Badge badgeContent={3} color="error">
-                <Notifications sx={{ fontSize: 20 }} />
-              </Badge>
-            </IconButton> */}
-
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar
@@ -256,7 +274,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <Menu
             sx={{ mt: '45px' }}
-            // anchorEl={anchorElUser}
             anchorOrigin={{
               vertical: 'top',
               horizontal: 'right',
@@ -266,7 +283,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               vertical: 'top',
               horizontal: 'right',
             }}
-            // open={Boolean(anchorElUser)}
             open={openMenu}
             onClose={handleCloseUserMenu}
           >
@@ -341,7 +357,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           p: 0,
           minHeight: 'calc(100vh - 64px)',
           mt: '64px',
-          ml: isMobile ? 0 : 0, // Remove left margin as drawer is now collapsible
+          ml: isMobile ? 0 : 0,
           transition: theme.transitions.create('margin', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,

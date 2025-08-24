@@ -1,5 +1,5 @@
 // frontend/src/components/classroom/SimplePDFViewer.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Box,
     Paper,
@@ -99,20 +99,52 @@ export const SimplePDFViewer: React.FC<PDFViewerProps> = ({
         setScale((prevScale) => Math.max(prevScale - 0.2, 0.4));
     };
 
+    // In frontend/src/components/classroom/SimplePDFViewer.tsx
+
+    // Add this useEffect to listen for fullscreen changes
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            // Update state when fullscreen mode changes (e.g., when ESC is pressed)
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+
+        // Listen for fullscreen change events
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+        };
+    }, []);
+
+    // Update the toggleFullscreen function
     const toggleFullscreen = () => {
         const element = document.getElementById('pdf-viewer-container');
         if (!element) return;
 
         if (!isFullscreen) {
+            // Entering fullscreen
             if (element.requestFullscreen) {
-                element.requestFullscreen();
+                element.requestFullscreen().catch((err) => {
+                    console.error('Error entering fullscreen:', err);
+                });
             }
+            setIsFullscreen(true);
         } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
+            // Exiting fullscreen
+            if (document.exitFullscreen && document.fullscreenElement) {
+                document.exitFullscreen().catch((err) => {
+                    // Silently catch the error if document is not active
+                    console.log('Exit fullscreen error (likely already exited):', err);
+                });
             }
+            setIsFullscreen(false);
         }
-        setIsFullscreen(!isFullscreen);
     };
 
     const handleDownload = () => {
