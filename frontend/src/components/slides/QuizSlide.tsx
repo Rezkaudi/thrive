@@ -1,6 +1,4 @@
-// Updated QuizSlide.tsx to properly handle quiz validation with improved feedback and wrong answer styling
-
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Typography,
@@ -35,12 +33,69 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
   const isQuizCompleted = validation?.type === "success";
   const hasWrongAnswer = validation?.type === "error";
 
+  // Create randomized options mapping - memoized to prevent re-shuffling on re-renders
+  const randomizedMapping = useMemo(() => {
+    if (!content.options) return { shuffledOptions: [], indexMap: [] };
+
+    // Create array of indices and shuffle them
+    const indices = content.options.map((_: string, index: number) => index);
+    
+    // Fisher-Yates shuffle algorithm
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    // Create shuffled options array
+    const shuffledOptions = indices.map((originalIndex: number) => content.options![originalIndex]);
+    
+    return {
+      shuffledOptions,
+      indexMap: indices, // Maps display position to original index
+      reverseMap: indices.reduce((acc: Record<number, number>, originalIndex: number, displayIndex: number) => {
+        acc[originalIndex] = displayIndex;
+        return acc;
+      }, {} as Record<number, number>)
+    };
+  }, [content.options, slide.id]); // Include slide.id to ensure consistent shuffling per slide
+
+  // Convert original answer indices to display indices
+  const getDisplayAnswer = (originalAnswer: number | number[] | undefined) => {
+    if (originalAnswer === undefined) return originalAnswer;
+    
+    if (Array.isArray(originalAnswer)) {
+      // For multiple choice, map each original index to display index
+      return originalAnswer.map((originalIndex: number) => randomizedMapping.reverseMap[originalIndex]);
+    } else {
+      // For single choice, map original index to display index
+      return randomizedMapping.reverseMap[originalAnswer];
+    }
+  };
+
+  // Convert display answer indices back to original indices
+  const getOriginalAnswer = (displayAnswer: number | number[] | undefined) => {
+    if (displayAnswer === undefined) return displayAnswer;
+    
+    if (Array.isArray(displayAnswer)) {
+      // For multiple choice, map each display index to original index
+      return displayAnswer.map((displayIndex: number) => randomizedMapping.indexMap[displayIndex]);
+    } else {
+      // For single choice, map display index to original index
+      return randomizedMapping.indexMap[displayAnswer];
+    }
+  };
+
+  // Get the user's answer in display format
+  const displayUserAnswer = getDisplayAnswer(userAnswer);
+
   // Helper function to check if an option is wrong for single choice
-  const isOptionWrong = (optionIndex: number) => {
+  const isOptionWrong = (displayIndex: number) => {
     if (!hasWrongAnswer || !showQuizFeedback) return false;
     
+    const originalIndex = randomizedMapping.indexMap[displayIndex];
+    
     if (content.type === "single-choice") {
-      return userAnswer === optionIndex && optionIndex !== content.correctAnswer;
+      return userAnswer === originalIndex && originalIndex !== content.correctAnswer;
     }
     
     if (content.type === "multiple-choice") {
@@ -49,8 +104,8 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
       
       // Only highlight as wrong if:
       // User selected it but it's NOT a correct answer
-      const userSelected = userAnswers.includes(optionIndex);
-      const isCorrectAnswer = correctAnswers.includes(optionIndex);
+      const userSelected = userAnswers.includes(originalIndex);
+      const isCorrectAnswer = correctAnswers.includes(originalIndex);
       
       return userSelected && !isCorrectAnswer;
     }
@@ -59,31 +114,36 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
   };
 
   // Helper function to check if an option is correct (for highlighting correct answers)
-  const isOptionCorrect = (optionIndex: number) => {
+  const isOptionCorrect = (displayIndex: number) => {
     // Don't show correct answer hints for any quiz type - let users figure it out
     return false;
   };
 
-  const handleSingleChoiceAnswer = (answerIndex: string) => {
+  const handleSingleChoiceAnswer = (displayAnswerIndex: string) => {
+    const displayIndex = parseInt(displayAnswerIndex);
+    const originalIndex = randomizedMapping.indexMap[displayIndex];
+    
     setInteractiveAnswers((prev) => ({
       ...prev,
-      [quizId]: parseInt(answerIndex),
+      [quizId]: originalIndex,
     }));
   };
 
   const handleMultipleChoiceAnswer = (
-    answerIndex: number,
+    displayAnswerIndex: number,
     isChecked: boolean
   ) => {
+    const originalIndex = randomizedMapping.indexMap[displayAnswerIndex];
+    
     setInteractiveAnswers((prev) => {
       const currentAnswers = prev[quizId] || [];
       let newAnswers;
 
       if (isChecked) {
-        newAnswers = [...currentAnswers, answerIndex];
+        newAnswers = [...currentAnswers, originalIndex];
       } else {
         newAnswers = currentAnswers.filter(
-          (index: number) => index !== answerIndex
+          (index: number) => index !== originalIndex
         );
       }
 
@@ -149,13 +209,13 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
       {/* Single Choice - Radio Buttons */}
       {content.type === "single-choice" && (
         <RadioGroup
-          value={userAnswer?.toString() || ""}
+          value={displayUserAnswer?.toString() || ""}
           onChange={(e) => handleSingleChoiceAnswer(e.target.value)}
         >
-          {content.options?.map((option: string, index: number) => {
-            const isSelected = userAnswer === index;
-            const isWrong = isOptionWrong(index);
-            const isCorrect = isOptionCorrect(index);
+          {randomizedMapping.shuffledOptions?.map((option: string, displayIndex: number) => {
+            const isSelected = displayUserAnswer === displayIndex;
+            const isWrong = isOptionWrong(displayIndex);
+            const isCorrect = isOptionCorrect(displayIndex);
             
             // Determine border and background colors
             let borderColor = "divider";
@@ -176,8 +236,8 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
 
             return (
               <FormControlLabel
-                key={index}
-                value={index.toString()}
+                key={displayIndex}
+                value={displayIndex.toString()}
                 control={<Radio color="primary" />}
                 label={
                   <Typography
@@ -224,10 +284,10 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
           >
             💡 Select all correct answers
           </Typography>
-          {content.options?.map((option: string, index: number) => {
-            const isChecked = (userAnswer || []).includes(index);
-            const isWrong = isOptionWrong(index);
-            const isCorrect = isOptionCorrect(index);
+          {randomizedMapping.shuffledOptions?.map((option: string, displayIndex: number) => {
+            const isChecked = (displayUserAnswer || []).includes(displayIndex);
+            const isWrong = isOptionWrong(displayIndex);
+            const isCorrect = isOptionCorrect(displayIndex);
 
             // Determine border and background colors
             let borderColor = "divider";
@@ -248,13 +308,13 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
 
             return (
               <FormControlLabel
-                key={index}
+                key={displayIndex}
                 control={
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={(e) =>
-                      handleMultipleChoiceAnswer(index, e.target.checked)
+                      handleMultipleChoiceAnswer(displayIndex, e.target.checked)
                     }
                     style={{
                       width: 20,
