@@ -34,7 +34,6 @@ export const ForgotPasswordPage: React.FC = () => {
             await api.post('/auth/forgot-password', { email });
             setSuccess(true);
         } catch (err: any) {
-            console.log(err)
             // Check for rate limiting
             if (err.response?.status === 429) {
                 setError('Too many requests. Please try again later.');

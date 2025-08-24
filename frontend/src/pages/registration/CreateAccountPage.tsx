@@ -95,8 +95,6 @@ export const CreateAccountPage: React.FC = () => {
                     sessionId,
                 });
 
-                console.log(response);
-
                 if (response.data.status === 'complete' || response.data.status === 'paid') {
                     setPaymentVerified(true);
                     sessionStorage.setItem('registration_step', '3');
@@ -142,10 +140,6 @@ export const CreateAccountPage: React.FC = () => {
 
         verifyPayment();
     }, [navigate, searchParams]);
-
-    useEffect(() => {
-        console.log("register", paymentVerified);
-    }, [paymentVerified]);
 
     const calculatePasswordStrength = (password: string): PasswordStrength => {
         let score = 0;

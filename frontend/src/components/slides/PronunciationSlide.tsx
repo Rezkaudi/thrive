@@ -65,16 +65,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   const showSlideFeeback = showFeedback[slideId];
   const validation = validationResults[slideId];
 
-  console.log('PronunciationSlide State:', {
-    slideId,
-    userAnswer,
-    completedCount,
-    totalItems,
-    isSlideCompleted,
-    validation,
-    showSlideFeeback
-  });
-
   // Get recording state for a specific item
   const getRecordingState = (itemId: string): RecordingState => {
     return recordingStates[itemId] || {
@@ -99,7 +89,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   // Load existing state when component mounts or userAnswer changes
   useEffect(() => {
     if (userAnswer && typeof userAnswer === 'object') {
-      console.log('Loading existing pronunciation answers:', userAnswer);
       
       const recordedItems = new Set<string>();
       Object.keys(userAnswer).forEach(itemId => {
@@ -112,7 +101,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
       
       // Check if slide was marked as completed
       if (userAnswer.completed === true) {
-        console.log('Slide was previously completed');
         setIsSlideCompleted(true);
       }
     }
@@ -121,7 +109,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   // Check validation state for completion
   useEffect(() => {
     if (validation?.type === 'success' && validation?.isValid) {
-      console.log('Validation shows success, marking slide as completed');
       setIsSlideCompleted(true);
       setIsProcessingCompletion(false);
     }
@@ -170,7 +157,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
                 [itemId]: audioUrl,
               }
             };
-            console.log('Updated answers after recording:', newAnswers);
             return newAnswers;
           });
           
@@ -243,7 +229,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
           }
           newAnswers[slideId] = slideAnswers;
         }
-        console.log('Updated answers after reset:', newAnswers);
         return newAnswers;
       });
       
@@ -253,15 +238,9 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
 
   const handleMarkComplete = () => {
     if (completedCount === 0 || isSlideCompleted || isProcessingCompletion) {
-      console.log('Cannot complete - conditions not met:', {
-        completedCount,
-        isSlideCompleted,
-        isProcessingCompletion
-      });
       return;
     }
 
-    console.log('=== STARTING PRONUNCIATION COMPLETION ===');
     setIsProcessingCompletion(true);
 
     // Create the answer object with all recorded items
@@ -275,8 +254,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
         completedAnswer[itemId] = state.audioUrl;
       }
     });
-
-    console.log('Completion answer object:', completedAnswer);
 
     // Update the answers first
     setInteractiveAnswers(prev => ({
@@ -296,14 +273,11 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
 
     // Use checkAnswer to integrate with the slide system
     setTimeout(() => {
-      console.log('Calling checkAnswer for pronunciation...');
       // For pronunciation, we don't need a "correct" answer since it's subjective
       // Pass the completed answer as both user answer and correct answer
       const success = checkAnswer(slideId, completedAnswer, completedAnswer, 'pronunciation');
-      console.log('CheckAnswer result:', success);
       
       if (success) {
-        console.log('Pronunciation marked as complete successfully');
         setIsSlideCompleted(true);
       }
       setIsProcessingCompletion(false);
@@ -313,7 +287,6 @@ export const PronunciationSlide: React.FC<SlideComponentProps> = ({
   // Reset completion state if user removes all recordings
   useEffect(() => {
     if (completedCount === 0 && isSlideCompleted) {
-      console.log('All recordings removed, resetting completion state');
       setIsSlideCompleted(false);
       
       // Clear the completed flag from answers

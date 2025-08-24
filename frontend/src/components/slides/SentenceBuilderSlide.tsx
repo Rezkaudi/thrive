@@ -215,13 +215,6 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const handleCheckAnswer = useCallback(() => {
     if (!currentItem || !isComplete) return;
 
-    // Enhanced logging for debugging
-    console.group('🔍 Enhanced Sentence Builder Check Answer');
-    console.log('User answer:', sentenceState.selectedWords);
-    console.log('Correct answer:', correctSentence);
-    console.log('Available words:', allAvailableWords);
-    console.log('Distractors used:', sentenceState.selectedWords.filter(word => validDistractors.includes(word)));
-    console.log('Words match:', JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence));
     console.groupEnd();
 
     checkAnswer(slideId, sentenceState.selectedWords, correctSentence, "sentence-builder");

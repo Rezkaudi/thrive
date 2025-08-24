@@ -101,7 +101,6 @@ const authSlice = createSlice({
         state.csrfToken = action.payload.csrfToken;
       })
       .addCase(login.rejected, (state, action) => {
-        console.log(action)
         state.loading = false;
         state.error = (action.payload as { error: string })?.error || 'Login failed';
       })
