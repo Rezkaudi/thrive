@@ -361,38 +361,67 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     const delays = {
       'quiz': 2500,           // Quick auto-progression for quizzes
       'drag-drop': 0,         // No auto-progression for other interactive types
-      'fill-blanks': 0,       
-      'sentence-builder': 0,  
-      'matching': 0,          
-      'sorting': 0,           
-      'hotspot': 0,           
-      'timeline': 0,          
-      'listening': 0,         
-      'pronunciation': 0,     
-      'flashcard': 0,         
-      'generic': 0            
+      'fill-blanks': 0,
+      'sentence-builder': 0,
+      'matching': 0,
+      'sorting': 0,
+      'hotspot': 0,
+      'timeline': 0,
+      'listening': 0,
+      'pronunciation': 0,
+      'flashcard': 0,
+      'generic': 0
     };
 
     return delays[interactiveType as keyof typeof delays] || delays.generic;
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(prev => !prev);
+  // In frontend/src/hooks/useInteractiveSlides.ts
 
+  const toggleFullscreen = () => {
     if (!isFullscreen) {
+      // Entering fullscreen
+      setIsFullscreen(true);
       if (containerRef.current) {
         containerRef.current.requestFullscreen?.();
       }
     } else {
+      // Exiting fullscreen
       exitFullscreen();
     }
   };
 
   const exitFullscreen = () => {
+    setIsFullscreen(false);
+    // Only call exitFullscreen if the document is actually in fullscreen mode
     if (document.fullscreenElement) {
-      document.exitFullscreen?.();
+      document.exitFullscreen?.().catch((err) => {
+        // Silently catch the error if document is not active
+        console.log('Exit fullscreen error (likely already exited):', err);
+      });
     }
   };
+
+  // Add an effect to listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // Update state when fullscreen mode changes (e.g., when ESC is pressed)
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    // Listen for fullscreen change events
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
 
   const slideComponentProps = {
     slide,
