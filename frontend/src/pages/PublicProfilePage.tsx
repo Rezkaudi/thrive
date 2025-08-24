@@ -126,7 +126,6 @@ export const PublicProfilePage: React.FC = () => {
         setLoading(true);
         const profileData = await profileService.getPublicProfile(userId);
         setProfile(profileData);
-        console.log(profileData)
       } catch (err: any) {
         setError(err.message || 'Failed to load profile');
       } finally {

@@ -195,7 +195,6 @@ export const AdminCourseDetailPage: React.FC = () => {
             );
 
             await Promise.all(updatePromises);
-            console.log("Lessons reordered successfully");
         } catch (error) {
             console.error("Failed to reorder lessons:", error);
             fetchLessons(selectedCourse!.id);
@@ -258,7 +257,6 @@ export const AdminCourseDetailPage: React.FC = () => {
     const fetchLessons = async (courseId: string) => {
         try {
             const response = await api.get(`/courses/${courseId}/lessons`);
-            console.log("Lessons response:", response.data);
             const sortedLessons = response.data.sort((a: Lesson, b: Lesson) => a.order - b.order);
             setLessons(sortedLessons);
         } catch (error) {

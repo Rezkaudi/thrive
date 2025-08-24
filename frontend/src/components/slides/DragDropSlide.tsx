@@ -113,7 +113,6 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       const normalizedTarget = item.target.trim();
       answers[normalizedText] = normalizedTarget;
     });
-    console.log("Correct answers mapping:", answers);
     return answers;
   }, [items]);
 
@@ -144,18 +143,8 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
   useEffect(() => {
     // Only use parent validation if we don't have local validation or if it's a success
     if (validation && !localValidation) {
-      console.log("=== PARENT VALIDATION STATE UPDATE ===");
-      console.log("Parent validation:", validation);
-      console.log("Local validation:", localValidation);
-      console.log("Using parent validation since no local validation exists");
-
       setLocalValidation(validation);
       setForceUpdate((prev) => prev + 1);
-    } else if (validation && localValidation) {
-      console.log("=== VALIDATION CONFLICT ===");
-      console.log("Parent validation:", validation);
-      console.log("Local validation:", localValidation);
-      console.log("Keeping local validation (it takes priority)");
     }
   }, [validation, showSlideFeeback]);
 
@@ -168,12 +157,8 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
     }
 
     if (localValidation?.type === "error" && showSlideFeeback) {
-      console.log("=== AUTO-RESET TRIGGERED ===");
-      console.log("Error validation detected, setting reset timer");
-
       // Reset immediately when there's an error
       const timer = setTimeout(() => {
-        console.log("Executing auto-reset...");
         handleReset();
         setIsValidating(false);
         setLocalValidation(null);
@@ -181,14 +166,10 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
 
       setAutoResetTimer(timer);
     } else if (localValidation?.type === "success") {
-      console.log("Success validation - stopping validation state");
       setIsValidating(false);
 
       // Reset with celebration animation after success
       const successTimer = setTimeout(() => {
-        console.log(
-          "Success celebration complete - resetting for next attempt"
-        );
         handleReset();
       }, 3000); // Longer delay for success to let user see the success message
 
@@ -285,17 +266,6 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         // Add new mapping - ensure we use the exact text as it appears
         updatedAnswer[item.text] = target;
 
-        console.log("=== DROP ACTION ===");
-        console.log("Dropping item:", item.text);
-        console.log("Onto target:", target);
-        console.log("Updated answer state:", updatedAnswer);
-        console.log("Correct answer for this item:", correctAnswers[item.text]);
-        console.log(
-          "Is this match correct?",
-          correctAnswers[item.text] === target
-        );
-        console.log("==================");
-
         setInteractiveAnswers((prev) => ({
           ...prev,
           [slideId]: updatedAnswer,
@@ -321,19 +291,11 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
     // Use the pre-computed correct answers
     const correctAnswerForValidation = { ...correctAnswers };
 
-    console.log("=== COMPREHENSIVE ANSWER VALIDATION ===");
-    console.log("Items from content:", items);
-    console.log("User answers:", userAnswer);
-    console.log("Correct answers:", correctAnswerForValidation);
 
     // Check if all items are answered
     const userAnswerKeys = Object.keys(userAnswer);
     const expectedKeys = Object.keys(correctAnswerForValidation);
 
-    console.log("User answer keys:", userAnswerKeys);
-    console.log("Expected keys:", expectedKeys);
-    console.log("User answer count:", userAnswerKeys.length);
-    console.log("Expected count:", expectedKeys.length);
 
     // Detailed validation of each answer
     let correctCount = 0;
@@ -349,12 +311,10 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       const status = isCorrect ? "✅ CORRECT" : "❌ WRONG";
       const result = `${key} -> "${userValue}" | Expected: "${correctValue}" | ${status}`;
       detailedResults.push(result);
-      console.log(result);
     });
 
     const allCorrect = correctCount === expectedKeys.length;
-    console.log(`\nSUMMARY: ${correctCount}/${expectedKeys.length} correct`);
-    console.log("All answers correct?", allCorrect);
+
 
     // Create our own validation result
     const localValidationResult = {
@@ -365,8 +325,6 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
       isValid: allCorrect,
     };
 
-    console.log("LOCAL validation result:", localValidationResult);
-
     // Set our local validation immediately
     setLocalValidation(localValidationResult);
     setIsValidating(false);
@@ -374,19 +332,16 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
     // Also try to update parent state, but don't rely on it
     try {
       checkAnswer(slideId, userAnswer, correctAnswerForValidation, "drag-drop");
-      console.log("Parent checkAnswer called");
     } catch (error) {
       console.error("Error calling parent checkAnswer:", error);
     }
 
-    console.log("=====================================");
 
     // Force a state update to ensure fresh validation
     setForceUpdate((prev) => prev + 1);
   }, [items, userAnswer, slideId, checkAnswer, correctAnswers]);
 
   const handleReset = useCallback(() => {
-    console.log("=== RESETTING DRAG-DROP ===");
 
     // Clear any existing timer
     if (autoResetTimer) {
@@ -402,9 +357,6 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
     setLocalValidation(null);
     setResetTrigger((prev) => prev + 1);
     setForceUpdate((prev) => prev + 1);
-
-    console.log("Reset completed - all answers cleared");
-    console.log("========================");
   }, [slideId, setInteractiveAnswers, autoResetTimer]);
 
   // Remove specific item from answers
@@ -419,8 +371,6 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
         [slideId]: updatedAnswer,
       }));
 
-      console.log("Removed match for:", itemText);
-      console.log("Updated answers:", updatedAnswer);
     },
     [userAnswer, slideId, setInteractiveAnswers, isValidating]
   );
@@ -515,6 +465,46 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
           }}
         />
       </Box>
+
+            {/* Feedback display - Prioritize local validation */}
+      {showSlideFeeback && localValidation && (
+        <Fade in key={`${forceUpdate}-${localValidation.type}`}>
+          <Alert
+            severity={localValidation.type}
+            sx={{
+              mt: { xs: 2, md: 3 },
+              borderRadius: 2,
+              fontSize: { xs: "0.9rem", md: "1rem" }
+            }}
+            icon={
+              localValidation.type === "success" ? (
+                <CheckCircle />
+              ) : localValidation.type === "error" ? (
+                <Error />
+              ) : (
+                <Warning />
+              )
+            }
+          >
+            <Typography variant="body1" fontWeight={500}>
+              {localValidation.message}
+            </Typography>
+            {localValidation.type === "error" && (
+              <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+                Activity will reset automatically in 2 seconds to try again...
+              </Typography>
+            )}
+            {localValidation.type === "success" && (
+              <Typography
+                variant="body2"
+                sx={{ mt: 1, opacity: 0.8, color: "success.dark" }}
+              >
+                🎯 Perfect match! Resetting in 3 seconds for next practice...
+              </Typography>
+            )}
+          </Alert>
+        </Fade>
+      )}
 
       <Grid container spacing={{ xs: 2, md: 4 }} sx={{ mb: { xs: 3, md: 4 } }}>
         {/* Left side - Items to drag */}
@@ -848,46 +838,6 @@ export const DragDropSlide: React.FC<SlideComponentProps> = ({
               : `Complete (${matchedCount}/${totalCount})`}
         </Button>
       </Stack>
-
-      {/* Feedback display - Prioritize local validation */}
-      {showSlideFeeback && localValidation && (
-        <Fade in key={`${forceUpdate}-${localValidation.type}`}>
-          <Alert
-            severity={localValidation.type}
-            sx={{
-              mt: { xs: 2, md: 3 },
-              borderRadius: 2,
-              fontSize: { xs: "0.9rem", md: "1rem" }
-            }}
-            icon={
-              localValidation.type === "success" ? (
-                <CheckCircle />
-              ) : localValidation.type === "error" ? (
-                <Error />
-              ) : (
-                <Warning />
-              )
-            }
-          >
-            <Typography variant="body1" fontWeight={500}>
-              {localValidation.message}
-            </Typography>
-            {localValidation.type === "error" && (
-              <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-                Activity will reset automatically in 2 seconds to try again...
-              </Typography>
-            )}
-            {localValidation.type === "success" && (
-              <Typography
-                variant="body2"
-                sx={{ mt: 1, opacity: 0.8, color: "success.dark" }}
-              >
-                🎯 Perfect match! Resetting in 3 seconds for next practice...
-              </Typography>
-            )}
-          </Alert>
-        </Fade>
-      )}
     </Box>
   );
 };

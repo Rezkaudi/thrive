@@ -502,25 +502,9 @@ export const Comments: React.FC<CommentsProps> = ({
   const commentsInitialized = (item as any)?.commentsInitialized || false;
   const commentsPage = (item as any)?.commentsPage || 1;
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Comments Debug:', {
-      postId,
-      isOpen,
-      commentsCount,
-      commentsLength: comments.length,
-      commentsLoading,
-      commentsInitialized,
-      hasAttemptedFetch,
-      item: !!item,
-      isAnnouncement
-    });
-  }, [postId, isOpen, commentsCount, comments.length, commentsLoading, commentsInitialized, hasAttemptedFetch, item, isAnnouncement]);
-
   // Fetch comments when section is opened
   useEffect(() => {
     if (isOpen && !hasAttemptedFetch && !commentsLoading) {
-      console.log(`Attempting to fetch comments for ${isAnnouncement ? 'announcement' : 'post'}:`, postId);
       setHasAttemptedFetch(true);
       
       if (isAnnouncement) {

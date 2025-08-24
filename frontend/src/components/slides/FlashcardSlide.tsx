@@ -180,6 +180,31 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
         />
       </Paper>
 
+      
+      {/* Completion Message */}
+      {allCardsFlipped && (
+        <Fade in>
+          <Alert
+            severity="success"
+            sx={{
+              mt: 3,
+              borderRadius: 3,
+              fontSize: { xs: "0.9rem", md: "1rem" },
+              "& .MuiAlert-icon": {
+                fontSize: { xs: "1.2rem", md: "1.5rem" },
+              },
+            }}
+          >
+            <Typography variant="body1" fontWeight={500}>
+              🎴 Excellent work! You've flipped all {totalCards} flashcards and reviewed all the content!
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
+              The lesson will automatically continue to the next slide...
+            </Typography>
+          </Alert>
+        </Fade>
+      )}
+
       {/* Flashcards Grid */}
       <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
         {content.items?.map((item: any, index: number) => {
@@ -410,30 +435,6 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
           </Paper>
         )}
       </Stack>
-
-      {/* Completion Message */}
-      {allCardsFlipped && (
-        <Fade in>
-          <Alert
-            severity="success"
-            sx={{
-              mt: 3,
-              borderRadius: 3,
-              fontSize: { xs: "0.9rem", md: "1rem" },
-              "& .MuiAlert-icon": {
-                fontSize: { xs: "1.2rem", md: "1.5rem" },
-              },
-            }}
-          >
-            <Typography variant="body1" fontWeight={500}>
-              🎴 Excellent work! You've flipped all {totalCards} flashcards and reviewed all the content!
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
-              The lesson will automatically continue to the next slide...
-            </Typography>
-          </Alert>
-        </Fade>
-      )}
 
       {/* Instructions */}
       {/* {flippedCards === 0 && (

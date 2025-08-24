@@ -215,13 +215,6 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
   const handleCheckAnswer = useCallback(() => {
     if (!currentItem || !isComplete) return;
 
-    // Enhanced logging for debugging
-    console.group('🔍 Enhanced Sentence Builder Check Answer');
-    console.log('User answer:', sentenceState.selectedWords);
-    console.log('Correct answer:', correctSentence);
-    console.log('Available words:', allAvailableWords);
-    console.log('Distractors used:', sentenceState.selectedWords.filter(word => validDistractors.includes(word)));
-    console.log('Words match:', JSON.stringify(sentenceState.selectedWords) === JSON.stringify(correctSentence));
     console.groupEnd();
 
     checkAnswer(slideId, sentenceState.selectedWords, correctSentence, "sentence-builder");
@@ -292,6 +285,35 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
       >
         {content.instruction}
       </Typography>
+
+       {/* Enhanced Feedback Alert */}
+      {showSlideFeeback && displayValidation && (
+        <Fade in>
+          <Alert
+            severity={displayValidation.type}
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              fontSize: { xs: "1rem", md: "1.1rem" },
+              fontWeight: 500,
+            }}
+          >
+            {displayValidation.message}
+            {displayValidation.type === "error" && (
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1,
+                  opacity: 0.8,
+                  fontSize: { xs: "0.85rem", md: "0.9rem" }
+                }}
+              >
+                Activity will reset automatically in 1.5 seconds...
+              </Typography>
+            )}
+          </Alert>
+        </Fade>
+      )}
 
       {/* Translation */}
       {currentItem.translation && (
@@ -589,34 +611,7 @@ export const SentenceBuilderSlide: React.FC<SlideComponentProps> = ({
         </Button>
       </Stack>
 
-      {/* Enhanced Feedback Alert */}
-      {showSlideFeeback && displayValidation && (
-        <Fade in>
-          <Alert
-            severity={displayValidation.type}
-            sx={{
-              mt: 3,
-              borderRadius: 2,
-              fontSize: { xs: "1rem", md: "1.1rem" },
-              fontWeight: 500,
-            }}
-          >
-            {displayValidation.message}
-            {displayValidation.type === "error" && (
-              <Typography
-                variant="body2"
-                sx={{
-                  mt: 1,
-                  opacity: 0.8,
-                  fontSize: { xs: "0.85rem", md: "0.9rem" }
-                }}
-              >
-                Activity will reset automatically in 1.5 seconds...
-              </Typography>
-            )}
-          </Alert>
-        </Fade>
-      )}
+      
     </Box>
   );
 };

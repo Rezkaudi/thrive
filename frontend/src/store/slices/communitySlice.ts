@@ -145,13 +145,11 @@ export const fetchComments = createAsyncThunk(
     includeReplies?: boolean;
   }, { rejectWithValue }) => {
     try {
-      console.log('Fetching comments for post:', postId, { page, limit, includeReplies });
       const response = await api.get(`/community/posts/${postId}/comments`, {
         params: { page, limit, includeReplies }
       });
       
       if (response.data.success) {
-        console.log('Comments response:', response.data.data);
         return { postId, ...response.data.data };
       } else {
         throw new Error(response.data.message || 'Failed to fetch comments');
@@ -167,12 +165,10 @@ export const createComment = createAsyncThunk(
   'community/createComment',
   async ({ postId, data }: { postId: string; data: CreateCommentData }, { rejectWithValue, getState }) => {
     try {
-      console.log('Creating comment for post:', postId, data);
       const response = await api.post(`/community/posts/${postId}/comments`, data);
       
       if (response.data.success) {
         const comment = response.data.data;
-        console.log('Comment created:', comment);
         
         // Get current user info from state for optimistic UI updates
         const state = getState() as any;
@@ -573,9 +569,7 @@ const communitySlice = createSlice({
         const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
         if (postIndex !== -1) {
           const { comments, pagination } = action.payload;
-          
-          console.log('Updating post comments:', { postId: action.payload.postId, comments, pagination });
-          
+                    
           state.posts[postIndex].commentsInitialized = true;
           state.posts[postIndex].commentsLoading = false;
           

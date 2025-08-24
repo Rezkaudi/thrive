@@ -56,25 +56,11 @@ export const communityService = {
       throw new Error('No files provided for upload');
     }
 
-    console.log('Creating FormData with files:', files.map(f => ({
-      name: f.name,
-      type: f.type,
-      size: f.size,
-      instanceof: f instanceof File
-    })));
-
     const formData = new FormData();
     files.forEach((file, index) => {
-      console.log(`Appending file ${index}:`, file.name, file.type, file.size, 'instanceof File:', file instanceof File);
       formData.append('media', file, file.name); // Explicitly pass filename
     });
 
-    // Simple FormData validation
-    console.log('FormData created with', files.length, 'files');
-    console.log('FormData has media:', formData.has('media'));
-
-    // Log the actual FormData object
-    console.log('FormData object:', formData);
 
     const response = await api.post('/community/upload-media', formData, {
       headers: {

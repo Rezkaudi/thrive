@@ -68,7 +68,6 @@ export const ResetPasswordPage: React.FC = () => {
 
             try {
                 const data = await api.get(`/auth/reset-password/validate/${token}`);
-                console.log(data.data);
 
                 if (data.data.valid) {
                     setTokenValid(true);

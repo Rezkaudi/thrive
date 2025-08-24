@@ -81,6 +81,17 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
         {content.instruction}
       </Typography>
 
+      {showSlideFeeback && validation && (
+        <Fade in>
+          <Alert
+            severity={validation.type}
+            sx={{ mt: 3, borderRadius: 2, fontSize: "1rem" }}
+          >
+            {validation.message}
+          </Alert>
+        </Fade>
+      )}
+
       <Stack spacing={4}>
         {content.items?.map((item: any, questionIndex: number) => (
           <Paper
@@ -163,16 +174,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
         </Button>
       </Box>
 
-      {showSlideFeeback && validation && (
-        <Fade in>
-          <Alert
-            severity={validation.type}
-            sx={{ mt: 3, borderRadius: 2, fontSize: "1rem" }}
-          >
-            {validation.message}
-          </Alert>
-        </Fade>
-      )}
+      
     </Box>
   );
 };

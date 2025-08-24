@@ -43,7 +43,6 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
         setLoading(true);
 
         try {
-            console.log(email)
             await api.post('/auth/send-verification-code', { email });
             setShowVerification(true);
             setResendTimer(60);

@@ -189,7 +189,7 @@ export const validateAnswer = (
 
   return {
     isValid: true,
-    message: 'Answer validated successfully!',
+    message: '正解！Correct!',
     type: 'success'
   };
 };

@@ -1,6 +1,4 @@
-// Updated QuizSlide.tsx to properly handle quiz validation
-
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Typography,
@@ -32,28 +30,120 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
   const validation = validationResults[quizId];
 
   // Check if quiz is already completed correctly
-  const isQuizCompleted = validation?.type === 'success';
+  const isQuizCompleted = validation?.type === "success";
+  const hasWrongAnswer = validation?.type === "error";
 
-  const handleSingleChoiceAnswer = (answerIndex: string) => {
+  // Create randomized options mapping - memoized to prevent re-shuffling on re-renders
+  const randomizedMapping = useMemo(() => {
+    if (!content.options) return { shuffledOptions: [], indexMap: [] };
+
+    // Create array of indices and shuffle them
+    const indices = content.options.map((_: string, index: number) => index);
+    
+    // Fisher-Yates shuffle algorithm
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    // Create shuffled options array
+    const shuffledOptions = indices.map((originalIndex: number) => content.options![originalIndex]);
+    
+    return {
+      shuffledOptions,
+      indexMap: indices, // Maps display position to original index
+      reverseMap: indices.reduce((acc: Record<number, number>, originalIndex: number, displayIndex: number) => {
+        acc[originalIndex] = displayIndex;
+        return acc;
+      }, {} as Record<number, number>)
+    };
+  }, [content.options, slide.id]); // Include slide.id to ensure consistent shuffling per slide
+
+  // Convert original answer indices to display indices
+  const getDisplayAnswer = (originalAnswer: number | number[] | undefined) => {
+    if (originalAnswer === undefined) return originalAnswer;
+    
+    if (Array.isArray(originalAnswer)) {
+      // For multiple choice, map each original index to display index
+      return originalAnswer.map((originalIndex: number) => randomizedMapping.reverseMap[originalIndex]);
+    } else {
+      // For single choice, map original index to display index
+      return randomizedMapping.reverseMap[originalAnswer];
+    }
+  };
+
+  // Convert display answer indices back to original indices
+  const getOriginalAnswer = (displayAnswer: number | number[] | undefined) => {
+    if (displayAnswer === undefined) return displayAnswer;
+    
+    if (Array.isArray(displayAnswer)) {
+      // For multiple choice, map each display index to original index
+      return displayAnswer.map((displayIndex: number) => randomizedMapping.indexMap[displayIndex]);
+    } else {
+      // For single choice, map display index to original index
+      return randomizedMapping.indexMap[displayAnswer];
+    }
+  };
+
+  // Get the user's answer in display format
+  const displayUserAnswer = getDisplayAnswer(userAnswer);
+
+  // Helper function to check if an option is wrong for single choice
+  const isOptionWrong = (displayIndex: number) => {
+    if (!hasWrongAnswer || !showQuizFeedback) return false;
+    
+    const originalIndex = randomizedMapping.indexMap[displayIndex];
+    
+    if (content.type === "single-choice") {
+      return userAnswer === originalIndex && originalIndex !== content.correctAnswer;
+    }
+    
+    if (content.type === "multiple-choice") {
+      const correctAnswers = content.correctAnswers || [];
+      const userAnswers = userAnswer || [];
+      
+      // Only highlight as wrong if:
+      // User selected it but it's NOT a correct answer
+      const userSelected = userAnswers.includes(originalIndex);
+      const isCorrectAnswer = correctAnswers.includes(originalIndex);
+      
+      return userSelected && !isCorrectAnswer;
+    }
+    
+    return false;
+  };
+
+  // Helper function to check if an option is correct (for highlighting correct answers)
+  const isOptionCorrect = (displayIndex: number) => {
+    // Don't show correct answer hints for any quiz type - let users figure it out
+    return false;
+  };
+
+  const handleSingleChoiceAnswer = (displayAnswerIndex: string) => {
+    const displayIndex = parseInt(displayAnswerIndex);
+    const originalIndex = randomizedMapping.indexMap[displayIndex];
+    
     setInteractiveAnswers((prev) => ({
       ...prev,
-      [quizId]: parseInt(answerIndex),
+      [quizId]: originalIndex,
     }));
   };
 
   const handleMultipleChoiceAnswer = (
-    answerIndex: number,
+    displayAnswerIndex: number,
     isChecked: boolean
   ) => {
+    const originalIndex = randomizedMapping.indexMap[displayAnswerIndex];
+    
     setInteractiveAnswers((prev) => {
       const currentAnswers = prev[quizId] || [];
       let newAnswers;
 
       if (isChecked) {
-        newAnswers = [...currentAnswers, answerIndex];
+        newAnswers = [...currentAnswers, originalIndex];
       } else {
         newAnswers = currentAnswers.filter(
-          (index: number) => index !== answerIndex
+          (index: number) => index !== originalIndex
         );
       }
 
@@ -89,64 +179,134 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
         {content.question}
       </Typography>
 
-      {/* Show completion status if quiz is already completed */}
-      {isQuizCompleted && (
-        <Paper
+     {/* Detailed Feedback (only show after validation) */}
+    {showQuizFeedback && validation && (
+      <Fade in>
+        <Alert
+          severity={validation.type}
           sx={{
-            p: 2,
             mb: 3,
-            bgcolor: 'success.light',
-            color: 'success.contrastText',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
+            borderRadius: 2,
+            fontSize: "1rem",
+            // Conditional styling based on validation type
+            ...(validation.type === "success" ? {
+              // Green styling for correct answers
+              backgroundColor: "#e8f5e8",    // Light green background
+              borderColor: "#4caf50",        // Green border
+              color: "#000000",              // Black text for correct answers
+              "& .MuiAlert-message": {
+                fontSize: "1rem",
+                color: "#000000",            // Black text for message
+              },
+              "& .MuiAlert-icon": {
+                color: "#4caf50",            // Green icon
+              },
+            } : {
+              // Red styling for incorrect answers  
+              backgroundColor: "#f44336",    // Red background
+              borderColor: "#d32f2f",        // Darker red border
+              color: "#ffffff",              // White text for incorrect answers
+              "& .MuiAlert-message": {
+                fontSize: "1rem",
+                color: "#ffffff",            // White text for message
+              },
+              "& .MuiAlert-icon": {
+                color: "#ffffff",            // White icon
+              },
+            }),
           }}
+          icon={validation.type === "success" ? <CheckCircle /> : <Error />}
         >
-          <CheckCircle />
-          <Typography variant="body1" fontWeight={500}>
-            You've already completed this quiz correctly!
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontWeight: 500,
+              color: "inherit", // Inherit the alert's text color
+            }}
+          >
+            {validation.message}
           </Typography>
-        </Paper>
-      )}
+          {content.explanation && validation.type === "success" && (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mt: 1, 
+                opacity: 0.9,
+                color: "inherit", // Inherit the alert's text color
+              }}
+            >
+              💡 {content.explanation}
+            </Typography>
+          )}
+        </Alert>
+      </Fade>
+    )}
 
       {/* Single Choice - Radio Buttons */}
       {content.type === "single-choice" && (
         <RadioGroup
-          value={userAnswer?.toString() || ""}
+          value={displayUserAnswer?.toString() || ""}
           onChange={(e) => handleSingleChoiceAnswer(e.target.value)}
         >
-          {content.options?.map((option: string, index: number) => (
-            <FormControlLabel
-              key={index}
-              value={index.toString()}
-              control={<Radio color="primary" />}
-              label={
-                <Typography
-                  variant="body1"
-                  sx={{ fontSize: "1.1rem", py: 0.5 }}
-                >
-                  {option}
-                </Typography>
-              }
-              sx={{
-                mb: 2,
-                p: 2,
-                borderRadius: 2,
-                border: "2px solid",
-                borderColor: userAnswer === index ? "primary.main" : "divider",
-                backgroundColor:
-                  userAnswer === index ? "primary.50" : "background.paper",
-                "&:hover": {
-                  bgcolor: "action.hover",
-                  borderColor: "primary.light",
-                },
-                transition: "all 0.2s ease",
-                width: "100%",
-                ml: 0,
-                mr: 0,
-              }}
-            />
-          ))}
+          {randomizedMapping.shuffledOptions?.map((option: string, displayIndex: number) => {
+            const isSelected = displayUserAnswer === displayIndex;
+            const isWrong = isOptionWrong(displayIndex);
+            const isCorrect = isOptionCorrect(displayIndex);
+            
+            // Determine border and background colors
+            let borderColor = "divider";
+            let backgroundColor = "background.paper";
+            let textColor = "text.primary";
+            
+            if (showQuizFeedback && isCorrect) {
+              borderColor = "success.main";
+              backgroundColor = "success.50";
+            } else if (isWrong) {
+              borderColor = "error.main";
+              backgroundColor = "error.50";
+              textColor = "error.main";
+            } else if (isSelected) {
+              borderColor = "primary.main";
+              backgroundColor = "primary.50";
+            }
+
+            return (
+              <FormControlLabel
+                key={displayIndex}
+                value={displayIndex.toString()}
+                control={<Radio color="primary" />}
+                label={
+                  <Typography
+                    variant="body1"
+                    sx={{ 
+                      fontSize: "1.1rem", 
+                      py: 0.5,
+                      color: textColor,
+                      fontWeight: isWrong ? 500 : 400
+                    }}
+                  >
+                    {option}
+                  </Typography>
+                }
+                sx={{
+                  mb: 2,
+                  p: 1,
+                  borderRadius: 2,
+                  border: "2px solid",
+                  borderColor: borderColor,
+                  backgroundColor: backgroundColor,
+                  "&:hover": {
+                    bgcolor: isWrong ? "error.100" : "action.hover",
+                    borderColor: isWrong ? "error.main" : "primary.light",
+                  },
+                  transition: "all 0.2s ease",
+                  width: "100%",
+                  ml: 0,
+                  mr: 0,
+                }}
+              />
+            );
+          })}
         </RadioGroup>
       )}
 
@@ -160,23 +320,42 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
           >
             💡 Select all correct answers
           </Typography>
-          {content.options?.map((option: string, index: number) => {
-            const isChecked = (userAnswer || []).includes(index);
+          {randomizedMapping.shuffledOptions?.map((option: string, displayIndex: number) => {
+            const isChecked = (displayUserAnswer || []).includes(displayIndex);
+            const isWrong = isOptionWrong(displayIndex);
+            const isCorrect = isOptionCorrect(displayIndex);
+
+            // Determine border and background colors
+            let borderColor = "divider";
+            let backgroundColor = "background.paper";
+            let textColor = "text.primary";
+            
+            if (showQuizFeedback && isCorrect) {
+              borderColor = "success.main";
+              backgroundColor = "success.50";
+            } else if (isWrong) {
+              borderColor = "error.main";
+              backgroundColor = "error.50";
+              textColor = "error.main";
+            } else if (isChecked) {
+              borderColor = "primary.main";
+              backgroundColor = "primary.50";
+            }
 
             return (
               <FormControlLabel
-                key={index}
+                key={displayIndex}
                 control={
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={(e) =>
-                      handleMultipleChoiceAnswer(index, e.target.checked)
+                      handleMultipleChoiceAnswer(displayIndex, e.target.checked)
                     }
                     style={{
                       width: 20,
                       height: 20,
-                      accentColor: "#1976d2",
+                      accentColor: isWrong ? "#d32f2f" : "#1976d2",
                       cursor: "pointer",
                       marginRight: "12px",
                     }}
@@ -185,7 +364,12 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
                 label={
                   <Typography
                     variant="body1"
-                    sx={{ fontSize: "1.1rem", py: 0.5 }}
+                    sx={{ 
+                      fontSize: "1.1rem", 
+                      py: 0.5,
+                      color: textColor,
+                      fontWeight: isWrong ? 500 : 400
+                    }}
                   >
                     {option}
                   </Typography>
@@ -195,13 +379,11 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
                   p: 2,
                   borderRadius: 2,
                   border: "2px solid",
-                  borderColor: isChecked ? "primary.main" : "divider",
-                  backgroundColor: isChecked
-                    ? "primary.50"
-                    : "background.paper",
+                  borderColor: borderColor,
+                  backgroundColor: backgroundColor,
                   "&:hover": {
-                    bgcolor: "action.hover",
-                    borderColor: "primary.light",
+                    bgcolor: isWrong ? "error.100" : "action.hover",
+                    borderColor: isWrong ? "error.main" : "primary.light",
                   },
                   transition: "all 0.2s ease",
                   width: "100%",
@@ -217,7 +399,7 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
       )}
 
       {/* Check Answer Button */}
-      <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
+      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
         <Button
           variant="contained"
           size="large"
@@ -227,31 +409,37 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
             (content.type === "single-choice"
               ? typeof userAnswer !== "number"
               : content.type === "multiple-choice" &&
-              (!userAnswer || userAnswer.length === 0))
+                (!userAnswer || userAnswer.length === 0))
           }
           sx={{
             px: 4,
             py: 1.5,
+            width: "100%",
             fontSize: "1.1rem",
             borderRadius: 3,
             background: isQuizCompleted
-              ? "linear-gradient(45deg, primary.main 30%, primary.light 90%)"
+              ? "linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)"
               : "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
             "&:hover": {
               background: isQuizCompleted
-                ? "linear-gradient(45deg, primary.main 30%, primary.light 90%)"
-                : "linear-gradient(45deg, primary.main 30%, primary.light 90%)",
+                ? "linear-gradient(45deg, #45a049 30%, #7cb342 90%)"
+                : "linear-gradient(45deg, primary.dark 30%, primary.main 90%)",
+            },
+            "&:disabled": {
+              background: "linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)",
             },
           }}
         >
           {isQuizCompleted ? "✓ Completed" : "Check Answer"}
-          {content.type === "multiple-choice" && userAnswer && !isQuizCompleted && (
-            <Chip
-              label={`${userAnswer.length} selected`}
-              size="small"
-              sx={{ ml: 2, bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
-            />
-          )}
+          {content.type === "multiple-choice" &&
+            userAnswer &&
+            !isQuizCompleted && (
+              <Chip
+                label={`${userAnswer.length} selected`}
+                size="small"
+                sx={{ ml: 2, bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
+              />
+            )}
         </Button>
       </Stack>
 
@@ -274,35 +462,8 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
         </Typography>
       </Box>
 
-      {/* Feedback */}
-      {showQuizFeedback && validation && (
-        <Fade in>
-          <Alert
-            severity={validation.type}
-            sx={{
-              mt: 3,
-              borderRadius: 2,
-              fontSize: "1rem",
-              "& .MuiAlert-message": {
-                fontSize: "1rem",
-              },
-            }}
-            icon={validation.type === "success" ? <CheckCircle /> : <Error />}
-          >
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              {validation.message}
-            </Typography>
-            {content.explanation && validation.type === "success" && (
-              <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
-                💡 {content.explanation}
-              </Typography>
-            )}
-          </Alert>
-        </Fade>
-      )}
-
       {/* Navigation hint for incomplete quiz */}
-      {!isQuizCompleted && validation?.type === 'warning' && (
+      {/* {!isQuizCompleted && validation?.type === 'warning' && (
         <Alert
           severity="warning"
           sx={{
@@ -313,7 +474,7 @@ export const QuizSlide: React.FC<SlideComponentProps> = ({
         >
           You must complete this quiz correctly before proceeding to the next slide.
         </Alert>
-      )}
+      )} */}
     </Box>
   );
 };
