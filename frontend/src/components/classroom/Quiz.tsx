@@ -1,5 +1,5 @@
 // frontend/src/components/classroom/Quiz.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -53,6 +53,16 @@ interface QuizProps {
 
 const MotionCard = motion(Card);
 
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export const Quiz: React.FC<QuizProps> = ({
   questions,
   passingScore = 70,
@@ -72,9 +82,53 @@ export const Quiz: React.FC<QuizProps> = ({
   );
   const [showExplanation, setShowExplanation] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
-  const [hasCompletedLesson, setHasCompletedLesson] = useState(false); // NEW STATE
+  const [hasCompletedLesson, setHasCompletedLesson] = useState(false);
 
-  const question = questions[currentQuestion];
+  // Randomize options for each question and create mapping
+  const randomizedQuestions = useMemo(() => {
+    return questions.map((question) => {
+      // Create array of option indices with their original values
+      const optionIndices = question.options.map((option, index) => ({
+        option,
+        originalIndex: index,
+      }));
+      
+      // Shuffle the options
+      const shuffledOptions = shuffleArray(optionIndices);
+      
+      // Create mapping from new index to original index
+      const indexMapping = new Map();
+      shuffledOptions.forEach((item, newIndex) => {
+        indexMapping.set(newIndex, item.originalIndex);
+      });
+      
+      // Create reverse mapping from original index to new index
+      const reverseIndexMapping = new Map();
+      shuffledOptions.forEach((item, newIndex) => {
+        reverseIndexMapping.set(item.originalIndex, newIndex);
+      });
+      
+      // Update correct answer indices to match new order
+      let newCorrectAnswer;
+      if (Array.isArray(question.correctAnswer)) {
+        newCorrectAnswer = question.correctAnswer.map(originalIndex => 
+          reverseIndexMapping.get(originalIndex)
+        );
+      } else {
+        newCorrectAnswer = reverseIndexMapping.get(question.correctAnswer);
+      }
+      
+      return {
+        ...question,
+        options: shuffledOptions.map(item => item.option),
+        correctAnswer: newCorrectAnswer,
+        originalToNewMapping: reverseIndexMapping,
+        newToOriginalMapping: indexMapping,
+      };
+    });
+  }, [questions]); // Only regenerate when questions change
+
+  const question = randomizedQuestions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   useEffect(() => {
@@ -135,7 +189,7 @@ export const Quiz: React.FC<QuizProps> = ({
     let totalScore = 0;
     let totalPoints = 0;
 
-    questions.forEach((q, index) => {
+    randomizedQuestions.forEach((q, index) => {
       const answer = selectedAnswers[index];
       const points = q.points || 1;
       totalPoints += points;
@@ -173,18 +227,30 @@ export const Quiz: React.FC<QuizProps> = ({
         origin: { y: 0.6 }
       });
     }
-
-    // Don't call onComplete immediately - let user review results first
-    // onComplete will be called when user clicks "Continue" button
   };
 
-  // NEW FUNCTION: Handle continuing to next lesson
   const handleContinueToNextLesson = () => {
     const passed = score >= passingScore;
     setHasCompletedLesson(true);
     
-    // Now call onComplete to trigger lesson completion and move to next lesson
-    onComplete(score, passed, selectedAnswers);
+    // Convert answers back to original indices before passing to onComplete
+    const originalAnswers = selectedAnswers.map((answer, index) => {
+      if (answer === null) return null;
+      
+      const randomizedQuestion = randomizedQuestions[index];
+      
+      if (Array.isArray(answer)) {
+        // Multiple choice - convert array of new indices to original indices
+        return answer.map((newIndex: number) => 
+          randomizedQuestion.newToOriginalMapping.get(newIndex)
+        );
+      } else {
+        // Single choice - convert new index to original index
+        return randomizedQuestion.newToOriginalMapping.get(answer);
+      }
+    });
+    
+    onComplete(score, passed, originalAnswers);
   };
 
   const resetQuiz = () => {
@@ -246,7 +312,7 @@ export const Quiz: React.FC<QuizProps> = ({
                 <Typography variant="h6" gutterBottom>
                   Review Your Answers
                 </Typography>
-                {questions.map((q, index) => {
+                {randomizedQuestions.map((q, index) => {
                   const answer = selectedAnswers[index];
                   const isCorrect = q.type === 'single' 
                     ? answer === q.correctAnswer
@@ -286,7 +352,6 @@ export const Quiz: React.FC<QuizProps> = ({
                 })}
               </Stack>
 
-              {/* ACTION BUTTONS */}
               <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 4 }}>
                 {!passed && (
                   <Button
@@ -366,12 +431,6 @@ export const Quiz: React.FC<QuizProps> = ({
                       </Typography>
                     )}
                   </Box>
-                  {/* <IconButton
-                    onClick={handleFlagQuestion}
-                    color={flaggedQuestions.has(currentQuestion) ? 'warning' : 'default'}
-                  >
-                    <Flag />
-                  </IconButton> */}
                 </Stack>
 
                 {question.type === 'single' ? (
