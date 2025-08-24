@@ -16,6 +16,7 @@ import {
   MoreHoriz,
   Lock,
   AutoAwesome,
+  HourglassEmpty,
 } from '@mui/icons-material';
 
 interface SlideFooterProps {
@@ -56,8 +57,9 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   
   const footerRef = useRef<HTMLDivElement>(null);
 
-  // NEW: Track auto-progression state (simplified - no timer)
+  // NEW: Track auto-progression state and validation processing
   const [showAutoProgression, setShowAutoProgression] = useState(false);
+  const [isProcessingValidation, setIsProcessingValidation] = useState(false);
 
   // Check if a slide at given index is accessible
   const isSlideAccessible = (index: number) => {
@@ -81,7 +83,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const currentSlideIsQuiz = slides[currentSlide] && isQuizSlide(slides[currentSlide]);
   const isQuizIncomplete = currentSlideIsQuiz && !slideProgress.has(currentSlide);
 
-  // NEW: Monitor validation results for auto-progression feedback (simplified)
+  // NEW: Monitor validation results for auto-progression feedback and processing state
   useEffect(() => {
     if (!currentSlideIsQuiz) return;
 
@@ -91,18 +93,25 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     const isShowingFeedback = showFeedback[slideId];
 
     if (validation?.type === 'success' && isShowingFeedback && !isLastSlide) {
+      setIsProcessingValidation(true);
       setShowAutoProgression(true);
       
-      // Auto-hide after a brief moment (no countdown)
+      // Auto-hide and enable next button after a brief moment
       const cleanup = setTimeout(() => {
         setShowAutoProgression(false);
-      }, 2000); // Show for 2 seconds then hide
+        setIsProcessingValidation(false);
+      }, 2500); // Show for 2.5 seconds then enable next
 
       return () => {
         clearTimeout(cleanup);
       };
+    } else if (validation?.type === 'error' && isShowingFeedback) {
+      // Reset processing state on error
+      setIsProcessingValidation(false);
+      setShowAutoProgression(false);
     } else {
       setShowAutoProgression(false);
+      // Don't reset processing state immediately to prevent flickering
     }
   }, [validationResults, showFeedback, currentSlide, currentSlideIsQuiz, isLastSlide, slides]);
 
@@ -118,7 +127,16 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     return slide.id || '';
   };
 
-  // Keyboard navigation (same as before)
+  // Determine if next button should be disabled
+  const shouldDisableNext = () => {
+    if (currentSlide >= totalSlides - 1) return true;
+    if (!canNavigateToNext) return true;
+    if (isQuizIncomplete) return true;
+    if (isProcessingValidation) return true; // NEW: Disable during validation processing
+    return false;
+  };
+
+  // Keyboard navigation
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     const activeElement = document.activeElement;
     const isInputFocused = activeElement && (
@@ -142,20 +160,19 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         }
         break;
       case 'ArrowRight':
-        if (canNavigateToNext && currentSlide < totalSlides - 1) {
+        if (!shouldDisableNext()) {
           onNext();
         }
         break;
       case 'Enter':
-        // UPDATED: Show complete button on last slide regardless of progress
         if (isLastSlide && !isLessonCompleted) {
           onComplete();
-        } else if (canNavigateToNext && currentSlide < totalSlides - 1) {
+        } else if (!shouldDisableNext()) {
           onNext();
         }
         break;
     }
-  }, [currentSlide, totalSlides, canNavigateToNext, isLastSlide, isLessonCompleted, onPrevious, onNext, onComplete]);
+  }, [currentSlide, totalSlides, canNavigateToNext, isLastSlide, isLessonCompleted, onPrevious, onNext, onComplete, shouldDisableNext]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown, true);
@@ -308,6 +325,31 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     );
   };
 
+  // Get next button text and icon based on state
+  const getNextButtonConfig = () => {
+    if (isProcessingValidation) {
+      return {
+        text: isMobile ? 'Wait' : 'Processing...',
+        icon: <HourglassEmpty />,
+        tooltip: 'Answer is being validated...'
+      };
+    }
+    if (isQuizIncomplete) {
+      return {
+        text: isMobile ? 'Quiz' : (isTablet ? 'Complete Quiz' : 'Complete Quiz First'),
+        icon: <Lock />,
+        tooltip: 'Complete the quiz to continue'
+      };
+    }
+    return {
+      text: 'Next',
+      icon: <NavigateNext />,
+      tooltip: ''
+    };
+  };
+
+  const nextButtonConfig = getNextButtonConfig();
+
   // Mobile Layout
   if (isMobile) {
     return (
@@ -328,8 +370,8 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           outline: 'none',
         }}
       >
-        {/* NEW: Auto-progression indicator (simplified - no countdown) */}
-        {showAutoProgression && (
+        {/* Auto-progression indicator */}
+        {/* {showAutoProgression && (
           <Fade in={showAutoProgression}>
             <Box sx={{ 
               p: 2, 
@@ -346,7 +388,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
               </Stack>
             </Box>
           </Fade>
-        )}
+        )} */}
 
         {/* Progress Section */}
         <Stack alignItems="center" spacing={1}>
@@ -385,7 +427,6 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
             Prev
           </Button>
 
-          {/* UPDATED: Show complete button on last slide regardless of progress */}
           {isLastSlide ? (
             <Button
               variant="contained"
@@ -413,35 +454,41 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
             </Button>
           ) : (
             <Tooltip
-              title={isQuizIncomplete ? 'Complete the quiz to continue' : ''}
+              title={nextButtonConfig.tooltip}
               arrow
             >
               <span>
                 <Button
-                  endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
+                  endIcon={nextButtonConfig.icon}
                   onClick={handleButtonClick(onNext)}
                   variant="contained"
-                  disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
+                  disabled={shouldDisableNext()}
                   size="small"
                   sx={{
                     borderRadius: 2,
                     flex: 1,
                     fontWeight: 600,
-                    background: isQuizIncomplete
-                      ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
-                      : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
-                    '&:hover': {
-                      background: isQuizIncomplete
+                    background: isProcessingValidation
+                      ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                      : isQuizIncomplete
                         ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
-                        : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
+                        : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
+                    '&:hover': {
+                      background: isProcessingValidation
+                        ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                        : isQuizIncomplete
+                          ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
+                          : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
                     },
                     '&:disabled': {
-                      background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                      background: isProcessingValidation
+                        ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                        : 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
                     },
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  {isQuizIncomplete ? 'Quiz' : 'Next'}
+                  {nextButtonConfig.text}
                 </Button>
               </span>
             </Tooltip>
@@ -471,7 +518,25 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         outline: 'none',
       }}
     >
-
+      {/* Auto-progression indicator (desktop)
+      {showAutoProgression && (
+        <Fade in={showAutoProgression}>
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: 'success.light', 
+            borderRadius: 2,
+            textAlign: 'center',
+            mb: 1 
+          }}>
+            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+              <AutoAwesome sx={{ color: 'success.dark' }} />
+              <Typography variant="body2" color="success.dark" fontWeight={600}>
+                Great job! Moving to next slide...
+              </Typography>
+            </Stack>
+          </Box>
+        </Fade>
+      )} */}
 
       {/* Main Navigation Row */}
       <Stack
@@ -517,7 +582,6 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
         </Stack>
 
         {/* Next/Complete Button */}
-        {/* UPDATED: Show complete button on last slide regardless of progress */}
         {isLastSlide ? (
           <Button
             variant="contained"
@@ -550,15 +614,15 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
           </Button>
         ) : (
           <Tooltip
-            title={isQuizIncomplete ? 'Complete the quiz to continue' : ''}
+            title={nextButtonConfig.tooltip}
             arrow
           >
             <span>
               <Button
-                endIcon={isQuizIncomplete ? <Lock /> : <NavigateNext />}
+                endIcon={nextButtonConfig.icon}
                 onClick={handleButtonClick(onNext)}
                 variant="contained"
-                disabled={currentSlide >= totalSlides - 1 || !canNavigateToNext}
+                disabled={shouldDisableNext()}
                 size={isTablet ? "small" : "medium"}
                 sx={{
                   borderRadius: 2,
@@ -567,23 +631,29 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
                   minWidth: isTablet ? 100 : 120,
                   flexShrink: 0,
                   fontWeight: 600,
-                  background: isQuizIncomplete
-                    ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
-                    : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
-                  '&:hover': {
-                    background: isQuizIncomplete
+                  background: isProcessingValidation
+                    ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                    : isQuizIncomplete
                       ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
-                      : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
-                    transform: isQuizIncomplete ? 'none' : 'translateY(-1px)',
-                    boxShadow: isQuizIncomplete ? 1 : 4,
+                      : 'linear-gradient(45deg, #5C633A 30%, #D4BC8C 90%)',
+                  '&:hover': {
+                    background: isProcessingValidation
+                      ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                      : isQuizIncomplete
+                        ? 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)'
+                        : 'linear-gradient(45deg, #283618 30%, #C4AC7C 90%)',
+                    transform: (isQuizIncomplete || isProcessingValidation) ? 'none' : 'translateY(-1px)',
+                    boxShadow: (isQuizIncomplete || isProcessingValidation) ? 1 : 4,
                   },
                   '&:disabled': {
-                    background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                    background: isProcessingValidation
+                      ? 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)'
+                      : 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
                   },
                   transition: 'all 0.2s ease'
                 }}
               >
-                {isQuizIncomplete ? (isTablet ? 'Quiz' : 'Complete Quiz First') : 'Next'}
+                {nextButtonConfig.text}
               </Button>
             </span>
           </Tooltip>
