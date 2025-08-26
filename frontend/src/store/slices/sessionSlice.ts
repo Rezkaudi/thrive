@@ -82,17 +82,17 @@ interface SessionState {
   };
   loading: boolean;
   error: string | null;
-  
+
   // Session operations
   creating: boolean;
   updating: boolean;
   deleting: boolean;
-  
+
   // Delete-specific state
   deleteOptions: DeleteOption[];
   deleteOptionsLoading: boolean;
   recurringDetails: RecurringSessionDetails | null;
-  
+
   // Form state
   sessionForm: {
     title: string;
@@ -100,7 +100,7 @@ interface SessionState {
     type: 'SPEAKING' | 'EVENT';
     meetingUrl: string;
     location: string;
-    scheduledAt: Date;
+    scheduledAt: string;
     duration: number;
     maxParticipants: number;
     pointsRequired: number;
@@ -140,7 +140,7 @@ const initialState: SessionState = {
     type: 'SPEAKING',
     meetingUrl: '',
     location: '',
-    scheduledAt: new Date(),
+    scheduledAt: new Date().toISOString(),
     duration: 30,
     maxParticipants: 8,
     pointsRequired: 0,
@@ -262,7 +262,7 @@ const sessionSlice = createSlice({
         type: 'SPEAKING',
         meetingUrl: '',
         location: '',
-        scheduledAt: new Date(),
+        scheduledAt: new Date().toISOString(),
         duration: 30,
         maxParticipants: 8,
         pointsRequired: 0,
@@ -283,7 +283,7 @@ const sessionSlice = createSlice({
         type: session.type,
         meetingUrl: session.meetingUrl || '',
         location: session.location || '',
-        scheduledAt: new Date(session.scheduledAt),
+        scheduledAt: new Date(session.scheduledAt).toISOString(),
         duration: session.duration,
         maxParticipants: session.maxParticipants,
         pointsRequired: session.pointsRequired,
@@ -314,7 +314,7 @@ const sessionSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch sessions';
       })
-      
+
       // Create session
       .addCase(createSession.pending, (state) => {
         state.creating = true;
@@ -334,7 +334,7 @@ const sessionSlice = createSlice({
         state.creating = false;
         state.error = action.payload as string;
       })
-      
+
       // Update session
       .addCase(updateSession.pending, (state) => {
         state.updating = true;
@@ -352,7 +352,7 @@ const sessionSlice = createSlice({
         state.updating = false;
         state.error = action.payload as string;
       })
-      
+
       // Fetch delete options
       .addCase(fetchDeleteOptions.pending, (state) => {
         state.deleteOptionsLoading = true;
@@ -367,7 +367,7 @@ const sessionSlice = createSlice({
         state.deleteOptionsLoading = false;
         state.error = action.payload as string;
       })
-      
+
       // Delete session
       .addCase(deleteSession.pending, (state) => {
         state.deleting = true;
@@ -375,9 +375,9 @@ const sessionSlice = createSlice({
       })
       .addCase(deleteSession.fulfilled, (state, action) => {
         state.deleting = false;
-        
+
         const { sessionId, deletedCount, deletedRecurringSeries } = action.payload;
-        
+
         if (deletedRecurringSeries) {
           // Remove all sessions in the series (we'll need to refresh to see the changes)
           // For now, remove the main session
@@ -388,7 +388,7 @@ const sessionSlice = createSlice({
           state.sessions = state.sessions.filter(s => s.id !== sessionId);
           state.pagination.total = Math.max(0, state.pagination.total - 1);
         }
-        
+
         // Clear delete-related state
         state.deleteOptions = [];
         state.recurringDetails = null;
@@ -397,7 +397,7 @@ const sessionSlice = createSlice({
         state.deleting = false;
         state.error = action.payload as string;
       })
-      
+
       // Fetch recurring details
       .addCase(fetchRecurringDetails.pending, (state) => {
         state.loading = true;
