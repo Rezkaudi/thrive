@@ -38,7 +38,7 @@ const plans: PlanOption[] = [
         id: 'premiere',
         name: 'Japan in Context Premiere',
         price: 220000,
-        currency: '¥',
+        currency: '$',
         period: 'one-time',
         // stripePriceId: process.env.REACT_APP_STRIPE_ONE_TIME_PRICE_ID || 'price_premiere',
         features: [
@@ -54,7 +54,7 @@ const plans: PlanOption[] = [
         id: 'monthly',
         name: 'Monthly Subscription',
         price: 19980,
-        currency: '¥',
+        currency: '$',
         period: 'month',
         recommended: true,
         features: [
@@ -69,7 +69,7 @@ const plans: PlanOption[] = [
         id: 'yearly',
         name: 'Yearly Subscription',
         price: 199000,
-        currency: '¥',
+        currency: '$',
         period: 'year',
         features: [
             { title: 'Thrive in Japan Platform', included: true },
@@ -142,9 +142,9 @@ export const PaymentPlanPage: React.FC = () => {
     };
 
     const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('ja-JP', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'JPY',
+            currency: 'USD',
         }).format(price);
     };
 

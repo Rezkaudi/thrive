@@ -1310,9 +1310,6 @@ export const CourseDetailPage: React.FC = () => {
                                                 >
                                                     Unlock with Subscription
                                                 </Button>
-                                                <Typography variant="body2" sx={{ mt: 2, opacity: 0.8 }}>
-                                                    Starting at ¥19,980/month
-                                                </Typography>
                                             </Paper>
                                         </motion.div>
                                     </Paper>
