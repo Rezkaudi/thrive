@@ -299,7 +299,6 @@ export const CourseDetailPage: React.FC = () => {
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [enrollDialog, setEnrollDialog] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
     const [lessonLoading, setLessonLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -332,6 +331,16 @@ export const CourseDetailPage: React.FC = () => {
         }
     }, [selectedCourse]);
 
+
+    const handleEnroll = async (course: Course) => {
+        try {
+            await api.post(`/courses/${course.id}/enroll`);
+            await fetchData();
+
+        } catch (error: any) {
+            console.log(error)
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -490,12 +499,6 @@ export const CourseDetailPage: React.FC = () => {
 
             return { ...lesson, isLocked, lockReason };
         });
-    };
-
-    const handleLockedLessonClick = (lesson: Lesson) => {
-        if (lesson.lockReason === 'Subscribe to unlock') {
-            setShowSubscriptionModal(true);
-        }
     };
 
     const LessonSidebar = () => {
@@ -1063,6 +1066,8 @@ export const CourseDetailPage: React.FC = () => {
         navigate("/not-found")
     }
 
+
+
     return (
         <Box
             sx={{
@@ -1363,7 +1368,7 @@ export const CourseDetailPage: React.FC = () => {
                                         <Button
                                             variant="contained"
                                             size="large"
-                                            onClick={() => setEnrollDialog(selectedCourse)}
+                                            onClick={() => handleEnroll(selectedCourse!)}
                                             sx={{
                                                 borderRadius: 3,
                                                 px: 4,

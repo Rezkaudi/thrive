@@ -16,6 +16,8 @@ import {
     Stack,
     LinearProgress,
     Chip,
+    FormControlLabel,
+    Checkbox,
 } from '@mui/material';
 import {
     Visibility,
@@ -45,6 +47,8 @@ export const NewRegistrationPage: React.FC = () => {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [agreeToTerms, setAgreeToTerms] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
@@ -340,12 +344,36 @@ export const NewRegistrationPage: React.FC = () => {
                                         }}
                                     />
 
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={agreeToTerms}
+                                                onChange={(e) => setAgreeToTerms(e.target.checked)}
+                                                color="primary"
+                                            />
+                                        }
+                                        label={
+                                            <Typography variant="body2">
+                                                I agree to the{" "}
+                                                <Link
+                                                    to="/privacy-policy"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    color="primary"
+                                                >
+                                                    terms and conditions
+                                                </Link>
+                                            </Typography>
+                                        }
+                                        sx={{ mt: 2 }}
+                                    />
+
                                     <Button
                                         type="submit"
                                         fullWidth
                                         variant="contained"
                                         size="large"
-                                        disabled={loading || !formData.name || passwordStrength.score < 100 || formData.password !== formData.confirmPassword}
+                                        disabled={loading || !formData.name || passwordStrength.score < 100 || formData.password !== formData.confirmPassword || !agreeToTerms}
                                         sx={{ py: 1.5 }}
                                     >
                                         {loading ? <CircularProgress size={24} /> : 'Continue to Verification'}

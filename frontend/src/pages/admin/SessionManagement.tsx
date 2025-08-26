@@ -93,7 +93,7 @@ export const SessionManagement: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const dispatch = useDispatch<AppDispatch>();
-  
+
   // Redux state
   const {
     sessions,
@@ -116,7 +116,7 @@ export const SessionManagement: React.FC = () => {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   const [selectedDeleteOption, setSelectedDeleteOption] = useState<string>('');
-  
+
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -133,7 +133,7 @@ export const SessionManagement: React.FC = () => {
       ...(filters.isActive !== '' && { isActive: filters.isActive }),
       ...(filters.isRecurring !== '' && { isRecurring: filters.isRecurring }),
     };
-    
+
     dispatch(fetchSessions(params));
   }, [dispatch, pagination.page, pagination.limit, filters]);
 
@@ -147,15 +147,15 @@ export const SessionManagement: React.FC = () => {
     try {
       const payload = {
         ...sessionForm,
-        scheduledAt: sessionForm.scheduledAt.toISOString(),
+        scheduledAt: sessionForm.scheduledAt,
       };
 
       if (editingSession) {
-        await dispatch(updateSession({ 
-          sessionId: editingSession.id, 
-          sessionData: payload 
+        await dispatch(updateSession({
+          sessionId: editingSession.id,
+          sessionData: payload
         })).unwrap();
-        
+
         setSnackbar({
           open: true,
           message: editingSession.isRecurring && sessionForm.updateAllRecurring
@@ -165,7 +165,7 @@ export const SessionManagement: React.FC = () => {
         });
       } else {
         const result = await dispatch(createSession(payload)).unwrap();
-        
+
         if (result.sessions && result.sessions.length > 1) {
           setSnackbar({
             open: true,
@@ -184,7 +184,7 @@ export const SessionManagement: React.FC = () => {
       setSessionDialog(false);
       setEditingSession(null);
       dispatch(resetForm());
-      
+
       // Refresh sessions list
       const params = {
         page: pagination.page,
@@ -194,7 +194,7 @@ export const SessionManagement: React.FC = () => {
         ...(filters.isRecurring !== '' && { isRecurring: filters.isRecurring }),
       };
       dispatch(fetchSessions(params));
-      
+
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -209,7 +209,7 @@ export const SessionManagement: React.FC = () => {
     try {
       setSessionToDelete(session);
       setSelectedDeleteOption('');
-      
+
       // Fetch delete options
       await dispatch(fetchDeleteOptions(session.id)).unwrap();
       setDeleteDialog(true);
@@ -250,7 +250,7 @@ export const SessionManagement: React.FC = () => {
       setDeleteDialog(false);
       setSessionToDelete(null);
       dispatch(clearDeleteOptions());
-      
+
       // Refresh sessions list
       const params = {
         page: pagination.page,
@@ -260,7 +260,7 @@ export const SessionManagement: React.FC = () => {
         ...(filters.isRecurring !== '' && { isRecurring: filters.isRecurring }),
       };
       dispatch(fetchSessions(params));
-      
+
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -354,9 +354,9 @@ export const SessionManagement: React.FC = () => {
   const totalBookings = sessions.reduce((sum, s) => sum + s.currentParticipants, 0);
   const averageFillRate = sessions.length > 0
     ? Math.round(
-        sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
-        sessions.length
-      )
+      sessions.reduce((sum, s) => sum + (s.currentParticipants / s.maxParticipants) * 100, 0) /
+      sessions.length
+    )
     : 0;
   const recurringCount = sessions.filter(s => s.isRecurring).length;
   const activeFiltersCount = Object.values(filters).filter(f => f !== '').length;
@@ -895,10 +895,10 @@ export const SessionManagement: React.FC = () => {
                   onChange={(e) => setSelectedDeleteOption(e.target.value)}
                 >
                   {deleteOptions.map((option) => (
-                    <Card 
-                      key={option.value} 
-                      variant="outlined" 
-                      sx={{ 
+                    <Card
+                      key={option.value}
+                      variant="outlined"
+                      sx={{
                         mb: 1,
                         border: selectedDeleteOption === option.value ? 2 : 1,
                         borderColor: selectedDeleteOption === option.value ? 'primary.main' : 'grey.300'
@@ -917,16 +917,16 @@ export const SessionManagement: React.FC = () => {
                                 <Typography variant="body1" fontWeight={600}>
                                   {option.label}
                                 </Typography>
-                                <Chip 
-                                  label={option.severity.toUpperCase()} 
-                                  size="small" 
+                                <Chip
+                                  label={option.severity.toUpperCase()}
+                                  size="small"
                                   color={getSeverityColor(option.severity) as any}
                                   sx={{ color: 'white' }}
                                 />
                                 {option.recommended && (
-                                  <Chip 
-                                    label="RECOMMENDED" 
-                                    size="small" 
+                                  <Chip
+                                    label="RECOMMENDED"
+                                    size="small"
                                     color="primary"
                                     variant="outlined"
                                   />
@@ -953,21 +953,21 @@ export const SessionManagement: React.FC = () => {
                     </Typography>
                     <List dense>
                       <ListItem>
-                        <ListItemText 
-                          primary="Total Sessions in Series" 
+                        <ListItemText
+                          primary="Total Sessions in Series"
                           secondary={recurringDetails.recurringDetails.totalSessions}
                         />
                       </ListItem>
                       <ListItem>
-                        <ListItemText 
-                          primary="Child Sessions" 
+                        <ListItemText
+                          primary="Child Sessions"
                           secondary={recurringDetails.recurringDetails.childrenCount}
                         />
                       </ListItem>
                       {recurringDetails.recurringDetails.nextInLine && (
                         <ListItem>
-                          <ListItemText 
-                            primary="Next Session to be Promoted" 
+                          <ListItemText
+                            primary="Next Session to be Promoted"
                             secondary={`"${recurringDetails.recurringDetails.nextInLine.title}" on ${formatDateTime(recurringDetails.recurringDetails.nextInLine.scheduledAt)}`}
                           />
                         </ListItem>
@@ -1046,7 +1046,7 @@ export const SessionManagement: React.FC = () => {
                   'e.g., Cultural Exchange Workshop'
                 }
               />
-              
+
               <TextField
                 fullWidth
                 multiline
@@ -1060,7 +1060,7 @@ export const SessionManagement: React.FC = () => {
                   'Describe the special event activities...'
                 }
               />
-              
+
               <FormControl fullWidth>
                 <InputLabel>Session Type</InputLabel>
                 <Select
@@ -1104,8 +1104,8 @@ export const SessionManagement: React.FC = () => {
 
               <DateTimePicker
                 label="Date & Time"
-                value={sessionForm.scheduledAt}
-                onChange={(newValue) => newValue && handleFormChange('scheduledAt', newValue)}
+                value={new Date(sessionForm.scheduledAt)}
+                onChange={(newValue) => newValue && handleFormChange('scheduledAt', newValue.toISOString())}
                 slotProps={{
                   textField: {
                     fullWidth: true,
