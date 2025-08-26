@@ -232,7 +232,7 @@ export const AdminDashboard: React.FC = () => {
           <StatCard
             icon={<AttachMoney />}
             title="Monthly Revenue"
-            value={`¥${stats.monthlyRevenue.toLocaleString()}`}
+            value={`$${stats.monthlyRevenue.toLocaleString()}`}
             trend={stats.revenueGrowth}
             color="#A6531C"
             onClick={() => navigate('/admin/analytics')}

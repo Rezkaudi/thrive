@@ -42,7 +42,7 @@ const InnerPaymentForm: React.FC<InnerPaymentFormProps> = ({ email: initialEmail
         try {
             const { data } = await api.post('/payment/create-payment-intent', {
                 amount: 5000,
-                currency: 'jpy',
+                currency: 'usd',
             });
 
             const result = await stripe.confirmCardPayment(data.clientSecret, {
@@ -130,7 +130,7 @@ const InnerPaymentForm: React.FC<InnerPaymentFormProps> = ({ email: initialEmail
                 size="large"
                 disabled={!stripe || loading}
             >
-                {loading ? <CircularProgress size={24} /> : 'Pay ¥5,000'}
+                {loading ? <CircularProgress size={24} /> : 'Pay $5,000'}
             </Button>
         </form>
     );
