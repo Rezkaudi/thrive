@@ -8,6 +8,7 @@ import dashboardReducer from './slices/dashboardSlice';
 import activityReducer from './slices/activitySlice';
 import sessionsReducer from './slices/sessionSlice'
 import announcementReducer from './slices/announcementSlice'
+import videoReducer from './slices/videoSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     dashboard: dashboardReducer,
     activity: activityReducer,
     session: sessionsReducer,
+    videos: videoReducer ,
   },
 });
 

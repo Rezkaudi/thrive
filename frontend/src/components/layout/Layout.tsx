@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// frontend/src/components/layout/Layout.tsx (UPDATE YOUR EXISTING LAYOUT)
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -34,13 +35,21 @@ import {
   Person,
   Logout,
   EmojiEvents,
-  Notifications,
   AdminPanelSettings,
   ChevronLeft,
   ChevronRight,
 } from '@mui/icons-material';
 import { logout } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
+import { 
+  fetchTourVideo, 
+  fetchTourVideoStatus, 
+  setShowTourModal,
+  hideTourModal
+} from '../../store/slices/videoSlice';
+import { TourVideoModal } from '../welcome-video/TourVideoModal';
+import { VideoButton } from '../welcome-video/VideoButton';
+
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,8 +63,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   const user = useSelector((state: RootState) => state.auth.user);
-  const profile = useSelector((state: RootState) => state.dashboard.data);
-  const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
+  const profile = useSelector((state: RootState) => state.dashboard?.data);
+  const profilePhoto = useSelector((state: RootState) => state.dashboard?.data?.user?.profilePhoto);
+  
+  // 🎯 VIDEO STATE FOR FIRST-TIME LOGIN
+  const { 
+    video, 
+    tourVideoStatus, 
+    showTourModal 
+  } = useSelector((state: RootState) => state.videos);
 
   const [openMenu, setOpenMenu] = useState<boolean>(false);
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
@@ -65,17 +81,53 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return stored ? stored === "true" : true;
   });
 
+  // 🎯 FIRST-TIME LOGIN: Load tour video and status on user login
+  useEffect(() => {
+    if (user) {
+      console.log('🎯 User logged in, checking tour video status...');
+      // Load both video and user status in parallel
+      Promise.all([
+        dispatch(fetchTourVideo()),
+        dispatch(fetchTourVideoStatus())
+      ]).catch(error => {
+        console.error('Failed to load tour video data:', error);
+      });
+    }
+  }, [dispatch, user]);
+
+  // 🎯 FIRST-TIME LOGIN: Auto-show modal with optimal timing
+  useEffect(() => {
+    if (!user) return; // Wait for user to be loaded
+
+    const shouldAutoShow = (
+      tourVideoStatus?.shouldShowTour && // User hasn't seen tour (hasSeedTourVideo = false)
+      video && // Video exists
+      video.isActive && // Video is active
+      !showTourModal // Modal not already showing
+    );
+
+    if (shouldAutoShow) {
+      // Smooth UX with appropriate delay for first-time users
+      const timer = setTimeout(() => {
+        console.log('🎥 AUTO-SHOWING tour video for first-time user!');
+        dispatch(setShowTourModal(true)); // 🎯 TRIGGERS AUTO-SHOW!
+      }, 1500); // 1.5 second delay
+      
+      return () => clearTimeout(timer);
+    }
+  }, [tourVideoStatus, video, showTourModal, dispatch, user]);
+
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setOpenMenu(prev => !prev)
+    setOpenMenu(prev => !prev);
   };
 
   const handleCloseUserMenu = () => {
-    setOpenMenu(prev => !prev)
+    setOpenMenu(prev => !prev);
   };
 
   const handleLogout = () => {
     dispatch(logout());
-    window.location.pathname = "/login"
+    window.location.pathname = "/login";
   };
 
   const handleDrawerToggle = () => {
@@ -83,8 +135,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       setMobileOpen(!mobileOpen);
     } else {
       setDesktopDrawerOpen(!desktopDrawerOpen);
-      localStorage.setItem("desktopDrawerOpen", String(!desktopDrawerOpen))
+      localStorage.setItem("desktopDrawerOpen", String(!desktopDrawerOpen));
     }
+  };
+
+  const handleTourModalClose = () => {
+    dispatch(hideTourModal());
   };
 
   const menuItems = [
@@ -190,20 +246,27 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Tooltip>
           </ListItem>
         ))}
+
+        {/* 🎯 VIDEO TOUR BUTTON IN SIDEBAR */}
+        <VideoButton 
+          collapsed={!desktopDrawerOpen && !isMobile} 
+          inSidebar={true} 
+        />
       </List>
+      
       <Divider sx={{ mt: 'auto' }} />
       {(desktopDrawerOpen || isMobile) && (
         <Box sx={{ p: 2 }}>
           <Stack spacing={1}>
             <Chip
               icon={<EmojiEvents sx={{ fontSize: 16 }} />}
-              label={`${profile?.stats.totalPoints || "0"} Points`}
+              label={`${profile?.stats?.totalPoints || "0"} Points`}
               color="primary"
               variant="outlined"
               size="small"
             />
             <Chip
-              label={`Level ${profile?.user.level || "1"}`}
+              label={`Level ${profile?.user?.level || "1"}`}
               color="secondary"
               size="small"
             />
@@ -247,13 +310,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Box
                 component="img"
                 src="/logo.png"
-                alt="Description of image"
+                alt="Logo"
                 sx={isMobile ? { width: 150, height: 20 } : { width: 200, height: 30 }}
               />
             </Link>
           </Typography>
 
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} alignItems="center">            
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar
@@ -266,7 +329,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     borderColor: 'primary.light',
                   }}
                 >
-                  {!profilePhoto && (profile?.user.name?.[0] || user?.email[0].toUpperCase())}
+                  {!profilePhoto && (profile?.user?.name?.[0] || user?.email[0]?.toUpperCase())}
                 </Avatar>
               </IconButton>
             </Tooltip>
@@ -274,29 +337,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <Menu
             sx={{ mt: '45px' }}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             open={openMenu}
             onClose={handleCloseUserMenu}
           >
             <MenuItem onClick={() => { navigate('/profile'); handleCloseUserMenu(); }}>
-              <ListItemIcon>
-                <Person sx={{ fontSize: 20 }} />
-              </ListItemIcon>
+              <ListItemIcon><Person sx={{ fontSize: 20 }} /></ListItemIcon>
               Profile
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <Logout sx={{ fontSize: 20 }} />
-              </ListItemIcon>
+              <ListItemIcon><Logout sx={{ fontSize: 20 }} /></ListItemIcon>
               Logout
             </MenuItem>
           </Menu>
@@ -334,15 +387,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         variant="temporary"
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        ModalProps={{
-          keepMounted: true,
-        }}
+        ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box',
-            width: 240,
-          },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 240 },
         }}
       >
         {drawer}
@@ -366,6 +414,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {children}
       </Box>
+
+      {/* 🎯 FIRST-TIME LOGIN: Tour Video Modal */}
+      <TourVideoModal
+        open={showTourModal}
+        onClose={handleTourModalClose}
+        video={video}
+        isFirstTimeUser={tourVideoStatus?.shouldShowTour || false}
+      />
     </Box>
   );
 };

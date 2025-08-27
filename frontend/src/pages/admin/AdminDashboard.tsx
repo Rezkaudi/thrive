@@ -1,3 +1,4 @@
+// frontend/src/pages/admin/AdminDashboard.tsx (REVERTED TO ORIGINAL)
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -24,6 +25,7 @@ import {
   Refresh,
   ArrowUpward,
   ArrowDownward,
+  VideoLibrary,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -49,6 +51,7 @@ const StatCard = ({ icon, title, value, subtitle, trend, color, onClick }: any) 
         height: '100%',
         background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
         border: `1px solid ${color}20`,
+        minHeight: "100%"
       }}
       onClick={onClick}
     >
@@ -164,6 +167,13 @@ export const AdminDashboard: React.FC = () => {
       color: '#A6531C',
     },
     {
+      title: 'Tour Video Management',
+      description: 'Add and edit tour video',
+      icon: <VideoLibrary />,
+      path: '/admin/videos',
+      color: '#8B5A2B',
+    },
+    {
       title: 'Community Moderation',
       description: 'Review flagged content',
       icon: <Forum />,
@@ -185,7 +195,6 @@ export const AdminDashboard: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
           <Stack spacing={2} alignItems="center">
             <CircularProgress />
-            {/* <Typography variant="h6">Loading dashboard...</Typography> */}
           </Stack>
         </Box>
       </Container>
@@ -266,7 +275,7 @@ export const AdminDashboard: React.FC = () => {
       </Typography>
       <Grid container spacing={3} mb={4}>
         {quickActions.map((action, index) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+          <Grid size={{ xs: 12, sm: 6, md: 6, lg: 4 }} key={index}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -299,7 +308,7 @@ export const AdminDashboard: React.FC = () => {
                 <Typography variant="h6" fontWeight={600} gutterBottom>
                   {action.title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
                   {action.description}
                 </Typography>
               </Paper>

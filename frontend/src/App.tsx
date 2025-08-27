@@ -44,6 +44,7 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { CourseDetailPage } from './pages/CourseDetailPage';
 import { AdminCourseDetailPage } from './pages/admin/AdminCourseDetailPage';
+import { AdminVideoPage } from './pages/admin/AdminVideoPage';
 
 
 function AppContent() {
@@ -191,6 +192,16 @@ function AppContent() {
               </Layout>
             </ProtectedRoute>
           }
+        />
+        <Route
+        path='/admin/videos'
+        element= {
+          <ProtectedRoute requiredRole="ADMIN">
+            <Layout>
+              <AdminVideoPage/>
+            </Layout>
+          </ProtectedRoute>
+        }
         />
 
         <Route
