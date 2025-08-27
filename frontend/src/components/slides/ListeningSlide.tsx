@@ -174,7 +174,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
         </Button>
       </Box>
 
-      
+
     </Box>
   );
 };
