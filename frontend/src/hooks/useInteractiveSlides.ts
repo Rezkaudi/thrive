@@ -177,7 +177,9 @@ export const useInteractiveSlides = (slides: Slide[], onComplete: () => void) =>
     // SPECIAL CASE: For slides where validation passing means success
     if (interactiveType === 'pronunciation' || interactiveType === 'flashcard' || interactiveType === 'listening') {
       // For these slide types, if validation passed with success type, it's correct
-      isCorrect = validation.type === 'success';
+      // isCorrect = validation.type === 'success';
+      isCorrect = deepEqual(userAnswer, correctAnswer);
+
     } else if (interactiveType === 'drag-drop') {
       // For drag-drop, compare object properties regardless of key order
       isCorrect = deepEqual(userAnswer, correctAnswer);
