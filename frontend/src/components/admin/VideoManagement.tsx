@@ -402,14 +402,14 @@ export const VideoManagement: React.FC = () => {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                 Create a tour video to automatically guide new users through your platform on first login.
               </Typography>
-              <Button
+              {/* <Button
                 variant="contained"
                 startIcon={<Add />}
                 onClick={() => setShowForm(true)}
                 disabled={isCreatingOrUpdating}
               >
                 Create Tour Video
-              </Button>
+              </Button> */}
             </Box>
           </CardContent>
         </Card>
