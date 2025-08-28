@@ -41,9 +41,9 @@ import {
 } from '@mui/icons-material';
 import { logout } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
-import { 
-  fetchTourVideo, 
-  fetchTourVideoStatus, 
+import {
+  fetchTourVideo,
+  fetchTourVideoStatus,
   setShowTourModal,
   hideTourModal
 } from '../../store/slices/videoSlice';
@@ -65,12 +65,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const user = useSelector((state: RootState) => state.auth.user);
   const profile = useSelector((state: RootState) => state.dashboard?.data);
   const profilePhoto = useSelector((state: RootState) => state.dashboard?.data?.user?.profilePhoto);
-  
+
   // 🎯 VIDEO STATE FOR FIRST-TIME LOGIN
-  const { 
-    video, 
-    tourVideoStatus, 
-    showTourModal 
+  const {
+    video,
+    tourVideoStatus,
+    showTourModal
   } = useSelector((state: RootState) => state.videos);
 
   const [openMenu, setOpenMenu] = useState<boolean>(false);
@@ -112,7 +112,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         console.log('🎥 AUTO-SHOWING tour video for first-time user!');
         dispatch(setShowTourModal(true)); // 🎯 TRIGGERS AUTO-SHOW!
       }, 1500); // 1.5 second delay
-      
+
       return () => clearTimeout(timer);
     }
   }, [tourVideoStatus, video, showTourModal, dispatch, user]);
@@ -127,7 +127,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleLogout = () => {
     dispatch(logout());
-    window.location.pathname = "/login";
   };
 
   const handleDrawerToggle = () => {
@@ -248,12 +247,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         ))}
 
         {/* 🎯 VIDEO TOUR BUTTON IN SIDEBAR */}
-        <VideoButton 
-          collapsed={!desktopDrawerOpen && !isMobile} 
-          inSidebar={true} 
+        <VideoButton
+          collapsed={!desktopDrawerOpen && !isMobile}
+          inSidebar={true}
         />
       </List>
-      
+
       <Divider sx={{ mt: 'auto' }} />
       {(desktopDrawerOpen || isMobile) && (
         <Box sx={{ p: 2 }}>
@@ -316,7 +315,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Link>
           </Typography>
 
-          <Stack direction="row" spacing={2} alignItems="center">            
+          <Stack direction="row" spacing={2} alignItems="center">
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar

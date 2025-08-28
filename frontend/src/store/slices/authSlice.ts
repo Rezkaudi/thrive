@@ -105,10 +105,19 @@ const authSlice = createSlice({
         state.error = (action.payload as { error: string })?.error || 'Login failed';
       })
       // Logout
+      .addCase(logout.pending, (state) => {
+        state.authChecking = true;
+      })
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
         state.csrfToken = null;
         state.isAuthenticated = false;
+        state.authChecking = false;
+      })
+      .addCase(logout.rejected, (state) => {
+        state.authChecking = false;
+        state.isAuthenticated = false;
+        state.user = null;
       })
       // Check Auth
       .addCase(checkAuth.pending, (state) => {
