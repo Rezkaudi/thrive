@@ -44,16 +44,18 @@ import { useSweetAlert } from '../../utils/sweetAlert';
 
 interface Post {
   id: string;
-  userId: string;
   content: string;
   mediaUrls: string[];
   likesCount: number;
   createdAt: string;
   isFlagged?: boolean;
+  commentsCount: number;
   author?: {
     name: string;
     email: string;
     avatar?: string;
+    userId: string;
+    level:string;
   };
 }
 
@@ -325,7 +327,7 @@ export const CommunityModeration: React.FC = () => {
         break;
         
       case 'blockUser':
-        const userId = isAnnouncement ? (item as Announcement).author?.userId : (item as Post).userId;
+        const userId = isAnnouncement ? (item as Announcement).author?.userId : (item as Post).author?.userId;
         const userName = isAnnouncement ? (item as Announcement).author?.name : (item as Post).author?.name;
         
         confirmResult = await showConfirm({
