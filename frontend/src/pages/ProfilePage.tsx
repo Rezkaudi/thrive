@@ -1549,7 +1549,7 @@ export const ProfilePage: React.FC = () => {
                   >
                     {'Subscription Management'}
                   </Button>
-                  {status === "trialing" && <Button
+                  {/* {status === "trialing" && <Button
                     variant="contained"
                     color="primary"
                     onClick={handleStartSubscription}
@@ -1557,7 +1557,7 @@ export const ProfilePage: React.FC = () => {
                     startIcon={loadingStart && <CircularProgress size={20} />}
                   >
                     {'Start Subscription'}
-                  </Button>}
+                  </Button>} */}
                 </Stack>
               </Stack>
             </Box>}

@@ -310,7 +310,7 @@ export const SubscriptionPage: React.FC = () => {
                     direction={{ xs: 'column', lg: 'row' }}
                     spacing={3}
                     alignItems="stretch"
-                    sx={{ maxWidth: 'lg', mx: 'auto' }}
+                    sx={{ maxWidth: 'lg', mx: 'auto' , gap: {xs: "90px 0", lg: "0"} }}
                 >
                     {plans.map((plan, index) => {
                         const colors = getPlanColor(plan.id);
@@ -346,7 +346,7 @@ export const SubscriptionPage: React.FC = () => {
                                         <Box
                                             sx={{
                                                 position: 'absolute',
-                                                top: 20,
+                                                top:{xs: -15, md:60 , lg: 20},
                                                 right: -10,
                                                 bgcolor: 'error.main',
                                                 color: 'white',
