@@ -1,4 +1,3 @@
-// frontend/src/pages/admin/SessionManagement.tsx (Fixed)
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -89,6 +88,13 @@ import {
 } from '../../store/slices/sessionSlice';
 import { AppDispatch, RootState } from '../../store/store';
 
+// Helper to generate default date
+const getDefaultScheduledAt = () => {
+  const now = new Date();
+  now.setHours(now.getHours() + 1);
+  return now.toISOString();
+};
+
 export const SessionManagement: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -144,6 +150,26 @@ export const SessionManagement: React.FC = () => {
 
   // Handle save session
   const handleSaveSession = async () => {
+    // 1. Validate required fields
+    if (!sessionForm.title || !sessionForm.description) {
+      setSnackbar({
+        open: true,
+        message: 'Title and Description are required.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    // 2. Validate duration constraints
+    if (sessionForm.duration < 15 || sessionForm.duration > 180) {
+      setSnackbar({
+        open: true,
+        message: 'Session duration must be between 15 and 180 minutes.',
+        severity: 'error',
+      });
+      return;
+    }
+
     try {
       const payload = {
         ...sessionForm,
@@ -151,10 +177,12 @@ export const SessionManagement: React.FC = () => {
       };
 
       if (editingSession) {
-        await dispatch(updateSession({
-          sessionId: editingSession.id,
-          sessionData: payload
-        })).unwrap();
+        await dispatch(
+          updateSession({
+            sessionId: editingSession.id,
+            sessionData: payload,
+          })
+        ).unwrap();
 
         setSnackbar({
           open: true,
@@ -392,6 +420,8 @@ export const SessionManagement: React.FC = () => {
               onClick={() => {
                 dispatch(resetForm());
                 handleFormChange('type', 'SPEAKING');
+                // Set default scheduledAt
+                handleFormChange('scheduledAt', getDefaultScheduledAt());
                 setSessionDialog(true);
               }}
             >
@@ -403,6 +433,8 @@ export const SessionManagement: React.FC = () => {
               onClick={() => {
                 dispatch(resetForm());
                 handleFormChange('type', 'EVENT');
+                // Set default scheduledAt
+                handleFormChange('scheduledAt', getDefaultScheduledAt());
                 setSessionDialog(true);
               }}
               sx={{ color: "white" }}
