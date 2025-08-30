@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -24,6 +24,9 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
   checkAnswer,
 }) => {
   const [sortedItems, setSortedItems] = useState<string[]>([]);
+  const [shuffleSeed, setShuffleSeed] = useState(0);
+  const [resetTrigger, setResetTrigger] = useState(0); // New state variable
+
   const content = slide.content.content;
   const slideId = `sorting-${slide.id}`;
   const showSlideFeeback = showFeedback[slideId];
@@ -31,37 +34,76 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
 
   // Mobile detection
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // --- helpers ---
+  function shuffleArray<T>(array: T[]): T[] {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
 
   const handleSort = (newOrder: string[]) => {
     setSortedItems(newOrder);
   };
 
-  const handleCheckAnswer = () => {
+  const handleCheckAnswer = async () => {
     const correctOrder =
-      content.items
-        ?.sort((a: any, b: any) => a.correctOrder - b.correctOrder)
+      [...(content.items ?? [])]
+        .sort((a: any, b: any) => a.correctOrder - b.correctOrder)
         .map((item: any) => item.text) || [];
 
-    checkAnswer(slideId, sortedItems, correctOrder, "sorting");
+    // The checkAnswer function is now async to handle state updates properly
+    await checkAnswer(slideId, sortedItems, correctOrder, "sorting");
+    
+    // Check the new validation result immediately after the update
+    const isCorrect = JSON.stringify(sortedItems) === JSON.stringify(correctOrder);
+
+    if (!isCorrect) {
+      setResetTrigger(prev => prev + 1); // Trigger a reset
+    }
   };
 
-  const resetSort = () => {
+  const shuffleAndReset = () => {
     setSortedItems([]);
+    setShuffleSeed((s) => s + 1); // triggers a new master shuffle
   };
 
-  const availableItems =
-    content.items?.filter((item: any) => !sortedItems.includes(item.text)) ||
-    [];
+  // --- data derivations ---
+  const allItems: any[] = useMemo(() => content.items ?? [], [content.items]);
 
-  // Available Items Component
+  // Shuffles only when content changes or when seed changes (button / error)
+  const masterShuffled: any[] = useMemo(
+    () => shuffleArray(allItems),
+    [allItems, shuffleSeed]
+  );
+
+  // Available items follow the master shuffled order, filtered by chosen ones
+  const availableItems: any[] = useMemo(
+    () => masterShuffled.filter((item: any) => !sortedItems.includes(item.text)),
+    [masterShuffled, sortedItems]
+  );
+
+  // Reset automatically on incorrect submissions
+  useEffect(() => {
+    if (validation?.type === "error") {
+      shuffleAndReset();
+    }
+  }, [resetTrigger]); // Now depends on resetTrigger
+
+  // --- subcomponents ---
   const AvailableItemsSection = () => (
-    <Paper sx={{
-      p: { xs: 2, sm: 3 },
-      mb: 4,
-      borderRadius: 3,
-      bgcolor: "grey.50"
-    }}>
+    <Paper
+      sx={{
+        p: { xs: 2, sm: 3 },
+        mb: 4,
+        borderRadius: 3,
+        bgcolor: "grey.50",
+      }}
+    >
       <Typography
         variant="h6"
         gutterBottom
@@ -69,7 +111,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         fontWeight={600}
         sx={{
           mb: 3,
-          fontSize: { xs: "1.1rem", sm: "1.25rem" }
+          fontSize: { xs: "1.1rem", sm: "1.25rem" },
         }}
       >
         📦 Available Items
@@ -103,7 +145,6 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
     </Paper>
   );
 
-  // Sorting Area Component
   const SortingAreaSection = () => (
     <Paper
       sx={{
@@ -124,10 +165,10 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         fontWeight={600}
         sx={{
           mb: 3,
-          fontSize: { xs: "1.1rem", sm: "1.25rem" }
+          fontSize: { xs: "1.1rem", sm: "1.25rem" },
         }}
       >
-        📋 Correct Order {isMobile ? "(Tap items above)" : "(Drag items here)"}
+        📋 Correct Order {isMobile ? "(Tap items above)" : "(Tap items below)"}
       </Typography>
 
       {sortedItems.length === 0 ? (
@@ -138,13 +179,12 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
           sx={{
             fontStyle: "italic",
             mt: { xs: 2, sm: 4 },
-            fontSize: { xs: "0.875rem", sm: "1rem" }
+            fontSize: { xs: "0.875rem", sm: "1rem" },
           }}
         >
           {isMobile
             ? "Tap items from above to arrange them in the correct order ⬆️"
-            : "Drag items from below to arrange them in the correct order ⬇️"
-          }
+            : "Tap items from below to arrange them in the correct order ⬇️"}
         </Typography>
       ) : (
         <Reorder.Group
@@ -182,13 +222,15 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
                 >
                   {index + 1}
                 </Avatar>
-                {!isMobile && <DragIndicator sx={{ color: "text.secondary" }} />}
+                {!isMobile && (
+                  <DragIndicator sx={{ color: "text.secondary" }} />
+                )}
                 <Typography
                   variant="body1"
                   fontWeight={500}
                   sx={{
                     flexGrow: 1,
-                    fontSize: { xs: "0.875rem", sm: "1rem" }
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
                   }}
                 >
                   {item}
@@ -200,7 +242,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
                   }
                   sx={{
                     color: "error.main",
-                    p: { xs: 0.5, sm: 1 }
+                    p: { xs: 0.5, sm: 1 },
                   }}
                 >
                   <Close fontSize={isMobile ? "small" : "medium"} />
@@ -214,11 +256,13 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
   );
 
   return (
-    <Box sx={{
-      padding: { xs: 2, sm: 3, md: 4 },
-      maxWidth: "900px",
-      margin: "0 auto"
-    }}>
+    <Box
+      sx={{
+        padding: { xs: 2, sm: 3, md: 4 },
+        maxWidth: "900px",
+        margin: "0 auto",
+      }}
+    >
       <Typography
         variant="h4"
         gutterBottom
@@ -226,7 +270,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         textAlign="center"
         sx={{
           mb: 3,
-          fontSize: { xs: "1.75rem", sm: "2.125rem" }
+          fontSize: { xs: "1.75rem", sm: "2.125rem" },
         }}
       >
         {slide.content.title}
@@ -237,15 +281,13 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         sx={{
           textAlign: "center",
           mb: 4,
-          // color: "text.secondary",
-          // fontSize: { xs: "1rem", sm: "1.1rem" },
-          px: { xs: 1, sm: 0 }
+          px: { xs: 1, sm: 0 },
         }}
       >
         {content.instruction}
       </Typography>
 
-      {/* Conditional Layout - Mobile shows Available Items first, Desktop shows Sorting Area first */}
+      {/* Conditional Layout */}
       {isMobile ? (
         <>
           <AvailableItemsSection />
@@ -267,15 +309,15 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         <Button
           variant="outlined"
           size={isMobile ? "medium" : "large"}
-          onClick={resetSort}
+          onClick={shuffleAndReset}
           sx={{
             px: { xs: 3, sm: 4 },
             py: { xs: 1, sm: 1.5 },
             fontSize: { xs: "0.9rem", sm: "1rem" },
-            borderRadius: 3
+            borderRadius: 3,
           }}
         >
-          🔄 Reset
+          🔄 Shuffle & Reset
         </Button>
         <Button
           variant="contained"
@@ -305,7 +347,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
               mt: 3,
               borderRadius: 2,
               fontSize: { xs: "0.875rem", sm: "1rem" },
-              mx: { xs: 1, sm: 0 }
+              mx: { xs: 1, sm: 0 },
             }}
           >
             {validation.message}
