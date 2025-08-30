@@ -44,16 +44,18 @@ import { useSweetAlert } from '../../utils/sweetAlert';
 
 interface Post {
   id: string;
-  userId: string;
   content: string;
   mediaUrls: string[];
   likesCount: number;
   createdAt: string;
   isFlagged?: boolean;
+  commentsCount: number;
   author?: {
     name: string;
     email: string;
     avatar?: string;
+    userId: string;
+    level:string;
   };
 }
 
@@ -243,6 +245,12 @@ export const CommunityModeration: React.FC = () => {
     return flaggedPagination;
   };
 
+  const isVideo = (url:string) => {
+    const videoExtensions = ['.mp4', '.mov', '.webm']; // Add other video formats
+    const extension = url?.split('.')?.pop()?.toLowerCase();
+    return videoExtensions.includes(`.${extension}`);
+  };
+
   const handlePostAction = async (action: string, item: Post | Announcement, isAnnouncement: boolean = false) => {
     let confirmResult;
     let successMessage = '';
@@ -325,7 +333,7 @@ export const CommunityModeration: React.FC = () => {
         break;
         
       case 'blockUser':
-        const userId = isAnnouncement ? (item as Announcement).author?.userId : (item as Post).userId;
+        const userId = isAnnouncement ? (item as Announcement).author?.userId : (item as Post).author?.userId;
         const userName = isAnnouncement ? (item as Announcement).author?.name : (item as Post).author?.name;
         
         confirmResult = await showConfirm({
@@ -563,41 +571,42 @@ export const CommunityModeration: React.FC = () => {
           {!isAnnouncement && item.mediaUrls && item.mediaUrls.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Stack direction="row" spacing={1} flexWrap="wrap">
-                {item.mediaUrls.slice(0, 3).map((url: string, index: number) => (
-                  <Box
-                    key={index}
-                    component="img"
-                    src={url}
-                    alt={`Media ${index + 1}`}
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: 'divider'
-                    }}
-                  />
-                ))}
-                {item.mediaUrls.length > 3 && (
-                  <Box
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: 'grey.100',
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: 'divider'
-                    }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      +{item.mediaUrls.length - 3} more
-                    </Typography>
+                {item.mediaUrls.map((url: string, index: number) => (
+                  <Box key={index}>
+                    {isVideo(url) ? (
+                      // Render a video if the URL is a video
+                      <video
+                        src={url}
+                        controls // Add controls to allow playback
+                        style={{
+                          width: 100,
+                          height: 100,
+                          objectFit: 'cover',
+                          borderRadius: 4, // Use a number for borderRadius with MUI
+                          border: '1px solid',
+                          borderColor: 'divider',
+                        }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : (
+                      // Otherwise, render an image
+                      <Box
+                        component="img"
+                        src={url}
+                        alt={`Media ${index + 1}`}
+                        sx={{
+                          width: 100,
+                          height: 100,
+                          objectFit: 'cover',
+                          borderRadius: 1,
+                          border: '1px solid',
+                          borderColor: 'divider'
+                        }}
+                      />
+                    )}
                   </Box>
-                )}
+                ))}
               </Stack>
             </Box>
           )}
