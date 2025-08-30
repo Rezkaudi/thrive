@@ -84,7 +84,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // 🎯 FIRST-TIME LOGIN: Load tour video and status on user login
   useEffect(() => {
     if (user) {
-      console.log('🎯 User logged in, checking tour video status...');
+      // console.log('🎯 User logged in, checking tour video status...');
       // Load both video and user status in parallel
       Promise.all([
         dispatch(fetchTourVideo()),
@@ -111,7 +111,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       const timer = setTimeout(() => {
         console.log('🎥 AUTO-SHOWING tour video for first-time user!');
         dispatch(setShowTourModal(true)); // 🎯 TRIGGERS AUTO-SHOW!
-      }, 1500); // 1.5 second delay
+      }, 1500); //  
 
       return () => clearTimeout(timer);
     }

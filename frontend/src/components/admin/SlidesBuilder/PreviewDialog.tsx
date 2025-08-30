@@ -9,7 +9,6 @@ import {
   IconButton,
   Alert,
   Box,
-  Paper,
   Chip,
 } from '@mui/material';
 import {
@@ -74,7 +73,7 @@ export const PreviewDialog: React.FC<PreviewDialogProps> = ({
           </IconButton>
         </Stack>
       </DialogTitle>
-      
+
       <DialogContent sx={{ p: 0, height: '100%' }}>
         <Alert severity="info" sx={{ m: 2, borderRadius: 2 }}>
           <Typography variant="body2">

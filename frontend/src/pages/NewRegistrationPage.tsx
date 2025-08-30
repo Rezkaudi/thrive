@@ -121,7 +121,7 @@ export const NewRegistrationPage: React.FC = () => {
             // Navigate to verification page
             navigate('/register/verify');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Registration failed');
+            setError(err.response?.data?.error.message || 'Registration failed');
         } finally {
             setLoading(false);
         }

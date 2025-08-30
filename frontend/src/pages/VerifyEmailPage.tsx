@@ -85,7 +85,7 @@ export const VerifyEmailPage: React.FC = () => {
             await dispatch(checkAuth());
 
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Invalid verification code');
+            setError(err.response?.data?.error.message || 'Invalid verification code');
         } finally {
             setLoading(false);
         }
@@ -116,7 +116,7 @@ export const VerifyEmailPage: React.FC = () => {
             }, 3000);
 
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to resend verification code');
+            setError(err.response?.data?.error.message || 'Failed to resend verification code');
         } finally {
             setResendLoading(false);
         }

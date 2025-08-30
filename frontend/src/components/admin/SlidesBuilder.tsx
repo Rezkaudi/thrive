@@ -32,7 +32,7 @@ export const SlidesBuilder: React.FC<SlidesBuilderProps> = ({
     validationErrors,
     validateSlide,
     getTotalErrors,
-    hasErrors,
+    // hasErrors,
   } = useSlideValidation(slides);
 
   // Validate slide when it's updated

@@ -92,7 +92,7 @@ export const ListeningSlide: React.FC<SlideComponentProps> = ({
         </Fade>
       )}
 
-      <Stack spacing={4}>
+      <Stack spacing={4} mt={2}>
         {content.items?.map((item: any, questionIndex: number) => (
           <Paper
             key={item.id}

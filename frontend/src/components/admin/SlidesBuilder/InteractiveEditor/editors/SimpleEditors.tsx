@@ -6,7 +6,6 @@ import {
   Grid,
   Paper,
   Typography,
-  Box,
   Chip,
   IconButton,
   Tooltip

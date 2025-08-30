@@ -94,13 +94,13 @@ export const videoService = {
   isValidVideoUrl(url: string, type: VideoType): boolean {
     try {
       const urlObj = new URL(url);
-      
+
       if (type === VideoType.YOUTUBE) {
         return this.extractYouTubeVideoId(url) !== null;
       } else if (type === VideoType.S3) {
         return urlObj.hostname.includes('amazonaws.com') || urlObj.hostname.includes('s3');
       }
-      
+
       return false;
     } catch {
       return false;
