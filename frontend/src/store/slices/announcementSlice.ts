@@ -1,7 +1,7 @@
 // frontend/src/store/slices/announcementSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { announcementService, Announcement } from '../../services/announcementService';
-import { commentService, Comment, CreateCommentData, UpdateCommentData } from '../../services/commentService';
+import { Comment, CreateCommentData, UpdateCommentData } from '../../services/commentService';
 
 interface AnnouncementState {
   announcements: Announcement[];

@@ -7,7 +7,6 @@ import {
   Select,
   MenuItem,
   Card,
-  CardContent,
   Typography,
   Button,
   IconButton,
@@ -151,7 +150,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
             <Select
               value={codeContent.language || 'javascript'}
               label="Programming Language"
-              onChange={(e) => updateCodeContent({ 
+              onChange={(e) => updateCodeContent({
                 language: e.target.value,
                 // Set example code if current code is empty or default
                 ...((!codeContent.code || codeContent.code.includes('Enter your code here')) && {
@@ -204,19 +203,19 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
       <Card variant="outlined">
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-            <Tab 
-              label="Code Editor" 
-              icon={<Edit />} 
+            <Tab
+              label="Code Editor"
+              icon={<Edit />}
               iconPosition="start"
             />
-            <Tab 
-              label="Preview" 
-              icon={<Visibility />} 
+            <Tab
+              label="Preview"
+              icon={<Visibility />}
               iconPosition="start"
             />
-            <Tab 
-              label="Settings" 
-              icon={<Settings />} 
+            <Tab
+              label="Settings"
+              icon={<Settings />}
               iconPosition="start"
             />
           </Tabs>
@@ -227,10 +226,10 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
             {/* Code Editor Header */}
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Stack direction="row" spacing={1} alignItems="center">
-                <Chip 
-                  label={selectedLanguage?.label || 'JavaScript'} 
-                  color="primary" 
-                  size="small" 
+                <Chip
+                  label={selectedLanguage?.label || 'JavaScript'}
+                  color="primary"
+                  size="small"
                 />
                 <Typography variant="body2" color="text.secondary">
                   {(codeContent.code || '').split('\n').length} lines
@@ -239,8 +238,8 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
 
               <Stack direction="row" spacing={1}>
                 <Tooltip title="Copy Code">
-                  <IconButton 
-                    size="small" 
+                  <IconButton
+                    size="small"
                     onClick={() => navigator.clipboard.writeText(codeContent.code || '')}
                   >
                     <ContentCopy />
@@ -361,11 +360,11 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
                   Output:
                 </Typography>
                 <pre style={{ margin: 0, color: '#00ff00' }}>
-                  {selectedLanguage?.value === 'javascript' && codeContent.code?.includes('console.log') ? 
-                    'Hello, World!' : 
-                    selectedLanguage?.value === 'python' && codeContent.code?.includes('print') ?
+                  {selectedLanguage?.value === 'javascript' && codeContent.code?.includes('console.log') ?
                     'Hello, World!' :
-                    'Click "Run Code" to see output'}
+                    selectedLanguage?.value === 'python' && codeContent.code?.includes('print') ?
+                      'Hello, World!' :
+                      'Click "Run Code" to see output'}
                 </pre>
               </Box>
             )}
@@ -375,7 +374,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
         <TabPanel value={tabValue} index={2}>
           <Stack spacing={3}>
             <Typography variant="h6">Code Display Settings</Typography>
-            
+
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -387,7 +386,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
                   helperText="CSS font size (e.g., 14px, 1rem)"
                 />
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth>
                   <InputLabel>Tab Size</InputLabel>
@@ -402,7 +401,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
                   </Select>
                 </FormControl>
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControlLabel
                   control={
@@ -414,7 +413,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
                   label="Show line numbers"
                 />
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControlLabel
                   control={
@@ -426,7 +425,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
                   label="Word wrap"
                 />
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControlLabel
                   control={
@@ -438,7 +437,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
                   label="Highlight active lines"
                 />
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControlLabel
                   control={
@@ -453,7 +452,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
             </Grid>
 
             <Typography variant="h6" sx={{ mt: 3 }}>Interactive Features</Typography>
-            
+
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControlLabel
@@ -466,7 +465,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
                   label="Allow students to edit code"
                 />
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControlLabel
                   control={
@@ -483,7 +482,7 @@ export const CodeSlideEditor: React.FC<CodeSlideEditorProps> = ({
             {codeSettings.allowExecution && (
               <Alert severity="warning">
                 <Typography variant="body2">
-                  <strong>Security Note:</strong> Code execution should only be enabled for trusted code. 
+                  <strong>Security Note:</strong> Code execution should only be enabled for trusted code.
                   Consider using sandboxed environments for student code execution.
                 </Typography>
               </Alert>

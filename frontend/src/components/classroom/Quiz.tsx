@@ -17,7 +17,6 @@ import {
   Paper,
   Fade,
   Zoom,
-  IconButton,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -26,7 +25,6 @@ import {
   Quiz as QuizIcon,
   NavigateNext,
   NavigateBefore,
-  Flag,
   ArrowForward,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -92,32 +90,32 @@ export const Quiz: React.FC<QuizProps> = ({
         option,
         originalIndex: index,
       }));
-      
+
       // Shuffle the options
       const shuffledOptions = shuffleArray(optionIndices);
-      
+
       // Create mapping from new index to original index
       const indexMapping = new Map();
       shuffledOptions.forEach((item, newIndex) => {
         indexMapping.set(newIndex, item.originalIndex);
       });
-      
+
       // Create reverse mapping from original index to new index
       const reverseIndexMapping = new Map();
       shuffledOptions.forEach((item, newIndex) => {
         reverseIndexMapping.set(item.originalIndex, newIndex);
       });
-      
+
       // Update correct answer indices to match new order
       let newCorrectAnswer;
       if (Array.isArray(question.correctAnswer)) {
-        newCorrectAnswer = question.correctAnswer.map(originalIndex => 
+        newCorrectAnswer = question.correctAnswer.map(originalIndex =>
           reverseIndexMapping.get(originalIndex)
         );
       } else {
         newCorrectAnswer = reverseIndexMapping.get(question.correctAnswer);
       }
-      
+
       return {
         ...question,
         options: shuffledOptions.map(item => item.option),
@@ -151,13 +149,13 @@ export const Quiz: React.FC<QuizProps> = ({
   const handleMultipleAnswer = (index: number, checked: boolean) => {
     const current = selectedAnswers[currentQuestion] || [];
     const newAnswers = [...selectedAnswers];
-    
+
     if (checked) {
       newAnswers[currentQuestion] = [...current, index];
     } else {
       newAnswers[currentQuestion] = current.filter((i: number) => i !== index);
     }
-    
+
     setSelectedAnswers(newAnswers);
   };
 
@@ -175,15 +173,15 @@ export const Quiz: React.FC<QuizProps> = ({
     }
   };
 
-  const handleFlagQuestion = () => {
-    const newFlags = new Set(flaggedQuestions);
-    if (newFlags.has(currentQuestion)) {
-      newFlags.delete(currentQuestion);
-    } else {
-      newFlags.add(currentQuestion);
-    }
-    setFlaggedQuestions(newFlags);
-  };
+  // const handleFlagQuestion = () => {
+  //   const newFlags = new Set(flaggedQuestions);
+  //   if (newFlags.has(currentQuestion)) {
+  //     newFlags.delete(currentQuestion);
+  //   } else {
+  //     newFlags.add(currentQuestion);
+  //   }
+  //   setFlaggedQuestions(newFlags);
+  // };
 
   const calculateScore = () => {
     let totalScore = 0;
@@ -202,9 +200,9 @@ export const Quiz: React.FC<QuizProps> = ({
         // Multiple choice
         const correct = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer];
         const selected = answer || [];
-        
-        if (correct.length === selected.length && 
-            correct.every((c: number) => selected.includes(c))) {
+
+        if (correct.length === selected.length &&
+          correct.every((c: number) => selected.includes(c))) {
           totalScore += points;
         }
       }
@@ -219,7 +217,7 @@ export const Quiz: React.FC<QuizProps> = ({
     setShowResults(true);
 
     const passed = finalScore >= passingScore;
-    
+
     if (passed) {
       confetti({
         particleCount: 100,
@@ -232,16 +230,16 @@ export const Quiz: React.FC<QuizProps> = ({
   const handleContinueToNextLesson = () => {
     const passed = score >= passingScore;
     setHasCompletedLesson(true);
-    
+
     // Convert answers back to original indices before passing to onComplete
     const originalAnswers = selectedAnswers.map((answer, index) => {
       if (answer === null) return null;
-      
+
       const randomizedQuestion = randomizedQuestions[index];
-      
+
       if (Array.isArray(answer)) {
         // Multiple choice - convert array of new indices to original indices
-        return answer.map((newIndex: number) => 
+        return answer.map((newIndex: number) =>
           randomizedQuestion.newToOriginalMapping.get(newIndex)
         );
       } else {
@@ -249,7 +247,7 @@ export const Quiz: React.FC<QuizProps> = ({
         return randomizedQuestion.newToOriginalMapping.get(answer);
       }
     });
-    
+
     onComplete(score, passed, originalAnswers);
   };
 
@@ -272,7 +270,7 @@ export const Quiz: React.FC<QuizProps> = ({
 
   if (showResults) {
     const passed = score >= passingScore;
-    
+
     return (
       <Zoom in>
         <Box sx={{ maxWidth: 800, mx: 'auto', p: 0 }}>
@@ -289,15 +287,15 @@ export const Quiz: React.FC<QuizProps> = ({
                   <Cancel sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
                 )}
               </motion.div>
-              
+
               <Typography variant="h3" fontWeight={700} gutterBottom>
                 {passed ? 'Congratulations!' : 'Keep Practicing!'}
               </Typography>
-              
+
               <Typography variant="h4" sx={{ mb: 3 }}>
                 Your Score: <strong>{score}%</strong>
               </Typography>
-              
+
               {passed ? (
                 <Alert severity="success" sx={{ mb: 3 }}>
                   You passed! You've earned {pointsReward} points.
@@ -314,11 +312,11 @@ export const Quiz: React.FC<QuizProps> = ({
                 </Typography>
                 {randomizedQuestions.map((q, index) => {
                   const answer = selectedAnswers[index];
-                  const isCorrect = q.type === 'single' 
+                  const isCorrect = q.type === 'single'
                     ? answer === q.correctAnswer
                     : Array.isArray(q.correctAnswer) &&
-                      answer && answer.length === q.correctAnswer.length &&
-                      q.correctAnswer.every((c: number) => answer.includes(c));
+                    answer && answer.length === q.correctAnswer.length &&
+                    q.correctAnswer.every((c: number) => answer.includes(c));
 
                   return (
                     <Paper key={q.id} sx={{ p: 2, textAlign: 'left' }}>
@@ -339,7 +337,7 @@ export const Quiz: React.FC<QuizProps> = ({
                           {!isCorrect && (
                             <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
                               Correct answer: {
-                                Array.isArray(q.correctAnswer) 
+                                Array.isArray(q.correctAnswer)
                                   ? q.correctAnswer.map(i => q.options[i]).join(', ')
                                   : q.options[q.correctAnswer as number]
                               }
@@ -362,7 +360,7 @@ export const Quiz: React.FC<QuizProps> = ({
                     Try Again
                   </Button>
                 )}
-                
+
                 {passed && !hasCompletedLesson && (
                   <Button
                     variant="contained"
@@ -396,13 +394,13 @@ export const Quiz: React.FC<QuizProps> = ({
                 icon={<Timer />}
                 label={formatTime(timeRemaining)}
                 color={timeRemaining < 60 ? 'error' : 'default'}
-                sx={timeRemaining < 60 ? {color: "white"} : null}
+                sx={timeRemaining < 60 ? { color: "white" } : null}
               />
             )}
             <Chip
               label={`${currentQuestion + 1} / ${questions.length}`}
               color="primary"
-              sx={{color: "white"}}
+              sx={{ color: "white" }}
             />
           </Stack>
         </Stack>
@@ -509,10 +507,10 @@ export const Quiz: React.FC<QuizProps> = ({
                   bgcolor: index === currentQuestion
                     ? 'primary.main'
                     : selectedAnswers[index] !== null
-                    ? 'success.main'
-                    : flaggedQuestions.has(index)
-                    ? 'warning.main'
-                    : 'grey.300',
+                      ? 'success.main'
+                      : flaggedQuestions.has(index)
+                        ? 'warning.main'
+                        : 'grey.300',
                   cursor: 'pointer',
                   transition: 'all 0.3s',
                 }}
@@ -527,7 +525,7 @@ export const Quiz: React.FC<QuizProps> = ({
               onClick={handleSubmit}
               disabled={selectedAnswers.some(a => a === null)}
               color="success"
-              sx={{color: "white"}}
+              sx={{ color: "white" }}
             >
               Submit Quiz
             </Button>
@@ -536,7 +534,7 @@ export const Quiz: React.FC<QuizProps> = ({
               endIcon={<NavigateNext />}
               onClick={handleNext}
               variant="contained"
-              sx={{color: "white"}}
+              sx={{ color: "white" }}
             >
               Next
             </Button>

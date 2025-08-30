@@ -6,9 +6,7 @@ import {
     Avatar,
     Box,
     Chip,
-    Skeleton,
-    IconButton,
-    Tooltip,
+    Skeleton
 } from '@mui/material';
 import {
     School,

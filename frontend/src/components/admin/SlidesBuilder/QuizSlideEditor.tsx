@@ -79,7 +79,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
         updates.correctAnswer = 0; // Reset to first option if deleted option was selected
       }
     }
-    
+
     // Handle multiple choice - remove from correctAnswers array and adjust indices
     if (quizContent.type === 'multiple-choice') {
       const currentCorrect = quizContent.correctAnswers || [];
@@ -88,7 +88,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
         .map((i: number) => i > optionIndex ? i - 1 : i); // Adjust indices
       updates.correctAnswers = newCorrect;
     }
-    
+
     updateQuizContent(updates);
   };
 
@@ -97,14 +97,14 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
     const newCorrect = currentCorrect.includes(optionIndex)
       ? currentCorrect.filter((i: number) => i !== optionIndex)
       : [...currentCorrect, optionIndex];
-    
+
     updateQuizContent({ correctAnswers: newCorrect });
   };
 
   // Initialize with default values if needed
   React.useEffect(() => {
     if (!quizContent.type) {
-      updateQuizContent({ 
+      updateQuizContent({
         type: 'single-choice',
         options: ['Option 1', 'Option 2'],
         correctAnswer: 0
@@ -123,7 +123,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
         error={!content.title?.trim()}
         helperText={!content.title?.trim() ? 'Title is required' : ''}
       />
-      
+
       <TextField
         fullWidth
         multiline
@@ -145,7 +145,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
           onChange={(e) => {
             const newType = e.target.value;
             let updates: any = { type: newType };
-            
+
             // Convert between types
             if (newType === 'single-choice' && quizContent.type === 'multiple-choice') {
               // Convert multiple choice to single choice - use first correct answer
@@ -158,7 +158,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               updates.correctAnswers = [currentCorrect];
               updates.correctAnswer = undefined;
             }
-            
+
             updateQuizContent(updates);
           }}
         >
@@ -228,9 +228,9 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
                         type="checkbox"
                         checked={quizContent.correctAnswers?.includes(optionIndex) || false}
                         onChange={() => toggleMultipleChoiceAnswer(optionIndex)}
-                        style={{ 
-                          width: 20, 
-                          height: 20, 
+                        style={{
+                          width: 20,
+                          height: 20,
                           accentColor: '#4caf50',
                           cursor: 'pointer'
                         }}
@@ -249,7 +249,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
                 onChange={(e) => updateOption(optionIndex, e.target.value)}
                 error={!option.trim()}
                 helperText={
-                  quizContent.type === 'single-choice' 
+                  quizContent.type === 'single-choice'
                     ? (quizContent.correctAnswer === optionIndex ? 'Correct Answer' : '')
                     : (quizContent.correctAnswers?.includes(optionIndex) ? 'Correct Answer' : '')
                 }
@@ -279,7 +279,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
 
         <Alert severity="info" sx={{ mt: 2 }}>
           <Typography variant="body2">
-            {quizContent.type === 'single-choice' 
+            {quizContent.type === 'single-choice'
               ? '💡 Select the radio button next to the correct answer. Students will see these options in random order.'
               : '💡 Check all correct answers. Students can select multiple options.'
             }
@@ -292,7 +292,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
         <Typography variant="h6" fontWeight={600} gutterBottom>
           Quiz Settings
         </Typography>
-        
+
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
@@ -306,7 +306,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               helperText="0 = no time limit"
             />
           </Grid>
-          
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
@@ -318,7 +318,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               inputProps={{ min: 1 }}
             />
           </Grid>
-          
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControlLabel
               control={
@@ -330,7 +330,7 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
               label="Randomize option order"
             />
           </Grid>
-          
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControlLabel
               control={
@@ -364,31 +364,31 @@ export const QuizSlideEditor: React.FC<QuizSlideEditorProps> = ({
             📋 Quiz Preview
           </Typography>
           <Divider sx={{ my: 2 }} />
-          
+
           <Box sx={{ mb: 2 }}>
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-              <Chip 
-                label={quizContent.type === 'single-choice' ? 'Single Choice' : 'Multiple Choice'} 
-                color="primary" 
-                size="small" 
+              <Chip
+                label={quizContent.type === 'single-choice' ? 'Single Choice' : 'Multiple Choice'}
+                color="primary"
+                size="small"
               />
               {quizContent.timeLimit > 0 && (
-                <Chip 
-                  icon={<Timer />} 
-                  label={`${quizContent.timeLimit}s`} 
-                  color="warning" 
-                  size="small" 
+                <Chip
+                  icon={<Timer />}
+                  label={`${quizContent.timeLimit}s`}
+                  color="warning"
+                  size="small"
                 />
               )}
-              <Chip 
-                icon={<Psychology />} 
-                label={`${quizContent.points || 1} pts`} 
-                color="success" 
-                size="small" 
+              <Chip
+                icon={<Psychology />}
+                label={`${quizContent.points || 1} pts`}
+                color="success"
+                size="small"
               />
             </Stack>
           </Box>
-          
+
           <Typography variant="h6" gutterBottom>
             {quizContent.question || 'Your question will appear here...'}
           </Typography>

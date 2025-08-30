@@ -1,7 +1,7 @@
 // frontend/src/store/slices/communitySlice.ts (Updated - Remove isAnnouncement)
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
-import { commentService, Comment, CreateCommentData, UpdateCommentData } from '../../services/commentService';
+import { Comment, CreateCommentData, UpdateCommentData } from '../../services/commentService';
 
 interface Post {
   id: string;
@@ -56,9 +56,9 @@ const initialState: CommunityState = {
 // Modified fetchPosts to support infinite scroll
 export const fetchPosts = createAsyncThunk(
   'community/fetchPosts',
-  async ({ page = 1, limit = 20, append = false }: { 
-    page?: number; 
-    limit?: number; 
+  async ({ page = 1, limit = 20, append = false }: {
+    page?: number;
+    limit?: number;
     append?: boolean;
   }) => {
     const response = await api.get('/community/posts', { params: { page, limit } });
@@ -72,11 +72,11 @@ export const loadMorePosts = createAsyncThunk(
   async (_, { getState }) => {
     const state = getState() as { community: CommunityState };
     const nextPage = state.community.currentPage + 1;
-    
-    const response = await api.get('/community/posts', { 
-      params: { page: nextPage, limit: 20 } 
+
+    const response = await api.get('/community/posts', {
+      params: { page: nextPage, limit: 20 }
     });
-    
+
     return { ...response.data, page: nextPage, append: true };
   }
 );
@@ -102,7 +102,7 @@ export const toggleLike = createAsyncThunk(
 );
 
 export const editPost = createAsyncThunk(
-  'community/editPost', 
+  'community/editPost',
   async ({ postId, content, mediaUrls }: {
     postId: string;
     content: string;
@@ -110,9 +110,9 @@ export const editPost = createAsyncThunk(
   }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/community/posts/${postId}`, { content, mediaUrls });
-      
-      return { 
-        postId, 
+
+      return {
+        postId,
         updatedPost: response.data.post || response.data,
         content,
         mediaUrls: mediaUrls || [],
@@ -124,7 +124,7 @@ export const editPost = createAsyncThunk(
 );
 
 export const deletePost = createAsyncThunk(
-  'community/deletePost', 
+  'community/deletePost',
   async (postId: string, { rejectWithValue }) => {
     try {
       const response = await api.delete(`/community/posts/${postId}`);
@@ -148,7 +148,7 @@ export const fetchComments = createAsyncThunk(
       const response = await api.get(`/community/posts/${postId}/comments`, {
         params: { page, limit, includeReplies }
       });
-      
+
       if (response.data.success) {
         return { postId, ...response.data.data };
       } else {
@@ -166,15 +166,15 @@ export const createComment = createAsyncThunk(
   async ({ postId, data }: { postId: string; data: CreateCommentData }, { rejectWithValue, getState }) => {
     try {
       const response = await api.post(`/community/posts/${postId}/comments`, data);
-      
+
       if (response.data.success) {
         const comment = response.data.data;
-        
+
         // Get current user info from state for optimistic UI updates
         const state = getState() as any;
         const currentUserId = state.auth.user?.id;
         const userProfile = state.dashboard.data?.user;
-        
+
         // Ensure the comment has author info for immediate display
         const commentWithAuthor = {
           ...comment,
@@ -186,7 +186,7 @@ export const createComment = createAsyncThunk(
             level: userProfile?.level || 1
           }
         };
-        
+
         return { postId, comment: commentWithAuthor };
       } else {
         throw new Error(response.data.message || 'Failed to create comment');
@@ -203,7 +203,7 @@ export const updateComment = createAsyncThunk(
   async ({ commentId, data }: { commentId: string; data: UpdateCommentData }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/community/comments/${commentId}`, data);
-      
+
       if (response.data.success) {
         return response.data.data;
       } else {
@@ -220,7 +220,7 @@ export const deleteComment = createAsyncThunk(
   async ({ commentId, postId }: { commentId: string; postId: string }, { rejectWithValue }) => {
     try {
       const response = await api.delete(`/community/comments/${commentId}`);
-      
+
       if (response.data.success) {
         return { commentId, postId };
       } else {
@@ -238,13 +238,13 @@ export const fetchCommentCount = createAsyncThunk(
     try {
       const state = getState() as { community: CommunityState };
       const post = state.community.posts.find(p => p.id === postId);
-      
+
       if (post?.commentsCount !== undefined) {
         return { postId, count: post.commentsCount };
       }
 
       const response = await api.get(`/community/posts/${postId}/comments/count`);
-      
+
       if (response.data.success) {
         return { postId, count: response.data.data.count };
       } else {
@@ -434,7 +434,7 @@ const communitySlice = createSlice({
       .addCase(fetchPosts.pending, (state, action) => {
         const page = action.meta.arg.page ?? 1;
         const append = action.meta.arg.append ?? false;
-        
+
         if (append || page > 1) {
           state.loadingMore = true;
         } else {
@@ -445,10 +445,10 @@ const communitySlice = createSlice({
       .addCase(fetchPosts.fulfilled, (state, action) => {
         state.loading = false;
         state.loadingMore = false;
-        
+
         const page = action.meta.arg.page ?? 1;
         const append = action.meta.arg.append ?? false;
-        
+
         if (append || page > 1) {
           const newPosts = action.payload.posts.filter(
             (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id)
@@ -457,10 +457,10 @@ const communitySlice = createSlice({
         } else {
           state.posts = action.payload.posts;
         }
-        
+
         state.totalPosts = action.payload.total;
         state.currentPage = action.payload.page;
-        
+
         const totalLoadedPosts = state.posts.length;
         state.hasMorePosts = totalLoadedPosts < state.totalPosts;
       })
@@ -469,7 +469,7 @@ const communitySlice = createSlice({
         state.loadingMore = false;
         state.error = action.error.message || 'Failed to fetch posts';
       })
-      
+
       // Load More Posts
       .addCase(loadMorePosts.pending, (state) => {
         state.loadingMore = true;
@@ -477,15 +477,15 @@ const communitySlice = createSlice({
       })
       .addCase(loadMorePosts.fulfilled, (state, action) => {
         state.loadingMore = false;
-        
+
         const newPosts = action.payload.posts.filter(
           (newPost: Post) => !state.posts.find(existing => existing.id === newPost.id)
         );
         state.posts = [...state.posts, ...newPosts];
-        
+
         state.totalPosts = action.payload.total;
         state.currentPage = action.payload.page;
-        
+
         const totalLoadedPosts = state.posts.length;
         state.hasMorePosts = totalLoadedPosts < state.totalPosts;
       })
@@ -493,7 +493,7 @@ const communitySlice = createSlice({
         state.loadingMore = false;
         state.error = action.error.message || 'Failed to load more posts';
       })
-      
+
       .addCase(createPost.fulfilled, (state, action) => {
         state.posts.unshift(action.payload);
         state.totalPosts++;
@@ -521,11 +521,11 @@ const communitySlice = createSlice({
             mediaUrls: action.payload.mediaUrls,
             isEditing: false,
           };
-          
+
           if (action.payload.updatedPost) {
             Object.assign(updatedPost, action.payload.updatedPost);
           }
-          
+
           state.posts[postIndex] = updatedPost;
         }
         state.editError = null;
@@ -556,7 +556,7 @@ const communitySlice = createSlice({
         }
         state.deleteError = action.payload as string;
       })
-      
+
       // Comments (same as before)
       .addCase(fetchComments.pending, (state, action) => {
         const postIndex = state.posts.findIndex(p => p.id === action.meta.arg.postId);
@@ -569,10 +569,10 @@ const communitySlice = createSlice({
         const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
         if (postIndex !== -1) {
           const { comments, pagination } = action.payload;
-                    
+
           state.posts[postIndex].commentsInitialized = true;
           state.posts[postIndex].commentsLoading = false;
-          
+
           if (pagination.page === 1) {
             state.posts[postIndex].comments = comments;
           } else {
@@ -581,10 +581,10 @@ const communitySlice = createSlice({
               ...comments
             ];
           }
-          
+
           state.posts[postIndex].commentsPage = pagination.page;
           state.posts[postIndex].commentsHasMore = pagination.hasNextPage;
-          
+
           if (pagination.totalWithReplies !== undefined) {
             state.posts[postIndex].commentsCount = pagination.totalWithReplies;
           } else if (pagination.total !== undefined) {
@@ -609,11 +609,11 @@ const communitySlice = createSlice({
           if (!state.posts[postIndex].comments) {
             state.posts[postIndex].comments = [];
           }
-          
+
           state.posts[postIndex].commentsInitialized = true;
-          
+
           const newComment = action.payload.comment;
-          
+
           if (newComment.parentCommentId) {
             state.posts[postIndex].comments = findAndAddReply(
               state.posts[postIndex].comments!,
@@ -623,7 +623,7 @@ const communitySlice = createSlice({
           } else {
             state.posts[postIndex].comments!.unshift(newComment);
           }
-          
+
           const totalComments = countAllComments(state.posts[postIndex].comments!);
           state.posts[postIndex].commentsCount = totalComments;
         }
@@ -670,19 +670,19 @@ const communitySlice = createSlice({
       .addCase(deleteComment.fulfilled, (state, action) => {
         const postIndex = state.posts.findIndex(p => p.id === action.payload.postId);
         if (postIndex !== -1 && state.posts[postIndex].comments) {
-          
+
           const beforeCount = countAllComments(state.posts[postIndex].comments!);
-          
+
           state.posts[postIndex].comments = findAndDeleteComment(
             state.posts[postIndex].comments!,
             action.payload.commentId
           );
-          
+
           const afterCount = countAllComments(state.posts[postIndex].comments!);
-          
+
           const deletedCount = beforeCount - afterCount;
           state.posts[postIndex].commentsCount = Math.max(
-            0, 
+            0,
             (state.posts[postIndex].commentsCount || 0) - deletedCount
           );
         }
@@ -712,12 +712,12 @@ const communitySlice = createSlice({
   },
 });
 
-export const { 
-  setCurrentPage, 
-  clearError, 
+export const {
+  setCurrentPage,
+  clearError,
   resetPosts,
-  startEditPost, 
-  startDeletePost, 
+  startEditPost,
+  startDeletePost,
   updatePostContent,
   toggleCommentsSection,
   startEditComment,

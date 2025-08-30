@@ -50,19 +50,19 @@ export const SimplePDFViewer: React.FC<PDFViewerProps> = ({
     const [scale, setScale] = useState(isMobile ? 0.6 : isTablet ? 0.8 : 1.0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [inputPageNumber, setInputPageNumber] = useState('1');
-    const [isLoading, setIsLoading] = useState(true);
+    // const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
-        setIsLoading(false);
+        // setIsLoading(false);
         setError(null);
     };
 
     const onDocumentLoadError = (error: Error) => {
         console.error('Error loading PDF:', error);
         setError('Failed to load PDF. Please try again later.');
-        setIsLoading(false);
+        // setIsLoading(false);
     };
 
     const changePage = (offset: number) => {

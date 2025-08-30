@@ -1,4 +1,4 @@
-// frontend/src/pages/CommunityPage.tsx - Updated to dedicate the input card for posts
+// frontend/src/pages/CommunityPage.tsx - Updated with tab URL parameters
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
@@ -64,7 +64,7 @@ import {
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Comments } from "../components/community/Comments";
 import {
   MediaUpload,
@@ -150,6 +150,7 @@ interface ItemCardProps {
     severity: "success" | "error" | "info" | "warning"
   ) => void;
   isHighlighted?: boolean;
+  currentTab: number;
 }
 
 const ItemCard = ({
@@ -161,6 +162,7 @@ const ItemCard = ({
   currentUserId,
   onShowSnackbar,
   isHighlighted = false,
+  currentTab,
 }: ItemCardProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -181,9 +183,8 @@ const ItemCard = ({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const shareToSocial = (platform: string) => {
-    const message = `Check out this ${
-      item.isAnnouncement ? "announcement" : "post"
-    } from the Thrive in Japan community!`;
+    const message = `Check out this ${item.isAnnouncement ? "announcement" : "post"
+      } from the Thrive in Japan community!`;
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedMessage = encodeURIComponent(message);
 
@@ -256,7 +257,9 @@ const ItemCard = ({
   };
 
   const handleShareClick = () => {
-    const itemUrl = `${window.location.origin}/community?highlight=${item.id}`;
+    // Include the current tab in the share URL
+    const tabParam = currentTab === 0 ? "announcements" : "posts";
+    const itemUrl = `${window.location.origin}/community?tab=${tabParam}&highlight=${item.id}`;
     setShareUrl(itemUrl);
     setShareDialog(true);
   };
@@ -264,8 +267,7 @@ const ItemCard = ({
   const copyShareUrl = () => {
     navigator.clipboard.writeText(shareUrl);
     onShowSnackbar(
-      `${
-        item.isAnnouncement ? "Announcement" : "Post"
+      `${item.isAnnouncement ? "Announcement" : "Post"
       } URL copied to clipboard!`,
       "success"
     );
@@ -370,8 +372,8 @@ const ItemCard = ({
     item.commentsCount !== undefined
       ? item.commentsCount
       : item.commentsInitialized
-      ? 0
-      : "...";
+        ? 0
+        : "...";
 
   return (
     <motion.div
@@ -471,7 +473,8 @@ const ItemCard = ({
                 sx={{ fontSize: { xs: "0.5rem", md: "0.8rem" } }}
                 color="text.secondary"
               >
-                {item.author?.email} • {formatPostDate(item.createdAt)}{" "}
+                {/* {item.author?.email} •  */}
+                {formatPostDate(item.createdAt)}{" "}
                 {formatPostTime(item.createdAt)}
               </Typography>
             </Box>
@@ -556,9 +559,8 @@ const ItemCard = ({
                 variant="outlined"
                 sx={{ mb: 2 }}
                 disabled={item.isEditing}
-                placeholder={`Edit your ${
-                  item.isAnnouncement ? "announcement" : "post"
-                } content...`}
+                placeholder={`Edit your ${item.isAnnouncement ? "announcement" : "post"
+                  } content...`}
               />
 
               {/* Media Upload Section for Editing (Posts only) */}
@@ -817,9 +819,8 @@ const ItemCard = ({
             fullWidth
             multiline
             rows={isMobile ? 3 : 4}
-            placeholder={`Describe why you're reporting this ${
-              item.isAnnouncement ? "announcement" : "post"
-            }...`}
+            placeholder={`Describe why you're reporting this ${item.isAnnouncement ? "announcement" : "post"
+              }...`}
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
             variant="outlined"
@@ -880,6 +881,8 @@ const useInfiniteScroll = (
 };
 
 export const CommunityPage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tabValue, setTabValue] = useState(0);
   const [newPost, setNewPost] = useState("");
   const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>([]);
@@ -960,6 +963,18 @@ export const CommunityPage: React.FC = () => {
 
   const [isFetching] = useInfiniteScroll(loadMore, hasMore, loadingMore);
 
+  // Handle URL parameters on mount and URL changes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const tabParam = urlParams.get("tab");
+
+    if (tabParam === "posts") {
+      setTabValue(1);
+    } else if (tabParam === "announcements") {
+      setTabValue(0);
+    }
+  }, [location.search]);
+
   // Fetch initial data when component mounts
   useEffect(() => {
     dispatch(fetchAnnouncements({ page: 1, limit: 20 }));
@@ -997,7 +1012,12 @@ export const CommunityPage: React.FC = () => {
 
           setTimeout(() => {
             setHighlightedItemId(null);
-            const newUrl = window.location.pathname;
+            // Keep the tab parameter but remove highlight
+            const newParams = new URLSearchParams(window.location.search);
+            newParams.delete("highlight");
+            const newUrl = newParams.toString()
+              ? `${window.location.pathname}?${newParams.toString()}`
+              : window.location.pathname;
             window.history.replaceState({}, "", newUrl);
           }, 3000);
         }
@@ -1034,6 +1054,13 @@ export const CommunityPage: React.FC = () => {
     severity: "success" | "error" | "info" | "warning"
   ) => {
     setSnackbar({ open: true, message, severity });
+  };
+
+  // Handle tab change and update URL
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+    const tabName = newValue === 0 ? "announcements" : "posts";
+    navigate(`/community?tab=${tabName}`, { replace: true });
   };
 
   // Enhanced handleCreatePost - only creates posts (not announcements)
@@ -1271,9 +1298,8 @@ export const CommunityPage: React.FC = () => {
   // **MODIFIED**: Simplified postButtonText to remove announcement logic
   const postButtonText =
     selectedMedia.length > 0
-      ? `Post with ${selectedMedia.length} ${
-          selectedMedia.length === 1 ? "file" : "files"
-        }`
+      ? `Post with ${selectedMedia.length} ${selectedMedia.length === 1 ? "file" : "files"
+      }`
       : "Post";
 
   // Show loading only on initial load
@@ -1501,10 +1527,10 @@ export const CommunityPage: React.FC = () => {
                     {uploadProgress < 25
                       ? "Preparing..."
                       : uploadProgress < 75
-                      ? "Uploading media..."
-                      : uploadProgress < 95
-                      ? "Creating post..."
-                      : "Almost done..."}
+                        ? "Uploading media..."
+                        : uploadProgress < 95
+                          ? "Creating post..."
+                          : "Almost done..."}
                   </Typography>
                 </Stack>
               )}
@@ -1551,7 +1577,7 @@ export const CommunityPage: React.FC = () => {
       {/* Tabs */}
       <Tabs
         value={tabValue}
-        onChange={(e, v) => setTabValue(v)}
+        onChange={handleTabChange}
         sx={{ mb: 3 }}
         variant="scrollable"
         scrollButtons="auto"
@@ -1577,6 +1603,7 @@ export const CommunityPage: React.FC = () => {
             currentUserId={currentUserId}
             onShowSnackbar={handleShowSnackbar}
             isHighlighted={highlightedItemId === item.id}
+            currentTab={tabValue}
           />
         ))}
       </AnimatePresence>

@@ -7,9 +7,7 @@ import {
   Button,
   Box,
   Typography,
-  TextField,
   Stack,
-  Chip,
   Alert,
   Paper,
   IconButton,
@@ -21,26 +19,22 @@ import {
   TableRow,
   Tabs,
   Tab,
-  FormControlLabel,
-  Checkbox,
   LinearProgress,
 } from '@mui/material';
 import {
   CloudUpload,
-  VolumeUp,
   Delete,
-  ContentPaste,
   CheckCircle,
   Warning,
 } from '@mui/icons-material';
 import { CSVKeywordImport } from '../classroom/CSVKeywordImport';
 
-interface AudioMapping {
-  keyword: string;
-  japaneseAudioUrl: string;
-  englishAudioUrl: string;
-  japaneseSentenceAudioUrl: string;
-}
+// interface AudioMapping {
+//   keyword: string;
+//   japaneseAudioUrl: string;
+//   englishAudioUrl: string;
+//   japaneseSentenceAudioUrl: string;
+// }
 
 interface KeywordWithSentences {
   englishText: string;
@@ -66,103 +60,103 @@ export const BulkAudioManager: React.FC<BulkAudioManagerProps> = ({
   onApply,
 }) => {
   const [activeTab, setActiveTab] = useState(0);
-  const [bulkUrls, setBulkUrls] = useState('');
-  const [audioMappings, setAudioMappings] = useState<AudioMapping[]>([]);
-  const [autoMatch, setAutoMatch] = useState(true);
-  const [processing, setProcessing] = useState(false);
+  // const [bulkUrls, setBulkUrls] = useState('');
+  // const [audioMappings, setAudioMappings] = useState<AudioMapping[]>([]);
+  // const [autoMatch, setAutoMatch] = useState(true);
+  // const [processing, setProcessing] = useState(false);
 
   // Parse bulk URLs input
-  const parseBulkUrls = () => {
-    setProcessing(true);
-    const lines = bulkUrls.trim().split('\n').filter(line => line.trim());
-    const mappings: AudioMapping[] = [];
+  // const parseBulkUrls = () => {
+  //   setProcessing(true);
+  //   const lines = bulkUrls.trim().split('\n').filter(line => line.trim());
+  //   const mappings: AudioMapping[] = [];
 
-    lines.forEach(line => {
-      // Expected format: "keyword_jp.mp3 https://s3.../file.mp3"
-      // or "keyword_en.mp3 https://s3.../file.mp3"
-      // or "keyword_sentence_jp.mp3 https://s3.../file.mp3"
-      const parts = line.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        const filename = parts[0];
-        const url = parts[1];
+  //   lines.forEach(line => {
+  //     // Expected format: "keyword_jp.mp3 https://s3.../file.mp3"
+  //     // or "keyword_en.mp3 https://s3.../file.mp3"
+  //     // or "keyword_sentence_jp.mp3 https://s3.../file.mp3"
+  //     const parts = line.trim().split(/\s+/);
+  //     if (parts.length >= 2) {
+  //       const filename = parts[0];
+  //       const url = parts[1];
 
-        // Try to extract keyword and language from filename
-        const nameWithoutExt = filename.replace(/\.(mp3|wav|m4a)$/i, '');
-        const isSentenceJapanese = nameWithoutExt.match(/(_sentence_jp|_sentence_japanese|_sentence_ja)$/i);
-        const isJapanese = nameWithoutExt.match(/(_jp|_japanese|_ja)$/i);
-        const isEnglish = nameWithoutExt.match(/(_en|_english)$/i);
+  //       // Try to extract keyword and language from filename
+  //       const nameWithoutExt = filename.replace(/\.(mp3|wav|m4a)$/i, '');
+  //       const isSentenceJapanese = nameWithoutExt.match(/(_sentence_jp|_sentence_japanese|_sentence_ja)$/i);
+  //       const isJapanese = nameWithoutExt.match(/(_jp|_japanese|_ja)$/i);
+  //       const isEnglish = nameWithoutExt.match(/(_en|_english)$/i);
 
-        if (isSentenceJapanese || isJapanese || isEnglish) {
-          let keyword: string;
-          
-          if (isSentenceJapanese) {
-            keyword = nameWithoutExt.replace(/(_sentence_jp|_sentence_japanese|_sentence_ja)$/i, '');
-          } else if (isJapanese) {
-            keyword = nameWithoutExt.replace(/(_jp|_japanese|_ja)$/i, '');
-          } else {
-            keyword = nameWithoutExt.replace(/(_en|_english)$/i, '');
-          }
+  //       if (isSentenceJapanese || isJapanese || isEnglish) {
+  //         let keyword: string;
 
-          let mapping = mappings.find(m => m.keyword.toLowerCase() === keyword.toLowerCase());
-          if (!mapping) {
-            mapping = { 
-              keyword, 
-              japaneseAudioUrl: '', 
-              englishAudioUrl: '', 
-              japaneseSentenceAudioUrl: '' 
-            };
-            mappings.push(mapping);
-          }
+  //         if (isSentenceJapanese) {
+  //           keyword = nameWithoutExt.replace(/(_sentence_jp|_sentence_japanese|_sentence_ja)$/i, '');
+  //         } else if (isJapanese) {
+  //           keyword = nameWithoutExt.replace(/(_jp|_japanese|_ja)$/i, '');
+  //         } else {
+  //           keyword = nameWithoutExt.replace(/(_en|_english)$/i, '');
+  //         }
 
-          if (isSentenceJapanese) {
-            mapping.japaneseSentenceAudioUrl = url;
-          } else if (isJapanese) {
-            mapping.japaneseAudioUrl = url;
-          } else if (isEnglish) {
-            mapping.englishAudioUrl = url;
-          }
-        }
-      }
-    });
+  //         let mapping = mappings.find(m => m.keyword.toLowerCase() === keyword.toLowerCase());
+  //         if (!mapping) {
+  //           mapping = { 
+  //             keyword, 
+  //             japaneseAudioUrl: '', 
+  //             englishAudioUrl: '', 
+  //             japaneseSentenceAudioUrl: '' 
+  //           };
+  //           mappings.push(mapping);
+  //         }
 
-    setAudioMappings(mappings);
+  //         if (isSentenceJapanese) {
+  //           mapping.japaneseSentenceAudioUrl = url;
+  //         } else if (isJapanese) {
+  //           mapping.japaneseAudioUrl = url;
+  //         } else if (isEnglish) {
+  //           mapping.englishAudioUrl = url;
+  //         }
+  //       }
+  //     }
+  //   });
 
-    // Auto-match with keywords if enabled
-    if (autoMatch) {
-      autoMatchKeywords(mappings);
-    }
+  //   setAudioMappings(mappings);
 
-    setProcessing(false);
-  };
+  //   // Auto-match with keywords if enabled
+  //   if (autoMatch) {
+  //     autoMatchKeywords(mappings);
+  //   }
+
+  //   setProcessing(false);
+  // };
 
   // Auto-match audio files with keywords
-  const autoMatchKeywords = (mappings: AudioMapping[]) => {
-    const updatedKeywords = [...keywords];
+  // const autoMatchKeywords = (mappings: AudioMapping[]) => {
+  //   const updatedKeywords = [...keywords];
 
-    mappings.forEach(mapping => {
-      // Try to find matching keyword by Japanese or English text
-      const keywordIndex = updatedKeywords.findIndex(k =>
-        k.japaneseText.toLowerCase().includes(mapping.keyword.toLowerCase()) ||
-        k.englishText.toLowerCase().includes(mapping.keyword.toLowerCase()) ||
-        mapping.keyword.toLowerCase().includes(k.japaneseText.toLowerCase()) ||
-        mapping.keyword.toLowerCase().includes(k.englishText.toLowerCase())
-      );
+  //   mappings.forEach(mapping => {
+  //     // Try to find matching keyword by Japanese or English text
+  //     const keywordIndex = updatedKeywords.findIndex(k =>
+  //       k.japaneseText.toLowerCase().includes(mapping.keyword.toLowerCase()) ||
+  //       k.englishText.toLowerCase().includes(mapping.keyword.toLowerCase()) ||
+  //       mapping.keyword.toLowerCase().includes(k.japaneseText.toLowerCase()) ||
+  //       mapping.keyword.toLowerCase().includes(k.englishText.toLowerCase())
+  //     );
 
-      if (keywordIndex !== -1) {
-        if (mapping.japaneseAudioUrl) {
-          updatedKeywords[keywordIndex].japaneseAudioUrl = mapping.japaneseAudioUrl;
-        }
-        if (mapping.englishAudioUrl) {
-          updatedKeywords[keywordIndex].englishAudioUrl = mapping.englishAudioUrl;
-        }
-        if (mapping.japaneseSentenceAudioUrl) {
-          updatedKeywords[keywordIndex].japaneseSentenceAudioUrl = mapping.japaneseSentenceAudioUrl;
-        }
-      }
-    });
+  //     if (keywordIndex !== -1) {
+  //       if (mapping.japaneseAudioUrl) {
+  //         updatedKeywords[keywordIndex].japaneseAudioUrl = mapping.japaneseAudioUrl;
+  //       }
+  //       if (mapping.englishAudioUrl) {
+  //         updatedKeywords[keywordIndex].englishAudioUrl = mapping.englishAudioUrl;
+  //       }
+  //       if (mapping.japaneseSentenceAudioUrl) {
+  //         updatedKeywords[keywordIndex].japaneseSentenceAudioUrl = mapping.japaneseSentenceAudioUrl;
+  //       }
+  //     }
+  //   });
 
-    onApply(updatedKeywords);
-  };
+  //   onApply(updatedKeywords);
+  // };
 
   // Clear audio URL
   const clearAudioUrl = (keywordIndex: number, audioType: 'japanese' | 'english' | 'japaneseSentence') => {
@@ -181,24 +175,24 @@ export const BulkAudioManager: React.FC<BulkAudioManagerProps> = ({
     onApply(updatedKeywords);
   };
 
-  const handlePasteExample = () => {
-    setBulkUrls(`konnichiwa_jp.mp3 https://s3.amazonaws.com/mybucket/audio/konnichiwa_jp.mp3
-konnichiwa_en.mp3 https://s3.amazonaws.com/mybucket/audio/konnichiwa_en.mp3
-konnichiwa_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/konnichiwa_sentence_jp.mp3
-arigatou_jp.mp3 https://s3.amazonaws.com/mybucket/audio/arigatou_jp.mp3
-arigatou_en.mp3 https://s3.amazonaws.com/mybucket/audio/arigatou_en.mp3
-arigatou_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/arigatou_sentence_jp.mp3
-sayonara_jp.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_jp.mp3
-sayonara_en.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_en.mp3
-sayonara_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_sentence_jp.mp3`);
-  };
+  //   const handlePasteExample = () => {
+  //     setBulkUrls(`konnichiwa_jp.mp3 https://s3.amazonaws.com/mybucket/audio/konnichiwa_jp.mp3
+  // konnichiwa_en.mp3 https://s3.amazonaws.com/mybucket/audio/konnichiwa_en.mp3
+  // konnichiwa_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/konnichiwa_sentence_jp.mp3
+  // arigatou_jp.mp3 https://s3.amazonaws.com/mybucket/audio/arigatou_jp.mp3
+  // arigatou_en.mp3 https://s3.amazonaws.com/mybucket/audio/arigatou_en.mp3
+  // arigatou_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/arigatou_sentence_jp.mp3
+  // sayonara_jp.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_jp.mp3
+  // sayonara_en.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_en.mp3
+  // sayonara_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_sentence_jp.mp3`);
+  //   };
 
   // Calculate completion statistics
   const getCompletionStats = () => {
     const totalKeywords = keywords.length;
     const keywordsWithBasicAudio = keywords.filter(k => k.japaneseAudioUrl && k.englishAudioUrl).length;
     const keywordsWithSentenceAudio = keywords.filter(k => k.japaneseSentenceAudioUrl).length;
-    const keywordsWithAllAudio = keywords.filter(k => 
+    const keywordsWithAllAudio = keywords.filter(k =>
       k.japaneseAudioUrl && k.englishAudioUrl && k.japaneseSentenceAudioUrl
     ).length;
 
@@ -334,7 +328,7 @@ sayonara_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_senten
                   value={stats.basicAudioPercentage}
                   color="primary"
                 />
-                
+
                 <Typography variant="body2" color="text.secondary">
                   Sentence Audio: {stats.keywordsWithSentenceAudio} / {stats.totalKeywords} keywords ({Math.round(stats.sentenceAudioPercentage) || 0}%)
                 </Typography>
@@ -343,7 +337,7 @@ sayonara_sentence_jp.mp3 https://s3.amazonaws.com/mybucket/audio/sayonara_senten
                   value={stats.sentenceAudioPercentage}
                   color="success"
                 />
-                
+
                 <Typography variant="body2" color="text.secondary">
                   Complete Audio: {stats.keywordsWithAllAudio} / {stats.totalKeywords} keywords ({Math.round(stats.completeAudioPercentage) || 0}%)
                 </Typography>

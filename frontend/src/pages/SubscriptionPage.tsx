@@ -1,6 +1,6 @@
 // frontend/src/pages/SubscriptionPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Container,
@@ -11,7 +11,6 @@ import {
     CircularProgress,
     Card,
     CardContent,
-    Skeleton,
 } from '@mui/material';
 import {
     ArrowBack,
@@ -23,9 +22,10 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
-import { RootState } from '../store/store';
-import { useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store/store';
+import { useDispatch, useSelector } from 'react-redux';
 import { paymentService, DiscountStatus } from '../services/paymentService';
+import { logout } from '../store/slices/authSlice';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY!);
 interface PlanOption {
@@ -98,13 +98,14 @@ const plans: PlanOption[] = [
 const MotionCard = motion(Card);
 
 export const SubscriptionPage: React.FC = () => {
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const [selectedPlan, setSelectedPlan] = useState<string>('monthly');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [discountStatus, setDiscountStatus] = useState<DiscountStatus | null>(null);
     const [loadingDiscount, setLoadingDiscount] = useState(true);
     const { hasSubscription } = useSelector((state: RootState) => state.auth);
+    const dispatch = useDispatch<AppDispatch>();
 
     useEffect(() => {
         fetchDiscountStatus();
@@ -112,6 +113,10 @@ export const SubscriptionPage: React.FC = () => {
         // const interval = setInterval(fetchDiscountStatus, 30000);
         // return () => clearInterval(interval);
     }, []);
+
+    const handleLogout = () => {
+        dispatch(logout());
+    };
 
     const fetchDiscountStatus = async () => {
         try {
@@ -248,7 +253,7 @@ export const SubscriptionPage: React.FC = () => {
             <Container maxWidth="xl">
                 <Button
                     startIcon={<ArrowBack />}
-                    onClick={() => navigate('/register')}
+                    onClick={handleLogout}
                     sx={{
                         mb: 3,
                         '&:hover': {
@@ -310,7 +315,7 @@ export const SubscriptionPage: React.FC = () => {
                     direction={{ xs: 'column', lg: 'row' }}
                     spacing={3}
                     alignItems="stretch"
-                    sx={{ maxWidth: 'lg', mx: 'auto' , gap: {xs: "90px 0", lg: "0"} }}
+                    sx={{ maxWidth: 'lg', mx: 'auto', gap: { xs: "90px 0", lg: "0" } }}
                 >
                     {plans.map((plan, index) => {
                         const colors = getPlanColor(plan.id);
@@ -346,7 +351,7 @@ export const SubscriptionPage: React.FC = () => {
                                         <Box
                                             sx={{
                                                 position: 'absolute',
-                                                top:{xs: -15, md:60 , lg: 20},
+                                                top: { xs: -15, md: 60, lg: 20 },
                                                 right: -10,
                                                 bgcolor: 'error.main',
                                                 color: 'white',

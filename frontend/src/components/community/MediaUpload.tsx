@@ -64,7 +64,7 @@ const MAX_SIZES = {
 export const MediaUpload: React.FC<MediaUploadProps> = ({
   onMediaChange,
   selectedMedia = [],
-  maxFiles = 10,
+  maxFiles = 5,
   disabled = false,
   compact = false,
   showPreview = true,
@@ -355,13 +355,13 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
           <ButtonGroup variant="outlined" size="small">
             <Button
               startIcon={<PhotoCamera />}
-              onClick={() => fileInputRef.current?.click()}
+            // onClick={() => fileInputRef.current?.click()}
             >
               Photos
             </Button>
             <Button
               startIcon={<VideoCall />}
-              onClick={() => fileInputRef.current?.click()}
+            // onClick={() => fileInputRef.current?.click()}
             >
               Videos
             </Button>

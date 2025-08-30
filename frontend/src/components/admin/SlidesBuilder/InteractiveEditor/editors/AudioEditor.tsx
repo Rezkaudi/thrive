@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Stack,
   TextField,
-  Grid,
   IconButton,
   Tooltip,
   Card,
@@ -106,7 +105,7 @@ export const AudioEditor: React.FC<AudioEditorProps> = ({ item, onUpdate, type }
             </IconButton>
           </Tooltip>
           <Tooltip title="Listen to Audio">
-            <IconButton 
+            <IconButton
               color="success"
               disabled={!pronunciationItem.audioUrl?.trim()}
             >
@@ -137,7 +136,7 @@ export const AudioEditor: React.FC<AudioEditorProps> = ({ item, onUpdate, type }
           </IconButton>
         </Tooltip>
         <Tooltip title="Listen to Audio">
-          <IconButton 
+          <IconButton
             color="success"
             disabled={!listeningItem.audioUrl?.trim()}
           >
@@ -263,13 +262,13 @@ export const AudioEditor: React.FC<AudioEditorProps> = ({ item, onUpdate, type }
             🎧 Listening Exercise Preview
           </Typography>
           <Divider sx={{ my: 2 }} />
-          
+
           {/* Audio Player Simulation */}
-          <Box sx={{ 
-            p: 2, 
-            bgcolor: 'primary.main', 
-            color: 'white', 
-            borderRadius: 2, 
+          <Box sx={{
+            p: 2,
+            bgcolor: 'primary.main',
+            color: 'white',
+            borderRadius: 2,
             mb: 3,
             display: 'flex',
             alignItems: 'center',
@@ -281,16 +280,16 @@ export const AudioEditor: React.FC<AudioEditorProps> = ({ item, onUpdate, type }
                 {listeningItem.audioUrl ? 'Audio Ready' : 'No audio uploaded'}
               </Typography>
             </Box>
-            <Button 
-              variant="contained" 
-              color="secondary" 
+            <Button
+              variant="contained"
+              color="secondary"
               size="small"
               disabled={!listeningItem.audioUrl}
             >
               ▶ Play
             </Button>
           </Box>
-          
+
           <Typography variant="h6" gutterBottom>
             {listeningItem.question || 'Your listening question will appear here...'}
           </Typography>

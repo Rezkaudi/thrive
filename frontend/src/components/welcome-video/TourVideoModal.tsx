@@ -20,7 +20,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../store/store';
 import { Video, VideoType } from '../../services/videoService';
-import { markTourVideoViewed, hideTourModal } from '../../store/slices/videoSlice';
+import { markTourVideoViewed } from '../../store/slices/videoSlice';
 
 interface TourVideoModalProps {
   open: boolean;
@@ -149,6 +149,7 @@ export const TourVideoModal: React.FC<TourVideoModalProps> = ({
       maxWidth="md"
       fullWidth
       fullScreen={isMobile}
+
       sx={{
         '& .MuiDialog-paper': {
           borderRadius: isMobile ? 0 : 3,
@@ -165,14 +166,14 @@ export const TourVideoModal: React.FC<TourVideoModalProps> = ({
         }}
       >
         <Typography variant="h5" fontWeight={600}>
-           👋 Welcome! Platform Tour
+          👋 Welcome! Platform Tour
         </Typography>
         <IconButton onClick={handleClose} edge="end">
           <Close />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ pb: 2 }}>
+      <DialogContent sx={{ pb: 2 }} >
         <Stack spacing={3}>
           {/* Video Player */}
           {getVideoPlayer()}
@@ -180,15 +181,15 @@ export const TourVideoModal: React.FC<TourVideoModalProps> = ({
           {/* Video Info */}
           <Box>
             {isFirstTimeUser && (
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  mb: 2, 
-                  p: 2, 
-                  bgcolor: 'primary.50', 
+              <Typography
+                variant="body2"
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  bgcolor: 'primary.50',
                   borderRadius: 1,
                   color: 'primary.main',
-                  fontWeight: 500 
+                  fontWeight: 500
                 }}
               >
                 🎉 Welcome to our platform! This quick tour will help you get started.
@@ -212,13 +213,13 @@ export const TourVideoModal: React.FC<TourVideoModalProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button
-            onClick={handleClose}
-            variant="contained"
-            color="primary"
-          >
-            Get Started
-          </Button>
+        <Button
+          onClick={handleClose}
+          variant="contained"
+          color="primary"
+        >
+          Get Started
+        </Button>
       </DialogActions>
     </Dialog>
   );

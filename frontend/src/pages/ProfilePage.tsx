@@ -18,10 +18,7 @@ import {
   Badge,
   Tabs,
   Tab,
-  Select,
   MenuItem,
-  FormControl,
-  InputLabel,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -37,8 +34,6 @@ import {
   Snackbar,
   CircularProgress,
   Menu,
-  Switch,
-  FormControlLabel,
   Divider,
   Pagination,
 } from '@mui/material';
@@ -51,9 +46,7 @@ import {
   Star,
   CalendarMonth,
   CheckCircle,
-  Lock,
   Forum,
-  VideoCall,
   WorkspacePremium,
   Timeline,
   Category,
@@ -65,11 +58,6 @@ import {
   CloudUpload,
   SaveAlt,
   Cancel,
-  Notifications,
-  Security,
-  Palette,
-  Visibility,
-  VisibilityOff,
   Facebook,
   Twitter,
   LinkedIn,
@@ -90,7 +78,7 @@ import {
 } from '../store/slices/profileSlice';
 import { UpdateProfileData, profileService } from '../services/profileService';
 import { subscriptionService } from '../services/subscriptionService';
-import { chackPayment } from '../store/slices/authSlice';
+// import { chackPayment } from '../store/slices/authSlice';
 import { fetchUserActivities } from '../store/slices/activitySlice';
 import { ActivityFeed } from '../components/activity/ActivityFeed';
 import heic2any from 'heic2any';
@@ -113,26 +101,26 @@ interface Milestone {
   description: string;
 }
 
-interface UserSettings {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    lessonReminders: boolean;
-    achievements: boolean;
-    communityUpdates: boolean;
-  };
-  privacy: {
-    profileVisibility: 'public' | 'friends' | 'private';
-    showProgress: boolean;
-    showAchievements: boolean;
-    allowMessages: boolean;
-  };
-  preferences: {
-    theme: 'light' | 'dark' | 'auto';
-    language: 'en' | 'ja';
-    timezone: string;
-  };
-}
+// interface UserSettings {
+//   notifications: {
+//     email: boolean;
+//     push: boolean;
+//     lessonReminders: boolean;
+//     achievements: boolean;
+//     communityUpdates: boolean;
+//   };
+//   privacy: {
+//     profileVisibility: 'public' | 'friends' | 'private';
+//     showProgress: boolean;
+//     showAchievements: boolean;
+//     allowMessages: boolean;
+//   };
+//   preferences: {
+//     theme: 'light' | 'dark' | 'auto';
+//     language: 'en' | 'ja';
+//     timezone: string;
+//   };
+// }
 
 const rarityColors = {
   common: '#636E72',
@@ -149,9 +137,9 @@ export const ProfilePage: React.FC = () => {
 
   // Redux state
   const { data: profile, loading, updateLoading, photoUploadLoading, error } = useSelector((state: RootState) => state.profile);
-  const { user, status } = useSelector((state: RootState) => state.auth);
-  const totalLessonsCompleted = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsCompleted)
-  const totalLessonsAvailable = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsAvailable)
+  const { user } = useSelector((state: RootState) => state.auth);
+  // const totalLessonsCompleted = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsCompleted)
+  // const totalLessonsAvailable = useSelector((state: RootState) => state.dashboard.data?.stats.totalLessonsAvailable)
   const { userActivities, loading: activityLoading, pagination } = useSelector((state: RootState) => state.activity);
 
   // Local state
@@ -161,7 +149,7 @@ export const ProfilePage: React.FC = () => {
   const [photoMenuAnchor, setPhotoMenuAnchor] = useState<null | HTMLElement>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [loadingManage, setLoadingManage] = useState(false);
-  const [loadingStart, setLoadingStart] = useState(false);
+  // const [loadingStart, setLoadingStart] = useState(false);
   const [activityPage, setActivityPage] = useState(1);
 
   // Real profile data state
@@ -173,26 +161,26 @@ export const ProfilePage: React.FC = () => {
   const [settingsDialog, setSettingsDialog] = useState(false);
   const [certificateLoading, setCertificateLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
-  const [settings, setSettings] = useState<UserSettings>({
-    notifications: {
-      email: true,
-      push: true,
-      lessonReminders: true,
-      achievements: true,
-      communityUpdates: false,
-    },
-    privacy: {
-      profileVisibility: 'public',
-      showProgress: true,
-      showAchievements: true,
-      allowMessages: true,
-    },
-    preferences: {
-      theme: 'light',
-      language: 'en',
-      timezone: 'UTC',
-    },
-  });
+  // const [settings, setSettings] = useState<UserSettings>({
+  //   notifications: {
+  //     email: true,
+  //     push: true,
+  //     lessonReminders: true,
+  //     achievements: true,
+  //     communityUpdates: false,
+  //   },
+  //   privacy: {
+  //     profileVisibility: 'public',
+  //     showProgress: true,
+  //     showAchievements: true,
+  //     allowMessages: true,
+  //   },
+  //   preferences: {
+  //     theme: 'light',
+  //     language: 'en',
+  //     timezone: 'UTC',
+  //   },
+  // });
 
   const [formData, setFormData] = useState<UpdateProfileData>({
     name: '',
@@ -460,21 +448,21 @@ export const ProfilePage: React.FC = () => {
     setSettingsDialog(true);
   };
 
-  const handleSaveSettings = () => {
-    // Here you would typically save settings to your backend
-    setSnackbar({ open: true, message: 'Settings saved successfully!', severity: 'success' });
-    setSettingsDialog(false);
-  };
+  // const handleSaveSettings = () => {
+  //   // Here you would typically save settings to your backend
+  //   setSnackbar({ open: true, message: 'Settings saved successfully!', severity: 'success' });
+  //   setSettingsDialog(false);
+  // };
 
-  const updateSettings = (section: keyof UserSettings, key: string, value: any) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [key]: value,
-      },
-    }));
-  };
+  // const updateSettings = (section: keyof UserSettings, key: string, value: any) => {
+  //   setSettings(prev => ({
+  //     ...prev,
+  //     [section]: {
+  //       ...prev[section],
+  //       [key]: value,
+  //     },
+  //   }));
+  // };
 
   const handleSubscriptionManagement = async () => {
     setLoadingManage(true);
@@ -488,17 +476,17 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleStartSubscription = async () => {
-    setLoadingStart(true);
-    try {
-      await subscriptionService.endTrial();
-      await dispatch(chackPayment());
-    } catch (error) {
-      console.error('Error starting subscription:', error);
-    } finally {
-      setLoadingStart(false);
-    }
-  };
+  // const handleStartSubscription = async () => {
+  //   setLoadingStart(true);
+  //   try {
+  //     await subscriptionService.endTrial();
+  //     await dispatch(chackPayment());
+  //   } catch (error) {
+  //     console.error('Error starting subscription:', error);
+  //   } finally {
+  //     setLoadingStart(false);
+  //   }
+  // };
 
   // Use real data for achievements
   const achievements: Achievement[] = publicProfileData?.publicAchievements || [];

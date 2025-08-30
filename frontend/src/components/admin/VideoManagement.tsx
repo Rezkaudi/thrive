@@ -29,10 +29,10 @@ import {
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/store';
-import { 
-  fetchVideo, 
+import {
+  fetchVideo,
   checkVideoExists,
-  createOrUpdateVideo, 
+  createOrUpdateVideo,
   deleteVideo,
   clearError
 } from '../../store/slices/videoSlice';
@@ -91,7 +91,7 @@ const VideoForm: React.FC<{
     } else {
       setPreviewThumbnail(null);
     }
-  }, [formData.videoUrl, formData.videoType]);
+  }, [formData.videoUrl, formData.videoType, formData.thumbnailUrl]);
 
   const handleInputChange = (field: keyof VideoFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -147,7 +147,7 @@ const VideoForm: React.FC<{
   };
 
   const urlHelper = useMemo(() => (
-    formData.videoType === VideoType.YOUTUBE 
+    formData.videoType === VideoType.YOUTUBE
       ? 'e.g., https://www.youtube.com/watch?v=VIDEO_ID'
       : 'e.g., https://your-bucket.s3.amazonaws.com/video.mp4'
   ), [formData.videoType]);
@@ -253,9 +253,9 @@ const VideoForm: React.FC<{
           <Button onClick={closeAndReset} disabled={loading}>
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            variant="contained" 
+          <Button
+            type="submit"
+            variant="contained"
             disabled={loading}
           >
             {loading ? 'Saving...' : (video ? 'Update Video' : 'Create Video')}
@@ -268,12 +268,12 @@ const VideoForm: React.FC<{
 
 export const VideoManagement: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { 
-    video, 
-    loading, 
-    error, 
-    isCreatingOrUpdating, 
-    isDeleting 
+  const {
+    video,
+    loading,
+    error,
+    isCreatingOrUpdating,
+    isDeleting
   } = useSelector((state: RootState) => state.videos);
 
   const [showForm, setShowForm] = useState(false);
@@ -331,9 +331,9 @@ export const VideoManagement: React.FC = () => {
       </Stack>
 
       {error && (
-        <Alert 
-          severity="error" 
-          sx={{ mb: 2 }} 
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
           onClose={() => dispatch(clearError())}
         >
           {error}
@@ -355,7 +355,7 @@ export const VideoManagement: React.FC = () => {
               >
                 {video.videoType === VideoType.YOUTUBE ? <YouTube /> : <CloudDownload />}
               </Avatar>
-              
+
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="h6" fontWeight={600} gutterBottom>
                   Platform Tour Video
@@ -369,7 +369,7 @@ export const VideoManagement: React.FC = () => {
                   </Typography>
                 </Stack>
               </Box>
-              
+
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="outlined"
@@ -434,9 +434,9 @@ export const VideoManagement: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
-          <Button 
-            onClick={handleDelete} 
-            color="error" 
+          <Button
+            onClick={handleDelete}
+            color="error"
             variant="contained"
             disabled={isDeleting}
           >

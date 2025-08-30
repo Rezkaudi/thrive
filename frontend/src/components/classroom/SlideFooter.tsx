@@ -7,7 +7,6 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
-  Fade,
 } from '@mui/material';
 import {
   NavigateNext,
@@ -15,7 +14,6 @@ import {
   CheckCircle,
   MoreHoriz,
   Lock,
-  AutoAwesome,
   HourglassEmpty,
 } from '@mui/icons-material';
 
@@ -54,7 +52,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const footerRef = useRef<HTMLDivElement>(null);
 
   // NEW: Enhanced state management for processing and transitions
@@ -117,7 +115,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
       setIsProcessingValidation(true);
       setShowAutoProgression(true);
       setProcessingSlideIndex(currentSlide);
-      
+
       // Auto-advance after showing success feedback
       const advanceTimer = setTimeout(() => {
         onNext(); // This will trigger slide transition
@@ -354,7 +352,7 @@ export const SlideFooter: React.FC<SlideFooterProps> = ({
     if (isProcessingValidation) {
       return {
         text: isMobile ? 'Moving...' : 'Moving to next slide...',
-        icon: <HourglassEmpty sx={{ 
+        icon: <HourglassEmpty sx={{
           animation: 'rotate 2s linear infinite',
           '@keyframes rotate': {
             '0%': { transform: 'rotate(0deg)' },
