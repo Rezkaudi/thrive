@@ -127,7 +127,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
           fontSize: { xs: "1.1rem", sm: "1.25rem" }
         }}
       >
-        📋 Correct Order {isMobile ? "(Tap items above)" : "(Drag items here)"}
+        📋 Correct Order {isMobile ? "(Tap items above)" : "(Tap items bottom)"}
       </Typography>
 
       {sortedItems.length === 0 ? (
@@ -143,7 +143,7 @@ export const SortingSlide: React.FC<SlideComponentProps> = ({
         >
           {isMobile
             ? "Tap items from above to arrange them in the correct order ⬆️"
-            : "Drag items from below to arrange them in the correct order ⬇️"
+            : "Tap items from below to arrange them in the correct order ⬇️"
           }
         </Typography>
       ) : (
