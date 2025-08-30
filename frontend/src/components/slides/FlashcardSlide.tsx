@@ -180,7 +180,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
         />
       </Paper>
 
-      
+
       {/* Completion Message */}
       {allCardsFlipped && (
         <Fade in>
@@ -206,7 +206,7 @@ export const FlashcardSlide: React.FC<SlideComponentProps> = ({
       )}
 
       {/* Flashcards Grid */}
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, md: 4 }, mt: 2 }}>
         {content.items?.map((item: any, index: number) => {
           const isFlipped = flashcardStates[item.id] || false;
 
