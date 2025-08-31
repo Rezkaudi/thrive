@@ -979,6 +979,8 @@ export const CommunityPage: React.FC = () => {
       setTabValue(1);
     } else if (tabParam === "announcements") {
       setTabValue(0);
+    } else if (tabParam === "feedback") {
+      setTabValue(2);
     }
   }, [location.search]);
 
@@ -993,10 +995,11 @@ export const CommunityPage: React.FC = () => {
     if (tabValue === 0) {
       dispatch(resetAnnouncements());
       dispatch(fetchAnnouncements({ page: 1, limit: 20 }));
-    } else {
+    } else if (tabValue === 1) {
       dispatch(resetPosts());
       dispatch(fetchPosts({ page: 1, limit: 20 }));
     }
+    // No data fetching for feedback tab
   }, [tabValue, dispatch]);
 
   // Handle URL highlight parameter for shared items
@@ -1066,7 +1069,12 @@ export const CommunityPage: React.FC = () => {
   // Handle tab change and update URL
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    const tabName = newValue === 0 ? "announcements" : "posts";
+    let tabName = "announcements";
+    if (newValue === 1) {
+      tabName = "posts";
+    } else if (newValue === 2) {
+      tabName = "feedbacks";
+    }
     navigate(`/community?tab=${tabName}`, { replace: true });
   };
 
@@ -1304,15 +1312,18 @@ export const CommunityPage: React.FC = () => {
 
   const hasContent = newPost.trim() || selectedMedia.length > 0;
   // **MODIFIED**: Simplified postButtonText to remove announcement logic
+  const actionText = tabValue === 1 ? "Post" : "Submit";
+
   const postButtonText =
     selectedMedia.length > 0
-      ? `Post with ${selectedMedia.length} ${
+      ? `${actionText} with ${selectedMedia.length} ${
           selectedMedia.length === 1 ? "file" : "files"
         }`
-      : "Post";
+      : actionText;
+
 
   // Show loading only on initial load
-  if (loading && filteredItems.length === 0) {
+  if (loading && filteredItems.length === 0 && tabValue !== 2) {
     return (
       <Container
         maxWidth="md"
@@ -1339,7 +1350,7 @@ export const CommunityPage: React.FC = () => {
       )}
 
       {/* **MODIFIED**: Enhanced Create Post Card (now only shows for posts tab) */}
-      {tabValue === 1 && (
+      {!(tabValue === 0) && (
         <Card
           sx={{
             mb: 4,
@@ -1384,7 +1395,7 @@ export const CommunityPage: React.FC = () => {
                   placeholder={
                     dragOver
                       ? "Drop files here or type your message..."
-                      : "Share your thoughts, ask questions, or celebrate achievements..."
+                      : tabValue === 1 ? "Share your thoughts, ask questions, or celebrate achievements..." : "Share your questions, feedback, or report a bug directly to the team..."
                   }
                   value={newPost}
                   onChange={(e) => setNewPost(e.target.value)}
@@ -1417,6 +1428,7 @@ export const CommunityPage: React.FC = () => {
                         "&:hover": {
                           bgcolor: "success.100",
                         },
+                        transition: "all 0.2s ease",
                       }}
                     >
                       {selectedMedia.length}{" "}
@@ -1587,12 +1599,16 @@ export const CommunityPage: React.FC = () => {
         variant="scrollable"
         scrollButtons="auto"
       >
-        <Tab label={`Announcements`} 
-        icon={<Campaign />} 
-        iconPosition="start" />
-        <Tab label={`Community Posts`} 
-        icon={<People/>} 
-        iconPosition="start" />
+        <Tab
+          label={`Announcements`}
+          icon={<Campaign />}
+          iconPosition="start"
+        />
+        <Tab
+          label={`Community Posts`}
+          icon={<People />}
+          iconPosition="start"
+        />
         <Tab
           label={"Questions, Feedback and Fixes"}
           icon={<Feedback />}
@@ -1600,62 +1616,76 @@ export const CommunityPage: React.FC = () => {
         />
       </Tabs>
 
-      {/* Items */}
-      <AnimatePresence>
-        {filteredItems.map((item) => (
-          <ItemCard
-            key={item.id}
-            item={item}
-            onToggleLike={handleToggleLike}
-            onEdit={handleEditItem}
-            onDelete={handleDeleteItem}
-            onReport={handleReportItem}
-            currentUserId={currentUserId}
-            onShowSnackbar={handleShowSnackbar}
-            isHighlighted={highlightedItemId === item.id}
-            currentTab={tabValue}
-          />
-        ))}
-      </AnimatePresence>
-
-      {filteredItems.length === 0 && !loading && (
-        <Box sx={{ textAlign: "center", py: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            No {tabValue === 0 ? "announcements" : "posts"} found
+      {/* Conditional rendering for Feedback Tab content */}
+      {tabValue === 2 ? (
+        <Alert severity="info" sx={{ mt: 3, mb: 3 }}>
+          <Typography variant="h6">This is the Feedback Center!</Typography>
+          <Typography variant="body1">
+            This is a place to ask questions, report bugs, and provide feedback
+            to the development team. Posts here are **not** visible to other
+            community members, so feel free to be candid!
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {tabValue === 0
-              ? userRole === "ADMIN"
-                ? "No announcements yet." // Modified this for clarity
-                : "No announcements yet."
-              : "Be the first to share something!"}
-          </Typography>
-        </Box>
-      )}
+        </Alert>
+      ) : (
+        <>
+          {/* Items */}
+          <AnimatePresence>
+            {filteredItems.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                onToggleLike={handleToggleLike}
+                onEdit={handleEditItem}
+                onDelete={handleDeleteItem}
+                onReport={handleReportItem}
+                currentUserId={currentUserId}
+                onShowSnackbar={handleShowSnackbar}
+                isHighlighted={highlightedItemId === item.id}
+                currentTab={tabValue}
+              />
+            ))}
+          </AnimatePresence>
 
-      {/* Loading More Indicator */}
-      {loadingMore && (
-        <Fade in={loadingMore}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <Stack alignItems="center" spacing={2}>
-              <CircularProgress size={32} />
-              <Typography variant="body2" color="text.secondary">
-                Loading more {tabValue === 0 ? "announcements" : "posts"}...
+          {filteredItems.length === 0 && !loading && (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                No {tabValue === 0 ? "announcements" : "posts"} found
               </Typography>
-            </Stack>
-          </Box>
-        </Fade>
-      )}
+              <Typography variant="body2" color="text.secondary">
+                {tabValue === 0
+                  ? userRole === "ADMIN"
+                    ? "No announcements yet."
+                    : "No announcements yet."
+                  : "Be the first to share something!"}
+              </Typography>
+            </Box>
+          )}
 
-      {/* End of Items Indicator */}
-      {!hasMore && filteredItems.length > 0 && !loading && (
-        <Fade in={true}>
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              🎉 You've reached the end!
-            </Typography>
-          </Box>
-        </Fade>
+          {/* Loading More Indicator */}
+          {loadingMore && (
+            <Fade in={loadingMore}>
+              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                <Stack alignItems="center" spacing={2}>
+                  <CircularProgress size={32} />
+                  <Typography variant="body2" color="text.secondary">
+                    Loading more {tabValue === 0 ? "announcements" : "posts"}...
+                  </Typography>
+                </Stack>
+              </Box>
+            </Fade>
+          )}
+
+          {/* End of Items Indicator */}
+          {!hasMore && filteredItems.length > 0 && !loading && (
+            <Fade in={true}>
+              <Box sx={{ textAlign: "center", py: 4 }}>
+                <Typography variant="body2" color="text.secondary">
+                  🎉 You've reached the end!
+                </Typography>
+              </Box>
+            </Fade>
+          )}
+        </>
       )}
 
       {/* Snackbar for feedback */}
