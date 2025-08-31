@@ -61,6 +61,9 @@ import {
   WhatsApp,
   Send,
   AttachFile,
+  Feedback,
+  PostAddSharp,
+  People,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
@@ -183,8 +186,9 @@ const ItemCard = ({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const shareToSocial = (platform: string) => {
-    const message = `Check out this ${item.isAnnouncement ? "announcement" : "post"
-      } from the Thrive in Japan community!`;
+    const message = `Check out this ${
+      item.isAnnouncement ? "announcement" : "post"
+    } from the Thrive in Japan community!`;
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedMessage = encodeURIComponent(message);
 
@@ -267,7 +271,8 @@ const ItemCard = ({
   const copyShareUrl = () => {
     navigator.clipboard.writeText(shareUrl);
     onShowSnackbar(
-      `${item.isAnnouncement ? "Announcement" : "Post"
+      `${
+        item.isAnnouncement ? "Announcement" : "Post"
       } URL copied to clipboard!`,
       "success"
     );
@@ -372,8 +377,8 @@ const ItemCard = ({
     item.commentsCount !== undefined
       ? item.commentsCount
       : item.commentsInitialized
-        ? 0
-        : "...";
+      ? 0
+      : "...";
 
   return (
     <motion.div
@@ -559,8 +564,9 @@ const ItemCard = ({
                 variant="outlined"
                 sx={{ mb: 2 }}
                 disabled={item.isEditing}
-                placeholder={`Edit your ${item.isAnnouncement ? "announcement" : "post"
-                  } content...`}
+                placeholder={`Edit your ${
+                  item.isAnnouncement ? "announcement" : "post"
+                } content...`}
               />
 
               {/* Media Upload Section for Editing (Posts only) */}
@@ -819,8 +825,9 @@ const ItemCard = ({
             fullWidth
             multiline
             rows={isMobile ? 3 : 4}
-            placeholder={`Describe why you're reporting this ${item.isAnnouncement ? "announcement" : "post"
-              }...`}
+            placeholder={`Describe why you're reporting this ${
+              item.isAnnouncement ? "announcement" : "post"
+            }...`}
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
             variant="outlined"
@@ -1249,7 +1256,8 @@ export const CommunityPage: React.FC = () => {
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-      if (!isSubmitting) { // Simplified check
+      if (!isSubmitting) {
+        // Simplified check
         setDragOver(true);
       }
     },
@@ -1298,8 +1306,9 @@ export const CommunityPage: React.FC = () => {
   // **MODIFIED**: Simplified postButtonText to remove announcement logic
   const postButtonText =
     selectedMedia.length > 0
-      ? `Post with ${selectedMedia.length} ${selectedMedia.length === 1 ? "file" : "files"
-      }`
+      ? `Post with ${selectedMedia.length} ${
+          selectedMedia.length === 1 ? "file" : "files"
+        }`
       : "Post";
 
   // Show loading only on initial load
@@ -1398,9 +1407,7 @@ export const CommunityPage: React.FC = () => {
                       size="small"
                       variant="outlined"
                       startIcon={<AttachFile />}
-                      endIcon={
-                        mediaExpanded ? <ExpandLess /> : <ExpandMore />
-                      }
+                      endIcon={mediaExpanded ? <ExpandLess /> : <ExpandMore />}
                       onClick={() => setMediaExpanded(!mediaExpanded)}
                       sx={{
                         borderRadius: 6,
@@ -1527,10 +1534,10 @@ export const CommunityPage: React.FC = () => {
                     {uploadProgress < 25
                       ? "Preparing..."
                       : uploadProgress < 75
-                        ? "Uploading media..."
-                        : uploadProgress < 95
-                          ? "Creating post..."
-                          : "Almost done..."}
+                      ? "Uploading media..."
+                      : uploadProgress < 95
+                      ? "Creating post..."
+                      : "Almost done..."}
                   </Typography>
                 </Stack>
               )}
@@ -1546,9 +1553,7 @@ export const CommunityPage: React.FC = () => {
                   fontWeight: 600,
                   // **MODIFIED**: Simplified button color logic
                   bgcolor:
-                    selectedMedia.length > 0
-                      ? "success.main"
-                      : "primary.main",
+                    selectedMedia.length > 0 ? "success.main" : "primary.main",
                   "&:hover": {
                     bgcolor:
                       selectedMedia.length > 0
@@ -1582,12 +1587,17 @@ export const CommunityPage: React.FC = () => {
         variant="scrollable"
         scrollButtons="auto"
       >
+        <Tab label={`Announcements`} 
+        icon={<Campaign />} 
+        iconPosition="start" />
+        <Tab label={`Community Posts`} 
+        icon={<People/>} 
+        iconPosition="start" />
         <Tab
-          label={`Announcements`}
-          icon={<Campaign />}
+          label={"Questions, Feedback and Fixes"}
+          icon={<Feedback />}
           iconPosition="start"
         />
-        <Tab label={`Community Posts`} />
       </Tabs>
 
       {/* Items */}
