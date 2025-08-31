@@ -38,6 +38,7 @@ import {
   AdminPanelSettings,
   ChevronLeft,
   ChevronRight,
+  ContactMail
 } from '@mui/icons-material';
 import { logout } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
@@ -153,6 +154,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     },
     { title: 'Calendar', icon: <CalendarMonth sx={{ fontSize: 20 }} />, path: '/calendar' },
     { title: 'Profile', icon: <Person sx={{ fontSize: 20 }} />, path: '/profile' },
+    { title: 'Contact Us', icon: <ContactMail sx={{ fontSize: 20 }} />, path: 'mailto:info@uzumibi-jp.com', isExternalLink: true },
   ];
 
   if (user?.role === 'ADMIN') {
@@ -188,7 +190,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ListItemButton
                 selected={location.pathname === item.path}
                 onClick={() => {
-                  navigate(item.path);
+                  if (item.isExternalLink) {
+                    window.location.href = item.path;
+                  }
+                  else {
+                    navigate(item.path);
+                  }
                   if (isMobile) setMobileOpen(false);
                 }}
                 sx={{
@@ -251,6 +258,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           collapsed={!desktopDrawerOpen && !isMobile}
           inSidebar={true}
         />
+
       </List>
 
       <Divider sx={{ mt: 'auto' }} />
