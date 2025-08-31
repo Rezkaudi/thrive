@@ -15,12 +15,12 @@ import {
 } from '@mui/material';
 import { Email } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import api from '../services/api';
-import { checkAuth } from '../store/slices/authSlice';
+import api from '../../services/api';
+import { checkAuth } from '../../store/slices/authSlice';
 import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../store/store';
+import { AppDispatch } from '../../store/store';
 
-export const VerifyEmailPage: React.FC = () => {
+export const SpecialVerifyEmailPage: React.FC = () => {
     const navigate = useNavigate();
     const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
@@ -81,7 +81,7 @@ export const VerifyEmailPage: React.FC = () => {
         try {
             await api.post('/auth/verify-email-code', { email, code });
             sessionStorage.removeItem('registration_email');
-            window.location.href = '/subscription'
+            window.location.href = '/student-of-shiego/subscription'
             await dispatch(checkAuth());
 
         } catch (err: any) {

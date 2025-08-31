@@ -29,7 +29,7 @@ import {
     Cancel,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import api from '../services/api';
+import api from '../../services/api';
 
 interface PasswordStrength {
     score: number;
@@ -37,7 +37,7 @@ interface PasswordStrength {
     color: string;
 }
 
-export const NewRegistrationPage: React.FC = () => {
+export const SpecialNewRegistrationPage: React.FC = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
@@ -119,7 +119,7 @@ export const NewRegistrationPage: React.FC = () => {
             sessionStorage.setItem('registration_email', formData.email);
 
             // Navigate to verification page
-            navigate('/register/verify');
+            navigate('/student-of-shiego/register/verify');
         } catch (err: any) {
             setError(err.response?.data?.error.message || err.response?.data?.error || 'Registration failed');
         } finally {
@@ -172,7 +172,7 @@ export const NewRegistrationPage: React.FC = () => {
                         <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
                             <Box textAlign="center" m={4}>
                                 <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-                                    Sign up for a free 14 day trial
+                                    Sign up
                                 </Typography>
                                 <Typography variant="body1" color="text.secondary">
                                     Learn Japanese and start thriving in Japan with us

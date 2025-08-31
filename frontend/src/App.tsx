@@ -20,6 +20,8 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { NewRegistrationPage } from './pages/NewRegistrationPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
+
+
 // Admin Pages
 import { Analytics } from './pages/admin/Analytics';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -45,6 +47,9 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { CourseDetailPage } from './pages/CourseDetailPage';
 import { AdminCourseDetailPage } from './pages/admin/AdminCourseDetailPage';
 import { AdminVideoPage } from './pages/admin/AdminVideoPage';
+import { SpecialSubscriptionPage } from './pages/studentOfShiego/SpecialSubscriptionPage';
+import { SpecialVerifyEmailPage } from './pages/studentOfShiego/SpecialVerifyEmailPage';
+import { SpecialNewRegistrationPage } from './pages/studentOfShiego/SpecialNewRegistrationPage';
 
 
 function AppContent() {
@@ -89,6 +94,15 @@ function AppContent() {
           path="/subscription"
           element={isAuthenticated ? <SubscriptionPage /> : <Navigate to="/login" replace />}
         />
+
+        {/* Student of Shiego */}
+        <Route path="/student-of-shiego/register" element={<SpecialNewRegistrationPage />} />
+        <Route path="/student-of-shiego/register/verify" element={<SpecialVerifyEmailPage />} />
+        <Route
+          path="/student-of-shiego/subscription"
+          element={isAuthenticated ? <SpecialSubscriptionPage /> : <Navigate to="/login" replace />}
+        />
+
 
         <Route
           path="/login"
@@ -194,14 +208,14 @@ function AppContent() {
           }
         />
         <Route
-        path='/admin/videos'
-        element= {
-          <ProtectedRoute requiredRole="ADMIN">
-            <Layout>
-              <AdminVideoPage/>
-            </Layout>
-          </ProtectedRoute>
-        }
+          path='/admin/videos'
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <Layout>
+                <AdminVideoPage />
+              </Layout>
+            </ProtectedRoute>
+          }
         />
 
         <Route

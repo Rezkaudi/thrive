@@ -49,7 +49,7 @@ export const EmailVerificationPage: React.FC = () => {
             setShowVerification(true);
             setResendTimer(60);
         } catch (err: any) {
-            setError(err.response?.data?.error.message || 'Failed to send verification code');
+            setError(err.response?.data?.error.message || err.response?.data?.error || 'Failed to send verification code');
         } finally {
             setLoading(false);
         }
@@ -91,7 +91,7 @@ export const EmailVerificationPage: React.FC = () => {
             // Navigate to payment page
             navigate('/register/payment');
         } catch (err: any) {
-            setError(err.response?.data?.error.message || 'Invalid verification code');
+            setError(err.response?.data?.error.message || err.response?.data?.error || 'Invalid verification code');
         } finally {
             setLoading(false);
         }
