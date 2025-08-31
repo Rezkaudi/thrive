@@ -117,7 +117,7 @@ export const UserInfoStep: React.FC<UserInfoStepProps> = ({
 
             onNext({ name: formData.name, password: formData.password });
         } catch (err: any) {
-            setError(err.response?.data?.error.message || 'Failed to create account');
+            setError(err.response?.data?.error.message || err.response?.data?.error || 'Failed to create account');
         } finally {
             setLoading(false);
         }

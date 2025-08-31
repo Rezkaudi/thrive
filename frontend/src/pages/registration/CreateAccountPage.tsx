@@ -206,7 +206,7 @@ export const CreateAccountPage: React.FC = () => {
             sessionStorage.setItem('registration_step', '4');
             navigate('/register/complete');
         } catch (err: any) {
-            setError(err.response?.data?.error.message || 'Failed to create account');
+            setError(err.response?.data?.error.message || err.response?.data?.error || 'Failed to create account');
         } finally {
             setLoading(false);
         }

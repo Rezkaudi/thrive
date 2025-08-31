@@ -68,7 +68,7 @@ export const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
             await api.post('/auth/send-verification-code', { email });
             setResendTimer(60);
         } catch (err: any) {
-            setError(err.response?.data?.error.message || 'Failed to register');
+            setError(err.response?.data?.error.message || err.response?.data?.error || 'Failed to register');
         } finally {
             setLoading(false);
         }
@@ -126,7 +126,7 @@ export const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
                 }, 3000);
             }
         } catch (err: any) {
-            setError(err.response?.data?.error.message || 'Invalid verification code');
+            setError(err.response?.data?.error.message || err.response?.data?.error || 'Invalid verification code');
         } finally {
             setLoading(false);
         }
@@ -142,7 +142,7 @@ export const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
             await api.post('/auth/send-verification-code', { email });
             setResendTimer(60);
         } catch (err: any) {
-            setError(err.response?.data?.error.message || 'Failed to resend code');
+            setError(err.response?.data?.error.message || err.response?.data?.error || 'Failed to resend code');
         } finally {
             setLoading(false);
         }
