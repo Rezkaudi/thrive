@@ -78,6 +78,7 @@ export const CalendarPage: React.FC = () => {
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bookLoading, setBookLoading] = useState(false);
   const [loadingStart, setLoadingStart] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate()
@@ -145,6 +146,7 @@ export const CalendarPage: React.FC = () => {
     if (!bookingDialog || !eligibility?.canBook) return;
 
     try {
+      setBookLoading(true)
       await calendarService.createBooking(bookingDialog.id);
       setSnackbar({
         open: true,
@@ -153,9 +155,14 @@ export const CalendarPage: React.FC = () => {
       });
       setBookingDialog(null);
       fetchCalendarData();
+
+
     } catch (error) {
       showError("Error", "Failed to book session");
+    } finally {
+      setBookLoading(false)
     }
+
   };
 
   const handleSubscription = async () => {
@@ -835,9 +842,10 @@ export const CalendarPage: React.FC = () => {
           {status === "active" ? <Button
             variant="contained"
             onClick={handleBookSession}
+            loading={bookLoading}
             disabled={!eligibility?.canBook}
           >
-            Confirm Booking
+            Confirm Booking {bookLoading && "..."}
           </Button> :
             <Button
               variant="contained"
