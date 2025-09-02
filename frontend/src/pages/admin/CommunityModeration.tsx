@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/CommunityModeration.tsx - Updated with pagination
+// frontend/src/pages/admin/CommunityModeration.tsx - Updated with Feedback tab
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -37,9 +37,11 @@ import {
   ThumbUp,
   Comment,
   Share,
+  Feedback,
 } from '@mui/icons-material';
 import api from '../../services/api';
 import { announcementService } from '../../services/announcementService';
+import { feedbackService } from '../../services/feedbackService';
 import { useSweetAlert } from '../../utils/sweetAlert';
 
 interface Post {
@@ -55,7 +57,7 @@ interface Post {
     email: string;
     avatar?: string;
     userId: string;
-    level:string;
+    level: string;
   };
 }
 
@@ -77,6 +79,25 @@ interface Announcement {
   isFlagged?: boolean;
 }
 
+interface FeedbackItem {
+  id: string;
+  content: string;
+  mediaUrls: string[];
+  likesCount: number;
+  isLiked: boolean;
+  commentsCount: number;
+  createdAt: string;
+  updatedAt: string;
+  isFlagged?: boolean;
+  author?: {
+    userId: string;
+    name: string;
+    email: string;
+    avatar: string;
+    level: number;
+  };
+}
+
 interface PaginationData {
   currentPage: number;
   totalPages: number;
@@ -88,6 +109,7 @@ export const CommunityModeration: React.FC = () => {
   const { showConfirm, showError } = useSweetAlert();
   const [posts, setPosts] = useState<Post[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,21 +126,28 @@ export const CommunityModeration: React.FC = () => {
     currentPage: 1,
     totalPages: 1,
     total: 0,
-    limit: 10 // Items per page
+    limit: 10
   });
 
   const [postsPagination, setPostsPagination] = useState<PaginationData>({
     currentPage: 1,
     totalPages: 1,
     total: 0,
-    limit: 10 // Items per page
+    limit: 10
+  });
+
+  const [feedbackPagination, setFeedbackPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    limit: 10
   });
 
   const [flaggedPagination, setFlaggedPagination] = useState<PaginationData>({
     currentPage: 1,
     totalPages: 1,
     total: 0,
-    limit: 10 // Items per page
+    limit: 10
   });
 
   useEffect(() => {
@@ -132,6 +161,8 @@ export const CommunityModeration: React.FC = () => {
     } else if (tabValue === 1) {
       setPostsPagination(prev => ({ ...prev, currentPage: 1 }));
     } else if (tabValue === 2) {
+      setFeedbackPagination(prev => ({ ...prev, currentPage: 1 }));
+    } else if (tabValue === 3) {
       setFlaggedPagination(prev => ({ ...prev, currentPage: 1 }));
     }
   }, [tabValue]);
@@ -151,6 +182,12 @@ export const CommunityModeration: React.FC = () => {
 
   useEffect(() => {
     if (tabValue === 2) {
+      fetchFeedbackItems(feedbackPagination.currentPage);
+    }
+  }, [feedbackPagination.currentPage]);
+
+  useEffect(() => {
+    if (tabValue === 3) {
       fetchFlaggedContent(flaggedPagination.currentPage);
     }
   }, [flaggedPagination.currentPage]);
@@ -193,18 +230,39 @@ export const CommunityModeration: React.FC = () => {
     }
   };
 
+  const fetchFeedbackItems = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const response = await feedbackService.getFeedback(page, feedbackPagination.limit);
+      setFeedbackItems(response.feedback || []);
+      setFeedbackPagination(prev => ({
+        ...prev,
+        currentPage: page,
+        totalPages: response.pagination?.totalPages || Math.ceil(response.pagination?.total / prev.limit),
+        total: response.pagination?.total || 0
+      }));
+    } catch (error) {
+      console.error('Failed to fetch feedback:', error);
+      showError('Error', 'Failed to fetch feedback');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchFlaggedContent = async (page: number = 1) => {
     try {
       setLoading(true);
-      const [flaggedPosts, flaggedAnnouncements] = await Promise.all([
-        api.get(`/admin/posts/flagged?page=${page}&limit=${Math.ceil(flaggedPagination.limit / 2)}`).catch(() => ({ data: { posts: [], total: 0, totalPages: 0 } })),
-        api.get(`/admin/announcements/flagged?page=${page}&limit=${Math.ceil(flaggedPagination.limit / 2)}`).catch(() => ({ data: { announcements: [], total: 0, totalPages: 0 } }))
+      const [flaggedPosts, flaggedAnnouncements, flaggedFeedback] = await Promise.all([
+        api.get(`/admin/posts/flagged?page=${page}&limit=${Math.ceil(flaggedPagination.limit / 3)}`).catch(() => ({ data: { posts: [], total: 0, totalPages: 0 } })),
+        api.get(`/admin/announcements/flagged?page=${page}&limit=${Math.ceil(flaggedPagination.limit / 3)}`).catch(() => ({ data: { announcements: [], total: 0, totalPages: 0 } })),
+        api.get(`/admin/feedback/flagged?page=${page}&limit=${Math.ceil(flaggedPagination.limit / 3)}`).catch(() => ({ data: { feedback: [], total: 0, totalPages: 0 } }))
       ]);
       
       setPosts(flaggedPosts.data.posts || []);
       setAnnouncements(flaggedAnnouncements.data.announcements || []);
+      setFeedbackItems(flaggedFeedback.data.feedback || []);
       
-      const totalItems = (flaggedPosts.data.total || 0) + (flaggedAnnouncements.data.total || 0);
+      const totalItems = (flaggedPosts.data.total || 0) + (flaggedAnnouncements.data.total || 0) + (flaggedFeedback.data.total || 0);
       setFlaggedPagination(prev => ({
         ...prev,
         currentPage: page,
@@ -225,6 +283,8 @@ export const CommunityModeration: React.FC = () => {
     } else if (tabValue === 1) {
       await fetchPosts(1);
     } else if (tabValue === 2) {
+      await fetchFeedbackItems(1);
+    } else if (tabValue === 3) {
       await fetchFlaggedContent(1);
     }
   };
@@ -235,6 +295,8 @@ export const CommunityModeration: React.FC = () => {
     } else if (tabValue === 1) {
       setPostsPagination(prev => ({ ...prev, currentPage: page }));
     } else if (tabValue === 2) {
+      setFeedbackPagination(prev => ({ ...prev, currentPage: page }));
+    } else if (tabValue === 3) {
       setFlaggedPagination(prev => ({ ...prev, currentPage: page }));
     }
   };
@@ -242,25 +304,25 @@ export const CommunityModeration: React.FC = () => {
   const getCurrentPagination = () => {
     if (tabValue === 0) return announcementsPagination;
     if (tabValue === 1) return postsPagination;
+    if (tabValue === 2) return feedbackPagination;
     return flaggedPagination;
   };
 
-  const isVideo = (url:string) => {
-    const videoExtensions = ['.mp4', '.mov', '.webm']; // Add other video formats
+  const isVideo = (url: string) => {
+    const videoExtensions = ['.mp4', '.mov', '.webm'];
     const extension = url?.split('.')?.pop()?.toLowerCase();
     return videoExtensions.includes(`.${extension}`);
   };
 
-  const handlePostAction = async (action: string, item: Post | Announcement, isAnnouncement: boolean = false) => {
+  const handlePostAction = async (action: string, item: Post | Announcement | FeedbackItem, itemType: 'post' | 'announcement' | 'feedback' = 'post') => {
     let confirmResult;
     let successMessage = '';
-    let errorMessage = '';
 
     switch (action) {
       case 'delete':
         confirmResult = await showConfirm({
-          title: `Delete ${isAnnouncement ? 'Announcement' : 'Post'}`,
-          text: `Are you sure you want to delete this ${isAnnouncement ? 'announcement' : 'post'}? This action cannot be undone.`,
+          title: `Delete ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}`,
+          text: `Are you sure you want to delete this ${itemType}? This action cannot be undone.`,
           icon: 'warning',
           confirmButtonText: 'Yes, delete it',
           cancelButtonText: 'Cancel',
@@ -268,18 +330,22 @@ export const CommunityModeration: React.FC = () => {
         
         if (confirmResult.isConfirmed) {
           try {
-            if (isAnnouncement) {
+            if (itemType === 'announcement') {
               await announcementService.deleteAnnouncement(item.id);
+            } else if (itemType === 'feedback') {
+              await feedbackService.deleteFeedback(item.id);
             } else {
               await api.delete(`/admin/posts/${item.id}`);
             }
-            successMessage = `${isAnnouncement ? 'Announcement' : 'Post'} deleted successfully`;
+            successMessage = `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} deleted successfully`;
             
             // Refresh current page data
             if (tabValue === 0) {
               fetchAnnouncements(announcementsPagination.currentPage);
             } else if (tabValue === 1) {
               fetchPosts(postsPagination.currentPage);
+            } else if (tabValue === 2) {
+              fetchFeedbackItems(feedbackPagination.currentPage);
             } else {
               fetchFlaggedContent(flaggedPagination.currentPage);
             }
@@ -290,16 +356,16 @@ export const CommunityModeration: React.FC = () => {
               severity: 'success'
             });
           } catch (error) {
-            console.error(`Failed to delete ${isAnnouncement ? 'announcement' : 'post'}:`, error);
-            showError('Error', `Failed to delete ${isAnnouncement ? 'announcement' : 'post'}`);
+            console.error(`Failed to delete ${itemType}:`, error);
+            showError('Error', `Failed to delete ${itemType}`);
           }
         }
         break;
         
       case 'unflag':
         confirmResult = await showConfirm({
-          title: `Unflag ${isAnnouncement ? 'Announcement' : 'Post'}`,
-          text: `Are you sure you want to unflag this ${isAnnouncement ? 'announcement' : 'post'}?`,
+          title: `Unflag ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}`,
+          text: `Are you sure you want to unflag this ${itemType}?`,
           icon: 'question',
           confirmButtonText: 'Yes, unflag it',
           cancelButtonText: 'Cancel',
@@ -307,15 +373,25 @@ export const CommunityModeration: React.FC = () => {
         
         if (confirmResult.isConfirmed) {
           try {
-            const endpoint = isAnnouncement ? `/admin/announcements/${item.id}/unflag` : `/admin/posts/${item.id}/unflag`;
+            let endpoint = '';
+            if (itemType === 'announcement') {
+              endpoint = `/admin/announcements/${item.id}/unflag`;
+            } else if (itemType === 'feedback') {
+              endpoint = `/admin/feedback/${item.id}/unflag`;
+            } else {
+              endpoint = `/admin/posts/${item.id}/unflag`;
+            }
+            
             await api.post(endpoint);
-            successMessage = `${isAnnouncement ? 'Announcement' : 'Post'} unflagged successfully`;
+            successMessage = `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} unflagged successfully`;
             
             // Refresh current page data
             if (tabValue === 0) {
               fetchAnnouncements(announcementsPagination.currentPage);
             } else if (tabValue === 1) {
               fetchPosts(postsPagination.currentPage);
+            } else if (tabValue === 2) {
+              fetchFeedbackItems(feedbackPagination.currentPage);
             } else {
               fetchFlaggedContent(flaggedPagination.currentPage);
             }
@@ -326,15 +402,15 @@ export const CommunityModeration: React.FC = () => {
               severity: 'success'
             });
           } catch (error) {
-            console.error(`Failed to unflag ${isAnnouncement ? 'announcement' : 'post'}:`, error);
-            showError('Error', `Failed to unflag ${isAnnouncement ? 'announcement' : 'post'}`);
+            console.error(`Failed to unflag ${itemType}:`, error);
+            showError('Error', `Failed to unflag ${itemType}`);
           }
         }
         break;
         
       case 'blockUser':
-        const userId = isAnnouncement ? (item as Announcement).author?.userId : (item as Post).author?.userId;
-        const userName = isAnnouncement ? (item as Announcement).author?.name : (item as Post).author?.name;
+        const userId = item.author?.userId;
+        const userName = item.author?.name;
         
         confirmResult = await showConfirm({
           title: 'Block User',
@@ -354,6 +430,8 @@ export const CommunityModeration: React.FC = () => {
               fetchAnnouncements(announcementsPagination.currentPage);
             } else if (tabValue === 1) {
               fetchPosts(postsPagination.currentPage);
+            } else if (tabValue === 2) {
+              fetchFeedbackItems(feedbackPagination.currentPage);
             } else {
               fetchFlaggedContent(flaggedPagination.currentPage);
             }
@@ -393,9 +471,8 @@ export const CommunityModeration: React.FC = () => {
       setAnnouncementDialog(false);
       setAnnouncementContent('');
       
-      // Refresh announcements data
       if (tabValue === 0) {
-        fetchAnnouncements(1); // Go to first page to see the new announcement
+        fetchAnnouncements(1);
         setAnnouncementsPagination(prev => ({ ...prev, currentPage: 1 }));
       }
     } catch (error) {
@@ -419,29 +496,48 @@ export const CommunityModeration: React.FC = () => {
         post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
         post.author?.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
+    } else if (tabValue === 2) {
+      return feedbackItems.filter(feedback =>
+        feedback.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        feedback.author?.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     } else {
-      // Flagged content - combine both
+      // Flagged content - combine all three
       const filteredPosts = posts.filter(post =>
         post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
         post.author?.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      ).map(p => ({ ...p, itemType: 'post' }));
+      
       const filteredAnnouncements = announcements.filter(announcement =>
         announcement.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
         announcement.author?.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      return [...filteredAnnouncements.map(a => ({ ...a, isAnnouncement: true })), ...filteredPosts.map(p => ({ ...p, isAnnouncement: false }))];
+      ).map(a => ({ ...a, itemType: 'announcement' }));
+      
+      const filteredFeedback = feedbackItems.filter(feedback =>
+        feedback.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        feedback.author?.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ).map(f => ({ ...f, itemType: 'feedback' }));
+      
+      return [...filteredAnnouncements, ...filteredPosts, ...filteredFeedback];
     }
   };
 
-  const ItemCard = ({ item, isAnnouncement = false }: { item: any; isAnnouncement?: boolean }) => {
+  const ItemCard = ({ item, itemType }: { item: any; itemType?: 'post' | 'announcement' | 'feedback' }) => {
     const [itemAnchorEl, setItemAnchorEl] = useState<null | HTMLElement>(null);
+    
+    // Determine item type based on tab or explicit prop
+    const type = itemType || (tabValue === 0 ? 'announcement' : tabValue === 1 ? 'post' : tabValue === 2 ? 'feedback' : item.itemType);
     
     return (
       <Card sx={{ 
         mb: 2, 
-        ...(isAnnouncement && {
+        ...(type === 'announcement' && {
           border: "2px solid",
           borderColor: "primary.main",
+        }),
+        ...(type === 'feedback' && {
+          border: "2px solid",
+          borderColor: "secondary.main",
         }),
         position: 'relative',
         overflow: 'hidden',
@@ -464,12 +560,20 @@ export const CommunityModeration: React.FC = () => {
                   >
                     {item.author?.name || 'Unknown User'}
                   </Typography>
-                  {isAnnouncement && (
+                  {type === 'announcement' && (
                     <Chip 
                       icon={<Campaign />} 
                       label="Announcement" 
                       size="small" 
                       color="primary"
+                    />
+                  )}
+                  {type === 'feedback' && (
+                    <Chip 
+                      icon={<Feedback />} 
+                      label="Feedback" 
+                      size="small" 
+                      color="secondary"
                     />
                   )}
                   {item.isFlagged && (
@@ -526,27 +630,27 @@ export const CommunityModeration: React.FC = () => {
                 <MenuItem 
                   onClick={() => {
                     setItemAnchorEl(null);
-                    handlePostAction('delete', item, isAnnouncement);
+                    handlePostAction('delete', item, type);
                   }}
                   sx={{ color: 'error.main' }}
                 >
-                  <Delete sx={{ mr: 1.5 }} /> Delete {isAnnouncement ? 'Announcement' : 'Post'}
+                  <Delete sx={{ mr: 1.5 }} /> Delete {type.charAt(0).toUpperCase() + type.slice(1)}
                 </MenuItem>
                 {item.isFlagged && (
                   <MenuItem 
                     onClick={() => {
                       setItemAnchorEl(null);
-                      handlePostAction('unflag', item, isAnnouncement);
+                      handlePostAction('unflag', item, type);
                     }}
                     sx={{ color: 'success.main' }}
                   >
-                    <CheckCircle sx={{ mr: 1.5 }} /> Unflag {isAnnouncement ? 'Announcement' : 'Post'}
+                    <CheckCircle sx={{ mr: 1.5 }} /> Unflag {type.charAt(0).toUpperCase() + type.slice(1)}
                   </MenuItem>
                 )}
                 <MenuItem 
                   onClick={() => {
                     setItemAnchorEl(null);
-                    handlePostAction('blockUser', item, isAnnouncement);
+                    handlePostAction('blockUser', item, type);
                   }}
                   sx={{ color: 'warning.main' }}
                 >
@@ -567,22 +671,21 @@ export const CommunityModeration: React.FC = () => {
             {item.content}
           </Typography>
 
-          {/* Media display for posts */}
-          {!isAnnouncement && item.mediaUrls && item.mediaUrls.length > 0 && (
+          {/* Media display for posts and feedback */}
+          {(type === 'post' || type === 'feedback') && item.mediaUrls && item.mediaUrls.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 {item.mediaUrls.map((url: string, index: number) => (
                   <Box key={index}>
                     {isVideo(url) ? (
-                      // Render a video if the URL is a video
                       <video
                         src={url}
-                        controls // Add controls to allow playback
+                        controls
                         style={{
                           width: 100,
                           height: 100,
                           objectFit: 'cover',
-                          borderRadius: 4, // Use a number for borderRadius with MUI
+                          borderRadius: 4,
                           border: '1px solid',
                           borderColor: 'divider',
                         }}
@@ -590,7 +693,6 @@ export const CommunityModeration: React.FC = () => {
                         Your browser does not support the video tag.
                       </video>
                     ) : (
-                      // Otherwise, render an image
                       <Box
                         component="img"
                         src={url}
@@ -614,7 +716,6 @@ export const CommunityModeration: React.FC = () => {
           {/* Likes and Comments Display */}
           <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
             <Stack direction="row" spacing={3} sx={{ color: 'text.secondary', alignItems: 'center' }}>
-              {/* Likes Count */}
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <ThumbUp sx={{ fontSize: '1rem' }} />
                 <Typography variant="body2" component="span" fontWeight="500">
@@ -622,7 +723,6 @@ export const CommunityModeration: React.FC = () => {
                 </Typography>
               </Stack>
               
-              {/* Comments Count */}
               {item.commentsCount !== undefined && (
                 <Stack direction="row" spacing={0.5} alignItems="center">
                   <Comment sx={{ fontSize: '1rem' }} />
@@ -656,7 +756,7 @@ export const CommunityModeration: React.FC = () => {
         </Button>
       </Stack>
 
-      {tabValue === 2 && filteredItems.length > 0 && (
+      {tabValue === 3 && filteredItems.length > 0 && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           {currentPagination.total} items require review
         </Alert>
@@ -687,6 +787,9 @@ export const CommunityModeration: React.FC = () => {
               label={`Posts ${currentPagination.total > 0 && tabValue === 1 ? `(${currentPagination.total})` : ''}`} 
             />
             <Tab 
+              label={`Feedback ${currentPagination.total > 0 && tabValue === 2 ? `(${currentPagination.total})` : ''}`} 
+            />
+            <Tab 
               label="Flagged Content" 
               icon={<Flag />} 
               iconPosition="end"
@@ -700,7 +803,7 @@ export const CommunityModeration: React.FC = () => {
               </Box>
             ) : filteredItems.length === 0 ? (
               <Typography color="text.secondary" textAlign="center" py={4}>
-                No {tabValue === 0 ? 'announcements' : tabValue === 1 ? 'posts' : 'flagged content'} found
+                No {tabValue === 0 ? 'announcements' : tabValue === 1 ? 'posts' : tabValue === 2 ? 'feedback' : 'flagged content'} found
               </Typography>
             ) : (
               <>
@@ -708,7 +811,7 @@ export const CommunityModeration: React.FC = () => {
                   <ItemCard 
                     key={item.id} 
                     item={item} 
-                    isAnnouncement={tabValue === 0 || item.isAnnouncement} 
+                    itemType={tabValue === 0 ? 'announcement' : tabValue === 1 ? 'post' : tabValue === 2 ? 'feedback' : item.itemType} 
                   />
                 ))}
 
