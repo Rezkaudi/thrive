@@ -100,7 +100,7 @@ export const deleteAnnouncement = createAsyncThunk(
   }
 );
 
-// Comment actions for announcements
+// Comment actions for announcements - Updated to work with community endpoints
 export const fetchAnnouncementComments = createAsyncThunk(
   'announcements/fetchComments',
   async ({ announcementId, page = 1, limit = 20, includeReplies = true }: {
@@ -180,10 +180,29 @@ export const updateAnnouncementComment = createAsyncThunk(
 
 export const deleteAnnouncementComment = createAsyncThunk(
   'announcements/deleteComment',
-  async ({ commentId, announcementId }: { commentId: string, announcementId: string }, { rejectWithValue }) => {
+  async ({ commentId, announcementId }: { commentId: string, announcementId: string }, { rejectWithValue, getState }) => {
     try {
       const response = await announcementService.deleteComment(commentId);
-      return { commentId, announcementId, newCommentsCount: response.newCommentsCount };
+      
+      // Get current comment count and calculate new count
+      const state = getState() as RootState;
+      const announcementIndex = state.announcements.announcements.findIndex(a => a.id === announcementId);
+      let newCommentsCount = 0;
+      
+      if (announcementIndex !== -1) {
+        const currentAnnouncement = state.announcements.announcements[announcementIndex];
+        // Calculate new count by counting remaining comments after deletion
+        const currentComments = (currentAnnouncement as any).comments || [];
+        const commentsWithoutDeleted = findAndDeleteComment(currentComments, commentId);
+        newCommentsCount = countAllComments(commentsWithoutDeleted);
+      }
+
+      return { 
+        commentId, 
+        announcementId, 
+        newCommentsCount,
+        message: response.message 
+      };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete comment');
     }
@@ -454,7 +473,7 @@ const announcementSlice = createSlice({
         state.deleteError = action.payload as string;
       })
 
-      // Comments
+      // Comments - Updated to work with community endpoints
       .addCase(fetchAnnouncementComments.pending, (state, action) => {
         const announcementIndex = state.announcements.findIndex(a => a.id === action.meta.arg.announcementId);
         if (announcementIndex !== -1) {
@@ -569,7 +588,7 @@ const announcementSlice = createSlice({
         state.commentError = action.payload as string;
       })
 
-      // Handle delete announcement comment
+      // Handle delete announcement comment - Updated to calculate comment count locally
       .addCase(deleteAnnouncementComment.pending, (state, action) => {
         const { announcementId, commentId } = action.meta.arg;
         const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
@@ -607,6 +626,30 @@ const announcementSlice = createSlice({
           );
         }
         state.commentError = action.payload as string;
+      })
+
+      // Handle the action creators for comment editing/deleting states
+      .addCase(startEditAnnouncementComment, (state, action) => {
+        const { announcementId, commentId } = action.payload;
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsEditing(
+            (state.announcements[announcementIndex] as any).comments,
+            commentId,
+            true
+          );
+        }
+      })
+      .addCase(startDeleteAnnouncementComment, (state, action) => {
+        const { announcementId, commentId } = action.payload;
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsDeleting(
+            (state.announcements[announcementIndex] as any).comments,
+            commentId,
+            true
+          );
+        }
       });
   },
 });

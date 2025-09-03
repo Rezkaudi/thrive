@@ -1,4 +1,4 @@
-// frontend/src/services/announcementService.ts
+// frontend/src/services/announcementService.ts - Updated to use community routes
 import api from './api';
 import { Comment, CreateCommentData, UpdateCommentData } from './commentService';
 
@@ -35,7 +35,7 @@ export interface UpdateAnnouncementData {
 }
 
 export const announcementService = {
-  // Announcement operations - Use the correct endpoints from your backend
+  // Announcement operations - Use announcement endpoints
   async getAnnouncements(page: number = 1, limit: number = 20): Promise<AnnouncementsPaginatedResponse> {
     const response = await api.get('/announcements', {
       params: { page, limit },
@@ -68,32 +68,32 @@ export const announcementService = {
     return response.data;
   },
 
-  // Comment operations for announcements
+  // CHANGED: Comment operations now use community routes
   async getComments(announcementId: string, page: number = 1, limit: number = 20, includeReplies: boolean = true) {
-    const response = await api.get(`/announcements/${announcementId}/comments`, {
+    const response = await api.get(`/community/posts/${announcementId}/comments`, {
       params: { page, limit, includeReplies },
     });
     return response.data;
   },
 
   async createComment(announcementId: string, data: { content: string; parentCommentId?: string }) {
-    const response = await api.post(`/announcements/${announcementId}/comments`, data);
+    const response = await api.post(`/community/posts/${announcementId}/comments`, data);
     return response.data;
   },
 
   async getCommentCount(announcementId: string) {
-    const response = await api.get(`/announcements/${announcementId}/comments/count`);
+    const response = await api.get(`/community/posts/${announcementId}/comments/count`);
     return response.data;
   },
 
-  // New method for editing a comment on an announcement
+  // CHANGED: Update comment using community route
   async updateComment(commentId: string, data: { content: string }) {
-    const response = await api.put(`/announcements/comments/${commentId}`, data);
+    const response = await api.put(`/community/comments/${commentId}`, data);
     return response.data;
   },
 
-  async deleteComment(commentId: string): Promise<{ message: string, newCommentsCount: number }> {
-    const response = await api.delete(`/announcements/comments/${commentId}`);
+  async deleteComment(commentId: string): Promise<{ message: string }> {
+    const response = await api.delete(`/community/comments/${commentId}`);
     return response.data;
   },
 

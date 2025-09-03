@@ -1,4 +1,4 @@
-// frontend/src/components/community/Comments.tsx - Fixed comment editing
+// frontend/src/components/community/Comments.tsx - Simplified with backend logic
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Box,
@@ -23,7 +23,6 @@ import {
   Divider,
   Badge,
   Alert,
-  Fade,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -86,6 +85,10 @@ interface Comment {
   replies?: Comment[];
   isEditing?: boolean;
   isDeleting?: boolean;
+  // Backend-provided flags
+  canEdit?: boolean;
+  canDelete?: boolean;
+  hasReplies?: boolean;
 }
 
 interface CommentsProps {
@@ -130,7 +133,7 @@ interface CommentItemProps {
   level?: number;
   isAnnouncement?: boolean;
   isFeedback?: boolean;
-  postId: string; // Add postId prop
+  postId: string;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -143,7 +146,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   level = 0,
   isAnnouncement,
   isFeedback,
-  postId, // Add postId parameter
+  postId,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -155,8 +158,19 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isOwner = currentUserId === comment.userId;
   const menuOpen = Boolean(anchorEl);
+
+  // Use backend-provided flags for cleaner logic
+  const canEdit = comment.canEdit ?? (currentUserId === comment.userId);
+  const canDelete = comment.canDelete ?? (currentUserId === comment.userId);
+  const hasReplies = comment.hasReplies ?? (comment.replies && comment.replies.length > 0);
+
+  // FIX: Reset showReplies when editing completes - This was missing for announcements
+  useEffect(() => {
+    if (!comment.isEditing && !isEditing && hasReplies) {
+      setShowReplies(true);
+    }
+  }, [comment.isEditing, isEditing, hasReplies]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -169,9 +183,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const handleEditClick = () => {
     setIsEditing(true);
     setEditContent(comment.content);
+    setShowReplies(false); // Hide replies when starting to edit
     handleMenuClose();
-    // REMOVED: onEdit(comment.id) - this was causing the TextField to be disabled
-    // The onEdit should only be called during save operation via Redux pending states
   };
 
   const handleSaveEdit = async () => {
@@ -180,7 +193,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
         if (isAnnouncement) {
           await dispatch(updateAnnouncementComment({
             commentId: comment.id,
-            announcementId: postId, // Add missing announcementId
+            announcementId: postId,
             data: { content: editContent.trim() }
           })).unwrap();
         } else if (isFeedback) {
@@ -195,19 +208,35 @@ const CommentItem: React.FC<CommentItemProps> = ({
           })).unwrap();
         }
         setIsEditing(false);
+        // Show replies after successful edit
+        if (hasReplies) {
+          setShowReplies(true);
+        }
       } catch (error) {
         console.error('Failed to update comment:', error);
         setEditContent(comment.content);
+        // Show replies even if edit failed
+        if (hasReplies) {
+          setShowReplies(true);
+        }
       }
     } else {
       setIsEditing(false);
       setEditContent(comment.content);
+      // Show replies when canceling without changes
+      if (hasReplies) {
+        setShowReplies(true);
+      }
     }
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditContent(comment.content);
+    // Show replies when canceling edit
+    if (hasReplies) {
+      setShowReplies(true);
+    }
   };
 
   const handleDeleteClick = () => {
@@ -319,7 +348,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                     onChange={(e) => setEditContent(e.target.value)}
                     variant="outlined"
                     size="small"
-                    disabled={comment.isEditing} // Only disabled during actual save operation
+                    disabled={comment.isEditing}
                     sx={{ mb: 1 }}
                   />
                   <Stack direction="row" spacing={1}>
@@ -330,7 +359,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                       disabled={
                         !editContent.trim() ||
                         editContent === comment.content ||
-                        comment.isEditing // Only disabled during actual save operation
+                        comment.isEditing
                       }
                       startIcon={
                         comment.isEditing ? (
@@ -366,23 +395,26 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 </Typography>
               )}
 
-              {/* Actions */}
-              {!isEditing && !comment.isEditing && level < 3 && (
+              {/* Actions - Simplified logic */}
+              {!isEditing && !comment.isEditing && (
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => onReply(comment.id)}
-                    startIcon={<Reply fontSize="small" />}
-                    sx={{
-                      color: 'text.secondary',
-                      '&:hover': { color: 'primary.main' },
-                      textTransform: 'none',
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Reply
-                  </Button>
+                  {/* Only allow reply on top-level comments */}
+                  {level === 0 && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => onReply(comment.id)}
+                      startIcon={<Reply fontSize="small" />}
+                      sx={{
+                        color: 'text.secondary',
+                        '&:hover': { color: 'primary.main' },
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      Reply
+                    </Button>
+                  )}
                 </Stack>
               )}
             </Box>
@@ -423,7 +455,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             horizontal: 'right',
           }}
         >
-          {isOwner && (
+          {canEdit && (
             <MenuItem
               onClick={handleEditClick}
               disabled={comment.isEditing || comment.isDeleting}
@@ -435,7 +467,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             </MenuItem>
           )}
 
-          {isOwner && (
+          {canDelete && (
             <MenuItem
               onClick={handleDeleteClick}
               disabled={comment.isDeleting}
@@ -448,7 +480,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             </MenuItem>
           )}
 
-          {!isOwner && (
+          {!canEdit && (
             <MenuItem onClick={handleReportClick} sx={{ color: 'warning.main' }}>
               <ListItemIcon>
                 <Report fontSize="small" color="warning" />
@@ -494,8 +526,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
         </Dialog>
       </motion.div>
 
-      {/* Replies */}
-      {comment.replies && comment.replies.length > 0 && (
+      {/* Replies - Simplified: Backend handles when to include them */}
+      {hasReplies && comment.replies && comment.replies.length > 0 && (
         <Box sx={{ mt: 1 }}>
           <Button
             size="small"
@@ -512,6 +544,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             {showReplies ? 'Hide' : 'Show'} {comment.replies.length}{' '}
             {comment.replies.length === 1 ? 'reply' : 'replies'}
           </Button>
+          
           <Collapse in={showReplies}>
             <AnimatePresence>
               {comment.replies.map((reply) => (
@@ -526,7 +559,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   level={level + 1}
                   isAnnouncement={isAnnouncement}
                   isFeedback={isFeedback}
-                  postId={postId} // Pass postId to recursive calls
+                  postId={postId}
                 />
               ))}
             </AnimatePresence>
@@ -553,7 +586,7 @@ export const Comments: React.FC<CommentsProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // FIX: Call useSelector hooks directly at the top level of the component
+  // State management (same as before)
   const announcement = useSelector((state: RootState) =>
     state.announcements.announcements.find((a) => a.id === postId)
   );
@@ -569,7 +602,6 @@ export const Comments: React.FC<CommentsProps> = ({
     (state: RootState) => state.dashboard.data?.user
   );
 
-  // Use useMemo to select the correct state based on props
   const { comments, commentsLoading, commentsInitialized } = useMemo(() => {
     if (isAnnouncement) {
       return {
@@ -659,9 +691,6 @@ export const Comments: React.FC<CommentsProps> = ({
   };
 
   const handleEditComment = (commentId: string) => {
-    // This function is no longer needed for starting edit mode
-    // It was causing the issue by dispatching actions too early
-    // The Redux actions for editing are now only called during save operation
     console.log('Edit comment:', commentId);
   };
 
@@ -688,7 +717,6 @@ export const Comments: React.FC<CommentsProps> = ({
 
   const handleReportComment = (commentId: string, reason: string) => {
     console.log('Report comment:', commentId, reason);
-    // Implement reporting logic here
   };
 
   const handleReply = (parentCommentId: string) => {
@@ -818,7 +846,7 @@ export const Comments: React.FC<CommentsProps> = ({
                 currentUserId={currentUserId}
                 isAnnouncement={isAnnouncement}
                 isFeedback={isFeedback}
-                postId={postId} // Pass postId to CommentItem
+                postId={postId}
               />
             ))}
           </AnimatePresence>

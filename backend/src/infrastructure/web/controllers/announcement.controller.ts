@@ -15,17 +15,17 @@ import { ActivityService } from '../../services/ActivityService';
 export class AnnouncementController {
   // ... keep all existing methods until updateComment ...
 
-  // FIXED: Update comment method with proper author population
+  // Fixed updateComment method for AnnouncementController
   async updateComment(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { commentId } = req.params;
       const { content } = req.body;
       const userId = req.user?.userId;
-      
+
       if (!userId) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Authentication required" 
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required"
         });
       }
 
@@ -46,20 +46,20 @@ export class AnnouncementController {
       const commentRepository = new CommentRepository();
       const userRepository = new UserRepository();
       const profileRepository = new ProfileRepository();
-      
+
       const existingComment = await commentRepository.findById(commentId);
-      
+
       if (!existingComment) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "Comment not found" 
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found"
         });
       }
 
       if (existingComment.userId !== userId) {
-        return res.status(403).json({ 
-          success: false, 
-          message: "You can only edit your own comments" 
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit your own comments"
         });
       }
 
@@ -76,7 +76,7 @@ export class AnnouncementController {
         });
       }
 
-      // CRITICAL FIX: Fetch user and profile data to populate author information
+      // Fetch user and profile data to populate author information
       const user = await userRepository.findById(userId);
       const profile = await profileRepository.findByUserId(userId);
 
@@ -107,12 +107,12 @@ export class AnnouncementController {
 
       console.log('Updated comment with author data:', responseData);
 
+      // FIX: Match the expected structure from Redux thunk
       res.status(200).json({
         success: true,
-        message: "Comment updated successfully",
-        data: responseData
+        data: responseData // ← Keep 'data' to match Redux thunk expectation
       });
-      
+
     } catch (error) {
       console.error('Error in updateComment for announcement:', error);
       next(error);
@@ -137,7 +137,7 @@ export class AnnouncementController {
           userId: user?.id || comment.userId,
           name: profile?.name || user?.email?.split('@')[0] || 'User',
           email: user?.email || '',
-          avatar: profile?.profilePhoto  || '',
+          avatar: profile?.profilePhoto || '',
           level: profile?.level || 1
         }
       };
