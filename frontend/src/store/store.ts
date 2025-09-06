@@ -9,19 +9,21 @@ import activityReducer from './slices/activitySlice';
 import sessionsReducer from './slices/sessionSlice'
 import announcementReducer from './slices/announcementSlice'
 import videoReducer from './slices/videoSlice'
+import feedbackReducer from './slices/feedbackSlice'
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     course: courseReducer,
-    community: communityReducer,  
+    community: communityReducer,
     announcements: announcementReducer,
     profile: profileReducer,
     calendar: calendarReducer,
     dashboard: dashboardReducer,
     activity: activityReducer,
     session: sessionsReducer,
-    videos: videoReducer ,
+    videos: videoReducer,
+    feedback: feedbackReducer,
   },
 });
 

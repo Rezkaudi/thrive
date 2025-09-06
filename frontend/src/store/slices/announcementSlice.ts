@@ -1,7 +1,7 @@
-// frontend/src/store/slices/announcementSlice.ts
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { announcementService, Announcement } from '../../services/announcementService';
 import { Comment, CreateCommentData, UpdateCommentData } from '../../services/commentService';
+import { RootState } from '../store'; // Import RootState for `getState`
 
 interface AnnouncementState {
   announcements: Announcement[];
@@ -29,7 +29,7 @@ const initialState: AnnouncementState = {
   commentError: null,
 };
 
-// Fetch announcements
+// Async thunks for announcements
 export const fetchAnnouncements = createAsyncThunk(
   'announcements/fetchAnnouncements',
   async ({ page = 1, limit = 20, append = false }: {
@@ -42,11 +42,10 @@ export const fetchAnnouncements = createAsyncThunk(
   }
 );
 
-// Load more announcements
 export const loadMoreAnnouncements = createAsyncThunk(
   'announcements/loadMoreAnnouncements',
   async (_, { getState }) => {
-    const state = getState() as { announcements: AnnouncementState };
+    const state = getState() as RootState;
     const nextPage = state.announcements.currentPage + 1;
 
     const response = await announcementService.getAnnouncements(nextPage, 20);
@@ -54,7 +53,6 @@ export const loadMoreAnnouncements = createAsyncThunk(
   }
 );
 
-// Create announcement (admin only)
 export const createAnnouncement = createAsyncThunk(
   'announcements/createAnnouncement',
   async ({ content }: { content: string }) => {
@@ -63,7 +61,6 @@ export const createAnnouncement = createAsyncThunk(
   }
 );
 
-// Toggle like
 export const toggleAnnouncementLike = createAsyncThunk(
   'announcements/toggleLike',
   async (announcementId: string) => {
@@ -72,7 +69,6 @@ export const toggleAnnouncementLike = createAsyncThunk(
   }
 );
 
-// Edit announcement
 export const editAnnouncement = createAsyncThunk(
   'announcements/editAnnouncement',
   async ({ announcementId, content }: {
@@ -92,7 +88,6 @@ export const editAnnouncement = createAsyncThunk(
   }
 );
 
-// Delete announcement
 export const deleteAnnouncement = createAsyncThunk(
   'announcements/deleteAnnouncement',
   async (announcementId: string, { rejectWithValue }) => {
@@ -105,7 +100,7 @@ export const deleteAnnouncement = createAsyncThunk(
   }
 );
 
-// Comment actions for announcements
+// Comment actions for announcements - Updated to work with community endpoints
 export const fetchAnnouncementComments = createAsyncThunk(
   'announcements/fetchComments',
   async ({ announcementId, page = 1, limit = 20, includeReplies = true }: {
@@ -136,13 +131,10 @@ export const createAnnouncementComment = createAsyncThunk(
 
       if (response.success) {
         const comment = response.data;
-
-        // Get current user info from state for optimistic UI updates
-        const state = getState() as any;
+        const state = getState() as RootState;
         const currentUserId = state.auth.user?.id;
         const userProfile = state.dashboard.data?.user;
 
-        // Ensure the comment has author info for immediate display
         const commentWithAuthor = {
           ...comment,
           author: comment.author || {
@@ -164,14 +156,20 @@ export const createAnnouncementComment = createAsyncThunk(
   }
 );
 
-// New thunk for updating an announcement comment
 export const updateAnnouncementComment = createAsyncThunk(
   'announcements/updateComment',
-  async ({ commentId, data }: { commentId: string; data: UpdateCommentData }, { rejectWithValue }) => {
+  async ({ commentId, announcementId, data }: { 
+    commentId: string;
+    announcementId: string; 
+    data: UpdateCommentData 
+  }, { rejectWithValue }) => {
     try {
       const response = await announcementService.updateComment(commentId, data);
       if (response.success) {
-        return { updatedComment: response.data };
+        return { 
+          announcementId, // Include announcementId in return
+          updatedComment: response.data 
+        };
       }
       throw new Error(response.message || 'Failed to update comment');
     } catch (error: any) {
@@ -180,19 +178,40 @@ export const updateAnnouncementComment = createAsyncThunk(
   }
 );
 
-// Updated async thunk for deleting a comment on an announcement
 export const deleteAnnouncementComment = createAsyncThunk(
   'announcements/deleteComment',
-  async ({ commentId, announcementId }: { commentId: string, announcementId: string }, { rejectWithValue }) => {
+  async ({ commentId, announcementId }: { commentId: string, announcementId: string }, { rejectWithValue, getState }) => {
     try {
-      // The API call returns the new total count
       const response = await announcementService.deleteComment(commentId);
-      return { commentId, announcementId, newCommentsCount: response.newCommentsCount };
+      
+      // Get current comment count and calculate new count
+      const state = getState() as RootState;
+      const announcementIndex = state.announcements.announcements.findIndex(a => a.id === announcementId);
+      let newCommentsCount = 0;
+      
+      if (announcementIndex !== -1) {
+        const currentAnnouncement = state.announcements.announcements[announcementIndex];
+        // Calculate new count by counting remaining comments after deletion
+        const currentComments = (currentAnnouncement as any).comments || [];
+        const commentsWithoutDeleted = findAndDeleteComment(currentComments, commentId);
+        newCommentsCount = countAllComments(commentsWithoutDeleted);
+      }
+
+      return { 
+        commentId, 
+        announcementId, 
+        newCommentsCount,
+        message: response.message 
+      };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete comment');
     }
   }
 );
+
+export const startEditAnnouncementComment = createAction<{ announcementId: string; commentId: string }>('announcements/startEditComment');
+export const startDeleteAnnouncementComment = createAction<{ announcementId: string; commentId: string }>('announcements/startDeleteComment');
+
 
 // Helper functions for nested comment operations (same as community slice)
 const findAndUpdateComment = (comments: Comment[], commentId: string, updatedComment: Comment): Comment[] => {
@@ -237,6 +256,36 @@ const findAndAddReply = (comments: Comment[], parentId: string, newReply: Commen
   });
 };
 
+const markCommentAsEditing = (comments: Comment[], commentId: string, isEditing: boolean = true): Comment[] => {
+  return comments.map(comment => {
+    if (comment.id === commentId) {
+      return { ...comment, isEditing, isDeleting: false };
+    }
+    if (comment.replies) {
+      return {
+        ...comment,
+        replies: markCommentAsEditing(comment.replies, commentId, isEditing)
+      };
+    }
+    return comment;
+  });
+};
+
+const markCommentAsDeleting = (comments: Comment[], commentId: string, isDeleting: boolean = true): Comment[] => {
+  return comments.map(comment => {
+    if (comment.id === commentId) {
+      return { ...comment, isDeleting, isEditing: false };
+    }
+    if (comment.replies) {
+      return {
+        ...comment,
+        replies: markCommentAsDeleting(comment.replies, commentId, isDeleting)
+      };
+    }
+    return comment;
+  });
+};
+
 const countAllComments = (comments: Comment[]): number => {
   let count = comments.length;
   comments.forEach(comment => {
@@ -247,11 +296,12 @@ const countAllComments = (comments: Comment[]): number => {
   return count;
 };
 
+
 const announcementSlice = createSlice({
   name: 'announcements',
   initialState,
   reducers: {
-    setCurrentPage: (state, action) => {
+    setCurrentPage: (state, action: PayloadAction<number>) => {
       state.currentPage = action.payload;
     },
     clearError: (state) => {
@@ -268,21 +318,18 @@ const announcementSlice = createSlice({
     startEditAnnouncement: (state, action) => {
       const announcementIndex = state.announcements.findIndex(a => a.id === action.payload);
       if (announcementIndex !== -1) {
-        // Add isEditing property (extend the interface as needed)
         (state.announcements[announcementIndex] as any).isEditing = true;
       }
     },
     startDeleteAnnouncement: (state, action) => {
       const announcementIndex = state.announcements.findIndex(a => a.id === action.payload);
       if (announcementIndex !== -1) {
-        // Add isDeleting property (extend the interface as needed)
         (state.announcements[announcementIndex] as any).isDeleting = true;
       }
     },
     toggleAnnouncementCommentsSection: (state, action) => {
       const announcementIndex = state.announcements.findIndex(a => a.id === action.payload);
       if (announcementIndex !== -1) {
-        // Initialize comments if not present
         if (!(state.announcements[announcementIndex] as any).comments) {
           (state.announcements[announcementIndex] as any).comments = [];
           (state.announcements[announcementIndex] as any).commentsPage = 1;
@@ -426,7 +473,7 @@ const announcementSlice = createSlice({
         state.deleteError = action.payload as string;
       })
 
-      // Comments
+      // Comments - Updated to work with community endpoints
       .addCase(fetchAnnouncementComments.pending, (state, action) => {
         const announcementIndex = state.announcements.findIndex(a => a.id === action.meta.arg.announcementId);
         if (announcementIndex !== -1) {
@@ -439,7 +486,6 @@ const announcementSlice = createSlice({
         if (announcementIndex !== -1) {
           const { comments, pagination } = action.payload;
 
-          // Mark as initialized and set comments
           (state.announcements[announcementIndex] as any).commentsInitialized = true;
           (state.announcements[announcementIndex] as any).commentsLoading = false;
 
@@ -502,6 +548,19 @@ const announcementSlice = createSlice({
       })
 
       // Handle update announcement comment
+      .addCase(updateAnnouncementComment.pending, (state, action) => {
+        const announcementId = (action.meta.arg as any).announcementId;
+        const commentId = (action.meta.arg as any).commentId;
+
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsEditing(
+            (state.announcements[announcementIndex] as any).comments,
+            commentId,
+            true
+          );
+        }
+      })
       .addCase(updateAnnouncementComment.fulfilled, (state, action) => {
         const { updatedComment } = action.payload;
         for (const announcement of state.announcements) {
@@ -515,29 +574,82 @@ const announcementSlice = createSlice({
         }
       })
       .addCase(updateAnnouncementComment.rejected, (state, action) => {
+        const announcementId = (action.meta.arg as any).announcementId;
+        const commentId = (action.meta.arg as any).commentId;
+
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsEditing(
+            (state.announcements[announcementIndex] as any).comments,
+            commentId,
+            false
+          );
+        }
         state.commentError = action.payload as string;
       })
 
-      // Handle delete announcement comment
+      // Handle delete announcement comment - Updated to calculate comment count locally
+      .addCase(deleteAnnouncementComment.pending, (state, action) => {
+        const { announcementId, commentId } = action.meta.arg;
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsDeleting(
+            (state.announcements[announcementIndex] as any).comments!,
+            commentId,
+            true
+          );
+        }
+        state.commentError = null;
+      })
       .addCase(deleteAnnouncementComment.fulfilled, (state, action) => {
         const { commentId, announcementId, newCommentsCount } = action.payload;
         const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
 
         if (announcementIndex !== -1) {
           const announcement = state.announcements[announcementIndex];
-          // Remove the comment from the local state
           const updatedComments = findAndDeleteComment(
             (announcement as any).comments || [],
             commentId
           );
           (announcement as any).comments = updatedComments;
-
-          // Update the comment count with the correct value from the backend
           announcement.commentsCount = newCommentsCount;
         }
       })
       .addCase(deleteAnnouncementComment.rejected, (state, action) => {
+        const { announcementId, commentId } = action.meta.arg;
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsDeleting(
+            (state.announcements[announcementIndex] as any).comments!,
+            commentId,
+            false
+          );
+        }
         state.commentError = action.payload as string;
+      })
+
+      // Handle the action creators for comment editing/deleting states
+      .addCase(startEditAnnouncementComment, (state, action) => {
+        const { announcementId, commentId } = action.payload;
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsEditing(
+            (state.announcements[announcementIndex] as any).comments,
+            commentId,
+            true
+          );
+        }
+      })
+      .addCase(startDeleteAnnouncementComment, (state, action) => {
+        const { announcementId, commentId } = action.payload;
+        const announcementIndex = state.announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1 && (state.announcements[announcementIndex] as any).comments) {
+          (state.announcements[announcementIndex] as any).comments = markCommentAsDeleting(
+            (state.announcements[announcementIndex] as any).comments,
+            commentId,
+            true
+          );
+        }
       });
   },
 });

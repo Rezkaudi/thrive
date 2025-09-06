@@ -1,16 +1,15 @@
-// frontend/src/components/Comments.tsx
-import React, { useState, useEffect } from 'react';
+// frontend/src/components/community/Comments.tsx - Simplified with backend logic
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Box,
+  Card,
+  Collapse,
   Typography,
   TextField,
   Button,
   Avatar,
   Stack,
   IconButton,
-  Divider,
-  CircularProgress,
-  Collapse,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -20,127 +19,158 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Paper,
+  CircularProgress,
+  Divider,
   Badge,
+  Alert,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
-  Reply,
+  Send,
   MoreVert,
   Edit,
   Delete,
-  Send,
-  Cancel,
+  Report,
   Save,
+  Cancel,
+  Reply,
   ExpandMore,
   ExpandLess,
 } from '@mui/icons-material';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store/store';
+import { AppDispatch, RootState } from '../../store/store';
 import {
   fetchComments,
   createComment,
   updateComment,
   deleteComment,
+  startEditComment,
+  startDeleteComment,
 } from '../../store/slices/communitySlice';
 import {
   fetchAnnouncementComments,
   createAnnouncementComment,
   updateAnnouncementComment,
   deleteAnnouncementComment,
+  startEditAnnouncementComment,
+  startDeleteAnnouncementComment,
 } from '../../store/slices/announcementSlice';
+import {
+  fetchFeedbackComments,
+  createFeedbackComment,
+  updateFeedbackComment,
+  deleteFeedbackComment,
+  startDeleteFeedbackComment,
+  startEditFeedbackComment,
+} from '../../store/slices/feedbackSlice';
 import { linkifyText } from '../../utils/linkify';
-// Import or define the Comment interface
+
 interface Comment {
   id: string;
   userId: string;
   postId: string;
   content: string;
   parentCommentId?: string;
+  createdAt: string;
+  updatedAt: string;
   author?: {
     userId: string;
     name: string;
     email: string;
     avatar: string;
-    level: number;
+    level?: number;
   };
-  createdAt: string;
-  updatedAt: string;
   replies?: Comment[];
   isEditing?: boolean;
   isDeleting?: boolean;
-  isReplying?: boolean;
-  likesCount?: number;
-  isLiked?: boolean;
+  // Backend-provided flags
+  canEdit?: boolean;
+  canDelete?: boolean;
+  hasReplies?: boolean;
 }
 
+interface CommentsProps {
+  postId: string;
+  commentsCount?: number;
+  isOpen: boolean;
+  onToggle: () => void;
+  isAnnouncement?: boolean;
+  isFeedback?: boolean;
+}
 
-// Format date utility
 const formatCommentDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
 
-  if (diffInMinutes < 1) return 'just now';
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `${diffInDays}d ago`;
-
-  return date.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+  if (diffHours < 1) {
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    return diffMinutes <= 1 ? 'Just now' : `${diffMinutes}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  } else {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    });
+  }
 };
 
 interface CommentItemProps {
   comment: Comment;
-  postId: string;
-  currentUserId?: string;
   onReply: (parentId: string) => void;
-  isReply?: boolean;
-  isAnnouncement?: boolean; // New prop
+  onEdit: (commentId: string) => void;
+  onDelete: (commentId: string) => void;
+  onReport: (commentId: string, reason: string) => void;
+  currentUserId?: string;
+  level?: number;
+  isAnnouncement?: boolean;
+  isFeedback?: boolean;
+  postId: string;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
   comment,
-  postId,
-  currentUserId,
   onReply,
-  isReply = false,
-  isAnnouncement = false // New prop with default
+  onEdit,
+  onDelete,
+  onReport,
+  currentUserId,
+  level = 0,
+  isAnnouncement,
+  isFeedback,
+  postId,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
   const [showReplies, setShowReplies] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const menuOpen = Boolean(anchorEl);
-  const isOwnComment = currentUserId === comment.userId;
 
-  useEffect(() => {
-    if (!isEditing) {
-      setEditContent(comment.content);
-    }
-  }, [comment.content, isEditing]);
+  // Use backend-provided flags for cleaner logic
+  const canEdit = comment.canEdit ?? (currentUserId === comment.userId);
+  const canDelete = comment.canDelete ?? (currentUserId === comment.userId);
+  const hasReplies = comment.hasReplies ?? (comment.replies && comment.replies.length > 0);
 
-  // Reset local loading states when comment state changes
+  // FIX: Reset showReplies when editing completes - This was missing for announcements
   useEffect(() => {
-    if (!comment.isEditing) {
-      setIsUpdating(false);
+    if (!comment.isEditing && !isEditing && hasReplies) {
+      setShowReplies(true);
     }
-    if (!comment.isDeleting) {
-      setIsDeleting(false);
-    }
-  }, [comment.isEditing, comment.isDeleting]);
+  }, [comment.isEditing, isEditing, hasReplies]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -150,375 +180,469 @@ const CommentItem: React.FC<CommentItemProps> = ({
     setAnchorEl(null);
   };
 
-  const handleEdit = () => {
+  const handleEditClick = () => {
     setIsEditing(true);
     setEditContent(comment.content);
+    setShowReplies(false); // Hide replies when starting to edit
     handleMenuClose();
   };
 
   const handleSaveEdit = async () => {
     if (editContent.trim() && editContent !== comment.content) {
-      setIsUpdating(true);
       try {
         if (isAnnouncement) {
-          // Dispatch the new action for announcements
           await dispatch(updateAnnouncementComment({
+            commentId: comment.id,
+            announcementId: postId,
+            data: { content: editContent.trim() }
+          })).unwrap();
+        } else if (isFeedback) {
+          await dispatch(updateFeedbackComment({
             commentId: comment.id,
             data: { content: editContent.trim() }
           })).unwrap();
         } else {
-          // Dispatch the existing action for posts
           await dispatch(updateComment({
             commentId: comment.id,
             data: { content: editContent.trim() }
           })).unwrap();
         }
         setIsEditing(false);
-        setIsUpdating(false);
+        // Show replies after successful edit
+        if (hasReplies) {
+          setShowReplies(true);
+        }
       } catch (error) {
+        console.error('Failed to update comment:', error);
         setEditContent(comment.content);
-        setIsUpdating(false);
-        console.error('Failed to save edit:', error);
+        // Show replies even if edit failed
+        if (hasReplies) {
+          setShowReplies(true);
+        }
       }
     } else {
       setIsEditing(false);
+      setEditContent(comment.content);
+      // Show replies when canceling without changes
+      if (hasReplies) {
+        setShowReplies(true);
+      }
     }
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditContent(comment.content);
-    setIsUpdating(false);
+    // Show replies when canceling edit
+    if (hasReplies) {
+      setShowReplies(true);
+    }
   };
 
   const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
+    handleMenuClose();
+    onDelete(comment.id);
+  };
+
+  const handleReportClick = () => {
+    setReportDialogOpen(true);
+    setReportReason('');
     handleMenuClose();
   };
 
-  const handleDeleteConfirm = async () => {
-    setIsDeleting(true);
-    try {
-      if (isAnnouncement) {
-        await dispatch(deleteAnnouncementComment({
-          commentId: comment.id,
-          announcementId: postId,
-        })).unwrap();
-      } else {
-        await dispatch(deleteComment({
-          commentId: comment.id,
-          postId
-        })).unwrap();
-      }
-      setDeleteDialogOpen(false);
-      setIsDeleting(false);
-    } catch (error) {
-      setIsDeleting(false);
-      console.error('Failed to delete comment:', error);
+  const handleReportSubmit = () => {
+    if (reportReason.trim()) {
+      onReport(comment.id, reportReason);
+      setReportDialogOpen(false);
+      setReportReason('');
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setIsDeleting(false);
-  };
-
-  const handleReplyClick = () => {
-    onReply(comment.id);
-  };
-
-  // Determine the actual loading states
-  const actuallyEditing = isUpdating || comment.isEditing;
-  const actuallyDeleting = isDeleting || comment.isDeleting;
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      layout
+    <Box
+      sx={{
+        ml: level * (isMobile ? 2 : 4),
+        mb: 2,
+        opacity: comment.isDeleting ? 0.5 : 1,
+        transition: 'opacity 0.3s ease',
+      }}
     >
-      <Box
-        sx={{
-          ml: isReply ? 4 : 0,
-          mt: 2,
-          opacity: actuallyDeleting ? 0.5 : 1,
-          position: 'relative',
-        }}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3 }}
       >
-        <Stack direction="row" spacing={2} alignItems="flex-start">
-          <Badge
-            badgeContent={comment.author?.level ? `L${comment.author.level}` : undefined}
-            color="primary"
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          >
-            <Avatar
-              src={comment.author?.avatar}
-              sx={{ width: isReply ? 32 : 40, height: isReply ? 32 : 40 }}
+        <Card
+          variant="outlined"
+          sx={{
+            p: 2,
+            bgcolor: level > 0 ? 'grey.50' : 'background.paper',
+            position: 'relative',
+          }}
+        >
+          <Stack direction="row" spacing={2} alignItems="flex-start">
+            <Badge
+              badgeContent={
+                comment.author?.level ? `L${comment.author.level}` : undefined
+              }
+              color="primary"
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              sx={{ flexShrink: 0 }}
             >
-              {!comment.author?.avatar && comment.author?.name?.[0]}
-            </Avatar>
-          </Badge>
-
-          <Box flexGrow={1}>
-            <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-              <Typography
-                variant="subtitle2"
-                fontWeight={600}
-                sx={{ color: 'text.primary' }}
+              <Avatar
+                src={comment.author?.avatar}
+                sx={{ width: 32, height: 32 }}
               >
-                {comment.author?.name || 'Unknown User'}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatCommentDate(comment.createdAt)}
-              </Typography>
-              {actuallyEditing && (
-                <Typography variant="caption" color="info.main">
-                  editing...
+                {comment.author?.name?.[0] || 'U'}
+              </Avatar>
+            </Badge>
+
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="flex-start"
+                mb={1}
+              >
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight={600}
+                    sx={{ color: 'text.primary' }}
+                  >
+                    {comment.author?.name || 'Unknown User'}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontSize: '0.75rem' }}
+                  >
+                    {formatCommentDate(comment.createdAt)}
+                    {comment.createdAt !== comment.updatedAt && ' (edited)'}
+                  </Typography>
+                </Box>
+
+                <IconButton
+                  size="small"
+                  onClick={handleMenuClick}
+                  disabled={comment.isDeleting}
+                  sx={{
+                    opacity: 0.7,
+                    '&:hover': { opacity: 1 },
+                    transition: 'opacity 0.2s ease',
+                  }}
+                >
+                  <MoreVert fontSize="small" />
+                </IconButton>
+              </Stack>
+
+              {/* Comment Content */}
+              {isEditing ? (
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={isMobile ? 2 : 3}
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    variant="outlined"
+                    size="small"
+                    disabled={comment.isEditing}
+                    sx={{ mb: 1 }}
+                  />
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={handleSaveEdit}
+                      disabled={
+                        !editContent.trim() ||
+                        editContent === comment.content ||
+                        comment.isEditing
+                      }
+                      startIcon={
+                        comment.isEditing ? (
+                          <CircularProgress size={14} />
+                        ) : (
+                          <Save />
+                        )
+                      }
+                    >
+                      {comment.isEditing ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleCancelEdit}
+                      disabled={comment.isEditing}
+                      startIcon={<Cancel />}
+                    >
+                      Cancel
+                    </Button>
+                  </Stack>
+                </Box>
+              ) : (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mb: 1,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {linkifyText(comment.content)}
                 </Typography>
               )}
-            </Stack>
 
-            {isEditing ? (
-              <Box sx={{ mb: 1 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  disabled={actuallyEditing}
-                  placeholder="Edit your comment..."
-                  sx={{ mb: 1 }}
-                />
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={actuallyEditing ? <CircularProgress size={14} /> : <Save />}
-                    onClick={handleSaveEdit}
-                    disabled={!editContent.trim() || actuallyEditing}
-                  >
-                    {actuallyEditing ? 'Saving...' : 'Save'}
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<Cancel />}
-                    onClick={handleCancelEdit}
-                    disabled={actuallyEditing}
-                  >
-                    Cancel
-                  </Button>
+              {/* Actions - Simplified logic */}
+              {!isEditing && !comment.isEditing && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {/* Only allow reply on top-level comments */}
+                  {level === 0 && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => onReply(comment.id)}
+                      startIcon={<Reply fontSize="small" />}
+                      sx={{
+                        color: 'text.secondary',
+                        '&:hover': { color: 'primary.main' },
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      Reply
+                    </Button>
+                  )}
                 </Stack>
-              </Box>
-            ) : (
-              <Typography
-                variant="body2"
-                sx={{ mb: 1, whiteSpace: 'pre-wrap' }}
-              >
-                {linkifyText(comment.content)}
-              </Typography>
-            )}
-
-            {!isEditing && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                {!isReply && (
-                  <Button
-                    size="small"
-                    startIcon={<Reply />}
-                    onClick={handleReplyClick}
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: '0.75rem',
-                      minWidth: 'auto',
-                      px: 1,
-                    }}
-                    disabled={actuallyDeleting}
-                  >
-                    Reply
-                  </Button>
-                )}
-
-                {comment.replies && comment.replies.length > 0 && !isReply && (
-                  <Button
-                    size="small"
-                    startIcon={showReplies ? <ExpandLess /> : <ExpandMore />}
-                    onClick={() => setShowReplies(!showReplies)}
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: '0.75rem',
-                      minWidth: 'auto',
-                      px: 1,
-                    }}
-                  >
-                    {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
-                  </Button>
-                )}
-              </Stack>
-            )}
-          </Box>
-
-          <IconButton
-            size="small"
-            onClick={handleMenuClick}
-            disabled={actuallyDeleting || isEditing}
-            sx={{ color: 'text.secondary' }}
-          >
-            <MoreVert fontSize="small" />
-          </IconButton>
-
-          {/* Options Menu */}
-          <Menu
-            anchorEl={anchorEl}
-            open={menuOpen && !isEditing}
-            onClose={handleMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-          >
-            {isOwnComment && (
-              <MenuItem
-                onClick={handleEdit}
-                disabled={actuallyEditing || isEditing || actuallyDeleting}
-              >
-                <ListItemIcon>
-                  <Edit fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Edit</ListItemText>
-              </MenuItem>
-            )}
-
-            {isOwnComment && (
-              <MenuItem
-                onClick={handleDeleteClick}
-                sx={{ color: 'error.main' }}
-                disabled={actuallyDeleting || isEditing}
-              >
-                <ListItemIcon>
-                  <Delete fontSize="small" color="error" />
-                </ListItemIcon>
-                <ListItemText>Delete</ListItemText>
-              </MenuItem>
-            )}
-          </Menu>
-        </Stack>
-
-        {/* Replies */}
-        {comment.replies && comment.replies.length > 0 && !isReply && (
-          <Collapse in={showReplies}>
-            <Box sx={{ mt: 1 }}>
-              <AnimatePresence>
-                {comment.replies.map((reply) => (
-                  <CommentItem
-                    key={reply.id}
-                    comment={reply}
-                    postId={postId}
-                    currentUserId={currentUserId}
-                    onReply={onReply}
-                    isReply={true}
-                    isAnnouncement={isAnnouncement} // Pass through the prop
-                  />
-                ))}
-              </AnimatePresence>
+              )}
             </Box>
-          </Collapse>
-        )}
+          </Stack>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={handleDeleteCancel}
+          {/* Loading overlay for deleting */}
+          {comment.isDeleting && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                bgcolor: 'rgba(255, 255, 255, 0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 1,
+              }}
+            >
+              <CircularProgress size={24} />
+            </Box>
+          )}
+        </Card>
+
+        {/* Options Menu */}
+        <Menu
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={handleMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
         >
-          <DialogTitle>Delete Comment</DialogTitle>
+          {canEdit && (
+            <MenuItem
+              onClick={handleEditClick}
+              disabled={comment.isEditing || comment.isDeleting}
+            >
+              <ListItemIcon>
+                <Edit fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Edit</ListItemText>
+            </MenuItem>
+          )}
+
+          {canDelete && (
+            <MenuItem
+              onClick={handleDeleteClick}
+              disabled={comment.isDeleting}
+              sx={{ color: 'error.main' }}
+            >
+              <ListItemIcon>
+                <Delete fontSize="small" color="error" />
+              </ListItemIcon>
+              <ListItemText>Delete</ListItemText>
+            </MenuItem>
+          )}
+
+          {!canEdit && (
+            <MenuItem onClick={handleReportClick} sx={{ color: 'warning.main' }}>
+              <ListItemIcon>
+                <Report fontSize="small" color="warning" />
+              </ListItemIcon>
+              <ListItemText>Report</ListItemText>
+            </MenuItem>
+          )}
+        </Menu>
+
+        {/* Report Dialog */}
+        <Dialog
+          open={reportDialogOpen}
+          onClose={() => setReportDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Report Comment</DialogTitle>
           <DialogContent>
-            <DialogContentText>
-              Are you sure you want to delete this comment? This action cannot be undone.
+            <DialogContentText sx={{ mb: 2 }}>
+              Please provide a reason for reporting this comment:
             </DialogContentText>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Describe why you're reporting this comment..."
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              variant="outlined"
+            />
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleDeleteCancel} disabled={actuallyDeleting}>
-              Cancel
-            </Button>
+            <Button onClick={() => setReportDialogOpen(false)}>Cancel</Button>
             <Button
-              onClick={handleDeleteConfirm}
-              color="error"
+              onClick={handleReportSubmit}
+              color="warning"
               variant="contained"
-              disabled={actuallyDeleting}
-              startIcon={actuallyDeleting ? <CircularProgress size={16} /> : undefined}
+              disabled={!reportReason.trim()}
             >
-              {actuallyDeleting ? 'Deleting...' : 'Delete'}
+              Report
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
-    </motion.div>
+      </motion.div>
+
+      {/* Replies - Simplified: Backend handles when to include them */}
+      {hasReplies && comment.replies && comment.replies.length > 0 && (
+        <Box sx={{ mt: 1 }}>
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => setShowReplies(!showReplies)}
+            endIcon={showReplies ? <ExpandLess /> : <ExpandMore />}
+            sx={{
+              color: 'text.secondary',
+              textTransform: 'none',
+              fontSize: '0.75rem',
+              ml: level * (isMobile ? 2 : 4) + 6,
+            }}
+          >
+            {showReplies ? 'Hide' : 'Show'} {comment.replies.length}{' '}
+            {comment.replies.length === 1 ? 'reply' : 'replies'}
+          </Button>
+          
+          <Collapse in={showReplies}>
+            <AnimatePresence>
+              {comment.replies.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  onReply={onReply}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onReport={onReport}
+                  currentUserId={currentUserId}
+                  level={level + 1}
+                  isAnnouncement={isAnnouncement}
+                  isFeedback={isFeedback}
+                  postId={postId}
+                />
+              ))}
+            </AnimatePresence>
+          </Collapse>
+        </Box>
+      )}
+    </Box>
   );
 };
 
-interface CommentsProps {
-  postId: string;
-  commentsCount?: number;
-  isOpen: boolean;
-  onToggle: () => void;
-  isAnnouncement?: boolean; // New prop to distinguish between posts and announcements
-}
-
 export const Comments: React.FC<CommentsProps> = ({
   postId,
-  commentsCount = 0,
+  commentsCount,
   isOpen,
   onToggle,
-  isAnnouncement = false, // New prop with default
+  isAnnouncement,
+  isFeedback,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [newComment, setNewComment] = useState('');
-  const [replyTo, setReplyTo] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
 
-  // Get the appropriate item and state based on type - moved outside function and using hooks properly
-  const announcements = useSelector((state: RootState) => state.announcements?.announcements || []);
-  const posts = useSelector((state: RootState) => state.community.posts);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // State management (same as before)
+  const announcement = useSelector((state: RootState) =>
+    state.announcements.announcements.find((a) => a.id === postId)
+  );
+  const feedbackItem = useSelector((state: RootState) =>
+    state.feedback.feedback.find((f) => f.id === postId)
+  );
+  const post = useSelector((state: RootState) =>
+    state.community.posts.find((p) => p.id === postId)
+  );
+
   const currentUserId = useSelector((state: RootState) => state.auth.user?.id);
-  const profilePhoto = useSelector((state: RootState) => state.dashboard.data?.user.profilePhoto);
-  const name = useSelector((state: RootState) => state.dashboard.data?.user.name);
+  const userProfile = useSelector(
+    (state: RootState) => state.dashboard.data?.user
+  );
 
-  // Get item data based on type
-  const item = isAnnouncement 
-    ? announcements.find((a: any) => a.id === postId)
-    : posts.find(p => p.id === postId);
+  const { comments, commentsLoading, commentsInitialized } = useMemo(() => {
+    if (isAnnouncement) {
+      return {
+        comments: (announcement as any)?.comments || [],
+        commentsLoading: (announcement as any)?.commentsLoading || false,
+        commentsInitialized: (announcement as any)?.commentsInitialized || false,
+      };
+    } else if (isFeedback) {
+      return {
+        comments: feedbackItem?.comments || [],
+        commentsLoading: feedbackItem?.commentsLoading || false,
+        commentsInitialized: feedbackItem?.commentsInitialized || false,
+      };
+    } else {
+      return {
+        comments: (post as any)?.comments || [],
+        commentsLoading: (post as any)?.commentsLoading || false,
+        commentsInitialized: (post as any)?.commentsInitialized || false,
+      };
+    }
+  }, [isAnnouncement, isFeedback, announcement, feedbackItem, post]);
 
-  const comments = (item as any)?.comments || [];
-  const commentsLoading = (item as any)?.commentsLoading || false;
-  const commentsHasMore = (item as any)?.commentsHasMore || false;
-  const commentsInitialized = (item as any)?.commentsInitialized || false;
-  const commentsPage = (item as any)?.commentsPage || 1;
-
-  // Fetch comments when section is opened
   useEffect(() => {
-    if (isOpen && !hasAttemptedFetch && !commentsLoading) {
-      setHasAttemptedFetch(true);
-      
+    if (isOpen && !commentsInitialized && !commentsLoading) {
       if (isAnnouncement) {
-        dispatch(fetchAnnouncementComments({
-          announcementId: postId,
-          page: 1,
-          limit: 20,
-          includeReplies: true,
-        }));
+        dispatch(fetchAnnouncementComments({ announcementId: postId, page: 1, limit: 50 }));
+      } else if (isFeedback) {
+        dispatch(fetchFeedbackComments({ feedbackId: postId, page: 1, limit: 50 }));
       } else {
-        dispatch(fetchComments({ postId, page: 1, limit: 20 }));
+        dispatch(fetchComments({ postId, page: 1, limit: 50 }));
       }
     }
-  }, [isOpen, hasAttemptedFetch, commentsLoading, dispatch, postId, isAnnouncement]);
+  }, [
+    isOpen,
+    commentsInitialized,
+    commentsLoading,
+    postId,
+    dispatch,
+    isAnnouncement,
+    isFeedback,
+  ]);
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
@@ -526,30 +650,39 @@ export const Comments: React.FC<CommentsProps> = ({
     setIsSubmitting(true);
     try {
       if (isAnnouncement) {
-        await dispatch(createAnnouncementComment({
-          announcementId: postId,
-          data: {
-            content: newComment.trim(),
-            parentCommentId: replyTo || undefined
-          }
-        })).unwrap();
+        await dispatch(
+          createAnnouncementComment({
+            announcementId: postId,
+            data: {
+              content: newComment.trim(),
+              parentCommentId: replyToCommentId || undefined,
+            },
+          })
+        ).unwrap();
+      } else if (isFeedback) {
+        await dispatch(
+          createFeedbackComment({
+            feedbackId: postId,
+            data: {
+              content: newComment.trim(),
+              parentCommentId: replyToCommentId || undefined,
+            },
+          })
+        ).unwrap();
       } else {
-        await dispatch(createComment({
-          postId,
-          data: {
-            content: newComment.trim(),
-            parentCommentId: replyTo || undefined
-          }
-        })).unwrap();
+        await dispatch(
+          createComment({
+            postId,
+            data: {
+              content: newComment.trim(),
+              parentCommentId: replyToCommentId || undefined,
+            },
+          })
+        ).unwrap();
       }
-      
+
       setNewComment('');
-      setReplyTo(null);
-      
-      // Ensure we've attempted fetch after creating a comment
-      if (!hasAttemptedFetch) {
-        setHasAttemptedFetch(true);
-      }
+      setReplyToCommentId(null);
     } catch (error) {
       console.error('Failed to create comment:', error);
     } finally {
@@ -557,145 +690,174 @@ export const Comments: React.FC<CommentsProps> = ({
     }
   };
 
-  const handleReply = (parentId: string) => {
-    setReplyTo(parentId);
+  const handleEditComment = (commentId: string) => {
+    console.log('Edit comment:', commentId);
   };
 
-  const handleLoadMore = () => {
-    if (item && !commentsLoading && commentsHasMore) {
+  const handleDeleteComment = async (commentId: string) => {
+    try {
       if (isAnnouncement) {
-        dispatch(fetchAnnouncementComments({
-          announcementId: postId,
-          page: commentsPage + 1,
-          limit: 20,
-          includeReplies: true,
-        }));
+        dispatch(startDeleteAnnouncementComment({ announcementId: postId, commentId }));
+        await dispatch(
+          deleteAnnouncementComment({ commentId, announcementId: postId })
+        ).unwrap();
+      } else if (isFeedback) {
+        dispatch(startDeleteFeedbackComment({ feedbackId: postId, commentId }));
+        await dispatch(
+          deleteFeedbackComment({ commentId, feedbackId: postId })
+        ).unwrap();
       } else {
-        dispatch(fetchComments({
-          postId,
-          page: commentsPage + 1,
-          limit: 20
-        }));
+        dispatch(startDeleteComment({ postId, commentId }));
+        await dispatch(deleteComment({ commentId, postId })).unwrap();
       }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
     }
   };
 
-  // Determine what to show
-  const shouldShowLoading = commentsLoading && comments.length === 0;
-  const shouldShowComments = comments.length > 0;
-  const shouldShowEmpty = hasAttemptedFetch && !commentsLoading && comments.length === 0;
+  const handleReportComment = (commentId: string, reason: string) => {
+    console.log('Report comment:', commentId, reason);
+  };
+
+  const handleReply = (parentCommentId: string) => {
+    setReplyToCommentId(parentCommentId);
+    const commentInput = document.getElementById('comment-input');
+    if (commentInput) {
+      commentInput.focus();
+    }
+  };
+
+  const cancelReply = () => {
+    setReplyToCommentId(null);
+  };
 
   return (
-    <Box>
-      <Collapse in={isOpen}>
-        <Box sx={{ p: 2 }}>
-          {/* New Comment Form */}
-          <Stack direction="row" spacing={2} mb={3}>
-            <Avatar src={profilePhoto} sx={{ width: 40, height: 40 }}>
-              {!profilePhoto ? name?.[0] : "U"}
+    <Collapse in={isOpen} timeout={300}>
+      <Divider />
+      <Box sx={{ p: 3, bgcolor: 'grey.50' }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
+          <Typography variant="h6" fontWeight={600}>
+            Comments {commentsCount !== undefined && `(${commentsCount})`}
+          </Typography>
+          <Button
+            size="small"
+            onClick={onToggle}
+            startIcon={<ExpandLess />}
+            sx={{ color: 'text.secondary' }}
+          >
+            Hide
+          </Button>
+        </Stack>
+
+        <Box sx={{ mb: 3 }}>
+          {replyToCommentId && (
+            <Alert
+              severity="info"
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={cancelReply}
+                  startIcon={<Cancel />}
+                >
+                  Cancel Reply
+                </Button>
+              }
+            >
+              Replying to comment
+            </Alert>
+          )}
+
+          <Stack direction="row" spacing={2} alignItems="flex-start">
+            <Avatar
+              src={userProfile?.profilePhoto}
+              sx={{ width: 40, height: 40, mt: 0.5 }}
+            >
+              {userProfile?.name?.[0] || 'U'}
             </Avatar>
-            <Box flexGrow={1}>
-              {replyTo && (
-                <Typography variant="caption" color="info.main" sx={{ mb: 1, display: 'block' }}>
-                  Replying to comment...
-                  <Button
-                    size="small"
-                    onClick={() => setReplyTo(null)}
-                    sx={{ ml: 1, minWidth: 'auto', p: 0 }}
-                  >
-                    <Cancel fontSize="small" />
-                  </Button>
-                </Typography>
-              )}
+            <Box sx={{ flexGrow: 1 }}>
               <TextField
+                id="comment-input"
                 fullWidth
                 multiline
-                rows={2}
-                placeholder={replyTo ? "Write a reply..." : `Write a comment on this ${isAnnouncement ? 'announcement' : 'post'}...`}
+                rows={isMobile ? 2 : 3}
+                placeholder={
+                  replyToCommentId
+                    ? 'Write a reply...'
+                    : `Add a comment to this ${isAnnouncement ? 'announcement' : isFeedback ? 'feedback' : 'post'}...`
+                }
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 variant="outlined"
-                size="small"
                 disabled={isSubmitting}
-                sx={{ mb: 1 }}
+                sx={{
+                  mb: 1,
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'background.paper',
+                  },
+                }}
               />
-              <Stack direction="row" spacing={1}>
+              <Stack direction="row" justifyContent="flex-end">
                 <Button
                   variant="contained"
                   size="small"
-                  startIcon={isSubmitting ? <CircularProgress size={14} /> : <Send />}
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isSubmitting}
+                  startIcon={
+                    isSubmitting ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <Send />
+                    )
+                  }
+                  sx={{ borderRadius: 2 }}
                 >
-                  {isSubmitting ? 'Posting...' : 'Post'}
+                  {isSubmitting
+                    ? 'Posting...'
+                    : replyToCommentId
+                      ? 'Reply'
+                      : 'Comment'}
                 </Button>
-                {replyTo && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setReplyTo(null)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                )}
               </Stack>
             </Box>
           </Stack>
-          
-          <Divider sx={{ mb: 2 }} />
-          
-          {/* Comments List */}
-          {shouldShowLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-              <CircularProgress />
-              <Typography variant="body2" sx={{ ml: 2 }}>
-                Loading comments...
-              </Typography>
-            </Box>
-          ) : shouldShowComments ? (
-            <Box>
-              <AnimatePresence>
-                {comments.map((comment: any) => (
-                  <CommentItem
-                    key={comment.id}
-                    comment={comment}
-                    postId={postId}
-                    currentUserId={currentUserId}
-                    onReply={handleReply}
-                    isAnnouncement={isAnnouncement} // Pass the prop
-                  />
-                ))}
-              </AnimatePresence>
-              
-              {commentsHasMore && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={handleLoadMore}
-                    disabled={commentsLoading}
-                    startIcon={commentsLoading ? <CircularProgress size={16} /> : undefined}
-                  >
-                    {commentsLoading ? 'Loading...' : 'Load More Comments'}
-                  </Button>
-                </Box>
-              )}
-            </Box>
-          ) : shouldShowEmpty ? (
-            <Box sx={{ textAlign: 'center', py: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                No comments yet. Be the first to comment on this {isAnnouncement ? 'announcement' : 'post'}!
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                {hasAttemptedFetch ? 'No comments to show' : 'Open to view comments'}
-              </Typography>
-            </Box>
-          )}
         </Box>
-      </Collapse>
-    </Box>
+
+        {commentsLoading && comments.length === 0 ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : comments.length > 0 ? (
+          <AnimatePresence>
+            {comments.map((comment: Comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                onReply={handleReply}
+                onEdit={handleEditComment}
+                onDelete={handleDeleteComment}
+                onReport={handleReportComment}
+                currentUserId={currentUserId}
+                isAnnouncement={isAnnouncement}
+                isFeedback={isFeedback}
+                postId={postId}
+              />
+            ))}
+          </AnimatePresence>
+        ) : commentsInitialized ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              No comments yet. Be the first to comment!
+            </Typography>
+          </Box>
+        ) : null}
+      </Box>
+    </Collapse>
   );
 };

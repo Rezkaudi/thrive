@@ -1,4 +1,4 @@
-// frontend/src/pages/CommunityPage.tsx - Updated with tab URL parameters
+// frontend/src/pages/CommunityPage.tsx - Updated with Feedback Integration
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
@@ -61,6 +61,8 @@ import {
   WhatsApp,
   Send,
   AttachFile,
+  Feedback as FeedbackIcon,
+  People,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
@@ -91,11 +93,23 @@ import {
   resetAnnouncements,
   toggleAnnouncementCommentsSection,
 } from "../store/slices/announcementSlice";
+// NEW: Import feedback actions
+import {
+  fetchFeedback,
+  loadMoreFeedback,
+  createFeedback,
+  toggleFeedbackLike,
+  editFeedback,
+  deleteFeedback,
+  resetFeedback,
+  toggleFeedbackCommentsSection,
+} from "../store/slices/feedbackSlice";
 import { clearError } from "../store/slices/authSlice";
 import { linkifyText } from "../utils/linkify";
 import { communityService } from "../services/communityService";
+import { feedbackService } from "../services/feedbackService"; // NEW: Import feedback service
 
-// Unified interface for both posts and announcements
+// Updated interface to handle posts, announcements, and feedback
 interface ComponentItem {
   id: string;
   author?: {
@@ -108,6 +122,7 @@ interface ComponentItem {
   content: string;
   mediaUrls?: string[];
   isAnnouncement: boolean;
+  isFeedback?: boolean; // NEW: Add feedback flag
   likesCount: number;
   createdAt: string;
   isLiked: boolean;
@@ -183,8 +198,8 @@ const ItemCard = ({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const shareToSocial = (platform: string) => {
-    const message = `Check out this ${item.isAnnouncement ? "announcement" : "post"
-      } from the Thrive in Japan community!`;
+    const itemType = item.isAnnouncement ? "announcement" : item.isFeedback ? "feedback" : "post";
+    const message = `Check out this ${itemType} from the Thrive in Japan community!`;
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedMessage = encodeURIComponent(message);
 
@@ -211,7 +226,7 @@ const ItemCard = ({
   const menuOpen = Boolean(anchorEl);
   const isOwnItem = currentUserId === item.author?.userId;
 
-  // Initialize edit media from existing URLs (only for posts)
+  // Initialize edit media from existing URLs (for posts and feedback)
   useEffect(() => {
     if (
       isEditing &&
@@ -258,7 +273,8 @@ const ItemCard = ({
 
   const handleShareClick = () => {
     // Include the current tab in the share URL
-    const tabParam = currentTab === 0 ? "announcements" : "posts";
+    const tabParam = currentTab === 0 ? "announcements" : currentTab === 1 ? "posts" : "feedback";
+    const itemType = item.isAnnouncement ? "announcement" : item.isFeedback ? "feedback" : "post";
     const itemUrl = `${window.location.origin}/community?tab=${tabParam}&highlight=${item.id}`;
     setShareUrl(itemUrl);
     setShareDialog(true);
@@ -266,11 +282,8 @@ const ItemCard = ({
 
   const copyShareUrl = () => {
     navigator.clipboard.writeText(shareUrl);
-    onShowSnackbar(
-      `${item.isAnnouncement ? "Announcement" : "Post"
-      } URL copied to clipboard!`,
-      "success"
-    );
+    const itemType = item.isAnnouncement ? "Announcement" : item.isFeedback ? "Feedback" : "Post";
+    onShowSnackbar(`${itemType} URL copied to clipboard!`, "success");
   };
 
   const handleSaveEdit = async () => {
@@ -281,7 +294,7 @@ const ItemCard = ({
       try {
         let mediaUrls: string[] = [];
 
-        // Handle media for posts only
+        // Handle media for posts and feedback (not announcements)
         if (!item.isAnnouncement && editSelectedMedia.length > 0) {
           const newFiles = editSelectedMedia.filter(
             (media) => !media.preview.startsWith("http") && media.file.size > 0
@@ -289,7 +302,10 @@ const ItemCard = ({
 
           if (newFiles.length > 0) {
             const files = newFiles.map((media) => media.file);
-            const uploadResponse = await communityService.uploadMedia(files);
+            // Use appropriate service based on item type
+            const uploadResponse = item.isFeedback 
+              ? await feedbackService.uploadMedia(files)
+              : await communityService.uploadMedia(files);
             mediaUrls.push(...uploadResponse.files.map((file) => file.url));
           }
 
@@ -332,10 +348,8 @@ const ItemCard = ({
       await onDelete(item.id);
       setDeleteDialogOpen(false);
     } catch (error) {
-      console.error(
-        `Failed to delete ${item.isAnnouncement ? "announcement" : "post"}:`,
-        error
-      );
+      const itemType = item.isAnnouncement ? "announcement" : item.isFeedback ? "feedback" : "post";
+      console.error(`Failed to delete ${itemType}:`, error);
     }
   };
 
@@ -357,6 +371,8 @@ const ItemCard = ({
     if (!commentsOpen) {
       if (item.isAnnouncement) {
         dispatch(toggleAnnouncementCommentsSection(item.id));
+      } else if (item.isFeedback) {
+        dispatch(toggleFeedbackCommentsSection(item.id));
       } else {
         dispatch(toggleCommentsSection(item.id));
       }
@@ -375,6 +391,15 @@ const ItemCard = ({
         ? 0
         : "...";
 
+  // Get item type for display
+  const getItemType = () => {
+    if (item.isAnnouncement) return "announcement";
+    if (item.isFeedback) return "feedback";
+    return "post";
+  };
+
+  const itemType = getItemType();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -383,7 +408,7 @@ const ItemCard = ({
       layout
     >
       <Card
-        id={`${item.isAnnouncement ? "announcement" : "post"}-${item.id}`}
+        id={`${itemType}-${item.id}`}
         sx={{
           mb: 3,
           position: "relative",
@@ -460,6 +485,14 @@ const ItemCard = ({
                     color="primary"
                   />
                 )}
+                {item.isFeedback && (
+                  <Chip
+                    icon={<FeedbackIcon />}
+                    label="Feedback"
+                    size="small"
+                    color="success"
+                  />
+                )}
                 {(item.isEditing || isEditing) && (
                   <Chip
                     label="Editing..."
@@ -473,7 +506,6 @@ const ItemCard = ({
                 sx={{ fontSize: { xs: "0.5rem", md: "0.8rem" } }}
                 color="text.secondary"
               >
-                {/* {item.author?.email} •  */}
                 {formatPostDate(item.createdAt)}{" "}
                 {formatPostTime(item.createdAt)}
               </Typography>
@@ -559,11 +591,10 @@ const ItemCard = ({
                 variant="outlined"
                 sx={{ mb: 2 }}
                 disabled={item.isEditing}
-                placeholder={`Edit your ${item.isAnnouncement ? "announcement" : "post"
-                  } content...`}
+                placeholder={`Edit your ${itemType} content...`}
               />
 
-              {/* Media Upload Section for Editing (Posts only) */}
+              {/* Media Upload Section for Editing (Posts and Feedback only) */}
               {!item.isAnnouncement && (
                 <Box sx={{ mb: 2 }}>
                   <Button
@@ -620,7 +651,7 @@ const ItemCard = ({
             </Typography>
           )}
 
-          {/* Media Display (Posts only) */}
+          {/* Media Display (Posts and Feedback only) */}
           {!item.isAnnouncement &&
             item.mediaUrls &&
             item.mediaUrls.length > 0 &&
@@ -671,6 +702,7 @@ const ItemCard = ({
           isOpen={commentsOpen}
           onToggle={handleCommentsToggle}
           isAnnouncement={item.isAnnouncement}
+          isFeedback={item.isFeedback} // NEW: Pass feedback flag
         />
       </Card>
 
@@ -680,12 +712,11 @@ const ItemCard = ({
         onClose={() => setDeleteDialogOpen(false)}
       >
         <DialogTitle>
-          Delete {item.isAnnouncement ? "Announcement" : "Post"}
+          Delete {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this{" "}
-            {item.isAnnouncement ? "announcement" : "post"}? This action cannot
+            Are you sure you want to delete this {itemType}? This action cannot
             be undone.
           </DialogContentText>
         </DialogContent>
@@ -718,7 +749,7 @@ const ItemCard = ({
             justifyContent="space-between"
             alignItems="center"
           >
-            Share This {item.isAnnouncement ? "Announcement" : "Post"}
+            Share This {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
             <IconButton onClick={() => setShareDialog(false)}>
               <Close />
             </IconButton>
@@ -728,9 +759,7 @@ const ItemCard = ({
           <Stack spacing={3}>
             <Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Share this {item.isAnnouncement ? "announcement" : "post"} - the
-                link will open the community page and highlight this{" "}
-                {item.isAnnouncement ? "announcement" : "post"}
+                Share this {itemType} - the link will open the community page and highlight this {itemType}
               </Typography>
               <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
                 <Stack direction="row" spacing={2} alignItems="center">
@@ -808,19 +837,17 @@ const ItemCard = ({
         fullWidth
       >
         <DialogTitle>
-          Report {item.isAnnouncement ? "Announcement" : "Post"}
+          Report {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Please provide a reason for reporting this{" "}
-            {item.isAnnouncement ? "announcement" : "post"}:
+            Please provide a reason for reporting this {itemType}:
           </DialogContentText>
           <TextField
             fullWidth
             multiline
             rows={isMobile ? 3 : 4}
-            placeholder={`Describe why you're reporting this ${item.isAnnouncement ? "announcement" : "post"
-              }...`}
+            placeholder={`Describe why you're reporting this ${itemType}...`}
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
             variant="outlined"
@@ -929,6 +956,20 @@ export const CommunityPage: React.FC = () => {
     totalAnnouncements,
   } = useSelector((state: RootState) => state.announcements);
 
+  // NEW: Feedback state
+  const {
+    feedback,
+    loading: feedbackLoading,
+    loadingMore: feedbackLoadingMore,
+    hasMoreFeedback,
+    error: feedbackError,
+    editError: feedbackEditError,
+    deleteError: feedbackDeleteError,
+    commentError: feedbackCommentError,
+    currentPage: feedbackCurrentPage,
+    totalFeedback,
+  } = useSelector((state: RootState) => state.feedback);
+
   const profilePhoto = useSelector(
     (state: RootState) => state.dashboard.data?.user.profilePhoto
   );
@@ -939,24 +980,23 @@ export const CommunityPage: React.FC = () => {
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
 
   // Determine current loading state and hasMore based on active tab
-  const loading = tabValue === 0 ? announcementsLoading : postsLoading;
-  const loadingMore =
-    tabValue === 0 ? announcementsLoadingMore : postsLoadingMore;
-  const hasMore = tabValue === 0 ? hasMoreAnnouncements : hasMorePosts;
-  const error = tabValue === 0 ? announcementsError : postsError;
-  const editError = tabValue === 0 ? announcementsEditError : postsEditError;
-  const deleteError =
-    tabValue === 0 ? announcementsDeleteError : postsDeleteError;
-  const commentError =
-    tabValue === 0 ? announcementsCommentError : postsCommentError;
+  const loading = tabValue === 0 ? announcementsLoading : tabValue === 1 ? postsLoading : feedbackLoading;
+  const loadingMore = tabValue === 0 ? announcementsLoadingMore : tabValue === 1 ? postsLoadingMore : feedbackLoadingMore;
+  const hasMore = tabValue === 0 ? hasMoreAnnouncements : tabValue === 1 ? hasMorePosts : hasMoreFeedback;
+  const error = tabValue === 0 ? announcementsError : tabValue === 1 ? postsError : feedbackError;
+  const editError = tabValue === 0 ? announcementsEditError : tabValue === 1 ? postsEditError : feedbackEditError;
+  const deleteError = tabValue === 0 ? announcementsDeleteError : tabValue === 1 ? postsDeleteError : feedbackDeleteError;
+  const commentError = tabValue === 0 ? announcementsCommentError : tabValue === 1 ? postsCommentError : feedbackCommentError;
 
   // Infinite scroll callback
   const loadMore = useCallback(() => {
     if (hasMore && !loadingMore) {
       if (tabValue === 0) {
         dispatch(loadMoreAnnouncements());
-      } else {
+      } else if (tabValue === 1) {
         dispatch(loadMorePosts());
+      } else {
+        dispatch(loadMoreFeedback());
       }
     }
   }, [dispatch, hasMore, loadingMore, tabValue]);
@@ -972,6 +1012,8 @@ export const CommunityPage: React.FC = () => {
       setTabValue(1);
     } else if (tabParam === "announcements") {
       setTabValue(0);
+    } else if (tabParam === "feedback") {
+      setTabValue(2);
     }
   }, [location.search]);
 
@@ -979,6 +1021,7 @@ export const CommunityPage: React.FC = () => {
   useEffect(() => {
     dispatch(fetchAnnouncements({ page: 1, limit: 20 }));
     dispatch(fetchPosts({ page: 1, limit: 20 }));
+    dispatch(fetchFeedback({ page: 1, limit: 20 })); // NEW: Fetch feedback
   }, [dispatch]);
 
   // Reset data when changing tabs
@@ -986,9 +1029,12 @@ export const CommunityPage: React.FC = () => {
     if (tabValue === 0) {
       dispatch(resetAnnouncements());
       dispatch(fetchAnnouncements({ page: 1, limit: 20 }));
-    } else {
+    } else if (tabValue === 1) {
       dispatch(resetPosts());
       dispatch(fetchPosts({ page: 1, limit: 20 }));
+    } else {
+      dispatch(resetFeedback()); // NEW: Reset feedback
+      dispatch(fetchFeedback({ page: 1, limit: 20 })); // NEW: Fetch feedback
     }
   }, [tabValue, dispatch]);
 
@@ -1003,7 +1049,8 @@ export const CommunityPage: React.FC = () => {
       const timer = setTimeout(() => {
         const itemElement =
           document.getElementById(`post-${highlightParam}`) ||
-          document.getElementById(`announcement-${highlightParam}`);
+          document.getElementById(`announcement-${highlightParam}`) ||
+          document.getElementById(`feedback-${highlightParam}`); // NEW: Include feedback
         if (itemElement) {
           itemElement.scrollIntoView({
             behavior: "smooth",
@@ -1025,7 +1072,7 @@ export const CommunityPage: React.FC = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [posts, announcements]);
+  }, [posts, announcements, feedback]); // NEW: Include feedback dependency
 
   // Handle errors with snackbar
   useEffect(() => {
@@ -1059,11 +1106,11 @@ export const CommunityPage: React.FC = () => {
   // Handle tab change and update URL
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    const tabName = newValue === 0 ? "announcements" : "posts";
+    const tabName = newValue === 0 ? "announcements" : newValue === 1 ? "posts" : "feedback";
     navigate(`/community?tab=${tabName}`, { replace: true });
   };
 
-  // Enhanced handleCreatePost - only creates posts (not announcements)
+  // Enhanced handleCreatePost - now creates posts or feedback based on tab
   const handleCreatePost = async () => {
     if (!newPost.trim() && selectedMedia.length === 0) return;
 
@@ -1078,20 +1125,34 @@ export const CommunityPage: React.FC = () => {
         setUploadProgress(25);
 
         const files = selectedMedia.map((media) => media.file);
-        const uploadResponse = await communityService.uploadMedia(files);
+        // Use appropriate service based on current tab
+        const uploadResponse = tabValue === 2 
+          ? await feedbackService.uploadMedia(files)
+          : await communityService.uploadMedia(files);
 
         setUploadProgress(75);
         mediaUrls = uploadResponse.files.map((file) => file.url);
       }
 
-      // Create the post with uploaded media URLs
+      // Create the post or feedback with uploaded media URLs
       setUploadProgress(90);
-      await dispatch(
-        createPost({
-          content: newPost || " ",
-          mediaUrls,
-        })
-      ).unwrap();
+      if (tabValue === 2) {
+        // Create feedback
+        await dispatch(
+          createFeedback({
+            content: newPost || " ",
+            mediaUrls,
+          })
+        ).unwrap();
+      } else {
+        // Create post (tabValue === 1)
+        await dispatch(
+          createPost({
+            content: newPost || " ",
+            mediaUrls,
+          })
+        ).unwrap();
+      }
 
       // Clean up
       selectedMedia.forEach((media) => {
@@ -1105,10 +1166,12 @@ export const CommunityPage: React.FC = () => {
       setMediaExpanded(false);
       setUploadProgress(100);
 
-      handleShowSnackbar("Post created successfully!", "success");
+      const itemType = tabValue === 2 ? "Feedback" : "Post";
+      handleShowSnackbar(`${itemType} created successfully!`, "success");
     } catch (error) {
-      console.error("Failed to create post:", error);
-      handleShowSnackbar("Failed to create post", "error");
+      const itemType = tabValue === 2 ? "feedback" : "post";
+      console.error(`Failed to create ${itemType}:`, error);
+      handleShowSnackbar(`Failed to create ${itemType}`, "error");
     } finally {
       setIsSubmitting(false);
       setTimeout(() => setUploadProgress(0), 1000);
@@ -1116,11 +1179,13 @@ export const CommunityPage: React.FC = () => {
   };
 
   const handleToggleLike = (itemId: string) => {
-    // Determine if it's an announcement or post based on current tab
+    // Determine item type based on current tab
     if (tabValue === 0) {
       dispatch(toggleAnnouncementLike(itemId));
-    } else {
+    } else if (tabValue === 1) {
       dispatch(toggleLike(itemId));
+    } else {
+      dispatch(toggleFeedbackLike(itemId)); // NEW: Handle feedback likes
     }
   };
 
@@ -1135,19 +1200,23 @@ export const CommunityPage: React.FC = () => {
         await dispatch(
           editAnnouncement({ announcementId: itemId, content: newContent })
         ).unwrap();
-      } else {
+      } else if (tabValue === 1) {
         // Edit post
         await dispatch(
           editPost({ postId: itemId, content: newContent, mediaUrls })
         ).unwrap();
+      } else {
+        // Edit feedback
+        await dispatch(
+          editFeedback({ feedbackId: itemId, content: newContent, mediaUrls })
+        ).unwrap();
       }
-      handleShowSnackbar(
-        `${tabValue === 0 ? "Announcement" : "Post"} updated successfully!`,
-        "success"
-      );
+      const itemType = tabValue === 0 ? "Announcement" : tabValue === 1 ? "Post" : "Feedback";
+      handleShowSnackbar(`${itemType} updated successfully!`, "success");
     } catch (error: any) {
+      const itemType = tabValue === 0 ? "announcement" : tabValue === 1 ? "post" : "feedback";
       handleShowSnackbar(
-        error || `Failed to edit ${tabValue === 0 ? "announcement" : "post"}`,
+        error || `Failed to edit ${itemType}`,
         "error"
       );
     }
@@ -1158,17 +1227,19 @@ export const CommunityPage: React.FC = () => {
       if (tabValue === 0) {
         // Delete announcement
         await dispatch(deleteAnnouncement(itemId)).unwrap();
-      } else {
+      } else if (tabValue === 1) {
         // Delete post
         await dispatch(deletePost(itemId)).unwrap();
+      } else {
+        // Delete feedback
+        await dispatch(deleteFeedback(itemId)).unwrap();
       }
-      handleShowSnackbar(
-        `${tabValue === 0 ? "Announcement" : "Post"} deleted successfully!`,
-        "success"
-      );
+      const itemType = tabValue === 0 ? "Announcement" : tabValue === 1 ? "Post" : "Feedback";
+      handleShowSnackbar(`${itemType} deleted successfully!`, "success");
     } catch (error: any) {
+      const itemType = tabValue === 0 ? "announcement" : tabValue === 1 ? "post" : "feedback";
       handleShowSnackbar(
-        error || `Failed to delete ${tabValue === 0 ? "announcement" : "post"}`,
+        error || `Failed to delete ${itemType}`,
         "error"
       );
     }
@@ -1176,19 +1247,12 @@ export const CommunityPage: React.FC = () => {
 
   const handleReportItem = async (itemId: string, reason: string) => {
     try {
-      handleShowSnackbar(
-        `${tabValue === 0 ? "Announcement" : "Post"} reported successfully!`,
-        "info"
-      );
+      const itemType = tabValue === 0 ? "Announcement" : tabValue === 1 ? "Post" : "Feedback";
+      handleShowSnackbar(`${itemType} reported successfully!`, "info");
     } catch (error) {
-      console.error(
-        `Failed to report ${tabValue === 0 ? "announcement" : "post"}:`,
-        error
-      );
-      handleShowSnackbar(
-        `Failed to report ${tabValue === 0 ? "announcement" : "post"}`,
-        "error"
-      );
+      const itemType = tabValue === 0 ? "announcement" : tabValue === 1 ? "post" : "feedback";
+      console.error(`Failed to report ${itemType}:`, error);
+      handleShowSnackbar(`Failed to report ${itemType}`, "error");
     }
   };
 
@@ -1217,7 +1281,7 @@ export const CommunityPage: React.FC = () => {
       event.preventDefault();
       setDragOver(false);
 
-      if (isSubmitting) return; // Simplified check
+      if (isSubmitting) return;
 
       const files = Array.from(event.dataTransfer.files);
       if (files.length > 0) {
@@ -1249,7 +1313,7 @@ export const CommunityPage: React.FC = () => {
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-      if (!isSubmitting) { // Simplified check
+      if (!isSubmitting) {
         setDragOver(true);
       }
     },
@@ -1281,13 +1345,23 @@ export const CommunityPage: React.FC = () => {
       return announcements.map((announcement) => ({
         ...announcement,
         isAnnouncement: true,
+        isFeedback: false,
         mediaUrls: [],
       }));
-    } else {
+    } else if (tabValue === 1) {
       return posts.map((post) => ({
         ...post,
         isAnnouncement: false,
+        isFeedback: false,
         mediaUrls: post.mediaUrls || [],
+      }));
+    } else {
+      // NEW: Handle feedback tab
+      return feedback.map((feedbackItem) => ({
+        ...feedbackItem,
+        isAnnouncement: false,
+        isFeedback: true,
+        mediaUrls: feedbackItem.mediaUrls || [],
       }));
     }
   };
@@ -1295,12 +1369,14 @@ export const CommunityPage: React.FC = () => {
   const filteredItems = getFilteredItems();
 
   const hasContent = newPost.trim() || selectedMedia.length > 0;
-  // **MODIFIED**: Simplified postButtonText to remove announcement logic
-  const postButtonText =
-    selectedMedia.length > 0
-      ? `Post with ${selectedMedia.length} ${selectedMedia.length === 1 ? "file" : "files"
-      }`
-      : "Post";
+  // Updated postButtonText to handle feedback
+  const postButtonText = tabValue === 2 
+    ? (selectedMedia.length > 0 
+        ? `Share Feedback with ${selectedMedia.length} ${selectedMedia.length === 1 ? "file" : "files"}`
+        : "Share Feedback")
+    : (selectedMedia.length > 0
+        ? `Post with ${selectedMedia.length} ${selectedMedia.length === 1 ? "file" : "files"}`
+        : "Post");
 
   // Show loading only on initial load
   if (loading && filteredItems.length === 0) {
@@ -1329,16 +1405,16 @@ export const CommunityPage: React.FC = () => {
         </Alert>
       )}
 
-      {/* **MODIFIED**: Enhanced Create Post Card (now only shows for posts tab) */}
-      {tabValue === 1 && (
+      {/* Enhanced Create Post Card (now shows for posts and feedback tabs) */}
+      {(tabValue === 1 || tabValue === 2) && (
         <Card
           sx={{
             mb: 4,
             position: "relative",
             overflow: "visible",
             border: dragOver ? "2px dashed" : "1px solid",
-            borderColor: dragOver ? "primary.main" : "divider",
-            bgcolor: dragOver ? "primary.50" : "background.paper",
+            borderColor: dragOver ? (tabValue === 2 ? "success.main" : "primary.main") : "divider",
+            bgcolor: dragOver ? (tabValue === 2 ? "success.50" : "primary.50") : "background.paper",
             transition: "all 0.3s ease",
           }}
           onDrop={handleDrop}
@@ -1371,10 +1447,11 @@ export const CommunityPage: React.FC = () => {
                   fullWidth
                   multiline
                   rows={hasContent ? 3 : 2}
-                  // **MODIFIED**: Simplified placeholder text
                   placeholder={
                     dragOver
                       ? "Drop files here or type your message..."
+                      : tabValue === 2
+                      ? "Share your feedback, suggestions, or experiences with the app..."
                       : "Share your thoughts, ask questions, or celebrate achievements..."
                   }
                   value={newPost}
@@ -1385,7 +1462,7 @@ export const CommunityPage: React.FC = () => {
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
                       fontSize: "1rem",
-                      bgcolor: dragOver ? "primary.50" : "background.paper",
+                      bgcolor: dragOver ? (tabValue === 2 ? "success.50" : "primary.50") : "background.paper",
                       transition: "all 0.3s ease",
                     },
                   }}
@@ -1404,11 +1481,11 @@ export const CommunityPage: React.FC = () => {
                       onClick={() => setMediaExpanded(!mediaExpanded)}
                       sx={{
                         borderRadius: 6,
-                        bgcolor: "success.50",
-                        borderColor: "success.main",
-                        color: "success.main",
+                        bgcolor: tabValue === 2 ? "success.50" : "success.50",
+                        borderColor: tabValue === 2 ? "success.main" : "success.main",
+                        color: tabValue === 2 ? "success.main" : "success.main",
                         "&:hover": {
-                          bgcolor: "success.100",
+                          bgcolor: tabValue === 2 ? "success.100" : "success.100",
                         },
                       }}
                     >
@@ -1441,7 +1518,7 @@ export const CommunityPage: React.FC = () => {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  bgcolor: "rgba(25, 118, 210, 0.1)",
+                  bgcolor: tabValue === 2 ? "rgba(46, 125, 50, 0.1)" : "rgba(25, 118, 210, 0.1)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1453,7 +1530,7 @@ export const CommunityPage: React.FC = () => {
                   sx={{
                     p: 3,
                     textAlign: "center",
-                    bgcolor: "primary.main",
+                    bgcolor: tabValue === 2 ? "success.main" : "primary.main",
                     color: "white",
                     borderRadius: 2,
                   }}
@@ -1463,7 +1540,7 @@ export const CommunityPage: React.FC = () => {
                     Drop files to attach
                   </Typography>
                   <Typography variant="body2">
-                    They'll be uploaded when you post
+                    They'll be uploaded when you {tabValue === 2 ? "share feedback" : "post"}
                   </Typography>
                 </Paper>
               </Box>
@@ -1477,12 +1554,12 @@ export const CommunityPage: React.FC = () => {
               <Tooltip title="Add photos/videos">
                 <IconButton
                   size="medium"
-                  color="primary"
+                  color={tabValue === 2 ? "success" : "primary"}
                   disabled={isSubmitting}
                   onClick={() => setMediaExpanded(!mediaExpanded)}
                   sx={{
                     "&:hover": {
-                      bgcolor: "primary.50",
+                      bgcolor: tabValue === 2 ? "success.50" : "primary.50",
                       transform: "scale(1.1)",
                     },
                     transition: "all 0.2s ease",
@@ -1498,7 +1575,7 @@ export const CommunityPage: React.FC = () => {
               </Tooltip>
 
               {hasContent && (
-                <Tooltip title="Clear post">
+                <Tooltip title={`Clear ${tabValue === 2 ? "feedback" : "post"}`}>
                   <IconButton
                     size="medium"
                     color="error"
@@ -1523,14 +1600,13 @@ export const CommunityPage: React.FC = () => {
                 <Stack direction="row" spacing={1} alignItems="center">
                   <CircularProgress size={16} />
                   <Typography variant="caption" color="text.secondary">
-                    {/* **MODIFIED**: Simplified loading text */}
                     {uploadProgress < 25
                       ? "Preparing..."
                       : uploadProgress < 75
-                        ? "Uploading media..."
-                        : uploadProgress < 95
-                          ? "Creating post..."
-                          : "Almost done..."}
+                      ? "Uploading media..."
+                      : uploadProgress < 95
+                      ? tabValue === 2 ? "Sharing feedback..." : "Creating post..."
+                      : "Almost done..."}
                   </Typography>
                 </Stack>
               )}
@@ -1544,16 +1620,13 @@ export const CommunityPage: React.FC = () => {
                   borderRadius: 8,
                   minWidth: 120,
                   fontWeight: 600,
-                  // **MODIFIED**: Simplified button color logic
-                  bgcolor:
-                    selectedMedia.length > 0
-                      ? "success.main"
-                      : "primary.main",
+                  bgcolor: tabValue === 2
+                    ? (selectedMedia.length > 0 ? "success.main" : "success.main")
+                    : (selectedMedia.length > 0 ? "success.main" : "primary.main"),
                   "&:hover": {
-                    bgcolor:
-                      selectedMedia.length > 0
-                        ? "success.dark"
-                        : "primary.dark",
+                    bgcolor: tabValue === 2
+                      ? (selectedMedia.length > 0 ? "success.dark" : "success.dark")
+                      : (selectedMedia.length > 0 ? "success.dark" : "primary.dark"),
                     transform: "translateY(-1px)",
                     boxShadow: 3,
                   },
@@ -1574,7 +1647,7 @@ export const CommunityPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Tabs */}
+      {/* Tabs - Updated to include Feedback */}
       <Tabs
         value={tabValue}
         onChange={handleTabChange}
@@ -1587,7 +1660,15 @@ export const CommunityPage: React.FC = () => {
           icon={<Campaign />}
           iconPosition="start"
         />
-        <Tab label={`Community Posts`} />
+        <Tab label={`Community Posts`} 
+        icon={<People/>}
+        iconPosition="start"
+        />
+        <Tab
+          label={`Questions, Feedback and Fixes`}
+          icon={<FeedbackIcon />}
+          iconPosition="start"
+        />
       </Tabs>
 
       {/* Items */}
@@ -1611,14 +1692,16 @@ export const CommunityPage: React.FC = () => {
       {filteredItems.length === 0 && !loading && (
         <Box sx={{ textAlign: "center", py: 4 }}>
           <Typography variant="h6" color="text.secondary">
-            No {tabValue === 0 ? "announcements" : "posts"} found
+            No {tabValue === 0 ? "announcements" : tabValue === 1 ? "posts" : "feedback"} found
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {tabValue === 0
               ? userRole === "ADMIN"
-                ? "No announcements yet." // Modified this for clarity
+                ? "No announcements yet."
                 : "No announcements yet."
-              : "Be the first to share something!"}
+              : tabValue === 1
+              ? "Be the first to share something!"
+              : "Be the first to share your feedback!"}
           </Typography>
         </Box>
       )}
@@ -1630,7 +1713,7 @@ export const CommunityPage: React.FC = () => {
             <Stack alignItems="center" spacing={2}>
               <CircularProgress size={32} />
               <Typography variant="body2" color="text.secondary">
-                Loading more {tabValue === 0 ? "announcements" : "posts"}...
+                Loading more {tabValue === 0 ? "announcements" : tabValue === 1 ? "posts" : "feedback"}...
               </Typography>
             </Stack>
           </Box>
