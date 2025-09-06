@@ -154,7 +154,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     },
     { title: 'Calendar', icon: <CalendarMonth sx={{ fontSize: 20 }} />, path: '/calendar' },
     { title: 'Profile', icon: <Person sx={{ fontSize: 20 }} />, path: '/profile' },
-    { title: 'Contact Us', icon: <ContactMail sx={{ fontSize: 20 }} />, path: 'mailto:info@uzumibi-jp.com', isExternalLink: true },
+    { title: 'Contact Us', icon: <ContactMail sx={{ fontSize: 20 }} />, path: 'mailto:admin@uzumibi-jp.com', isExternalLink: true },
   ];
 
   if (user?.role === 'ADMIN') {
