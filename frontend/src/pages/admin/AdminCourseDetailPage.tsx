@@ -809,18 +809,19 @@ export const AdminCourseDetailPage: React.FC = () => {
                                     Quiz Questions
                                 </Typography>
                                 <QuizBuilder
+                                    key={editingLesson?.id || 'new-quiz'}
                                     initialQuestions={lessonForm.contentData?.questions || []}
                                     passingScore={lessonForm.passingScore}
                                     timeLimit={lessonForm.contentData?.timeLimit}
                                     onChange={(questions, settings) => {
-                                        setLessonForm({
-                                            ...lessonForm,
+                                        setLessonForm((prev) => ({
+                                            ...prev,
                                             contentData: {
                                                 questions,
                                                 timeLimit: settings.timeLimit,
                                             },
                                             passingScore: settings.passingScore,
-                                        });
+                                        }));
                                     }}
                                 />
                             </Box>
@@ -832,12 +833,13 @@ export const AdminCourseDetailPage: React.FC = () => {
                                     Slide Content
                                 </Typography>
                                 <SlidesBuilder
+                                    key={editingLesson?.id || 'new-slides'}
                                     initialSlides={lessonForm.contentData?.slides || []}
                                     onChange={(slides) => {
-                                        setLessonForm({
-                                            ...lessonForm,
+                                        setLessonForm((prev) => ({
+                                            ...prev,
                                             contentData: { slides },
-                                        });
+                                        }));
                                     }}
                                 />
                             </Box>
