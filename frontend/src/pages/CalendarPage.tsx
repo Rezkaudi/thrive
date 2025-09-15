@@ -262,7 +262,12 @@ export const CalendarPage: React.FC = () => {
     compact?: boolean;
   }) => {
     const isBooked = myBookings.some((b) => b.sessionId === session.id);
-    const isPast = new Date(session.scheduledAt) < new Date();
+    // const isPast = new Date(session.scheduledAt) < new Date();
+
+    const sessionStartTime = new Date(session.scheduledAt);
+    const sessionEndTime = new Date(sessionStartTime.getTime() + session.duration * 60000);
+    const isPast = sessionEndTime < new Date();
+
     const isFull = session.currentParticipants >= session.maxParticipants;
 
     return (
