@@ -35,57 +35,57 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
   const correctOrder = Array.isArray(item.correctOrder) ? item.correctOrder : [];
   const distractors = Array.isArray(item.distractors) ? item.distractors : [];
 
-  // Clean up any existing empty words on component mount
+  // Clean up any existing empty words on component mount (index-safe for duplicates)
   useEffect(() => {
-    const hasEmptyWords = words.some(word => !word || word.trim() === '');
-    if (hasEmptyWords) {
-      const cleanWords = words.filter(word => word && word.trim() !== '');
-      const cleanOrder = correctOrder
-        .map(orderIndex => {
-          const word = words[orderIndex];
-          return word && word.trim() !== '' ? cleanWords.indexOf(word) : -1;
-        })
-        .filter(index => index >= 0);
+    // Build a map from old index -> new index, skipping empties by position
+    const indexMap: Record<number, number> = {};
+    const cleanWords: string[] = [];
+    words.forEach((w, i) => {
+      if (w && w.trim() !== '') {
+        indexMap[i] = cleanWords.length;
+        cleanWords.push(w.trim());
+      }
+    });
 
-      onUpdate({
-        words: cleanWords,
-        correctOrder: cleanOrder
-      });
-    }
+    // If nothing changed, bail
+    if (cleanWords.length === words.length) return;
+
+    // Remap correctOrder using the indexMap (drop entries pointing to removed empties)
+    const cleanOrder = correctOrder
+      .map((oldIdx) => Object.prototype.hasOwnProperty.call(indexMap, oldIdx) ? indexMap[oldIdx] : -1)
+      .filter((idx) => idx >= 0);
+
+    onUpdate({
+      words: cleanWords,
+      correctOrder: cleanOrder
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle adding words to the correct sentence
+  // Handle adding words to the correct sentence (duplicates allowed)
   const handleAddWord = () => {
-    if (newWord.trim()) {
-      const trimmedWord = newWord.trim();
-      if (words.includes(trimmedWord) || distractors.includes(trimmedWord)) {
-        return; // Don't add duplicate words
-      }
+    const trimmedWord = newWord.trim();
+    if (!trimmedWord) return;
 
-      const updatedWords = [...words, trimmedWord];
-      const newIndex = words.length;
-      const updatedOrder = [...correctOrder, newIndex];
+    const updatedWords = [...words, trimmedWord];
+    const newIndex = words.length;
+    const updatedOrder = [...correctOrder, newIndex];
 
-      onUpdate({
-        words: updatedWords,
-        correctOrder: updatedOrder
-      });
-      setNewWord('');
-    }
+    onUpdate({
+      words: updatedWords,
+      correctOrder: updatedOrder
+    });
+    setNewWord('');
   };
 
-  // Handle adding distractor words
+  // Handle adding distractor words (duplicates allowed)
   const handleAddDistractor = () => {
-    if (newDistractor.trim()) {
-      const trimmedWord = newDistractor.trim();
-      if (words.includes(trimmedWord) || distractors.includes(trimmedWord)) {
-        return; // Don't add duplicate words
-      }
+    const trimmed = newDistractor.trim();
+    if (!trimmed) return;
 
-      const updatedDistractors = [...distractors, trimmedWord];
-      onUpdate({ distractors: updatedDistractors });
-      setNewDistractor('');
-    }
+    const updatedDistractors = [...distractors, trimmed];
+    onUpdate({ distractors: updatedDistractors });
+    setNewDistractor('');
   };
 
   // Handle removing distractor words
@@ -94,13 +94,14 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
     onUpdate({ distractors: updatedDistractors });
   };
 
+  // Remove a word (by index) from words and reindex correctOrder
   const handleRemoveWord = (indexToRemove: number) => {
     if (words.length <= 0) return;
 
     const updatedWords = words.filter((_, i) => i !== indexToRemove);
     const updatedOrder = correctOrder
       .filter(orderIndex => orderIndex !== indexToRemove)
-      .map(orderIndex => orderIndex > indexToRemove ? orderIndex - 1 : orderIndex);
+      .map(orderIndex => (orderIndex > indexToRemove ? orderIndex - 1 : orderIndex));
 
     onUpdate({
       words: updatedWords,
@@ -108,7 +109,7 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
     });
   };
 
-  // Drag and drop handlers (existing code)
+  // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -164,19 +165,13 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
             label="Add correct word"
             value={newWord}
             onChange={(e) => setNewWord(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddWord()}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddWord()}
             placeholder="e.g., 私, です, 学生"
             sx={{ maxWidth: 300 }}
-            helperText={
-              (words.includes(newWord.trim()) || distractors.includes(newWord.trim())) && newWord.trim()
-                ? "Word already exists"
-                : ""
-            }
-            error={(words.includes(newWord.trim()) || distractors.includes(newWord.trim())) && newWord.trim() !== ""}
           />
           <IconButton
             onClick={handleAddWord}
-            disabled={!newWord.trim() || words.includes(newWord.trim()) || distractors.includes(newWord.trim())}
+            disabled={!newWord.trim()}
             color="success"
             sx={{
               bgcolor: 'success.main',
@@ -286,19 +281,13 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
             label="Add distractor word"
             value={newDistractor}
             onChange={(e) => setNewDistractor(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddDistractor()}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddDistractor()}
             placeholder="e.g., 猫, 食べます, 本"
             sx={{ maxWidth: 300 }}
-            helperText={
-              (words.includes(newDistractor.trim()) || distractors.includes(newDistractor.trim())) && newDistractor.trim()
-                ? "Word already exists"
-                : ""
-            }
-            error={(words.includes(newDistractor.trim()) || distractors.includes(newDistractor.trim())) && newDistractor.trim() !== ""}
           />
           <IconButton
             onClick={handleAddDistractor}
-            disabled={!newDistractor.trim() || words.includes(newDistractor.trim()) || distractors.includes(newDistractor.trim())}
+            disabled={!newDistractor.trim()} // allow duplicates; only block empty
             color="error"
             sx={{
               bgcolor: 'error.main',
@@ -462,7 +451,6 @@ export const SentenceBuilderEditor: React.FC<SentenceBuilderEditorProps> = ({
                 🎲 Available Words (shuffled for students):
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {/* Combine and shuffle all words for preview */}
                 {[...getOrderedWords(), ...distractors]
                   .sort(() => Math.random() - 0.5) // Simple shuffle for preview
                   .map((word, i) => {
