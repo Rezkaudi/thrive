@@ -5,7 +5,7 @@ import { authService } from '../../services/authService';
 import { subscriptionService } from '../../services/subscriptionService';
 
 
-interface User {
+export interface User {
   id: string;
   email: string;
   role: string;
