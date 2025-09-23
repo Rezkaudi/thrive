@@ -10,6 +10,7 @@ export interface ISession {
   type: SessionType;
   hostId: string;
   meetingUrl?: string;
+  location? :string;
   scheduledAt: Date;
   duration: number; // in minutes
   maxParticipants: number;
@@ -31,6 +32,7 @@ export class Session implements ISession {
     public type: SessionType,
     public hostId: string,
     public meetingUrl: string | undefined,
+    public location: string | undefined,
     public scheduledAt: Date,
     public duration: number,
     public maxParticipants: number,

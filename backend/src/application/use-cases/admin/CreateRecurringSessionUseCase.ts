@@ -10,6 +10,7 @@ export interface CreateRecurringSessionDTO {
   type: SessionType;
   hostId?: string;
   meetingUrl?: string;
+  location? :string;
   scheduledAt: Date;
   duration: number;
   maxParticipants: number;
@@ -46,6 +47,7 @@ export class CreateRecurringSessionUseCase {
       dto.type,
       dto.hostId || dto.adminId,
       dto.meetingUrl,
+      dto.location,
       dto.scheduledAt,
       dto.duration,
       dto.maxParticipants,
@@ -73,6 +75,7 @@ export class CreateRecurringSessionUseCase {
         dto.type,
         dto.hostId || dto.adminId,
         dto.meetingUrl,
+        dto.location,
         recurringDate,
         dto.duration,
         dto.maxParticipants,
