@@ -4,6 +4,7 @@ import { ISubscriptionRepository } from '../../../domain/repositories/ISubscript
 import { Subscription, SubscriptionPlan, SubscriptionStatus } from '../../../domain/entities/Subscription';
 import { PaymentService } from '../../../infrastructure/services/PaymentService';
 import Stripe from 'stripe';
+import { ENV_CONFIG } from '../../../infrastructure/config/env.config';
 
 export interface HandleSubscriptionWebhookDTO {
     event: Stripe.Event;
@@ -295,11 +296,11 @@ export class HandleSubscriptionWebhookUseCase {
         // Map your Stripe price IDs to subscription plans
         // You should store these in environment variables
         const priceMappings: Record<string, SubscriptionPlan> = {
-            [process.env.STRIPE_MONTHLY_PRICE_ID || '']: 'monthly',
-            [process.env.STRIPE_YEARLY_PRICE_ID || '']: 'yearly',
-            [process.env.STRIPE_ONE_TIME_PRICE_ID || '']: 'one-time',
-            [process.env.STRIPE_MONTHLY_DISCOUNT_PRICE_ID || '']: 'monthly',
-            [process.env.STRIPE_YEARLY_DISCOUNT_PRICE_ID || '']: 'yearly',
+            [ENV_CONFIG.STRIPE_MONTHLY_PRICE_ID || '']: 'monthly',
+            [ENV_CONFIG.STRIPE_YEARLY_PRICE_ID || '']: 'yearly',
+            [ENV_CONFIG.STRIPE_ONE_TIME_PRICE_ID || '']: 'one-time',
+            [ENV_CONFIG.STRIPE_MONTHLY_DISCOUNT_PRICE_ID || '']: 'monthly',
+            [ENV_CONFIG.STRIPE_YEARLY_DISCOUNT_PRICE_ID || '']: 'yearly',
         };
 
         // Try to get plan from price ID mapping
