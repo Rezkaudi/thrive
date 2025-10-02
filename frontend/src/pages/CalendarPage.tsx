@@ -43,6 +43,7 @@ import {
   Cancel,
   ContentCopy,
   Refresh,
+  Schedule,
 } from "@mui/icons-material";
 import {
   format,
@@ -251,6 +252,34 @@ export const CalendarPage: React.FC = () => {
     return sessions.filter((s) => isSameDay(new Date(s.scheduledAt), date));
   };
 
+  const getTimeUntilSession = (sessionDate: string) => {
+    const sessionTime = new Date(sessionDate);
+    const now = new Date();
+    const hoursUntil = (sessionTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursUntil;
+  };
+
+  const isWithin24Hours = (sessionDate: string) => {
+    const hoursUntil = getTimeUntilSession(sessionDate);
+    return hoursUntil <= 24 && hoursUntil > 0;
+  };
+
+  const formatTimeUntilSession = (sessionDate: string) => {
+    const hoursUntil = getTimeUntilSession(sessionDate);
+
+    if (hoursUntil < 0) {
+      return 'Session has passed';
+    } else if (hoursUntil < 1) {
+      const minutesUntil = Math.floor(hoursUntil * 60);
+      return `${minutesUntil} minutes`;
+    } else if (hoursUntil < 24) {
+      return `${Math.floor(hoursUntil)} hours`;
+    } else {
+      const daysUntil = Math.floor(hoursUntil / 24);
+      return `${daysUntil} day${daysUntil !== 1 ? 's' : ''}`;
+    }
+  };
+
   const calendarDays = generateCalendarDays();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -262,13 +291,15 @@ export const CalendarPage: React.FC = () => {
     compact?: boolean;
   }) => {
     const isBooked = myBookings.some((b) => b.sessionId === session.id);
-    // const isPast = new Date(session.scheduledAt) < new Date();
 
     const sessionStartTime = new Date(session.scheduledAt);
     const sessionEndTime = new Date(sessionStartTime.getTime() + session.duration * 60000);
     const isPast = sessionEndTime < new Date();
-
     const isFull = session.currentParticipants >= session.maxParticipants;
+
+    // NEW: Check if within 24 hours
+    const within24Hours = isWithin24Hours(session.scheduledAt);
+    const timeUntilSession = formatTimeUntilSession(session.scheduledAt);
 
     return (
       <motion.div
@@ -281,7 +312,7 @@ export const CalendarPage: React.FC = () => {
             mb: 2,
             opacity: isPast ? 0.7 : 1,
             border: isBooked ? "2px solid" : "1px solid",
-            borderColor: isBooked ? "primary.main" : "divider",
+            borderColor: isBooked ? "primary.main" : within24Hours && !isBooked ? "warning.main" : "divider",
           }}
         >
           <CardContent sx={{ p: compact ? 2 : 3 }}>
@@ -305,6 +336,15 @@ export const CalendarPage: React.FC = () => {
                       label="Booked"
                       size="small"
                       color="primary"
+                    />
+                  )}
+                  {within24Hours && !isBooked && !isPast && (
+                    <Chip
+                      icon={<AccessTime />}
+                      label="24h Notice Required"
+                      size="small"
+                      color="warning"
+                      variant="outlined"
                     />
                   )}
                 </Stack>
@@ -332,6 +372,20 @@ export const CalendarPage: React.FC = () => {
                   ({session.duration} min)
                 </Typography>
               </Stack>
+
+              {/* NEW: Show time until session */}
+              {!isPast && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Schedule fontSize="small" color="action" />
+                  <Typography
+                    variant="body2"
+                    color={within24Hours ? "warning.main" : "text.secondary"}
+                    fontWeight={within24Hours ? 600 : 400}
+                  >
+                    {timeUntilSession} until session
+                  </Typography>
+                </Stack>
+              )}
 
               <Stack direction="row" spacing={1} alignItems="center">
                 <Group fontSize="small" color="action" />
@@ -425,7 +479,9 @@ export const CalendarPage: React.FC = () => {
                       ? "Session Ended"
                       : isFull
                         ? "Session Full"
-                        : "Book Session"}
+                        : within24Hours
+                          ? "24h Notice Required"
+                          : "Book Session"}
                   </Button>
                 )}
               </Stack>
@@ -769,6 +825,19 @@ export const CalendarPage: React.FC = () => {
                 <strong>Duration:</strong> {bookingDialog?.duration} minutes
               </Typography>
 
+              {/* NEW: Show time until session */}
+              {bookingDialog && (
+                <Typography variant="body2">
+                  <strong>Time until session:</strong>{" "}
+                  <span style={{
+                    color: isWithin24Hours(bookingDialog.scheduledAt) ? '#ed6c02' : '#483C32',
+                    fontWeight: isWithin24Hours(bookingDialog.scheduledAt) ? 600 : 400
+                  }}>
+                    {formatTimeUntilSession(bookingDialog.scheduledAt)}
+                  </span>
+                </Typography>
+              )}
+
               <Typography variant="body2">
                 <strong>Points Required:</strong>{" "}
                 {bookingDialog?.pointsRequired === 0 ? (
@@ -789,7 +858,19 @@ export const CalendarPage: React.FC = () => {
               </Typography>
             </Stack>
 
-            {status === "active" && eligibility && !eligibility.canBook && (
+            {/* NEW: 24-hour warning */}
+            {bookingDialog && isWithin24Hours(bookingDialog.scheduledAt) && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Booking Not Available
+                </Typography>
+                <Typography variant="body2">
+                  Sessions must be booked at least 24 hours in advance. This session starts in {formatTimeUntilSession(bookingDialog.scheduledAt)}.
+                </Typography>
+              </Alert>
+            )}
+
+            {status === "active" && eligibility && !eligibility.canBook && bookingDialog && !isWithin24Hours(bookingDialog.scheduledAt) && (
               <Alert severity="warning">
                 <Typography variant="body2" fontWeight={600} gutterBottom>
                   Cannot book this session:
@@ -804,7 +885,7 @@ export const CalendarPage: React.FC = () => {
               </Alert>
             )}
 
-            {status === "active" && eligibility?.canBook && (
+            {status === "active" && eligibility?.canBook && bookingDialog && !isWithin24Hours(bookingDialog.scheduledAt) && (
               <Alert severity="success">
                 You're eligible to book this session!
               </Alert>
@@ -844,14 +925,23 @@ export const CalendarPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBookingDialog(null)}>Cancel</Button>
-          {status === "active" ? <Button
-            variant="contained"
-            onClick={handleBookSession}
-            loading={bookLoading}
-            disabled={!eligibility?.canBook}
-          >
-            Confirm Booking {bookLoading && "..."}
-          </Button> :
+          {status === "active" ?
+            <Button
+              variant="contained"
+              onClick={handleBookSession}
+              loading={bookLoading}
+              disabled={
+                !eligibility?.canBook ||
+                (!!(bookingDialog && isWithin24Hours(bookingDialog?.scheduledAt)))
+              }
+            >
+              {(bookingDialog && isWithin24Hours(bookingDialog.scheduledAt))
+                ? "24h Notice Required"
+                : bookLoading
+                  ? "Booking..."
+                  : "Confirm Booking"
+              }
+            </Button> :
             <Button
               variant="contained"
               onClick={hasAccessToCourses ? handleSubscription : () => navigate("/subscription")}
