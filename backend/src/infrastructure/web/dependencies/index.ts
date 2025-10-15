@@ -520,7 +520,8 @@ export const setupDependencies = (): DependencyContainer => {
         // Admin - User Management
         getUsers: new GetUsersUseCase(
             repositories.user,
-            repositories.profile
+            repositories.profile,
+            repositories.subscription
         ),
         updateUserStatus: new UpdateUserStatusUseCase(
             repositories.user
