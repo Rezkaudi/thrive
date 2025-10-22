@@ -511,7 +511,7 @@ export const SubscriptionPage: React.FC = () => {
                                                             <Typography variant="button">
                                                                 Claim Your Discount
                                                             </Typography>
-                                                            <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                                                            <Typography variant="caption" sx={{ fontSize: 20}}>
                                                                 {hasSubscription ? 'Subscribe Now' : '14-Day Free Trial'}
                                                             </Typography>
                                                         </Stack>
