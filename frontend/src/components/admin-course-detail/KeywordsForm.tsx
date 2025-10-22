@@ -1,10 +1,5 @@
-import React from "react";
-import {
-  Control,
-  FieldErrors,
-  UseFormSetValue,
-  UseFormWatch,
-} from "react-hook-form";
+import React, { memo, useCallback } from "react";
+import { Control, FieldErrors, useFieldArray } from "react-hook-form";
 import {
   Box,
   Stack,
@@ -25,59 +20,223 @@ import {
 } from "@mui/icons-material";
 import { Keyword, LessonFormState } from "../../types/lsesson-form.types";
 import { KeywordsSummary } from "./KeywordsSummary";
-import { BulkAudioManager } from "../admin/BulkAudioManager";
 
 interface KeywordsFormProps {
   control: Control<LessonFormState>;
   errors: FieldErrors<LessonFormState>;
   isMobile: boolean;
-  setValue: UseFormSetValue<LessonFormState>;
-  watch: UseFormWatch<LessonFormState>;
   setBulkAudioDialog: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+// Memoized individual keyword item to prevent re-renders of all items when one changes
+interface KeywordItemProps {
+  index: number;
+  keyword: Keyword;
+  onUpdate: (index: number, field: keyof Keyword, value: string) => void;
+  onRemove: (index: number) => void;
+}
+
+const KeywordItem = memo<KeywordItemProps>(
+  ({ index, keyword, onUpdate, onRemove }) => {
+    return (
+      <Paper sx={{ p: 2 }}>
+        <Stack spacing={2}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="subtitle2" fontWeight={600}>
+              Keyword {index + 1}
+            </Typography>
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() => onRemove(index)}
+            >
+              <DeleteOutline />
+            </IconButton>
+          </Stack>
+
+          {/* Word Section */}
+          <Typography variant="body2" fontWeight={500} color="primary">
+            Word/Phrase
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Japanese Text"
+                defaultValue={keyword.japaneseText}
+                onBlur={(e) => onUpdate(index, "japaneseText", e.target.value)}
+                placeholder="こんにちは"
+                InputProps={{
+                  startAdornment: (
+                    <Translate sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="English Text"
+                defaultValue={keyword.englishText}
+                onBlur={(e) => onUpdate(index, "englishText", e.target.value)}
+                placeholder="Hello"
+                InputProps={{
+                  startAdornment: (
+                    <Translate sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          {/* Sentence Section */}
+          <Typography variant="body2" fontWeight={500} color="secondary">
+            Example Sentences
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label="Japanese Sentence"
+                defaultValue={keyword.japaneseSentence}
+                onBlur={(e) =>
+                  onUpdate(index, "japaneseSentence", e.target.value)
+                }
+                placeholder="こんにちは、元気ですか？"
+                InputProps={{
+                  startAdornment: (
+                    <Translate sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label="English Sentence"
+                defaultValue={keyword.englishSentence}
+                onBlur={(e) =>
+                  onUpdate(index, "englishSentence", e.target.value)
+                }
+                placeholder="Hello, how are you?"
+                InputProps={{
+                  startAdornment: (
+                    <Translate sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          {/* Audio Section */}
+          <Typography variant="body2" fontWeight={500} color="info">
+            Audio Files
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="Japanese Word Audio URL"
+                defaultValue={keyword.japaneseAudioUrl}
+                onBlur={(e) =>
+                  onUpdate(index, "japaneseAudioUrl", e.target.value)
+                }
+                placeholder="https://s3.../japanese-word.mp3"
+                InputProps={{
+                  startAdornment: (
+                    <VolumeUp sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="English Word Audio URL"
+                defaultValue={keyword.englishAudioUrl}
+                onBlur={(e) =>
+                  onUpdate(index, "englishAudioUrl", e.target.value)
+                }
+                placeholder="https://s3.../english-word.mp3"
+                InputProps={{
+                  startAdornment: (
+                    <VolumeUp sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="Japanese Sentence Audio URL"
+                defaultValue={keyword.japaneseSentenceAudioUrl}
+                onBlur={(e) =>
+                  onUpdate(index, "japaneseSentenceAudioUrl", e.target.value)
+                }
+                placeholder="https://s3.../japanese-sentence.mp3"
+                InputProps={{
+                  startAdornment: (
+                    <VolumeUp sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
+        </Stack>
+      </Paper>
+    );
+  }
+);
+
+KeywordItem.displayName = "KeywordItem";
+
 export const KeywordsForm: React.FC<KeywordsFormProps> = ({
+  control,
   errors,
   isMobile,
-  setValue,
-  watch,
   setBulkAudioDialog,
 }) => {
-  const keywords = (watch("keywords") ?? []) as Keyword[];
+  const { fields, append, remove, update } = useFieldArray({
+    control,
+    name: "keywords",
+  });
 
-  const writeKeywords = (next: Keyword[]) => {
-    setValue("keywords", next, { shouldDirty: true, shouldValidate: true });
-  };
+  const addKeyword = useCallback(() => {
+    append({
+      englishText: "",
+      japaneseText: "",
+      englishAudioUrl: "",
+      japaneseAudioUrl: "",
+      englishSentence: "",
+      japaneseSentence: "",
+      japaneseSentenceAudioUrl: "",
+    });
+  }, [append]);
 
-  const addKeyword = () => {
-    writeKeywords([
-      ...keywords,
-      {
-        englishText: "",
-        japaneseText: "",
-        englishAudioUrl: "",
-        japaneseAudioUrl: "",
-        englishSentence: "",
-        japaneseSentence: "",
-        japaneseSentenceAudioUrl: "",
-      },
-    ]);
-  };
+  const removeKeyword = useCallback(
+    (index: number) => {
+      remove(index);
+    },
+    [remove]
+  );
 
-  const removeKeyword = (index: number) => {
-    const next = keywords.filter((_, i) => i !== index);
-    writeKeywords(next);
-  };
-
-  const updateKeyword = (
-    index: number,
-    field: keyof Keyword,
-    value: string
-  ) => {
-    const next = [...keywords];
-    next[index] = { ...next[index], [field]: value };
-    writeKeywords(next);
-  };
+  const updateKeyword = useCallback(
+    (index: number, field: keyof Keyword, value: string) => {
+      const currentField = fields[index];
+      if (currentField) {
+        update(index, { ...currentField, [field]: value });
+      }
+    },
+    [fields, update]
+  );
 
   return (
     <Box>
@@ -116,7 +275,7 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
         </Alert>
       )}
 
-      {keywords.length === 0 ? (
+      {fields.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: "center", bgcolor: "grey.50" }}>
           <Typography color="text.secondary" gutterBottom>
             No keywords added yet. You can:
@@ -146,183 +305,21 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
         </Paper>
       ) : (
         <Stack spacing={2}>
-          {keywords.map((keyword, index) => (
-            <Paper key={index} sx={{ p: 2 }}>
-              <Stack spacing={2}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    Keyword {index + 1}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => removeKeyword(index)}
-                  >
-                    <DeleteOutline />
-                  </IconButton>
-                </Stack>
-
-                {/* Word Section */}
-                <Typography variant="body2" fontWeight={500} color="primary">
-                  Word/Phrase
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      label="Japanese Text"
-                      value={keyword.japaneseText}
-                      onChange={(e) =>
-                        updateKeyword(index, "japaneseText", e.target.value)
-                      }
-                      placeholder="こんにちは"
-                      InputProps={{
-                        startAdornment: (
-                          <Translate sx={{ mr: 1, color: "action.active" }} />
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      label="English Text"
-                      value={keyword.englishText}
-                      onChange={(e) =>
-                        updateKeyword(index, "englishText", e.target.value)
-                      }
-                      placeholder="Hello"
-                      InputProps={{
-                        startAdornment: (
-                          <Translate sx={{ mr: 1, color: "action.active" }} />
-                        ),
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-
-                {/* Sentence Section */}
-                <Typography variant="body2" fontWeight={500} color="secondary">
-                  Example Sentences
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={2}
-                      label="Japanese Sentence"
-                      value={keyword.japaneseSentence}
-                      onChange={(e) =>
-                        updateKeyword(index, "japaneseSentence", e.target.value)
-                      }
-                      placeholder="こんにちは、元気ですか？"
-                      InputProps={{
-                        startAdornment: (
-                          <Translate sx={{ mr: 1, color: "action.active" }} />
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={2}
-                      label="English Sentence"
-                      value={keyword.englishSentence}
-                      onChange={(e) =>
-                        updateKeyword(index, "englishSentence", e.target.value)
-                      }
-                      placeholder="Hello, how are you?"
-                      InputProps={{
-                        startAdornment: (
-                          <Translate sx={{ mr: 1, color: "action.active" }} />
-                        ),
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-
-                {/* Audio Section */}
-                <Typography variant="body2" fontWeight={500} color="info">
-                  Audio Files
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="Japanese Word Audio URL"
-                      value={keyword.japaneseAudioUrl}
-                      onChange={(e) =>
-                        updateKeyword(index, "japaneseAudioUrl", e.target.value)
-                      }
-                      placeholder="https://s3.../japanese-word.mp3"
-                      InputProps={{
-                        startAdornment: (
-                          <VolumeUp sx={{ mr: 1, color: "action.active" }} />
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="English Word Audio URL"
-                      value={keyword.englishAudioUrl}
-                      onChange={(e) =>
-                        updateKeyword(index, "englishAudioUrl", e.target.value)
-                      }
-                      placeholder="https://s3.../english-word.mp3"
-                      InputProps={{
-                        startAdornment: (
-                          <VolumeUp sx={{ mr: 1, color: "action.active" }} />
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="Japanese Sentence Audio URL"
-                      value={keyword.japaneseSentenceAudioUrl}
-                      onChange={(e) =>
-                        updateKeyword(
-                          index,
-                          "japaneseSentenceAudioUrl",
-                          e.target.value
-                        )
-                      }
-                      placeholder="https://s3.../japanese-sentence.mp3"
-                      InputProps={{
-                        startAdornment: (
-                          <VolumeUp sx={{ mr: 1, color: "action.active" }} />
-                        ),
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-              </Stack>
-            </Paper>
+          {fields.map((field, index) => (
+            <KeywordItem
+              key={field.id}
+              index={index}
+              keyword={field as Keyword}
+              onUpdate={updateKeyword}
+              onRemove={removeKeyword}
+            />
           ))}
         </Stack>
       )}
 
-      {keywords.length > 0 && (
-        <KeywordsSummary keywords={keywords} isMobile={isMobile} />
+      {fields.length > 0 && (
+        <KeywordsSummary keywords={fields as Keyword[]} isMobile={isMobile} />
       )}
-
-      {/* Bulk Audio dialog trigger is managed in parent via setBulkAudioDialog */}
-      <BulkAudioManager
-        open={false} // not used; left for import reference only
-        onClose={() => {}}
-        keywords={keywords}
-        onApply={() => {}}
-      />
     </Box>
   );
 };
