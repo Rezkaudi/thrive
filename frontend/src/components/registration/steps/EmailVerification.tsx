@@ -13,6 +13,7 @@ import {
 import { Email, CheckCircle, Send } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../../../services/api';
+import { handlePasteCode } from '../../../utils/handlePasteCode';
 
 interface EmailVerificationProps {
     onNext: (data: { email: string; verificationCode: string }) => void;
@@ -223,6 +224,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
                                 value={digit}
                                 onChange={(e) => handleCodeChange(index, e.target.value)}
                                 onKeyDown={(e) => handleKeyDown(index, e)}
+                                onPaste={(e) => handlePasteCode(e, verificationCode, setVerificationCode, inputRefs)}
                                 inputProps={{
                                     maxLength: 1,
                                     style: {
