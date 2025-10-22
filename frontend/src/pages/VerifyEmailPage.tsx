@@ -19,6 +19,7 @@ import api from '../services/api';
 import { checkAuth } from '../store/slices/authSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../store/store';
+import { handlePasteCode } from '../utils/handlePasteCode';
 
 export const VerifyEmailPage: React.FC = () => {
     const navigate = useNavigate();
@@ -253,6 +254,7 @@ export const VerifyEmailPage: React.FC = () => {
                                             value={digit}
                                             onChange={(e) => handleCodeChange(index, e.target.value)}
                                             onKeyDown={(e) => handleKeyDown(index, e)}
+                                            onPaste={(e) => handlePasteCode(e, verificationCode, setVerificationCode, inputRefs)}
                                             inputProps={{
                                                 maxLength: 1,
                                                 style: {

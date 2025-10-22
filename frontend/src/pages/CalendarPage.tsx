@@ -870,7 +870,7 @@ export const CalendarPage: React.FC = () => {
               </Alert>
             )}
 
-            {status === "active" && eligibility && !eligibility.canBook && bookingDialog && !isWithin24Hours(bookingDialog.scheduledAt) && (
+            {(status === "active" || status === "trialing") && eligibility && !eligibility.canBook && bookingDialog && !isWithin24Hours(bookingDialog.scheduledAt) && (
               <Alert severity="warning">
                 <Typography variant="body2" fontWeight={600} gutterBottom>
                   Cannot book this session:
@@ -885,18 +885,18 @@ export const CalendarPage: React.FC = () => {
               </Alert>
             )}
 
-            {status === "active" && eligibility?.canBook && bookingDialog && !isWithin24Hours(bookingDialog.scheduledAt) && (
+            {(status === "active" || status === "trialing") && eligibility?.canBook && bookingDialog && !isWithin24Hours(bookingDialog.scheduledAt) && (
               <Alert severity="success">
                 You're eligible to book this session!
               </Alert>
             )}
 
-            {status !== "active" && (
+            {status !== "active" && status !== "trialing" && (
               <Alert severity="warning">
                 Subscribe to access this Booking
               </Alert>
             )}
-            {status !== "active" && (
+            {status !== "active" && status !== "trialing" && (
               <FormControlLabel
                 control={
                   <Checkbox
@@ -925,7 +925,7 @@ export const CalendarPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBookingDialog(null)}>Cancel</Button>
-          {status === "active" ?
+          {status === "active" || status === "trialing" ?
             <Button
               variant="contained"
               onClick={handleBookSession}

@@ -17,6 +17,7 @@ import {
 import { Email, CheckCircle, Send, ArrowBack } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
+import { handlePasteCode } from '../../utils/handlePasteCode';
 
 export const EmailVerificationPage: React.FC = () => {
     const navigate = useNavigate();
@@ -331,6 +332,7 @@ export const EmailVerificationPage: React.FC = () => {
                                                     value={digit}
                                                     onChange={(e) => handleCodeChange(index, e.target.value)}
                                                     onKeyDown={(e) => handleKeyDown(index, e)}
+                                                    onPaste={(e) => handlePasteCode(e, verificationCode, setVerificationCode, inputRefs)}
                                                     inputProps={{
                                                         maxLength: 1,
                                                         style: {
