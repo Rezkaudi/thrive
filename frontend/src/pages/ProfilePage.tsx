@@ -43,7 +43,6 @@ import {
 } from "../store/slices/profileSlice";
 import { profileService } from "../services/profileService";
 import { subscriptionService } from "../services/subscriptionService";
-// import { chackPayment } from '../store/slices/authSlice';
 import { fetchUserActivities } from "../store/slices/activitySlice";
 import { Achievement } from "../types/achievement.types";
 import {
@@ -228,18 +227,6 @@ export const ProfilePage: React.FC = () => {
       setLoadingManage(false);
     }
   };
-
-  // const handleStartSubscription = async () => {
-  //   setLoadingStart(true);
-  //   try {
-  //     await subscriptionService.endTrial();
-  //     await dispatch(chackPayment());
-  //   } catch (error) {
-  //     console.error('Error starting subscription:', error);
-  //   } finally {
-  //     setLoadingStart(false);
-  //   }
-  // };
 
   // Use real data for achievements
   const achievements: Achievement[] =

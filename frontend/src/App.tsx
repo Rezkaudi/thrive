@@ -9,18 +9,15 @@ import { theme } from './theme/theme';
 
 import { store, RootState, AppDispatch } from './store/store';
 import { Provider, useDispatch, useSelector } from 'react-redux';
-import { chackPayment, checkAuth } from './store/slices/authSlice';
+import { checkPayment, checkAuth } from './store/slices/authSlice';
 import { fetchDashboardData } from './store/slices/dashboardSlice';
-
 
 // Auth Pages
 import { LoginPage } from './pages/LoginPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { NewRegistrationPage } from './pages/NewRegistrationPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
-
-
 
 // Admin Pages
 import { Analytics } from './pages/admin/Analytics';
@@ -59,7 +56,7 @@ function AppContent() {
   useEffect(() => {
     const initApp = async () => {
       await dispatch(checkAuth());
-      await dispatch(chackPayment());
+      await dispatch(checkPayment());
       await dispatch(fetchDashboardData());
     };
 

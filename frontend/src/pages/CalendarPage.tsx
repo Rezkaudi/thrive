@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store/store";
 import { useSweetAlert } from "../utils/sweetAlert";
 import { subscriptionService } from "../services/subscriptionService";
-import { chackPayment } from "../store/slices/authSlice";
+import { checkPayment } from "../store/slices/authSlice";
 import { sleep } from "../utils/sleep";
 import { useNavigate } from "react-router-dom";
 import {
@@ -73,10 +73,10 @@ export const CalendarPage: React.FC = () => {
     try {
       await subscriptionService.endTrial();
       await sleep(5000);
-      await dispatch(chackPayment());
+      await dispatch(checkPayment());
       showSnackbar("Starting Subscription successfully!", "success");
     } catch (error) {
-      console.error("Error starting subscription:", error);
+      // Error handled by snackbar
     } finally {
       setLoadingStart(false);
     }

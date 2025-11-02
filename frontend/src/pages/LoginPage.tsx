@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { login, clearError, chackPayment } from '../store/slices/authSlice';
+import { login, clearError, checkPayment } from '../store/slices/authSlice';
 import { AppDispatch, RootState } from '../store/store';
 
 
@@ -40,8 +40,8 @@ export const LoginPage: React.FC = () => {
     const result = await dispatch(login(formData));
 
     if (login.fulfilled.match(result)) {
-      await dispatch(chackPayment());
-      navigate("/dashboard")
+      await dispatch(checkPayment());
+      navigate("/dashboard");
     }
 
   };
