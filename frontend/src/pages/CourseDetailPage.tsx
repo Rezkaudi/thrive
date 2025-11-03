@@ -336,9 +336,8 @@ export const CourseDetailPage: React.FC = () => {
         try {
             await api.post(`/courses/${course.id}/enroll`);
             await fetchData();
-
-        } catch (error: any) {
-            console.log(error)
+        } catch (error) {
+            setError("Failed to enroll in course");
         }
     };
 
@@ -355,7 +354,6 @@ export const CourseDetailPage: React.FC = () => {
 
             await fetchCourseProgress(enrollmentsRes.data);
         } catch (error) {
-            console.error("Failed to fetch courses:", error);
             setError("Failed to load courses");
         } finally {
             setLoading(false);
@@ -389,7 +387,7 @@ export const CourseDetailPage: React.FC = () => {
             const progressData = await Promise.all(progressPromises);
             setCourseProgress(progressData);
         } catch (error) {
-            console.error("Failed to fetch course progress:", error);
+            // Error silently handled
         }
     };
 
@@ -413,7 +411,7 @@ export const CourseDetailPage: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error("Failed to fetch lessons:", error);
+            // Error silently handled
         } finally {
             setLessonLoading(false);
         }

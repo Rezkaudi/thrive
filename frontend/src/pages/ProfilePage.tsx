@@ -182,7 +182,7 @@ export const ProfilePage: React.FC = () => {
           );
           setPublicProfileData(realData);
         } catch (error) {
-          console.error("Failed to fetch real profile data:", error);
+          // Error silently handled
         } finally {
           setLoadingPublicData(false);
         }
@@ -222,7 +222,7 @@ export const ProfilePage: React.FC = () => {
       const data = await subscriptionService.createCustomerPortal();
       window.location.href = data.session.url;
     } catch (error) {
-      console.error("Error during subscription management:", error);
+      // Error silently handled
     } finally {
       setLoadingManage(false);
     }

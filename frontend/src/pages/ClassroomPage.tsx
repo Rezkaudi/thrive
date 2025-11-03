@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import {
   Box,
   Container,
@@ -106,7 +106,7 @@ const getCourseColors = (courseType: string) => {
   );
 };
 
-const CourseCard = ({
+const CourseCard = memo(({
   course,
   onClick,
   isEnrolled,
@@ -121,10 +121,7 @@ const CourseCard = ({
   lessonCount?: number;
   completedCount?: number;
 }) => {
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const isCompleted = progress === 100;
-  const theme = useTheme();
-
   const colors = getCourseColors(course.type);
 
   return (
@@ -427,7 +424,7 @@ const CourseCard = ({
       </Card>
     </motion.div>
   );
-};
+});
 
 export const ClassroomPage: React.FC = () => {
   const theme = useTheme();
@@ -457,7 +454,6 @@ export const ClassroomPage: React.FC = () => {
 
       await fetchCourseProgress(enrollmentsRes.data);
     } catch (error) {
-      console.error("Failed to fetch courses:", error);
       setError("Failed to load courses");
     } finally {
       setLoading(false);
@@ -491,7 +487,7 @@ export const ClassroomPage: React.FC = () => {
       const progressData = await Promise.all(progressPromises);
       setCourseProgress(progressData);
     } catch (error) {
-      console.error("Failed to fetch course progress:", error);
+      // Error silently handled
     }
   };
 
@@ -501,8 +497,8 @@ export const ClassroomPage: React.FC = () => {
       // await fetchData();
       // setEnrollDialog(null);
       navigate(`/classroom/${course.id}`)
-    } catch (error: any) {
-      if (error.response?.status === 409) {
+    } catch (error) {
+      if ((error as any).response?.status === 409) {
         navigate(`/classroom/${course.id}`)
       }
     }

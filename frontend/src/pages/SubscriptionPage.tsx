@@ -123,7 +123,7 @@ export const SubscriptionPage: React.FC = () => {
             const status = await paymentService.checkDiscountStatus();
             setDiscountStatus(status);
         } catch (err) {
-            console.error('Failed to fetch discount status:', err);
+            // Error silently handled
         } finally {
             setLoadingDiscount(false);
         }

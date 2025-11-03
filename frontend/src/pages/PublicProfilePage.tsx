@@ -144,7 +144,7 @@ export const PublicProfilePage: React.FC = () => {
           const response = await activityService.getUserActivities(userId!, 1, 10);
           setRecentActivities(response.activities);
         } catch (error) {
-          console.error('Failed to fetch activities:', error);
+          // Error silently handled
         } finally {
           setActivitiesLoading(false);
         }
@@ -164,7 +164,7 @@ export const PublicProfilePage: React.FC = () => {
           url: window.location.href,
         });
       } catch (err) {
-        console.log('Error sharing:', err);
+        // Share error silently handled
       }
     } else {
       // Fallback to clipboard

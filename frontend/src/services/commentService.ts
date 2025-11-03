@@ -59,8 +59,7 @@ export const commentService = {
       } else {
         throw new Error(response.data.message || 'Failed to fetch comments');
       }
-    } catch (error: any) {
-      console.error('Error fetching comments:', error);
+    } catch (error) {
       throw error;
     }
   },
@@ -75,8 +74,7 @@ export const commentService = {
       } else {
         throw new Error(response.data.message || 'Failed to create comment');
       }
-    } catch (error: any) {
-      console.error('Error creating comment:', error);
+    } catch (error) {
       throw error;
     }
   },
@@ -91,8 +89,7 @@ export const commentService = {
       } else {
         throw new Error(response.data.message || 'Failed to fetch comment');
       }
-    } catch (error: any) {
-      console.error('Error fetching comment:', error);
+    } catch (error) {
       throw error;
     }
   },
@@ -107,8 +104,7 @@ export const commentService = {
       } else {
         throw new Error(response.data.message || 'Failed to update comment');
       }
-    } catch (error: any) {
-      console.error('Error updating comment:', error);
+    } catch (error) {
       throw error;
     }
   },
@@ -121,8 +117,7 @@ export const commentService = {
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to delete comment');
       }
-    } catch (error: any) {
-      console.error('Error deleting comment:', error);
+    } catch (error) {
       throw error;
     }
   },
@@ -137,8 +132,7 @@ export const commentService = {
       } else {
         throw new Error(response.data.message || 'Failed to fetch replies');
       }
-    } catch (error: any) {
-      console.error('Error fetching replies:', error);
+    } catch (error) {
       throw error;
     }
   },
@@ -153,8 +147,7 @@ export const commentService = {
       } else {
         throw new Error(response.data.message || 'Failed to fetch comment count');
       }
-    } catch (error: any) {
-      console.error('Error fetching comment count:', error);
+    } catch (error) {
       throw error;
     }
   },
