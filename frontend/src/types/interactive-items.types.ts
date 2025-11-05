@@ -34,6 +34,7 @@ export interface HotspotItem extends BaseItem {
   y: number;
   label: string;
   feedback: string;
+  imageUrl?: string;
 }
 
 export interface TimelineItem extends BaseItem {
@@ -89,4 +90,6 @@ export interface InteractiveItemEditorProps {
     color?: string;
     [key: string]: any;
   };
+  slideSettings?: Record<string, any>;
+  onSlideSettingsUpdate?: (settings: Record<string, any>) => void;
 }
