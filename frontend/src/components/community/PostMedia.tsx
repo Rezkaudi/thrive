@@ -1,19 +1,17 @@
 // frontend/src/components/community/PostMedia.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
-  Card,
   CardMedia,
   IconButton,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   Typography,
   Chip,
   Stack,
-} from '@mui/material';
+  Tooltip,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import {
   PlayArrow,
   Fullscreen,
@@ -21,378 +19,490 @@ import {
   Movie as MovieIcon,
   Close,
   Download,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
+  ChevronLeft,
+  ChevronRight,
+} from "@mui/icons-material";
+import { motion, AnimatePresence } from "framer-motion";
+
+// --- Types & Helpers ---
 
 interface PostMediaProps {
   mediaUrls: string[];
   maxDisplay?: number;
 }
 
-const getMediaType = (url: string): 'image' | 'video' => {
-  const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.ogg'];
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-  
+const getMediaType = (url: string): "image" | "video" => {
+  const videoExtensions = [".mp4", ".mov", ".avi", ".mkv", ".webm", ".ogg"];
   const lowerUrl = url.toLowerCase();
-  
-  if (videoExtensions.some(ext => lowerUrl.includes(ext))) {
-    return 'video';
-  }
-  
-  if (imageExtensions.some(ext => lowerUrl.includes(ext))) {
-    return 'image';
-  }
-  
-  // Default to image if we can't determine
-  return 'image';
+  if (videoExtensions.some((ext) => lowerUrl.includes(ext))) return "video";
+  return "image";
 };
 
 const formatFileName = (url: string): string => {
   try {
-    const parts = url.split('/');
-    const fileName = parts[parts.length - 1];
-    return fileName.split('?')[0]; // Remove query parameters
+    return decodeURIComponent(url.split("/").pop()?.split("?")[0] || "Media");
   } catch {
-    return 'media';
+    return "Media File";
   }
 };
 
-export const PostMedia: React.FC<PostMediaProps> = ({ 
-  mediaUrls, 
-  maxDisplay = 4 
+// --- Main Component ---
+
+export const PostMedia: React.FC<PostMediaProps> = ({
+  mediaUrls,
+  maxDisplay = 4,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
-  const [previewMedia, setPreviewMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
 
-  if (!mediaUrls || mediaUrls.length === 0) {
-    return null;
-  }
+  // --- Logic for Lightbox (moved before early return) ---
 
-  const handlePreview = (url: string, index: number) => {
-    setPreviewMedia({ url, type: getMediaType(url) });
-    setPreviewIndex(index);
+  const handlePreview = (index: number) => {
+    setCurrentIndex(index);
     setPreviewOpen(true);
   };
 
   const handleClosePreview = () => {
     setPreviewOpen(false);
-    setPreviewMedia(null);
+    setDirection(0);
   };
 
-  const handleNextMedia = () => {
-    const nextIndex = (previewIndex + 1) % mediaUrls.length;
-    const nextUrl = mediaUrls[nextIndex];
-    setPreviewIndex(nextIndex);
-    setPreviewMedia({ url: nextUrl, type: getMediaType(nextUrl) });
-  };
+  const paginate = useCallback(
+    (newDirection: number) => {
+      setDirection(newDirection);
+      setCurrentIndex((prev) => {
+        let next = prev + newDirection;
+        if (next < 0) next = mediaUrls.length - 1;
+        if (next >= mediaUrls.length) next = 0;
+        return next;
+      });
+    },
+    [mediaUrls.length]
+  );
 
-  const handlePrevMedia = () => {
-    const prevIndex = previewIndex === 0 ? mediaUrls.length - 1 : previewIndex - 1;
-    const prevUrl = mediaUrls[prevIndex];
-    setPreviewIndex(prevIndex);
-    setPreviewMedia({ url: prevUrl, type: getMediaType(prevUrl) });
-  };
-
-  const handleDownload = (url: string) => {
-    const link = document.createElement('a');
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = mediaUrls[currentIndex];
+    const link = document.createElement("a");
     link.href = url;
     link.download = formatFileName(url);
-    link.target = '_blank';
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const displayUrls = mediaUrls.slice(0, maxDisplay);
+  useEffect(() => {
+    if (!previewOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") paginate(-1);
+      if (e.key === "ArrowRight") paginate(1);
+      if (e.key === "Escape") handleClosePreview();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [previewOpen, paginate]);
+
+  if (!mediaUrls || mediaUrls.length === 0) return null;
+
+  // --- Logic for Dynamic Grid Layout ---
+
+  const displayCount = Math.min(mediaUrls.length, maxDisplay);
+  const displayUrls = mediaUrls.slice(0, displayCount);
   const remainingCount = mediaUrls.length - maxDisplay;
 
-  const getItemHeight = (itemCount: number) => {
-    switch (itemCount) {
-      case 1: return 300;
-      case 2: return 200;
-      default: return 150;
+  // Determines CSS Grid properties based on index and total count
+  const getGridStyle = (index: number, total: number) => {
+    // Single Item: Full width, dynamic height handled by img tag
+    if (total === 1)
+      return {
+        gridColumn: "span 2",
+        gridRow: "span 2",
+        height: "auto",
+        maxHeight: "600px",
+      };
+
+    // Two Items: Split vertically
+    if (total === 2)
+      return { gridColumn: "span 1", gridRow: "span 2", height: "300px" };
+
+    // Three Items: First item big (left), others stacked (right)
+    if (total === 3) {
+      if (index === 0)
+        return { gridColumn: "span 1", gridRow: "span 2", height: "400px" };
+      return { gridColumn: "span 1", gridRow: "span 1", height: "196px" }; // 196 + 196 + gap(8) = 400
     }
+
+    // Four+ Items: 2x2 Grid
+    return { gridColumn: "span 1", gridRow: "span 1", height: "200px" };
   };
 
-      return (
-    <Box sx={{ mt: 2 }}>
+  return (
+    <Box sx={{ mt: 2, width: "100%", overflow: "hidden" }}>
+      {/* --- DYNAMIC GRID CONTAINER --- */}
       <Box
         sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
           gap: 1,
-          mb: 1,
-          alignItems: 'flex-start',
+          width: "100%",
+          // Force single column on very small screens if multiple images
+          ...(isMobile &&
+            mediaUrls.length > 1 && {
+              gridTemplateColumns: "1fr",
+            }),
         }}
       >
         {displayUrls.map((url, index) => {
           const mediaType = getMediaType(url);
-          const isLastItem = index === displayUrls.length - 1;
+          const isLastItem = index === displayCount - 1;
           const showMoreOverlay = isLastItem && remainingCount > 0;
-          
-          // Calculate width for responsive layout
-          const getWidth = () => {
-            if (displayUrls.length === 1) return '100%';
-            if (displayUrls.length === 2) return 'calc(50% - 4px)';
-            if (displayUrls.length === 3) return 'calc(33.333% - 6px)';
-            return 'calc(50% - 4px)'; // 4+ items in 2x2 grid
-          };
+          const gridStyle =
+            isMobile && mediaUrls.length > 1
+              ? { height: "250px" } // Mobile fallback height
+              : getGridStyle(index, displayCount);
 
           return (
-            <Box
-              key={index}
-              sx={{
-                width: getWidth(),
-                minWidth: 0, // Prevent flex item overflow
-                '@media (max-width: 600px)': {
-                  width: displayUrls.length > 1 ? 'calc(50% - 4px)' : '100%',
-                },
+            <motion.div
+              key={`${url}-${index}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                position: "relative",
+                width: "100%",
+                ...gridStyle,
               }}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
+              <Box
+                onClick={() => handlePreview(index)}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  position: "relative",
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: "black", // Background for non-square videos/images
+                  transition: "filter 0.2s",
+                  "&:hover": { filter: "brightness(0.9)" },
+                }}
               >
-                <Card
-                  sx={{
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease-in-out',
-                    '&:hover': {
-                      transform: 'scale(1.02)',
-                    },
-                  }}
-                  onClick={() => handlePreview(url, index)}
-                >
-                  {mediaType === 'image' ? (
-                    <CardMedia
-                      component="img"
-                      height={getItemHeight(displayUrls.length)}
-                      image={url}
-                      alt={`Post media ${index + 1}`}
-                      sx={{
-                        objectFit: 'cover',
-                        bgcolor: 'grey.100',
-                      }}
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        height: getItemHeight(displayUrls.length),
-                        bgcolor: 'grey.900',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <video
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                        }}
-                        muted
-                      >
-                        <source src={url} type="video/mp4" />
-                      </video>
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          bgcolor: 'rgba(0, 0, 0, 0.7)',
-                          borderRadius: '50%',
-                          p: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <PlayArrow sx={{ color: 'white', fontSize: 32 }} />
-                      </Box>
-                    </Box>
-                  )}
-
-                  {/* Media type indicator */}
-                  <Chip
-                    icon={mediaType === 'image' ? <ImageIcon /> : <MovieIcon />}
-                    label={mediaType}
-                    size="small"
+                {mediaType === "image" ? (
+                  <CardMedia
+                    component="img"
+                    image={url}
+                    alt="content"
                     sx={{
-                      position: 'absolute',
-                      top: 8,
-                      left: 8,
-                      bgcolor: 'rgba(0, 0, 0, 0.7)',
-                      color: 'white',
-                      '& .MuiChip-icon': {
-                        color: 'white',
-                      },
+                      width: "100%",
+                      height: "100%",
+                      // For single images, use contain to show full image, otherwise cover to fill grid
+                      objectFit: displayCount === 1 ? "contain" : "cover",
+                      maxHeight: displayCount === 1 ? "600px" : "none",
+                      bgcolor:
+                        theme.palette.mode === "dark" ? "grey.900" : "grey.100",
                     }}
                   />
-
-                  {/* Expand icon */}
-                  <IconButton
+                ) : (
+                  <Box
                     sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      bgcolor: 'rgba(0, 0, 0, 0.7)',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'rgba(0, 0, 0, 0.8)',
-                      },
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
-                    size="small"
                   >
-                    <Fullscreen fontSize="small" />
-                  </IconButton>
-
-                  {/* More items overlay */}
-                  {showMoreOverlay && (
+                    <video
+                      src={url}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: displayCount === 1 ? "contain" : "cover",
+                      }}
+                    />
                     <Box
                       sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        bgcolor: 'rgba(0, 0, 0, 0.6)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
+                        position: "absolute",
+                        zIndex: 2,
+                        bgcolor: "rgba(0,0,0,0.5)",
+                        borderRadius: "50%",
+                        p: 1.5,
+                        backdropFilter: "blur(4px)",
                       }}
                     >
-                      <Typography variant="h4" fontWeight={600}>
-                        +{remainingCount}
-                      </Typography>
+                      <PlayArrow sx={{ color: "white", fontSize: 32 }} />
                     </Box>
-                  )}
-                </Card>
-              </motion.div>
-            </Box>
+                  </Box>
+                )}
+
+                {/* Badges / Overlays */}
+                <Box sx={{ position: "absolute", top: 8, left: 8, zIndex: 2 }}>
+                  <Chip
+                    icon={
+                      mediaType === "image" ? (
+                        <ImageIcon style={{ color: "white" }} />
+                      ) : (
+                        <MovieIcon style={{ color: "white" }} />
+                      )
+                    }
+                    label={mediaType === "video" ? "VIDEO" : "IMG"}
+                    size="small"
+                    sx={{
+                      bgcolor: "rgba(0,0,0,0.6)",
+                      color: "white",
+                      backdropFilter: "blur(4px)",
+                      fontWeight: "bold",
+                      height: 24,
+                      border: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  />
+                </Box>
+
+                {/* +X More Overlay */}
+                {showMoreOverlay && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      bgcolor: "rgba(0, 0, 0, 0.7)",
+                      backdropFilter: "blur(4px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      zIndex: 10,
+                      transition: "background-color 0.2s",
+                      "&:hover": { bgcolor: "rgba(0, 0, 0, 0.6)" },
+                    }}
+                  >
+                    <Typography variant="h4" fontWeight={700} color="white">
+                      +{remainingCount}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Hover Expand Icon (only if not "More" overlay) */}
+                {!showMoreOverlay && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                      opacity: 0,
+                      transition: "opacity 0.2s",
+                      ".MuiBox-root:hover &": { opacity: 1 },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: "rgba(0,0,0,0.6)",
+                        borderRadius: "50%",
+                        p: 0.5,
+                        color: "white",
+                        display: "flex",
+                      }}
+                    >
+                      <Fullscreen fontSize="small" />
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            </motion.div>
           );
         })}
       </Box>
 
-      {mediaUrls.length > 1 && (
-        <Typography variant="caption" color="text.secondary">
-          {mediaUrls.length} media file{mediaUrls.length > 1 ? 's' : ''}
-        </Typography>
-      )}
-
-      {/* Media Preview Dialog */}
+      {/* --- FULLSCREEN LIGHTBOX --- */}
       <Dialog
+        fullScreen
         open={previewOpen}
         onClose={handleClosePreview}
-        maxWidth="lg"
-        fullWidth
         PaperProps={{
           sx: {
-            bgcolor: 'black',
-            color: 'white',
+            bgcolor: "black",
+            backgroundImage: "none",
           },
         }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          bgcolor: 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-        }}>
-          <Box>
-            <Typography variant="h6">
-              Media Preview ({previewIndex + 1} of {mediaUrls.length})
+        {/* Floating Controls Overlay */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            p: 2,
+            zIndex: 1300,
+            display: "flex",
+            justifyContent: "space-between",
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)",
+            pointerEvents: "none", // Allow clicking through empty space
+          }}
+        >
+          <Box
+            sx={{
+              pointerEvents: "auto",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{ color: "white", fontWeight: 600 }}
+            >
+              {currentIndex + 1} / {mediaUrls.length}
             </Typography>
-            <Typography variant="caption" color="grey.400">
-              {formatFileName(previewMedia?.url || '')}
+            <Typography
+              variant="caption"
+              sx={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              {formatFileName(mediaUrls[currentIndex])}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1}>
+
+          <Stack direction="row" spacing={1} sx={{ pointerEvents: "auto" }}>
+            <Tooltip title="Download">
+              <IconButton
+                onClick={handleDownload}
+                sx={{
+                  color: "white",
+                  bgcolor: "rgba(255,255,255,0.1)",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+                }}
+              >
+                <Download />
+              </IconButton>
+            </Tooltip>
             <IconButton
-              onClick={() => handleDownload(previewMedia?.url || '')}
-              sx={{ color: 'white' }}
+              onClick={handleClosePreview}
+              sx={{
+                color: "white",
+                bgcolor: "rgba(255,255,255,0.1)",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+              }}
             >
-              <Download />
-            </IconButton>
-            <IconButton onClick={handleClosePreview} sx={{ color: 'white' }}>
               <Close />
             </IconButton>
           </Stack>
-        </DialogTitle>
+        </Box>
 
-        <DialogContent sx={{ 
-          p: 0, 
-          bgcolor: 'black',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '70vh',
-        }}>
-          {previewMedia && (
-            <Box sx={{ 
-              width: '100%', 
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              {previewMedia.type === 'image' ? (
+        {/* Slider Area */}
+        <Box
+          sx={{
+            height: "100%",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {mediaUrls.length > 1 && (
+            <>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  paginate(-1);
+                }}
+                sx={{
+                  position: "absolute",
+                  left: 16,
+                  zIndex: 1200,
+                  color: "white",
+                  bgcolor: "rgba(0,0,0,0.5)",
+                  "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+                }}
+              >
+                <ChevronLeft fontSize="large" />
+              </IconButton>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  paginate(1);
+                }}
+                sx={{
+                  position: "absolute",
+                  right: 16,
+                  zIndex: 1200,
+                  color: "white",
+                  bgcolor: "rgba(0,0,0,0.5)",
+                  "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+                }}
+              >
+                <ChevronRight fontSize="large" />
+              </IconButton>
+            </>
+          )}
+
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.div
+              key={currentIndex}
+              custom={direction}
+              variants={{
+                enter: (dir: number) => ({
+                  x: dir > 0 ? 1000 : -1000,
+                  opacity: 0,
+                }),
+                center: { zIndex: 1, x: 0, opacity: 1 },
+                exit: (dir: number) => ({
+                  zIndex: 0,
+                  x: dir < 0 ? 1000 : -1000,
+                  opacity: 0,
+                }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+              }}
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: isMobile ? "0" : "40px",
+              }}
+            >
+              {getMediaType(mediaUrls[currentIndex]) === "image" ? (
                 <Box
                   component="img"
-                  src={previewMedia.url}
-                  alt="Media preview"
+                  src={mediaUrls[currentIndex]}
+                  alt="Preview"
                   sx={{
-                    maxWidth: '100%',
-                    maxHeight: '70vh',
-                    objectFit: 'contain',
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
                   }}
                 />
               ) : (
                 <Box
                   component="video"
-                  src={previewMedia.url}
+                  src={mediaUrls[currentIndex]}
                   controls
                   autoPlay
                   sx={{
-                    maxWidth: '100%',
-                    maxHeight: '70vh',
-                    objectFit: 'contain',
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                    outline: "none",
                   }}
                 />
               )}
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ 
-          bgcolor: 'rgba(0, 0, 0, 0.8)',
-          justifyContent: 'space-between',
-        }}>
-          <Button 
-            onClick={handlePrevMedia} 
-            disabled={mediaUrls.length <= 1}
-            sx={{ color: 'white' }}
-          >
-            Previous
-          </Button>
-          <Button onClick={handleClosePreview} sx={{ color: 'white' }}>
-            Close
-          </Button>
-          <Button 
-            onClick={handleNextMedia} 
-            disabled={mediaUrls.length <= 1}
-            sx={{ color: 'white' }}
-          >
-            Next
-          </Button>
-        </DialogActions>
+            </motion.div>
+          </AnimatePresence>
+        </Box>
       </Dialog>
     </Box>
   );

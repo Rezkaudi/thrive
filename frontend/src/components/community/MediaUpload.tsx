@@ -49,6 +49,7 @@ interface MediaUploadProps {
   disabled?: boolean;
   compact?: boolean;
   showPreview?: boolean;
+  removeButtonDisabled?:boolean;
 }
 
 const SUPPORTED_FORMATS = {
@@ -68,6 +69,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
   disabled = false,
   compact = false,
   showPreview = true,
+  removeButtonDisabled,
 }) => {
   const [dragOver, setDragOver] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -560,6 +562,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
                         size="small"
                         onClick={() => handleRemoveFile(item.id)}
                         color="error"
+                        disabled={removeButtonDisabled}
                       >
                         <Delete fontSize="small" />
                       </IconButton>
