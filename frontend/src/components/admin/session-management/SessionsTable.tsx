@@ -62,9 +62,23 @@ const SessionRow: React.FC<{
   setSessionDialog: (v: boolean) => void;
   setEditingSession: (s: Session) => void;
   setFormFromSession: (s: Session) => void;
-}> = ({ session, onDelete, updating, deleting, dispatch, setSessionDialog, setEditingSession, setFormFromSession }) => {
-  const isPast = new Date(session.scheduledAt) < new Date();
-  const fillPercentage = (session.currentParticipants / session.maxParticipants) * 100;
+}> = ({
+  session,
+  onDelete,
+  updating,
+  deleting,
+  dispatch,
+  setSessionDialog,
+  setEditingSession,
+  setFormFromSession,
+}) => {
+  const sessionStartTime = new Date(session.scheduledAt);
+  const sessionEndTime = new Date(
+    sessionStartTime.getTime() + session.duration * 60000
+  );
+  const isPast = sessionEndTime < new Date();
+  const fillPercentage =
+    (session.currentParticipants / session.maxParticipants) * 100;
 
   return (
     <TableRow key={session.id} sx={{ opacity: isPast ? 0.8 : 1 }}>
@@ -76,10 +90,20 @@ const SessionRow: React.FC<{
               {session.title}
             </Typography>
             {session.isRecurring && (
-              <Tooltip title={session.recurringParentId ? "Part of recurring series" : "Recurring session parent"}>
+              <Tooltip
+                title={
+                  session.recurringParentId
+                    ? "Part of recurring series"
+                    : "Recurring session parent"
+                }
+              >
                 <Chip
                   icon={<Repeat />}
-                  label={session.recurringParentId ? "Series" : `${session.recurringWeeks}w`}
+                  label={
+                    session.recurringParentId
+                      ? "Series"
+                      : `${session.recurringWeeks}w`
+                  }
                   size="small"
                   color="info"
                   variant="outlined"
@@ -91,23 +115,37 @@ const SessionRow: React.FC<{
             {session.type === "SPEAKING" ? (
               <>
                 <VideoCall sx={{ fontSize: 16, color: "text.secondary" }} />
-                <Typography variant="caption" color="text.secondary">Online Meeting</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Online Meeting
+                </Typography>
               </>
             ) : session.location ? (
               <>
                 <LocationOn sx={{ fontSize: 16, color: "text.secondary" }} />
-                <Typography variant="caption" color="text.secondary">{session.location}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {session.location}
+                </Typography>
               </>
             ) : (
               <>
                 <Event sx={{ fontSize: 16, color: "text.secondary" }} />
-                <Typography variant="caption" color="text.secondary">Special Event</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Special Event
+                </Typography>
               </>
             )}
           </Stack>
-          {session.hostName && <Typography variant="caption" color="text.secondary">Host: {session.hostName}</Typography>}
+          {session.hostName && (
+            <Typography variant="caption" color="text.secondary">
+              Host: {session.hostName}
+            </Typography>
+          )}
           <Tooltip title={getRelativeTime(session.scheduledAt)}>
-            <Typography variant="caption" color="primary.main" sx={{ cursor: "help" }}>
+            <Typography
+              variant="caption"
+              color="primary.main"
+              sx={{ cursor: "help" }}
+            >
               {getRelativeTime(session.scheduledAt)}
             </Typography>
           </Tooltip>
@@ -117,7 +155,11 @@ const SessionRow: React.FC<{
       {/* Type */}
       <TableCell>
         <Stack direction="row" spacing={0.5} alignItems="center">
-          {session.type === "SPEAKING" ? <Mic sx={{ fontSize: 16 }} /> : <Event sx={{ fontSize: 16 }} />}
+          {session.type === "SPEAKING" ? (
+            <Mic sx={{ fontSize: 16 }} />
+          ) : (
+            <Event sx={{ fontSize: 16 }} />
+          )}
           <Chip
             label={session.type === "SPEAKING" ? "Speaking" : "Event"}
             size="small"
@@ -130,9 +172,13 @@ const SessionRow: React.FC<{
       {/* Date & Time */}
       <TableCell>
         <Stack spacing={0.5}>
-          <Typography variant="body2" fontWeight={500}>{formatDateTime(session.scheduledAt)}</Typography>
+          <Typography variant="body2" fontWeight={500}>
+            {formatDateTime(session.scheduledAt)}
+          </Typography>
           <Typography variant="caption" color="text.secondary">
-            {new Date(session.scheduledAt).toLocaleDateString("en-US", { weekday: "long" })}
+            {new Date(session.scheduledAt).toLocaleDateString("en-US", {
+              weekday: "long",
+            })}
           </Typography>
         </Stack>
       </TableCell>
@@ -154,18 +200,32 @@ const SessionRow: React.FC<{
               {session.currentParticipants}/{session.maxParticipants}
             </Typography>
           </Stack>
-          <Box sx={{ width: "100%", bgcolor: "grey.200", borderRadius: 1, height: 4 }}>
+          <Box
+            sx={{
+              width: "100%",
+              bgcolor: "grey.200",
+              borderRadius: 1,
+              height: 4,
+            }}
+          >
             <Box
               sx={{
                 width: `${Math.min(fillPercentage, 100)}%`,
-                bgcolor: fillPercentage >= 100 ? "error.main" : fillPercentage >= 80 ? "warning.main" : "success.main",
+                bgcolor:
+                  fillPercentage >= 100
+                    ? "error.main"
+                    : fillPercentage >= 80
+                    ? "warning.main"
+                    : "success.main",
                 height: "100%",
                 borderRadius: 1,
                 transition: "width 0.3s ease",
               }}
             />
           </Box>
-          <Typography variant="caption" color="text.secondary">{Math.round(fillPercentage)}% filled</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {Math.round(fillPercentage)}% filled
+          </Typography>
         </Stack>
       </TableCell>
 
@@ -174,10 +234,14 @@ const SessionRow: React.FC<{
         {session.pointsRequired > 0 ? (
           <Stack direction="row" spacing={0.5} alignItems="center">
             <Star sx={{ fontSize: 16, color: "warning.main" }} />
-            <Typography variant="body2" fontWeight={500}>{session.pointsRequired}</Typography>
+            <Typography variant="body2" fontWeight={500}>
+              {session.pointsRequired}
+            </Typography>
           </Stack>
         ) : (
-          <Typography variant="body2" color="success.main" fontWeight={500}>FREE</Typography>
+          <Typography variant="body2" color="success.main" fontWeight={500}>
+            FREE
+          </Typography>
         )}
       </TableCell>
 
@@ -198,7 +262,12 @@ const SessionRow: React.FC<{
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete session">
-            <IconButton size="small" color="error" onClick={() => onDelete(session)} disabled={deleting}>
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() => onDelete(session)}
+              disabled={deleting}
+            >
               <Delete />
             </IconButton>
           </Tooltip>
