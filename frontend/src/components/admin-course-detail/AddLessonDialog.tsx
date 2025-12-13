@@ -215,7 +215,7 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 2 }}>
-            <BasicInfoForm control={control} errors={errors} lessons={lessons} />
+            <BasicInfoForm isEditing={!!editingLesson} control={control} errors={errors} lessons={lessons} />
             <LessonTypeSelector control={control} />
             <ContentForm
               control={control}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Controller, Control, FieldErrors } from "react-hook-form";
+import { Controller, Control, FieldErrors } from "react-hook-form"; // 1. Import useWatch
 import { TextField, Stack } from "@mui/material";
 import { LessonFormState } from "../../types/lsesson-form.types";
 
@@ -7,13 +7,19 @@ interface BasicInfoFormProps {
   control: Control<LessonFormState>;
   errors: FieldErrors<LessonFormState>;
   lessons: LessonFormState[];
+  isEditing: boolean
 }
 
 export const BasicInfoForm: React.FC<BasicInfoFormProps> = ({
   control,
   errors,
   lessons,
+  isEditing
 }) => {
+  const maxOrder = isEditing
+    ? lessons?.length || 0
+    : (lessons?.length || 0) + 1;
+
   return (
     <Stack spacing={3}>
       <Controller
@@ -55,11 +61,22 @@ export const BasicInfoForm: React.FC<BasicInfoFormProps> = ({
             fullWidth
             type="number"
             label="Order"
+            // Prevent scroll wheel changing numbers
             onWheel={(e) => (e.target as HTMLInputElement).blur()}
             error={!!errors.order}
-            helperText={errors.order?.message || "Change this number to reorder the lesson"}
-            inputProps={{ min: 1, max: Math.max(lessons.length, 1) }}
-            onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+            helperText={
+              errors.order?.message ||
+              "Change this number to reorder the lesson"
+            }
+            // 4. Now maxOrder is defined and correct
+            inputProps={{
+              min: 1,
+              max: maxOrder,
+            }}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10);
+              field.onChange(isNaN(val) ? "" : val);
+            }}
           />
         )}
       />
