@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../../store/store';
 import { login } from '../../../store/slices/authSlice';
+import { handlePasteCode } from '../../../utils/handlePasteCode';
 
 interface EmailVerificationStepProps {
     email: string;
@@ -202,6 +203,7 @@ export const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
                                 value={digit}
                                 onChange={(e) => handleCodeChange(index, e.target.value)}
                                 onKeyDown={(e) => handleKeyDown(index, e)}
+                                onPaste={(e) => handlePasteCode(e, verificationCode, setVerificationCode, inputRefs)}
                                 inputProps={{
                                     maxLength: 1,
                                     style: {
