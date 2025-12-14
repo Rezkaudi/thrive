@@ -19,6 +19,7 @@ import {
   CalendarSession,
   BookingEligibility,
 } from "../../services/calendarService";
+import { formatTimeUntilSession, isWithin24Hours } from "../../utils/session";
 
 interface BookingDialogProps {
   open: boolean;
@@ -98,26 +99,45 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             </Typography>
           </Stack>
 
-          {userStatus === "active" && eligibility && !eligibility.canBook && (
-            <Alert severity="warning">
+          {session && isWithin24Hours(session.scheduledAt) && (
+            <Alert severity="error" sx={{ mt: 2 }}>
               <Typography variant="body2" fontWeight={600} gutterBottom>
-                Cannot book this session:
+                Booking Not Available
               </Typography>
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
-                {eligibility.reasons.map((reason, index) => (
-                  <li key={index}>
-                    <Typography variant="body2">{reason}</Typography>
-                  </li>
-                ))}
-              </ul>
+              <Typography variant="body2">
+                Sessions must be booked at least 24 hours in advance. This
+                session starts in {formatTimeUntilSession(session.scheduledAt)}.
+              </Typography>
             </Alert>
           )}
 
-          {userStatus === "active" && eligibility?.canBook && (
-            <Alert severity="success">
-              You're eligible to book this session!
-            </Alert>
-          )}
+          {userStatus === "active" &&
+            eligibility &&
+            !eligibility.canBook &&
+            session &&
+            !isWithin24Hours(session.scheduledAt) && (
+              <Alert severity="warning">
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Cannot book this session:
+                </Typography>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  {eligibility.reasons.map((reason, index) => (
+                    <li key={index}>
+                      <Typography variant="body2">{reason}</Typography>
+                    </li>
+                  ))}
+                </ul>
+              </Alert>
+            )}
+
+          {userStatus === "active" &&
+            eligibility?.canBook &&
+            session &&
+            !isWithin24Hours(session.scheduledAt) && (
+              <Alert severity="success">
+                You're eligible to book this session!
+              </Alert>
+            )}
 
           {userStatus !== "active" && (
             <Alert severity="warning">Subscribe to access this Booking</Alert>
@@ -156,9 +176,17 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
           <Button
             variant="contained"
             onClick={onBook}
-            disabled={loading || !eligibility?.canBook}
+            loading={loading}
+            disabled={
+              !eligibility?.canBook ||
+              !!(session && isWithin24Hours(session?.scheduledAt))
+            }
           >
-            {loading ? "Booking..." : "Confirm Booking"}
+            {session && isWithin24Hours(session.scheduledAt)
+              ? "24h Notice Required"
+              : session
+              ? "Booking..."
+              : "Confirm Booking"}
           </Button>
         ) : (
           <Button

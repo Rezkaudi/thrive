@@ -19,10 +19,12 @@ import {
   CheckCircle,
   Cancel,
   ContentCopy,
+  Schedule,
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { CalendarSession, Booking } from "../../services/calendarService";
+import { formatTimeUntilSession, isWithin24Hours } from "../../utils/session";
 
 interface SessionCardProps {
   session: CalendarSession;
@@ -53,6 +55,12 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   const isPast = sessionEndTime < new Date();
   const isFull = session.currentParticipants >= session.maxParticipants;
 
+
+
+  // NEW: Check if within 24 hours
+  const within24Hours = isWithin24Hours(session.scheduledAt);
+  const timeUntilSession = formatTimeUntilSession(session.scheduledAt);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -64,7 +72,11 @@ export const SessionCard: React.FC<SessionCardProps> = ({
           mb: 2,
           opacity: isPast ? 0.7 : 1,
           border: isBooked ? "2px solid" : "1px solid",
-          borderColor: isBooked ? "primary.main" : "divider",
+          borderColor: isBooked
+            ? "primary.main"
+            : within24Hours && !isBooked
+            ? "warning.main"
+            : "divider",
         }}
       >
         <CardContent sx={{ p: compact ? 2 : 3 }}>
@@ -85,6 +97,15 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                     label="Booked"
                     size="small"
                     color="primary"
+                  />
+                )}
+                {within24Hours && !isBooked && !isPast && (
+                  <Chip
+                    icon={<AccessTime />}
+                    label="24h Notice Required"
+                    size="small"
+                    color="warning"
+                    variant="outlined"
                   />
                 )}
               </Stack>
@@ -112,6 +133,20 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 ({session.duration} min)
               </Typography>
             </Stack>
+
+            {/* NEW: Show time until session */}
+            {!isPast && (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Schedule fontSize="small" color="action" />
+                <Typography
+                  variant="body2"
+                  color={within24Hours ? "warning.main" : "text.secondary"}
+                  fontWeight={within24Hours ? 600 : 400}
+                >
+                  {timeUntilSession} until session
+                </Typography>
+              </Stack>
+            )}
 
             <Stack direction="row" spacing={1} alignItems="center">
               <Group fontSize="small" color="action" />
