@@ -27,6 +27,8 @@ import {
   DialogActions,
   Alert,
   Snackbar,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   Search,
@@ -50,6 +52,7 @@ interface User {
     level: number;
     languageLevel: string;
   };
+  subscriptionStatus: string
 }
 
 export const UserManagement: React.FC = () => {
@@ -68,6 +71,7 @@ export const UserManagement: React.FC = () => {
     message: '',
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
+  const [showNoSubscriptionOnly, setShowNoSubscriptionOnly] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -159,11 +163,19 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(
-    (user) =>
+  const filteredUsers = users.filter((user) => {
+    // First filter by search query
+    const matchesSearch =
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.profile?.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      user.profile?.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Then filter by subscription status if the toggle is enabled
+    if (showNoSubscriptionOnly) {
+      return matchesSearch && user.subscriptionStatus !== "active";
+    }
+
+    return matchesSearch;
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -171,9 +183,21 @@ export const UserManagement: React.FC = () => {
         <Typography variant="h4" fontWeight={700}>
           User Management
         </Typography>
-        <Button variant="contained" startIcon={<FilterList />}>
-          Filters
-        </Button>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showNoSubscriptionOnly}
+                onChange={(e) => setShowNoSubscriptionOnly(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Show only users without subscription"
+          />
+          <Button variant="contained" startIcon={<FilterList />}>
+            Filters
+          </Button>
+        </Stack>
       </Stack>
 
       <Card>
@@ -203,6 +227,7 @@ export const UserManagement: React.FC = () => {
                   <TableCell>Points</TableCell>
                   <TableCell>Level</TableCell>
                   <TableCell>Language</TableCell>
+                  <TableCell>Subscription</TableCell>
                   <TableCell>Joined</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -243,6 +268,13 @@ export const UserManagement: React.FC = () => {
                     <TableCell>{user.profile?.points || 0}</TableCell>
                     <TableCell>{user.profile?.level || 1}</TableCell>
                     <TableCell>{user.profile?.languageLevel || 'N5'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.subscriptionStatus}
+                        size="small"
+                        color={user.subscriptionStatus === "active" ? 'info' : user.subscriptionStatus === "No Subscription" ? 'default' : 'warning'}
+                      />
+                    </TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell align="right">
                       <IconButton
@@ -262,7 +294,7 @@ export const UserManagement: React.FC = () => {
 
           <TablePagination
             component="div"
-            count={users.length}
+            count={filteredUsers.length}
             page={page}
             onPageChange={(e, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
