@@ -1,25 +1,18 @@
 import Stripe from 'stripe';
-import { IPaymentService, PaymentIntent } from '../../application/services/IPaymentService';
+import { IPaymentService, PaymentIntent } from '../../domain/services/IPaymentService';
 
-
-function daysToSecondsFromNow(days: number) {
-  // Convert days to seconds (days * hours * minutes * seconds)
-  const daysInSeconds = days * 24 * 60 * 60;
-  // Get current time in seconds (Unix timestamp)
-  const nowInSeconds = Math.floor(Date.now() / 1000);
-  // Return the future timestamp in seconds
-  return daysInSeconds + nowInSeconds;
-}
+import { ENV_CONFIG } from '../config/env.config';
 
 export class PaymentService implements IPaymentService {
   private stripe: Stripe;
   private webhookSecret: string;
 
   constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    this.stripe = new Stripe(ENV_CONFIG.STRIPE_SECRET_KEY!, {
       apiVersion: '2025-06-30.basil',
     });
-    this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+    this.webhookSecret = ENV_CONFIG.STRIPE_WEBHOOK_SECRET!;
   }
 
   async createPaymentIntent(amount: number, currency: string, metadata?: any): Promise<PaymentIntent> {
@@ -107,14 +100,13 @@ export class PaymentService implements IPaymentService {
     // Add subscription_data only for subscription mode
     if (params.mode === 'subscription' && !params.customerId && params.metadata.hasTrial !== false) {
       sessionConfig.subscription_data = {
-        trial_end: daysToSecondsFromNow(Number(process.env.STRIPE_FREE_DAYS)) + 200
+        trial_end: daysToSecondsFromNow(Number(ENV_CONFIG.STRIPE_FREE_DAYS)) + 200
       };
     }
 
     const session = await this.stripe.checkout.sessions.create(sessionConfig);
     return session;
   }
-
 
   async retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session | null> {
     try {
@@ -194,6 +186,13 @@ export class PaymentService implements IPaymentService {
     }
   }
 
+}
 
-
+function daysToSecondsFromNow(days: number) {
+  // Convert days to seconds (days * hours * minutes * seconds)
+  const daysInSeconds = days * 24 * 60 * 60;
+  // Get current time in seconds (Unix timestamp)
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  // Return the future timestamp in seconds
+  return daysInSeconds + nowInSeconds;
 }

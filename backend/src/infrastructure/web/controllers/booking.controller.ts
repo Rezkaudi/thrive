@@ -1,25 +1,22 @@
+// backend/src/infrastructure/web/controllers/booking.controller.ts
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { CreateBookingUseCase } from '../../../application/use-cases/booking/CreateBookingUseCase';
 import { CancelBookingUseCase } from '../../../application/use-cases/booking/CancelBookingUseCase';
-import { SessionRepository } from '../../database/repositories/SessionRepository';
-import { BookingRepository } from '../../database/repositories/BookingRepository';
-import { ProfileRepository } from '../../database/repositories/ProfileRepository';
-import { ActivityService } from '../../services/ActivityService';
+import { GetMyBookingsUseCase } from '../../../application/use-cases/booking/GetMyBookingsUseCase';
 
 export class BookingController {
+  constructor(
+    private createBookingUseCase: CreateBookingUseCase,
+    private getMyBookingsUseCase: GetMyBookingsUseCase,
+    private cancelBookingUseCase: CancelBookingUseCase
+  ) { }
+
   async createBooking(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sessionId } = req.body;
 
-      const createBookingUseCase = new CreateBookingUseCase(
-        new SessionRepository(),
-        new BookingRepository(),
-        new ProfileRepository(),
-        new ActivityService()
-      );
-
-      const booking = await createBookingUseCase.execute({
+      const booking = await this.createBookingUseCase.execute({
         userId: req.user!.userId,
         sessionId
       });
@@ -32,8 +29,10 @@ export class BookingController {
 
   async getMyBookings(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const bookingRepository = new BookingRepository();
-      const bookings = await bookingRepository.findByUserId(req.user!.userId);
+      const bookings = await this.getMyBookingsUseCase.execute({
+        userId: req.user!.userId
+      });
+
       res.json(bookings);
     } catch (error) {
       next(error);
@@ -44,13 +43,7 @@ export class BookingController {
     try {
       const { bookingId } = req.params;
 
-      const cancelBookingUseCase = new CancelBookingUseCase(
-        new SessionRepository(),
-        new BookingRepository(),
-        new ProfileRepository()
-      );
-
-      await cancelBookingUseCase.execute({
+      await this.cancelBookingUseCase.execute({
         userId: req.user!.userId,
         bookingId
       });

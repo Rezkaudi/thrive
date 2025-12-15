@@ -3,7 +3,7 @@ import { Comment } from "../../../domain/entities/Comment";
 import { ICommentRepository } from "../../../domain/repositories/ICommentRepository";
 import { IProfileRepository } from "../../../domain/repositories/IProfileRepository";
 import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { ICommentableRepository } from "../../../infrastructure/database/repositories/ICommentableRepository";
+import { ICommentableRepository } from "../../../domain/repositories/ICommentableRepository";
 
 export interface CreateCommentDTO {
   userId: string;
@@ -44,7 +44,7 @@ export class CreateCommentUseCase {
       if (!parentComment) {
         throw new Error("Parent comment not found");
       }
-      
+
       // Ensure the parent comment belongs to the same post/announcement
       if (parentComment.postId !== dto.postId) {
         throw new Error("Parent comment does not belong to this post or announcement");

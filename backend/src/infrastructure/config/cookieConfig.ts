@@ -1,4 +1,5 @@
-// backend/src/infrastructure/config/cookieConfig.ts
+import { ENV_CONFIG } from "./env.config";
+
 export interface CookieConfig {
     httpOnly: boolean;
     secure: boolean;
@@ -7,14 +8,14 @@ export interface CookieConfig {
 
 export const getAccessTokenCookieConfig = (): CookieConfig => ({
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    secure: ENV_CONFIG.NODE_ENV === 'production',
+    sameSite: ENV_CONFIG.NODE_ENV === 'production' ? 'none' : 'lax'
 });
 
 export const getRefreshTokenCookieConfig = (): CookieConfig => ({
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    secure: ENV_CONFIG.NODE_ENV === 'production',
+    sameSite: ENV_CONFIG.NODE_ENV === 'production' ? 'none' : 'lax'
 });
 
 export const COOKIE_NAMES = {

@@ -10,6 +10,7 @@ export interface ISession {
   type: SessionType;
   hostId: string;
   meetingUrl?: string;
+  location? :string;
   scheduledAt: Date;
   duration: number; // in minutes
   maxParticipants: number;
@@ -31,6 +32,7 @@ export class Session implements ISession {
     public type: SessionType,
     public hostId: string,
     public meetingUrl: string | undefined,
+    public location: string | undefined,
     public scheduledAt: Date,
     public duration: number,
     public maxParticipants: number,
@@ -42,13 +44,17 @@ export class Session implements ISession {
     public recurringWeeks: number | undefined,
     public createdAt: Date,
     public updatedAt: Date
-  ) {}
+  ) { }
 
   isFull(): boolean {
     return this.currentParticipants >= this.maxParticipants;
   }
 
   canBook(): boolean {
-    return this.isActive && !this.isFull() && this.scheduledAt > new Date();
+    const sessionStartTime = this.scheduledAt;
+    const sessionEndTime = new Date(sessionStartTime.getTime() + this.duration * 60000);
+    const isPast = sessionEndTime < new Date();
+
+    return this.isActive && !this.isFull() && !isPast;
   }
 }
