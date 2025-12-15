@@ -32,6 +32,8 @@ interface InteractiveItemsManagerProps {
   onUpdateContent: (updates: Partial<InteractiveContent>) => void;
   previewItem: number | null;
   onSetPreviewItem: (index: number | null) => void;
+  slideSettings?: Record<string, any>;
+  onSlideSettingsUpdate?: (settings: Record<string, any>) => void;
 }
 
 export const InteractiveItemsManager: React.FC<InteractiveItemsManagerProps> = ({
@@ -39,6 +41,8 @@ export const InteractiveItemsManager: React.FC<InteractiveItemsManagerProps> = (
   onUpdateContent,
   previewItem,
   onSetPreviewItem,
+  slideSettings,
+  onSlideSettingsUpdate,
 }) => {
   const currentTypeConfig = interactiveTypes.find(t => t.value === interactiveContent.type);
   const isSentenceBuilder = interactiveContent.type === 'sentence-builder';
@@ -60,9 +64,10 @@ export const InteractiveItemsManager: React.FC<InteractiveItemsManagerProps> = (
   const addInteractiveItem = () => {
     if (isSentenceBuilder) return; // Don't allow adding items for sentence builder
     
-    const newItem = getDefaultInteractiveItem(interactiveContent.type);
+    const currentItems = interactiveContent.items || [];
+    const newItem = getDefaultInteractiveItem(interactiveContent.type, currentItems.length);
     onUpdateContent({
-      items: [...(interactiveContent.items || []), newItem]
+      items: [...currentItems, newItem]
     });
   };
 
@@ -310,6 +315,9 @@ export const InteractiveItemsManager: React.FC<InteractiveItemsManagerProps> = (
                   itemIndex={itemIndex}
                   onUpdate={updateInteractiveItem}
                   currentTypeConfig={currentTypeConfig}
+                  slideSettings={slideSettings}
+                  onSlideSettingsUpdate={onSlideSettingsUpdate}
+                  allItems={interactiveContent.items}
                 />
 
                 {previewItem === itemIndex && (
@@ -382,10 +390,10 @@ export const InteractiveItemsManager: React.FC<InteractiveItemsManagerProps> = (
                   size="small"
                   variant="outlined"
                   onClick={() => {
-                    // Add 3 more default items
+                    // Add 3 more default items with proper indices
                     const newItems = [];
                     for (let i = 0; i < 3; i++) {
-                      newItems.push(getDefaultInteractiveItem(interactiveContent.type));
+                      newItems.push(getDefaultInteractiveItem(interactiveContent.type, items.length + i));
                     }
                     onUpdateContent({
                       items: [...items, ...newItems]

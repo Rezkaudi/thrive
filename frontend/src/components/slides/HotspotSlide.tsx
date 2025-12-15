@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { SlideComponentProps } from "../../types/slide.types";
 import {
   Alert,
@@ -15,6 +15,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { CheckCircle, Image, TouchApp } from "@mui/icons-material";
+import { HotspotItem } from "../../types/interactive-items.types";
 
 export const HotspotSlide: React.FC<SlideComponentProps> = ({
   slide,
@@ -35,13 +36,40 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
   const showSlideFeeback = showFeedback[slideId];
   const validation = validationResults[slideId];
 
-  const handleHotspotClick = (hotspotId: string) => {
-    setHotspotClicks((prev) => new Set(prev).add(hotspotId));
-  };
+  // Get hotspot items first
+  const hotspotItems = useMemo(() => content.items || [], [content.items]);
 
-  const handleCheckAnswer = () => {
-    const correctHotspots =
-      content.items?.map((item: any) => item.id.toString()) || [];
+  // Memoized values - get image URL from first hotspot or slide settings
+  const imageUrl = useMemo(() => {
+    // First, try to get from first hotspot's imageUrl
+    const firstHotspotImage = hotspotItems?.[0]?.imageUrl;
+    if (firstHotspotImage) return firstHotspotImage;
+    
+    // Then try slide-level settings
+    if (content.settings?.imageUrl) return content.settings.imageUrl;
+    
+    // Finally try localStorage fallback
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hotspot-temp-image-url');
+    }
+    return null;
+  }, [content.settings?.imageUrl, hotspotItems]);
+  const totalHotspots = hotspotItems.length;
+  const progressPercent = totalHotspots > 0 ? (hotspotClicks.size / totalHotspots) * 100 : 0;
+
+  const hotspotSize = useMemo(() => {
+    if (isMobile) return 32;
+    if (isTablet) return 36;
+    return 40;
+  }, [isMobile, isTablet]);
+
+  // Callbacks
+  const handleHotspotClick = useCallback((hotspotId: string) => {
+    setHotspotClicks((prev) => new Set(prev).add(hotspotId));
+  }, []);
+
+  const handleCheckAnswer = useCallback(() => {
+    const correctHotspots = hotspotItems.map((item: HotspotItem) => item.id?.toString() || '');
     const clickedHotspots = Array.from(hotspotClicks);
 
     checkAnswer(
@@ -50,28 +78,21 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
       correctHotspots.sort(),
       "hotspot"
     );
-  };
+  }, [hotspotItems, hotspotClicks, slideId, checkAnswer]);
 
-  const resetHotspots = () => {
+  const handleReset = useCallback(() => {
     setHotspotClicks(new Set());
-  };
+  }, []);
 
-  const handleImageLoad = () => {
+  const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
     setImageError(false);
-  };
+  }, []);
 
-  const handleImageError = () => {
+  const handleImageError = useCallback(() => {
     setImageError(true);
     setImageLoaded(false);
-  };
-
-  // Look for image URL in content.settings.imageUrl (slide level) or localStorage fallback
-  const savedImageUrl = typeof window !== 'undefined' ? localStorage.getItem('hotspot-temp-image-url') : null;
-  const imageUrl = content.settings?.imageUrl || savedImageUrl;
-
-  // Responsive hotspot size
-  const hotspotSize = isMobile ? 32 : isTablet ? 36 : 40;
+  }, []);
 
   return (
     <Box sx={{
@@ -94,12 +115,12 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
       </Typography>
 
       <Typography
-        variant="h3"
+        variant="body1"
         sx={{
           textAlign: "center",
           mb: { xs: 3, md: 4 },
-          // color: "text.secondary",
-          // fontSize: { xs: "1rem", md: "1.1rem" },
+          color: "text.secondary",
+          fontSize: { xs: "1rem", md: "1.1rem" },
           px: { xs: 1, sm: 2 }
         }}
       >
@@ -157,76 +178,75 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
             />
 
             {/* Hotspot Indicators - only show when image is loaded */}
-            {imageLoaded && content.items?.map((item: any) => (
-              <Tooltip
-                key={item.id}
-                title={
-                  hotspotClicks.has(item.id.toString())
-                    ? item.feedback
-                    : item.label
-                }
-                arrow
-                placement="top"
-                componentsProps={{
-                  tooltip: {
-                    sx: {
-                      fontSize: { xs: "0.75rem", md: "0.875rem" },
-                      maxWidth: { xs: 200, md: 300 }
+            {imageLoaded && content.items?.map((item: HotspotItem, index: number) => {
+              const itemId = item.id?.toString() || `hotspot-${index}`;
+              const isClicked = hotspotClicks.has(itemId);
+              
+              return (
+                <Tooltip
+                  key={itemId}
+                  title={isClicked ? item.feedback : item.label}
+                  arrow
+                  placement="top"
+                  componentsProps={{
+                    tooltip: {
+                      sx: {
+                        fontSize: { xs: "0.75rem", md: "0.875rem" },
+                        maxWidth: { xs: 200, md: 300 }
+                      }
                     }
-                  }
-                }}
-              >
-                <IconButton
-                  onClick={() => handleHotspotClick(item.id.toString())}
-                  sx={{
-                    position: "absolute",
-                    left: `${item.x}%`,
-                    top: `${item.y}%`,
-                    transform: "translate(-50%, -50%)",
-                    width: hotspotSize,
-                    height: hotspotSize,
-                    bgcolor: hotspotClicks.has(item.id.toString())
-                      ? "success.main"
-                      : "primary.main",
-                    color: "white",
-                    boxShadow: { xs: 2, md: 3 },
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                    animation:
-                      content.settings?.showAllHotspots ||
-                        hotspotClicks.has(item.id.toString())
-                        ? "none"
-                        : "pulse 2s infinite",
-                    "&:hover": {
-                      bgcolor: hotspotClicks.has(item.id.toString())
-                        ? "success.dark"
-                        : "primary.dark",
-                      transform: "translate(-50%, -50%) scale(1.1)",
-                    },
-                    // Touch targets for mobile
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: -8,
-                      left: -8,
-                      right: -8,
-                      bottom: -8,
-                      display: { xs: "block", md: "none" }
-                    },
-                    "@keyframes pulse": {
-                      "0%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0.7)" },
-                      "70%": { boxShadow: `0 0 0 ${isMobile ? 8 : 10}px rgba(25, 118, 210, 0)` },
-                      "100%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0)" },
-                    },
                   }}
                 >
-                  {hotspotClicks.has(item.id.toString()) ? (
-                    <CheckCircle sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }} />
-                  ) : (
-                    <TouchApp sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }} />
-                  )}
-                </IconButton>
-              </Tooltip>
-            ))}
+                  <IconButton
+                    onClick={() => handleHotspotClick(itemId)}
+                    sx={{
+                      position: "absolute",
+                      left: `${Math.max(0, Math.min(100, item.x ?? 50))}%`,
+                      top: `${Math.max(0, Math.min(100, item.y ?? 50))}%`,
+                      transform: "translate(-50%, -50%)",
+                      width: hotspotSize,
+                      height: hotspotSize,
+                      minWidth: hotspotSize,
+                      minHeight: hotspotSize,
+                      padding: 0,
+                      bgcolor: isClicked ? "success.main" : "primary.main",
+                      color: "white",
+                      boxShadow: { xs: 2, md: 3 },
+                      fontSize: { xs: "1rem", md: "1.25rem" },
+                      animation:
+                        content.settings?.showAllHotspots || isClicked
+                          ? "none"
+                          : "pulse 2s infinite",
+                      "&:hover": {
+                        bgcolor: isClicked ? "success.dark" : "primary.dark",
+                        transform: "translate(-50%, -50%) scale(1.1)",
+                      },
+                      // Touch targets for mobile
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: -8,
+                        left: -8,
+                        right: -8,
+                        bottom: -8,
+                        display: { xs: "block", md: "none" }
+                      },
+                      "@keyframes pulse": {
+                        "0%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0.7)" },
+                        "70%": { boxShadow: `0 0 0 ${isMobile ? 8 : 10}px rgba(25, 118, 210, 0)` },
+                        "100%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0)" },
+                      },
+                    }}
+                  >
+                    {isClicked ? (
+                      <CheckCircle sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }} />
+                    ) : (
+                      <TouchApp sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }} />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              );
+            })}
           </Box>
         ) : (
           <Box sx={{
@@ -284,12 +304,11 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
               textAlign: { xs: "center", sm: "left" }
             }}
           >
-            Progress: {hotspotClicks.size} of {content.items?.length || 0}{" "}
-            hotspots found
+            Progress: {hotspotClicks.size} of {totalHotspots} hotspots found
           </Typography>
           <LinearProgress
             variant="determinate"
-            value={(hotspotClicks.size / (content.items?.length || 1)) * 100}
+            value={progressPercent}
             sx={{
               width: { xs: "100%", sm: 200 },
               height: { xs: 6, md: 8 },
@@ -308,7 +327,7 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
         <Button
           variant="outlined"
           size={isMobile ? "medium" : "large"}
-          onClick={resetHotspots}
+          onClick={handleReset}
           sx={{
             px: { xs: 3, md: 4 },
             py: { xs: 1, md: 1.5 },
@@ -323,7 +342,7 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
           variant="contained"
           size={isMobile ? "medium" : "large"}
           onClick={handleCheckAnswer}
-          disabled={hotspotClicks.size !== (content.items?.length || 0)}
+          disabled={hotspotClicks.size !== totalHotspots}
           sx={{
             px: { xs: 4, md: 6 },
             py: { xs: 1, md: 1.5 },
@@ -336,7 +355,7 @@ export const HotspotSlide: React.FC<SlideComponentProps> = ({
             },
           }}
         >
-          Check Hotspots ({hotspotClicks.size}/{content.items?.length || 0})
+          Check Hotspots ({hotspotClicks.size}/{totalHotspots})
         </Button>
       </Stack>
 

@@ -22,12 +22,19 @@ import { FlashcardEditor } from './editors/FlashcardEditor';
 import { AudioEditor } from './editors/AudioEditor';
 import { SentenceBuilderEditor } from './editors/SentenceBuilderEditor';
 
-export const InteractiveItemEditor: React.FC<InteractiveItemEditorProps> = ({
+interface ExtendedInteractiveItemEditorProps extends InteractiveItemEditorProps {
+  allItems?: InteractiveItem[];
+}
+
+export const InteractiveItemEditor: React.FC<ExtendedInteractiveItemEditorProps> = ({
   type,
   item,
   itemIndex,
   onUpdate,
   currentTypeConfig,
+  slideSettings,
+  onSlideSettingsUpdate,
+  allItems = [],
 }) => {
   // Wrapper function to handle updates with itemIndex
   const handleUpdate = (updates: Partial<InteractiveItem>) => {
@@ -69,10 +76,14 @@ export const InteractiveItemEditor: React.FC<InteractiveItemEditorProps> = ({
 
     case 'hotspot':
       return (
-        <HotspotEditor 
-          item={item as HotspotItem} 
+        <HotspotEditor
+          item={item as HotspotItem}
+          itemIndex={itemIndex}
           onUpdate={handleUpdate}
           currentTypeConfig={currentTypeConfig}
+          slideSettings={slideSettings}
+          onSlideSettingsUpdate={onSlideSettingsUpdate}
+          allHotspots={allItems as HotspotItem[]}
         />
       );
 

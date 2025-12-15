@@ -75,7 +75,7 @@ export const getDefaultContent = (type: SlideContent['type']): SlideContent => {
   }
 };
 
-export const getDefaultInteractiveItem = (type: string) => {
+export const getDefaultInteractiveItem = (type: string, itemIndex?: number) => {
   const id = Date.now() + Math.random();
 
   switch (type) {
@@ -91,8 +91,18 @@ export const getDefaultInteractiveItem = (type: string) => {
     case 'sorting':
       return { id, text: '', correctOrder: 0 };
 
-    case 'hotspot':
-      return { id, x: 50, y: 50, label: '', feedback: '' };
+    case 'hotspot': {
+      // Vary positions for multiple hotspots
+      const positions = [
+        { x: 25, y: 25 },
+        { x: 75, y: 25 },
+        { x: 50, y: 50 },
+        { x: 25, y: 75 },
+        { x: 75, y: 75 }
+      ];
+      const pos = positions[(itemIndex || 0) % positions.length];
+      return { id, x: pos.x, y: pos.y, label: '', feedback: '', imageUrl: '' };
+    }
 
     case 'timeline':
       return { id, event: '', date: '', description: '' };
