@@ -111,7 +111,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             </Alert>
           )}
 
-          {userStatus === "active" &&
+          {(userStatus === "active" || userStatus === 'trialing') &&
             eligibility &&
             !eligibility.canBook &&
             session &&
@@ -130,7 +130,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
               </Alert>
             )}
 
-          {userStatus === "active" &&
+          {(userStatus === "active" || userStatus === 'trialing') &&
             eligibility?.canBook &&
             session &&
             !isWithin24Hours(session.scheduledAt) && (
@@ -139,11 +139,11 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
               </Alert>
             )}
 
-          {userStatus !== "active" && (
+          {userStatus !== "active" && userStatus !== 'trialing' && (
             <Alert severity="warning">Subscribe to access this Booking</Alert>
           )}
 
-          {userStatus !== "active" && (
+          {userStatus !== "active" && userStatus !== 'trialing' && (
             <FormControlLabel
               control={
                 <Checkbox
@@ -172,7 +172,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        {userStatus === "active" ? (
+        {(userStatus === "active" || userStatus === 'trialing') ? (
           <Button
             variant="contained"
             onClick={onBook}
