@@ -1,0 +1,15 @@
+export { AchievementCard } from "./AchievementCard";
+export { AchievementsSection } from "./AchievementsSection";
+export { ActionsSection } from "./ActionsSection";
+export { CourseItem } from "./CourseItem";
+export { CourseProgressSection } from "./CourseProgressSection";
+export { CoverImageSection } from "./CoverImageSection";
+export { Header } from "./Header";
+export { ProfileHeader } from "./ProfileHeader";
+export { ProfileError, ProfileLoading } from "./ProfileStates";
+export { QuickStats } from "./QuickStats";
+export { RecentActivity } from "./RecentActivity";
+export { SkillProgress } from "./SkillProgress";
+export { StatItem } from "./StatItem";
+export { StatsCard } from "./StatsCard";
+export { StatsGrid } from "./StatsGrid"; 

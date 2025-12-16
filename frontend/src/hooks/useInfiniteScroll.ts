@@ -15,72 +15,40 @@ interface UseInfiniteScrollReturn {
 
 // Hook using Intersection Observer API (more performant)
 export const useInfiniteScroll = (
-  callback: () => void | Promise<void>,
+  callback: () => void,
   hasMore: boolean,
-  loading: boolean,
-  options: UseInfiniteScrollOptions = {}
-): UseInfiniteScrollReturn => {
-  const {
-    threshold = 1000,
-    rootMargin = '0px',
-    enabled = true
-  } = options;
-
+  loading: boolean
+) => {
   const [isFetching, setIsFetching] = useState(false);
-  
-  // Create a ref that will always be defined
-  const targetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!enabled || !hasMore || loading || isFetching) return;
-
-    const target = targetRef.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && hasMore && !loading && !isFetching) {
-          setIsFetching(true);
-        }
-      },
-      {
-        root: null,
-        rootMargin,
-        threshold: 0.1
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop <
+        document.documentElement.offsetHeight - 1000
+      ) {
+        return;
       }
-    );
-
-    observer.observe(target);
-
-    return () => {
-      if (target) {
-        observer.unobserve(target);
+      if (hasMore && !loading && !isFetching) {
+        setIsFetching(true);
       }
     };
-  }, [enabled, hasMore, loading, isFetching, rootMargin]);
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [hasMore, loading, isFetching]);
 
   useEffect(() => {
     if (!isFetching) return;
 
-    const executeCallback = async () => {
-      try {
-        await callback();
-      } catch (error) {
-        console.error('Infinite scroll callback error:', error);
-      } finally {
-        setIsFetching(false);
-      }
-    };
+    if (hasMore && !loading) {
+      callback();
+    }
 
-    executeCallback();
-  }, [isFetching, callback]);
+    setIsFetching(false);
+  }, [isFetching, callback, hasMore, loading]);
 
-  return {
-    isFetching,
-    setIsFetching,
-    targetRef
-  };
+  return [isFetching, setIsFetching] as const;
 };
 
 // Alternative hook using scroll event (for more control)

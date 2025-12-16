@@ -87,8 +87,8 @@ export const editFeedback = createAsyncThunk(
         content,
         mediaUrls: mediaUrls || [],
       };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to edit feedback');
+    } catch (error) {
+      return rejectWithValue((error as any).message || 'Failed to edit feedback');
     }
   }
 );
@@ -99,8 +99,8 @@ export const deleteFeedback = createAsyncThunk(
     try {
       const response = await feedbackService.deleteFeedback(feedbackId);
       return { feedbackId, ...response };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to delete feedback');
+    } catch (error) {
+      return rejectWithValue((error as any).message || 'Failed to delete feedback');
     }
   }
 );
@@ -117,8 +117,8 @@ export const fetchFeedbackComments = createAsyncThunk(
     try {
       const response = await feedbackService.getCommentsByFeedback(feedbackId, page, limit, includeReplies);
       return { feedbackId, ...response };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch comments');
+    } catch (error) {
+      return rejectWithValue((error as any).message || 'Failed to fetch comments');
     }
   }
 );
@@ -145,8 +145,8 @@ export const createFeedbackComment = createAsyncThunk(
       };
 
       return { feedbackId, comment: commentWithAuthor };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to create comment');
+    } catch (error) {
+      return rejectWithValue((error as any).message || 'Failed to create comment');
     }
   }
 );
@@ -162,8 +162,8 @@ export const updateFeedbackComment = createAsyncThunk(
       } else {
         throw new Error(response.data.message || 'Failed to update comment');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update comment');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.message || (error as any).message || 'Failed to update comment');
     }
   }
 );
@@ -179,8 +179,8 @@ export const deleteFeedbackComment = createAsyncThunk(
       } else {
         throw new Error(response.data.message || 'Failed to delete comment');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete comment');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.message || (error as any).message || 'Failed to delete comment');
     }
   }
 );
@@ -198,8 +198,8 @@ export const fetchFeedbackCommentCount = createAsyncThunk(
 
       const response = await feedbackService.getCommentCount(feedbackId);
       return { feedbackId, count: response.count };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch comment count');
+    } catch (error) {
+      return rejectWithValue((error as any).message || 'Failed to fetch comment count');
     }
   }
 );
@@ -648,7 +648,7 @@ const feedbackSlice = createSlice({
         }
       })
       .addCase(fetchFeedbackCommentCount.rejected, (state, action) => {
-        console.error('Failed to fetch comment count:', action.payload);
+        // Error silently handled
       })
       // Add extra reducers to handle optimistic updates for comments
       .addCase(startEditFeedbackComment, (state, action) => {

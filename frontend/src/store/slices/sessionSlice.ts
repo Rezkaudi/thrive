@@ -72,14 +72,16 @@ export interface RecurringSessionDetails {
   };
 }
 
+export interface IFilters {
+  type: string;
+  isActive: string;
+  isRecurring: string;
+}
+
 interface SessionState {
   sessions: Session[];
   pagination: PaginationInfo;
-  filters: {
-    type: string;
-    isActive: string;
-    isRecurring: string;
-  };
+  filters: IFilters;
   loading: boolean;
   error: string | null;
 

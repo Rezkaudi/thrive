@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/store';
-import { chackPayment, checkAuth } from '../../store/slices/authSlice';
+import { checkAuth } from '../../store/slices/authSlice';
 import { fetchDashboardData } from '../../store/slices/dashboardSlice';
 import { Box, CircularProgress } from '@mui/material';
 

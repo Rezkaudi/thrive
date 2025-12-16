@@ -1,3 +1,4 @@
+
 export function handlePasteCode(
   e: React.ClipboardEvent,
   verificationCode: string[],

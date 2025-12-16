@@ -159,7 +159,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                                     </Typography>
                                 </Box>
 
-                                {activity.metadata?.points && (
+                                {typeof activity.metadata?.points === "number" && activity.metadata.points > 0 && (
                                     <Chip
                                         label={`+${activity.metadata.points}`}
                                         size="small"

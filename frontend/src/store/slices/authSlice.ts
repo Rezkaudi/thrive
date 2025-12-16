@@ -5,7 +5,7 @@ import { authService } from '../../services/authService';
 import { subscriptionService } from '../../services/subscriptionService';
 
 
-interface User {
+export interface User {
   id: string;
   email: string;
   role: string;
@@ -68,7 +68,7 @@ export const refreshToken = createAsyncThunk('auth/refresh', async () => {
   return response;
 });
 
-export const chackPayment = createAsyncThunk('subscriptions/check', async () => {
+export const checkPayment = createAsyncThunk('subscriptions/check', async () => {
   const response = await subscriptionService.checkSubscriptionStatus();
   return response;
 });
@@ -144,22 +144,22 @@ const authSlice = createSlice({
         state.user = action.payload.user;
       })
       // Check Subscription
-      .addCase(chackPayment.pending, (state) => {
+      .addCase(checkPayment.pending, (state) => {
         state.paymentChecking = true;
         state.loading = true;
       })
-      .addCase(chackPayment.fulfilled, (state, action) => {
+      .addCase(checkPayment.fulfilled, (state, action) => {
         state.paymentChecking = false;
         state.loading = false;
         state.status = action.payload.status;
         state.hasAccessToCourses = action.payload.hasAccessToCourses;
         state.hasSubscription = action.payload.hasSubscription;
       })
-      .addCase(chackPayment.rejected, (state) => {
+      .addCase(checkPayment.rejected, (state) => {
         state.paymentChecking = false;
         state.loading = false;
-        state.hasAccessToCourses = false
-        state.hasSubscription = false
+        state.hasAccessToCourses = false;
+        state.hasSubscription = false;
       })
   },
 });

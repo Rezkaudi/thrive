@@ -77,22 +77,22 @@ const plans: PlanOption[] = [
             { title: 'Access to Exclusive Events and Meet Ups', included: true },
         ],
     },
-    {
-        id: 'yearly',
-        name: 'Yearly Subscription',
-        regularPrice: 2000,
-        discountedPrice: 1400,
-        currency: '$',
-        period: 'year',
-        savings: 30,
-        features: [
-            { title: 'Thrive in Japan Platform', included: true },
-            { title: 'Unlimited Speaking Sessions', included: true },
-            { title: '"Japan in Context" Curriculum', included: true },
-            { title: '"JLPT in Context" Curriculum', included: true },
-            { title: 'Access to Exclusive Events and Meet Ups', included: true },
-        ],
-    },
+    // {
+    //     id: 'yearly',
+    //     name: 'Yearly Subscription',
+    //     regularPrice: 2000,
+    //     discountedPrice: 1400,
+    //     currency: '$',
+    //     period: 'year',
+    //     savings: 30,
+    //     features: [
+    //         { title: 'Thrive in Japan Platform', included: true },
+    //         { title: 'Unlimited Speaking Sessions', included: true },
+    //         { title: '"Japan in Context" Curriculum', included: true },
+    //         { title: '"JLPT in Context" Curriculum', included: true },
+    //         { title: 'Access to Exclusive Events and Meet Ups', included: true },
+    //     ],
+    // },
 ];
 
 const MotionCard = motion(Card);
@@ -123,7 +123,7 @@ export const SubscriptionPage: React.FC = () => {
             const status = await paymentService.checkDiscountStatus();
             setDiscountStatus(status);
         } catch (err) {
-            console.error('Failed to fetch discount status:', err);
+            // Error silently handled
         } finally {
             setLoadingDiscount(false);
         }
@@ -511,7 +511,7 @@ export const SubscriptionPage: React.FC = () => {
                                                             <Typography variant="button">
                                                                 Claim Your Discount
                                                             </Typography>
-                                                            <Typography variant="caption" sx={{ fontSize: 20}}>
+                                                            <Typography variant="caption" sx={{ fontSize: 20 }}>
                                                                 {hasSubscription ? 'Subscribe Now' : '14-Day Free Trial'}
                                                             </Typography>
                                                         </Stack>

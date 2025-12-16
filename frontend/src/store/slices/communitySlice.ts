@@ -117,8 +117,8 @@ export const editPost = createAsyncThunk(
         content,
         mediaUrls: mediaUrls || [],
       };
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to edit post');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.error || 'Failed to edit post');
     }
   }
 );
@@ -129,8 +129,8 @@ export const deletePost = createAsyncThunk(
     try {
       const response = await api.delete(`/community/posts/${postId}`);
       return { postId, ...response.data };
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to delete post');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.error || 'Failed to delete post');
     }
   }
 );
@@ -154,9 +154,8 @@ export const fetchComments = createAsyncThunk(
       } else {
         throw new Error(response.data.message || 'Failed to fetch comments');
       }
-    } catch (error: any) {
-      console.error('Failed to fetch comments:', error);
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch comments');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.message || (error as any).message || 'Failed to fetch comments');
     }
   }
 );
@@ -191,9 +190,8 @@ export const createComment = createAsyncThunk(
       } else {
         throw new Error(response.data.message || 'Failed to create comment');
       }
-    } catch (error: any) {
-      console.error('Failed to create comment:', error);
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to create comment');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.message || (error as any).message || 'Failed to create comment');
     }
   }
 );
@@ -209,8 +207,8 @@ export const updateComment = createAsyncThunk(
       } else {
         throw new Error(response.data.message || 'Failed to update comment');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update comment');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.message || (error as any).message || 'Failed to update comment');
     }
   }
 );
@@ -226,8 +224,8 @@ export const deleteComment = createAsyncThunk(
       } else {
         throw new Error(response.data.message || 'Failed to delete comment');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete comment');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.message || (error as any).message || 'Failed to delete comment');
     }
   }
 );
@@ -250,8 +248,8 @@ export const fetchCommentCount = createAsyncThunk(
       } else {
         throw new Error(response.data.message || 'Failed to fetch comment count');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch comment count');
+    } catch (error) {
+      return rejectWithValue((error as any).response?.data?.message || (error as any).message || 'Failed to fetch comment count');
     }
   }
 );

@@ -1,77 +1,36 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  Card,
-  Grid,
-  CardContent,
-  Typography,
-  LinearProgress,
-  Avatar,
-  Stack,
-  Paper,
-  Chip,
-  IconButton,
-  Skeleton,
-  Alert,
-} from '@mui/material';
-import {
-  School,
-  Groups,
-  CalendarMonth,
-  EmojiEvents,
-  ArrowForward,
-  Refresh,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../store/store';
-import { fetchDashboardData } from '../store/slices/dashboardSlice';
-import { ActivityFeed } from '../components/activity/ActivityFeed';
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 
+import { Container, Grid, Alert, IconButton } from "@mui/material";
+import { Refresh } from "@mui/icons-material";
 
-const StatCard = ({ icon, title, value, color, onClick, loading }: any) => (
-  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-    <Card
-      sx={{
-        cursor: onClick ? 'pointer' : 'default',
-        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-        border: `1px solid ${color}20`,
-        height: '100%',
-      }}
-      onClick={onClick}
-    >
-      <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            {loading ? (
-              <Skeleton variant="text" width={60} height={40} />
-            ) : (
-              <Typography variant="h4" fontWeight={700} color={color}>
-                {value}
-              </Typography>
-            )}
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {title}
-            </Typography>
-          </Box>
-          <Avatar sx={{ bgcolor: color, width: 56, height: 56 }}>
-            {icon}
-          </Avatar>
-        </Stack>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+import { RootState, AppDispatch } from "../store/store";
+import { fetchDashboardData } from "../store/slices/dashboardSlice";
+import {
+  WelcomeSection,
+  StatsGrid,
+  ProgressSection,
+  QuickActions,
+  AchievementsSection,
+  UpcomingSessions,
+} from "../components/dashboard";
+
+const GRID_SIZES = {
+  MAIN_CONTENT: { xs: 12, md: 8 },
+  SIDEBAR: { xs: 12, md: 4 },
+} as const;
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { data: dashboardData, loading, error } = useSelector((state: RootState) => state.dashboard);
+  const {
+    data: dashboardData,
+    loading,
+    error,
+  } = useSelector((state: RootState) => state.dashboard);
 
-  // In useEffect
   useEffect(() => {
     dispatch(fetchDashboardData());
   }, [dispatch]);
@@ -80,54 +39,17 @@ export const DashboardPage: React.FC = () => {
     dispatch(fetchDashboardData());
   };
 
-  const stats = [
-    {
-      icon: <School />,
-      title: 'Lessons Completed',
-      value: dashboardData
-        ? `${dashboardData.stats.totalLessonsCompleted}/${dashboardData.stats.totalLessonsAvailable}`
-        : '-',
-      color: '#5C633A',
-      onClick: () => navigate('/classroom'),
-    },
-    {
-      icon: <EmojiEvents />,
-      title: 'Total Points',
-      value: dashboardData?.stats.totalPoints || 0,
-      color: '#A6531C',
-    },
-    {
-      icon: <Groups />,
-      title: 'Community Posts',
-      value: dashboardData?.stats.communityPostsCount || 0,
-      color: '#D4BC8C',
-      onClick: () => navigate('/community'),
-    },
-    {
-      icon: <CalendarMonth />,
-      title: 'Upcoming Sessions',
-      value: dashboardData?.stats.upcomingSessionsCount || 0,
-      color: '#483C32',
-      onClick: () => navigate('/calendar'),
-    },
-  ];
-
-  // const formatActivityTime = (timestamp: string) => {
-  //   try {
-  //     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-  //   } catch {
-  //     return 'Recently';
-  //   }
-  // };
-
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error" action={
-          <IconButton color="inherit" size="small" onClick={handleRefresh}>
-            <Refresh />
-          </IconButton>
-        }>
+        <Alert
+          severity="error"
+          action={
+            <IconButton color="inherit" size="small" onClick={handleRefresh}>
+              <Refresh />
+            </IconButton>
+          }
+        >
           {error}
         </Alert>
       </Container>
@@ -137,317 +59,61 @@ export const DashboardPage: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
       {/* Welcome Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Paper
-          sx={{
-            p: 4,
-            mb: 4,
-            background: 'linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)',
-            color: 'white',
-            borderRadius: 3,
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -50,
-              right: -50,
-              width: 200,
-              height: 200,
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.1)',
-            }}
-          />
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Typography variant="h4" gutterBottom fontWeight={600}>
-                Ready to Thrive, {dashboardData?.user.name || dashboardData?.user.email.split('@')[0]} ? 👋
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                Learn Japanese, Truly belong, Live your purpose.
-              </Typography>
-            </Box>
-            <IconButton
-              onClick={handleRefresh}
-              sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.2)' }}
-            >
-              <Refresh />
-            </IconButton>
-          </Stack>
-        </Paper>
-      </motion.div>
+      <WelcomeSection
+        userName={dashboardData?.user?.name}
+        userEmail={dashboardData?.user?.email}
+        onRefresh={handleRefresh}
+      />
 
       {/* Stats Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((stat, index) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <StatCard {...stat} loading={loading} />
-            </motion.div>
-          </Grid>
-        ))}
-      </Grid>
+      <StatsGrid
+        stats={{
+          totalLessonsCompleted:
+            dashboardData?.stats?.totalLessonsCompleted || 0,
+          totalLessonsAvailable:
+            dashboardData?.stats?.totalLessonsAvailable || 0,
+          totalPoints: dashboardData?.stats?.totalPoints || 0,
+          communityPostsCount: dashboardData?.stats?.communityPostsCount || 0,
+          upcomingSessionsCount:
+            dashboardData?.stats?.upcomingSessionsCount || 0,
+        }}
+        loading={loading}
+        onNavigate={navigate}
+      />
 
-      {/* Progress Section */}
+      {/* Main Content Grid */}
       <Grid container spacing={4}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Card sx={{ mb: 4 }}>
-            <CardContent>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={3}
-              >
-                <Typography variant="h6" fontWeight={600}>
-                  Current Progress
-                </Typography>
-                <Chip
-                  label={`Level ${dashboardData?.user.level || 1}`}
-                  color="primary"
-                  size="small"
-                />
-              </Stack>
-
-              {loading ? (
-                <>
-                  <Skeleton variant="rectangular" height={40} sx={{ mb: 2 }} />
-                  <Skeleton variant="rectangular" height={40} />
-                </>
-              ) : (dashboardData?.courseProgress?.length && dashboardData?.courseProgress?.length > 0 ?
-                dashboardData?.courseProgress.map((course, index) => (
-                  <Box key={course.courseId} sx={{ mb: index === 0 ? 3 : 0 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {course.courseTitle}
-                    </Typography>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={course.progressPercentage}
-                        sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
-                        color={index === 0 ? "primary" : "secondary"}
-                      />
-                      <Typography variant="body2">{course.progressPercentage}%</Typography>
-                    </Stack>
-                    <Typography variant="caption" color="text.secondary">
-                      {course.completedLessons} of {course.totalLessons} lessons completed
-                    </Typography>
-                  </Box>
-                )) :
-                <Paper sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    No Progress yet
-                  </Typography>
-                </Paper>
-              )}
-            </CardContent>
-          </Card>
-          {/* */}
-          {/* Recent Activity */}
-          {/* <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                Recent Activity
-              </Typography>
-              <Stack spacing={2}>
-                {loading ? (
-                  <>
-                    <Skeleton variant="text" height={30} />
-                    <Skeleton variant="text" height={30} />
-                    <Skeleton variant="text" height={30} />
-                  </>
-                ) : dashboardData?.recentActivity.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    No recent activity
-                  </Typography>
-                ) : (
-                  dashboardData?.recentActivity.slice(0, 5).map((activity, index) => (
-                    <Stack
-                      key={index}
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      sx={{ py: 1 }}
-                    >
-                      <Typography variant="body2">{activity.title}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatActivityTime(activity.timestamp)}
-                      </Typography>
-                    </Stack>
-                  ))
-                )}
-              </Stack>
-            </CardContent>
-          </Card> */}
-
-          <Card>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6" fontWeight={600}>
-                  Recent Activity
-                </Typography>
-                {/* <Button size="small" onClick={() => navigate('/profile?tab=activity')}>
-                  View All
-                </Button> */}
-              </Stack>
-              <ActivityFeed
-                activities={dashboardData?.recentActivity!}
-                loading={loading}
-                compact
-                maxItems={5}
-              />
-            </CardContent>
-          </Card>
+        <Grid size={GRID_SIZES.MAIN_CONTENT}>
+          {/* Progress Section */}
+          <ProgressSection
+            courseProgress={dashboardData?.courseProgress || []}
+            recentActivity={dashboardData?.recentActivity || []}
+            userLevel={dashboardData?.user?.level || 1}
+            loading={loading}
+          />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={GRID_SIZES.SIDEBAR}>
           {/* Quick Actions */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                Quick Actions
-              </Typography>
-              <Stack spacing={2}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                  onClick={() => navigate('/classroom')}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography variant="body1" fontWeight={500}>
-                        Continue Learning
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {dashboardData && dashboardData.courseProgress.length > 0
-                          ? `Next lesson in ${dashboardData.courseProgress[0].courseTitle}`
-                          : 'Start your first lesson'}
-                      </Typography>
-                    </Box>
-                    <IconButton color="primary">
-                      <ArrowForward />
-                    </IconButton>
-                  </Stack>
-                </Paper>
-
-                <Paper
-                  sx={{
-                    p: 2,
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                  onClick={() => navigate('/calendar')}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography variant="body1" fontWeight={500}>
-                        Book Session
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {dashboardData?.upcomingSessions.length
-                          ? `${dashboardData.upcomingSessions.length} upcoming`
-                          : 'Practice speaking'}
-                      </Typography>
-                    </Box>
-                    <IconButton color="secondary">
-                      <ArrowForward />
-                    </IconButton>
-                  </Stack>
-                </Paper>
-              </Stack>
-            </CardContent>
-          </Card>
+          <QuickActions
+            courseProgress={dashboardData?.courseProgress || []}
+            upcomingSessions={dashboardData?.upcomingSessions || []}
+            onNavigate={navigate}
+          />
 
           {/* Achievements */}
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                Recent Achievements
-              </Typography>
-              <Stack spacing={2}>
-                {loading ? (
-                  <>
-                    <Skeleton variant="text" height={40} />
-                    <Skeleton variant="text" height={40} />
-                    <Skeleton variant="text" height={40} />
-                  </>
-                ) : dashboardData?.achievements.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Complete lessons to earn achievements!
-                  </Typography>
-                ) : (
-                  dashboardData?.achievements.map((achievement) => (
-                    <Stack key={achievement.id} direction="row" spacing={2} alignItems="center">
-                      <Typography variant="h4">{achievement.badge}</Typography>
-                      <Typography variant="body2">{achievement.title}</Typography>
-                    </Stack>
-                  ))
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+          <AchievementsSection
+            achievements={dashboardData?.achievements || []}
+            loading={loading}
+          />
         </Grid>
       </Grid>
 
       {/* Upcoming Sessions Preview */}
-      {dashboardData && dashboardData.upcomingSessions.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <Card sx={{ mt: 4 }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6" fontWeight={600}>
-                  Upcoming Sessions
-                </Typography>
-                <IconButton color="primary" onClick={() => navigate('/calendar')}>
-                  <ArrowForward />
-                </IconButton>
-              </Stack>
-              <Stack spacing={2}>
-                {dashboardData.upcomingSessions.slice(0, 3).map((session) => (
-                  <Paper key={session.id} sx={{ p: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body1" fontWeight={500}>
-                          {session.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(session.scheduledAt).toLocaleDateString()} at{' '}
-                          {new Date(session.scheduledAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        label={session.type}
-                        size="small"
-                        color={session.type === 'SPEAKING' ? 'primary' : 'secondary'}
-                      />
-                    </Stack>
-                  </Paper>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+      <UpcomingSessions
+        sessions={dashboardData?.upcomingSessions || []}
+        onNavigate={navigate}
+      />
     </Container>
   );
 };
