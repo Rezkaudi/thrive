@@ -116,8 +116,8 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               )}
             </Box>
             <Chip
-              label={session.type === "SPEAKING" ? "Speaking" : "Event"}
-              color={session.type === "SPEAKING" ? "primary" : "secondary"}
+              label={session.type === "SPEAKING" ? "Speaking" : session.type === "STANDARD" ? "Standard" : "Event"}
+              color={session.type === "SPEAKING" ? "primary" : session.type === "STANDARD" ? "info" : "secondary"}
               size="small"
             />
           </Stack>

@@ -23,11 +23,11 @@ import {
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { Add, Edit, Event, Mic, Repeat, Timeline } from "@mui/icons-material";
+import { Add, Edit, Event, Mic, Repeat, StarOutlined, Timeline } from "@mui/icons-material";
 import { useForm, Controller, useWatch } from "react-hook-form";
 
 /** TYPES **/
-export type SessionType = "SPEAKING" | "EVENT";
+export type SessionType = "SPEAKING" | "EVENT" | 'STANDARD';
 
 export interface SessionFormShape {
   id?: string;
@@ -85,6 +85,12 @@ const TITLE_BY_TYPE: Record<
     fieldLabel: "Event Title",
     placeholder: "e.g., Cultural Exchange Workshop",
   },
+  STANDARD : {
+    create: "Create New Standard Session",
+    edit: "Edit Standard Session",
+    fieldLabel: "Standard Title",
+    placeholder: "e.g, Standard Learning Session",
+  }
 };
 
 export const SessionDialog = ({
@@ -155,7 +161,7 @@ export const SessionDialog = ({
   }, [open, type, form, setValue]);
 
   const headerMeta = useMemo(() => TITLE_BY_TYPE[type || "SPEAKING"], [type]);
-  const Icon = type === "SPEAKING" ? Mic : Event;
+  const Icon = type === "SPEAKING" ? Mic : type === "STANDARD" ? StarOutlined : Event;
 
   const submitIcon = submitting ? undefined : isEditing ? <Edit /> : <Add />;
   const submitLabel = submitting
@@ -274,6 +280,8 @@ export const SessionDialog = ({
                   placeholder={
                     type === "SPEAKING"
                       ? "Describe what participants will practice..."
+                      : type === "STANDARD"
+                      ? "Describe the standard session content..."
                       : "Describe the special event activities..."
                   }
                   error={descriptionError}
@@ -315,13 +323,19 @@ export const SessionDialog = ({
                         <span>Special Event</span>
                       </Stack>
                     </MenuItem>
+                    <MenuItem value="STANDARD">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <StarOutlined />
+                        <span>Standard Event</span>
+                      </Stack>
+                    </MenuItem>
                   </Select>
                 )}
               />
             </FormControl>
 
             {/* Location / Meeting URL */}
-            {type === "SPEAKING" ? (
+            {type === "SPEAKING" || type ==='STANDARD' ? (
               <Controller
                 control={control}
                 name="meetingUrl"

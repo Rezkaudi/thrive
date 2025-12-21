@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 export interface CalendarSession {
   id: string;
   title: string;
-  type: 'SPEAKING' | 'EVENT';
+  type: 'SPEAKING' | 'EVENT' | 'STANDARD';
   hostId: string;
   hostName?: string;
   scheduledAt: string;

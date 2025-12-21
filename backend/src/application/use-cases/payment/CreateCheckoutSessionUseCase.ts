@@ -31,6 +31,14 @@ export class CreateCheckoutSessionUseCase {
         monthlySpecial: {
             regular: ENV_CONFIG.STRIPE_MONTHLY_PRICE_ID_SPECIAL || '',
             discounted: ENV_CONFIG.STRIPE_MONTHLY_PRICE_ID_SPECIAL || ''
+        },
+        standard: {
+            regular: ENV_CONFIG.STRIPE_STANDARD_PRICE_ID || '',
+            discounted: ENV_CONFIG.STRIPE_STANDARD_DISCOUNT_PRICE_ID || ''
+        },
+        premium: {
+            regular: ENV_CONFIG.STRIPE_PREMIUM_PRICE_ID || '',
+            discounted: ENV_CONFIG.STRIPE_PREMIUM_DISCOUNT_PRICE_ID || ''
         }
     };
 
@@ -42,6 +50,16 @@ export class CreateCheckoutSessionUseCase {
     async execute(request: CreateCheckoutSessionRequest): Promise<CreateCheckoutSessionResponse> {
         const { mode = 'payment', successUrl, cancelUrl, metadata, planType, email, userId } = request;
 
+        // Validate planType
+        if (!planType) {
+            throw new Error('planType is required');
+        }
+
+        const validPlanTypes = Object.keys(this.DISCOUNT_PRICES);
+        if (!validPlanTypes.includes(planType)) {
+            throw new Error(`Invalid planType. Must be one of: ${validPlanTypes.join(', ')}`);
+        }
+
         // Check discount eligibility
         const { isEligible } = await this.getDiscountStatus();
 
@@ -52,6 +70,11 @@ export class CreateCheckoutSessionUseCase {
             finalPriceId = this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES].discounted;
         } else if (planType && this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES]) {
             finalPriceId = this.DISCOUNT_PRICES[planType as keyof typeof this.DISCOUNT_PRICES].regular;
+        }
+
+        // Validate that the price ID is configured
+        if (!finalPriceId) {
+            throw new Error(`Price ID for plan "${planType}" is not configured. Please set the corresponding STRIPE_*_PRICE_ID environment variable.`);
         }
 
         const subscription = await this.subscriptionRepository.findByUserId(userId);

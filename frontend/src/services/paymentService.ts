@@ -20,7 +20,7 @@ export const paymentService = {
     },
 
     async createCheckoutSession(data: {
-        planType: 'monthly' | 'yearly' | 'monthlySpecial';
+        planType: 'monthly' | 'yearly' | 'monthlySpecial' | 'standard' | 'premium';
         mode: 'payment' | 'subscription';
         successUrl: string;
         cancelUrl: string;
