@@ -23,11 +23,19 @@ import {
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { Add, Edit, Event, Mic, Repeat, StarOutlined, Timeline } from "@mui/icons-material";
+import {
+  Add,
+  Edit,
+  Event,
+  Mic,
+  Repeat,
+  StarOutlined,
+  Timeline,
+} from "@mui/icons-material";
 import { useForm, Controller, useWatch } from "react-hook-form";
 
 /** TYPES **/
-export type SessionType = "SPEAKING" | "EVENT" | 'STANDARD';
+export type SessionType = "SPEAKING" | "EVENT" | "STANDARD";
 
 export interface SessionFormShape {
   id?: string;
@@ -85,12 +93,12 @@ const TITLE_BY_TYPE: Record<
     fieldLabel: "Event Title",
     placeholder: "e.g., Cultural Exchange Workshop",
   },
-  STANDARD : {
+  STANDARD: {
     create: "Create New Standard Session",
     edit: "Edit Standard Session",
     fieldLabel: "Standard Title",
     placeholder: "e.g, Standard Learning Session",
-  }
+  },
 };
 
 export const SessionDialog = ({
@@ -161,7 +169,8 @@ export const SessionDialog = ({
   }, [open, type, form, setValue]);
 
   const headerMeta = useMemo(() => TITLE_BY_TYPE[type || "SPEAKING"], [type]);
-  const Icon = type === "SPEAKING" ? Mic : type === "STANDARD" ? StarOutlined : Event;
+  const Icon =
+    type === "SPEAKING" ? Mic : type === "STANDARD" ? StarOutlined : Event;
 
   const submitIcon = submitting ? undefined : isEditing ? <Edit /> : <Add />;
   const submitLabel = submitting
@@ -217,13 +226,7 @@ export const SessionDialog = ({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog
-        open={open}
-        onClose={onClose}
-        maxWidth="md"
-        fullWidth
-        keepMounted
-      >
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth keepMounted>
         <DialogTitle>
           <Stack direction="row" spacing={2} alignItems="center">
             <Icon />
@@ -287,7 +290,9 @@ export const SessionDialog = ({
                   error={descriptionError}
                   onChange={(e) => field.onChange(e.target.value)}
                   onBlur={(e) => syncNow({ description: e.target.value })}
-                  helperText={descriptionError ? "Description is required" : " "}
+                  helperText={
+                    descriptionError ? "Description is required" : " "
+                  }
                 />
               )}
             />
@@ -335,7 +340,7 @@ export const SessionDialog = ({
             </FormControl>
 
             {/* Location / Meeting URL */}
-            {type === "SPEAKING" || type ==='STANDARD' ? (
+            {type === "SPEAKING" || type === "STANDARD" ? (
               <Controller
                 control={control}
                 name="meetingUrl"
@@ -381,12 +386,12 @@ export const SessionDialog = ({
                     if (!d) return;
                     const val = d.toISOString();
                     field.onChange(val);
+                    syncNow({ scheduledAt: val });
                   }}
                   slotProps={{
                     textField: {
                       fullWidth: true,
                       helperText: "Select when this session will take place",
-                      onBlur: () => syncNow({ scheduledAt: field.value }),
                     },
                   }}
                 />
@@ -408,13 +413,22 @@ export const SessionDialog = ({
                       label="Duration (minutes)"
                       inputProps={{ min: 15, max: 180, inputMode: "numeric" }}
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      onChange={(e) => field.onChange(asInt(e.target.value, 30))}
+                      onChange={(e) =>
+                        field.onChange(asInt(e.target.value, 30))
+                      }
                       onBlur={(e) =>
-                        syncNow({ duration: asInt((e.target as HTMLInputElement).value, 30) })
+                        syncNow({
+                          duration: asInt(
+                            (e.target as HTMLInputElement).value,
+                            30
+                          ),
+                        })
                       }
                       error={durationError}
                       helperText={
-                        durationError ? "Must be 15–180 minutes" : "15–180 minutes"
+                        durationError
+                          ? "Must be 15–180 minutes"
+                          : "15–180 minutes"
                       }
                     />
                   )}
@@ -435,11 +449,18 @@ export const SessionDialog = ({
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       onChange={(e) => field.onChange(asInt(e.target.value, 1))}
                       onBlur={(e) =>
-                        syncNow({ maxParticipants: asInt((e.target as HTMLInputElement).value, 1) })
+                        syncNow({
+                          maxParticipants: asInt(
+                            (e.target as HTMLInputElement).value,
+                            1
+                          ),
+                        })
                       }
                       error={participantsError}
                       helperText={
-                        participantsError ? "Must be 1–100 people" : "1–100 people"
+                        participantsError
+                          ? "Must be 1–100 people"
+                          : "1–100 people"
                       }
                     />
                   )}
@@ -462,7 +483,12 @@ export const SessionDialog = ({
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   onChange={(e) => field.onChange(asInt(e.target.value, 0))}
                   onBlur={(e) =>
-                    syncNow({ pointsRequired: asInt((e.target as HTMLInputElement).value, 0) })
+                    syncNow({
+                      pointsRequired: asInt(
+                        (e.target as HTMLInputElement).value,
+                        0
+                      ),
+                    })
                   }
                   helperText="Set to 0 for free sessions. Premium sessions typically cost 10–50 points."
                 />
@@ -489,9 +515,15 @@ export const SessionDialog = ({
                       }
                       label={
                         <Stack>
-                          <Stack direction="row" spacing={1} alignItems="center">
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                          >
                             <Repeat />
-                            <Typography variant="body2">Recurring Session</Typography>
+                            <Typography variant="body2">
+                              Recurring Session
+                            </Typography>
                           </Stack>
                           <Typography variant="caption" color="text.secondary">
                             Create multiple sessions repeating weekly
@@ -515,9 +547,16 @@ export const SessionDialog = ({
                         label="Number of Weeks"
                         inputProps={{ min: 2, max: 52, inputMode: "numeric" }}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        onChange={(e) => field.onChange(asInt(e.target.value, 4))}
+                        onChange={(e) =>
+                          field.onChange(asInt(e.target.value, 4))
+                        }
                         onBlur={(e) =>
-                          syncNow({ recurringWeeks: asInt((e.target as HTMLInputElement).value, 4) })
+                          syncNow({
+                            recurringWeeks: asInt(
+                              (e.target as HTMLInputElement).value,
+                              4
+                            ),
+                          })
                         }
                         helperText={`Will create ${field.value} sessions, one each week starting from the selected date`}
                       />
@@ -547,12 +586,19 @@ export const SessionDialog = ({
                       }
                       label={
                         <Stack>
-                          <Stack direction="row" spacing={1} alignItems="center">
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                          >
                             <Timeline />
-                            <Typography variant="body2">Update All in Series</Typography>
+                            <Typography variant="body2">
+                              Update All in Series
+                            </Typography>
                           </Stack>
                           <Typography variant="caption" color="text.secondary">
-                            Apply changes to all sessions in this recurring series
+                            Apply changes to all sessions in this recurring
+                            series
                           </Typography>
                         </Stack>
                       }
