@@ -64,6 +64,7 @@ export const CalendarPage: React.FC = () => {
         refetch();
       });
     } catch (error) {
+      setBookingDialog(null);
       showError("Error", "Failed to book session");
     }
   };
