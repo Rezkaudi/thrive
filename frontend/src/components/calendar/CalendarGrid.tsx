@@ -198,6 +198,10 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                               ? isSelected
                                 ? "white"
                                 : "primary.main"
+                              : session.type === "STANDARD"
+                              ? isSelected
+                                ? "white"
+                                : "info.main"
                               : isSelected
                               ? "white"
                               : "secondary.main",

@@ -1,4 +1,4 @@
-import { Event, Mic } from "@mui/icons-material";
+import { Event, Mic, StarOutlined } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -60,6 +60,20 @@ export const SessionManagementHeader = ({
           }}
         >
           Speaking Session
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          startIcon={<StarOutlined />}
+          onClick={() => {
+            dispatch(resetForm());
+            handleFormChange("type", "STANDARD");
+            // Set default scheduledAt
+            handleFormChange("scheduledAt", getDefaultScheduledAt());
+            setSessionDialog(true);
+          }}
+        >
+          Standard Session
         </Button>
         <Button
           variant="contained"

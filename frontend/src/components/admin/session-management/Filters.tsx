@@ -33,6 +33,7 @@ const filterOptions = [
       { value: "", label: "All Types" },
       { value: "SPEAKING", label: "Speaking Sessions" },
       { value: "EVENT", label: "Special Events" },
+      { value: "STANDARD", label: "Standard Sessions" },
     ],
   },
   {

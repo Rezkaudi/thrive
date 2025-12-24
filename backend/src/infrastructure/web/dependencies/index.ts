@@ -24,13 +24,14 @@ import { SubscriptionRepository } from "../../database/repositories/Subscription
 import { UserRepository } from "../../database/repositories/UserRepository";
 import { VideoRepository } from "../../database/repositories/VideoRepository";
 
-// ========== SERVICES (8) ==========
+// ========== SERVICES (9) ==========
 import { ActivityService } from "../../services/ActivityService";
 import { EmailService } from "../../services/EmailService";
 import { PaymentService } from "../../services/PaymentService";
 import { PasswordService } from "../../services/PasswordService";
 import { TokenService } from "../../services/TokenService";
 import { S3StorageService } from "../../services/S3StorageService";
+import { BookingValidationService } from "../../services/BookingValidationService";
 
 // ========== USE CASES (47) ==========
 
@@ -103,6 +104,7 @@ import { VerifyEmailWithCodeUseCase } from "../../../application/use-cases/auth/
 import { CancelBookingUseCase } from "../../../application/use-cases/booking/CancelBookingUseCase";
 import { CreateBookingUseCase } from "../../../application/use-cases/booking/CreateBookingUseCase";
 import { GetMyBookingsUseCase } from "../../../application/use-cases/booking/GetMyBookingsUseCase";
+import { GetBookingLimitsUseCase } from "../../../application/use-cases/booking/GetBookingLimitsUseCase";
 
 // Calendar Use Cases
 import { GetCalendarSessionsUseCase } from "../../../application/use-cases/calendar/GetCalendarSessionsUseCase";
@@ -258,6 +260,7 @@ export interface DependencyContainer {
         password: PasswordService;
         token: TokenService;
         s3Storage: S3StorageService;
+        bookingValidation: BookingValidationService;
     };
 
     // Use Cases
@@ -331,6 +334,7 @@ export interface DependencyContainer {
         cancelBooking: CancelBookingUseCase;
         createBooking: CreateBookingUseCase;
         getMyBookings: GetMyBookingsUseCase;
+        getBookingLimits: GetBookingLimitsUseCase;
 
         // Calendar
         getCalendarSessions: GetCalendarSessionsUseCase;
@@ -499,6 +503,12 @@ export const setupDependencies = (): DependencyContainer => {
         password: new PasswordService(),
         token: new TokenService(),
         s3Storage: new S3StorageService(),
+        bookingValidation: new BookingValidationService(
+            repositories.session,
+            repositories.booking,
+            repositories.subscription,
+            repositories.profile
+        ),
     };
 
     // ========== Initialize Use Cases ==========
@@ -706,10 +716,14 @@ export const setupDependencies = (): DependencyContainer => {
             repositories.session,
             repositories.booking,
             repositories.profile,
-            services.activity
+            services.activity,
+            services.bookingValidation
         ),
         getMyBookings: new GetMyBookingsUseCase(
             repositories.booking
+        ),
+        getBookingLimits: new GetBookingLimitsUseCase(
+            services.bookingValidation
         ),
 
         // Calendar Use Cases
@@ -723,8 +737,8 @@ export const setupDependencies = (): DependencyContainer => {
         ),
         checkBookingEligibility: new CheckBookingEligibilityUseCase(
             repositories.session,
-            repositories.booking,
-            repositories.profile
+            repositories.profile,
+            services.bookingValidation
         ),
         getUpcomingBookings: new GetUpcomingBookingsUseCase(
             repositories.booking,
@@ -1131,7 +1145,8 @@ export const setupDependencies = (): DependencyContainer => {
         booking: new BookingController(
             useCases.createBooking,
             useCases.getMyBookings,
-            useCases.cancelBooking
+            useCases.cancelBooking,
+            useCases.getBookingLimits
         ),
         calendar: new CalendarController(
             useCases.getCalendarSessions,

@@ -12,8 +12,10 @@ import {
   Checkbox,
   Link,
   CircularProgress,
+  Box,
+  Chip,
 } from "@mui/material";
-import { Star } from "@mui/icons-material";
+import { Star, Warning } from "@mui/icons-material";
 import { format } from "date-fns";
 import {
   CalendarSession,
@@ -37,6 +39,14 @@ interface BookingDialogProps {
   loadingStart: boolean;
 }
 
+/**
+ * Helper to determine if plan is Standard
+ * Standard plans: 'standard' only
+ */
+const isStandardPlan = (plan: string | null): boolean => {
+  return plan === "standard";
+};
+
 export const BookingDialog: React.FC<BookingDialogProps> = ({
   open,
   onClose,
@@ -54,9 +64,37 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
 }) => {
   if (!session) return null;
 
+  const isSubscribed = userStatus === "active" || userStatus === "trialing";
+  const userPlan = eligibility?.user.plan || null;
+
+  // Calculate booking limits display
+  const hasMonthlyLimit = eligibility?.user.monthlyBookingLimit !== null;
+  const monthlyRemaining = eligibility?.user.remainingMonthlyBookings || 0;
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{session.title}</DialogTitle>
+      <DialogTitle>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <span>{session.title}</span>
+          <Chip
+            label={session.type}
+            size="small"
+            color={
+              session.type === "PREMIUM"
+                ? "secondary"
+                : session.type === "SPEAKING"
+                ? "primary"
+                : session.type === "EVENT"
+                ? "warning"
+                : "default"
+            }
+          />
+        </Stack>
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
           <Typography variant="body2" paragraph>
@@ -84,12 +122,13 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
               {session.pointsRequired === 0 ? (
                 <span style={{ color: "#483C32" }}>FREE</span>
               ) : (
-                <div style={{ display: "inline-block" }}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span>{session.pointsRequired}</span>
-                    <Star sx={{ fontSize: 16, color: "warning.main" }} />
-                  </div>
-                </div>
+                <Box
+                  component="span"
+                  sx={{ display: "inline-flex", alignItems: "center" }}
+                >
+                  <span>{session.pointsRequired}</span>
+                  <Star sx={{ fontSize: 16, color: "warning.main", ml: 0.5 }} />
+                </Box>
               )}
             </Typography>
 
@@ -99,6 +138,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             </Typography>
           </Stack>
 
+          {/* 24-Hour Notice Alert */}
           {session && isWithin24Hours(session.scheduledAt) && (
             <Alert severity="error" sx={{ mt: 2 }}>
               <Typography variant="body2" fontWeight={600} gutterBottom>
@@ -111,11 +151,29 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             </Alert>
           )}
 
-          {(userStatus === "active" || userStatus === 'trialing') &&
+          {/* Session Type Access Warning */}
+          {isSubscribed &&
+            eligibility &&
+            !eligibility.validation?.canAccessSessionType &&
+            session.type !== "STANDARD" && (
+              <Alert severity="warning" icon={<Warning />}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Premium Session
+                </Typography>
+                <Typography variant="body2">
+                  Your Standard plan can only access Standard sessions. Upgrade
+                  to Premium to book {session.type} sessions.
+                </Typography>
+              </Alert>
+            )}
+
+          {/* General Booking Errors */}
+          {isSubscribed &&
             eligibility &&
             !eligibility.canBook &&
             session &&
-            !isWithin24Hours(session.scheduledAt) && (
+            !isWithin24Hours(session.scheduledAt) &&
+            eligibility.validation?.canAccessSessionType !== false && (
               <Alert severity="warning">
                 <Typography variant="body2" fontWeight={600} gutterBottom>
                   Cannot book this session:
@@ -130,7 +188,8 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
               </Alert>
             )}
 
-          {(userStatus === "active" || userStatus === 'trialing') &&
+          {/* Success State */}
+          {isSubscribed &&
             eligibility?.canBook &&
             session &&
             !isWithin24Hours(session.scheduledAt) && (
@@ -139,11 +198,14 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
               </Alert>
             )}
 
-          {userStatus !== "active" && userStatus !== 'trialing' && (
-            <Alert severity="warning">Subscribe to access this Booking</Alert>
+          {/* Not Subscribed State */}
+          {!isSubscribed && (
+            <Alert severity="warning">
+              Subscribe to access booking features
+            </Alert>
           )}
 
-          {userStatus !== "active" && userStatus !== 'trialing' && (
+          {!isSubscribed && (
             <FormControlLabel
               control={
                 <Checkbox
@@ -172,22 +234,53 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        {(userStatus === "active" || userStatus === 'trialing') ? (
-          <Button
-            variant="contained"
-            onClick={onBook}
-            loading={loading}
-            disabled={
-              !eligibility?.canBook ||
-              !!(session && isWithin24Hours(session?.scheduledAt))
+        {isSubscribed ? (
+          // Check if Standard user needs to upgrade
+          (() => {
+            const needsUpgradeForSessionType =
+              isStandardPlan(userPlan) &&
+              (session.type === "SPEAKING" ||
+                session.type === "EVENT" ||
+                session.type === "PREMIUM");
+            const needsUpgradeForMonthlyLimit =
+              isStandardPlan(userPlan) &&
+              hasMonthlyLimit &&
+              monthlyRemaining <= 0;
+            const needsUpgrade =
+              needsUpgradeForSessionType || needsUpgradeForMonthlyLimit;
+
+            if (needsUpgrade) {
+              return (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={onNavigateToSubscription}
+                >
+                  Upgrade to Premium
+                </Button>
+              );
             }
-          >
-            {session && isWithin24Hours(session.scheduledAt)
-              ? "24h Notice Required"
-              : session
-              ? "Booking..."
-              : "Confirm Booking"}
-          </Button>
+
+            return (
+              <Button
+                variant="contained"
+                onClick={onBook}
+                disabled={
+                  loading ||
+                  !eligibility?.canBook ||
+                  !!(session && isWithin24Hours(session?.scheduledAt))
+                }
+              >
+                {loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : session && isWithin24Hours(session.scheduledAt) ? (
+                  "24h Notice Required"
+                ) : (
+                  "Confirm Booking"
+                )}
+              </Button>
+            );
+          })()
         ) : (
           <Button
             variant="contained"

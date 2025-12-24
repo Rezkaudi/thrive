@@ -97,10 +97,11 @@ export class PaymentService implements IPaymentService {
       sessionConfig.customer_email = params.metadata?.email
     }
 
-    // Add subscription_data only for subscription mode
-    if (params.mode === 'subscription' && !params.customerId && params.metadata.hasTrial !== false) {
+    const trialDays = Number(ENV_CONFIG.STRIPE_FREE_DAYS) + 1;
+
+    if (params.mode === 'subscription' && !params.customerId && params.metadata?.hasTrial !== false) {
       sessionConfig.subscription_data = {
-        trial_end: daysToSecondsFromNow(Number(ENV_CONFIG.STRIPE_FREE_DAYS)) + 200
+        trial_end: daysToSecondsFromNow(trialDays)
       };
     }
 

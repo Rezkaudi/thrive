@@ -119,6 +119,13 @@ const SessionRow: React.FC<{
                   Online Meeting
                 </Typography>
               </>
+            ) : session.type === "STANDARD" ? (
+              <>
+                <Star sx={{ fontSize: 16, color: "text.secondary" }} />
+                <Typography variant="caption" color="text.secondary">
+                  Standard Session
+                </Typography>
+              </>
             ) : session.location ? (
               <>
                 <LocationOn sx={{ fontSize: 16, color: "text.secondary" }} />
@@ -157,13 +164,15 @@ const SessionRow: React.FC<{
         <Stack direction="row" spacing={0.5} alignItems="center">
           {session.type === "SPEAKING" ? (
             <Mic sx={{ fontSize: 16 }} />
+          ) : session.type === "STANDARD" ? (
+            <Star sx={{ fontSize: 16 }} />
           ) : (
             <Event sx={{ fontSize: 16 }} />
           )}
           <Chip
-            label={session.type === "SPEAKING" ? "Speaking" : "Event"}
+            label={session.type === "SPEAKING" ? "Speaking" : session.type === "STANDARD" ? "Standard" : "Event"}
             size="small"
-            color={session.type === "SPEAKING" ? "primary" : "secondary"}
+            color={session.type === "SPEAKING" ? "primary" : session.type === "STANDARD" ? "info" : "secondary"}
             sx={{ color: "white" }}
           />
         </Stack>

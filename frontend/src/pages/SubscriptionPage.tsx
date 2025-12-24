@@ -60,25 +60,25 @@ const plans: PlanOption[] = [
     //         { title: '1-on-1 JCT Certified Personal Coaching', included: true },
     //     ],
     // },
-    {
-        id: 'monthly',
-        name: 'Monthly Subscription',
-        regularPrice: 200,
-        discountedPrice: 140,
-        currency: '$',
-        period: 'month',
-        recommended: true,
-        savings: 30,
-        features: [
-            { title: 'Thrive in Japan Platform', included: true },
-            { title: 'Unlimited Speaking Sessions', included: true },
-            { title: '"Japan in Context" Curriculum', included: true },
-            { title: '"JLPT in Context" Curriculum', included: true },
-            { title: 'Access to Exclusive Events and Meet Ups', included: true },
-        ],
-    },
     // {
-    //     id: 'yearly',
+    //     id: 'monthly',
+    //     name: 'Monthly Subscription',
+    //     regularPrice: 200,
+    //     discountedPrice: 140,
+    //     currency: '$',
+    //     period: 'month',
+    //     recommended: true,
+    //     savings: 30,
+    //     features: [
+    //         { title: 'Thrive in Japan Platform', included: true },
+    //         { title: 'Unlimited Speaking Sessions', included: true },
+    //         { title: '"Japan in Context" Curriculum', included: true },
+    //         { title: '"JLPT in Context" Curriculum', included: true },
+    //         { title: 'Access to Exclusive Events and Meet Ups', included: true },
+    //     ],
+    // },
+    // {
+    //     id: '`yearly`',
     //     name: 'Yearly Subscription',
     //     regularPrice: 2000,
     //     discountedPrice: 1400,
@@ -93,13 +93,44 @@ const plans: PlanOption[] = [
     //         { title: 'Access to Exclusive Events and Meet Ups', included: true },
     //     ],
     // },
+    {
+        id: "standard",
+        name: "Standard Plan",
+        regularPrice: 12500,
+        discountedPrice: 8800,
+        currency: "JPY",
+        period: "month",
+        savings: 30,
+        features: [
+            { title: 'Full Curriculum Access', included: true },
+            { title: '4 Standard Speaking Sessions / month', included: true },
+            { title: 'View All Sessions & Events', included: true }, // Can see everything
+            { title: 'Sessions do not roll over', included: true }, // Limitation clearly stated
+        ]
+    },
+    {
+        id: "premium",
+        name: "Premium Plan",
+        regularPrice: 35000,
+        discountedPrice: 24500,
+        currency: "JPY",
+        period: "month",
+        savings: 30,
+        recommended: true,
+        features: [
+            { title: 'Full Curriculum Access', included: true },
+            { title: 'Unlimited Speaking Sessions', included: true },
+            { title: 'Join All Premium & Standard Sessions', included: true },
+            { title: 'Access to Exclusive Events', included: true },
+        ]
+    }
 ];
 
 const MotionCard = motion(Card);
 
 export const SubscriptionPage: React.FC = () => {
     // const navigate = useNavigate();
-    const [selectedPlan, setSelectedPlan] = useState<string>('monthly');
+    const [selectedPlan, setSelectedPlan] = useState<string>('standard');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [discountStatus, setDiscountStatus] = useState<DiscountStatus | null>(null);
@@ -146,8 +177,12 @@ export const SubscriptionPage: React.FC = () => {
             }
 
             // Create checkout session with discount check
+            const planTypeMap: { [key: string]: 'monthly' | 'yearly' | 'monthlySpecial' | 'standard' | 'premium' } = {
+                'standard': 'standard',
+                'premium': 'premium',
+            };
             const response = await paymentService.createCheckoutSession({
-                planType: planId as 'monthly' | 'yearly',
+                planType: planTypeMap[planId],
                 mode: 'subscription',
                 successUrl: `${window.location.origin}/dashboard`,
                 cancelUrl: `${window.location.origin}/subscription`,
@@ -170,18 +205,20 @@ export const SubscriptionPage: React.FC = () => {
         }
     };
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('en-US', {
+    const formatPrice = (price: number, currency: string = 'JPY') => {
+        return new Intl.NumberFormat('ja-JP', {
             style: 'currency',
-            currency: 'USD',
+            currency: currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
         }).format(price);
     };
 
     const getPlanIcon = (planId: string) => {
         switch (planId) {
-            case 'monthly':
+            case 'standard':
                 return <CalendarMonth sx={{ fontSize: 40, color: 'white' }} />;
-            case 'yearly':
+            case 'premium':
                 return <School sx={{ fontSize: 40, color: 'white' }} />;
             default:
                 return <School sx={{ fontSize: 40, color: 'white' }} />;
@@ -190,9 +227,9 @@ export const SubscriptionPage: React.FC = () => {
 
     const getPlanColor = (planId: string) => {
         switch (planId) {
-            case 'monthly':
+            case 'standard':
                 return { primary: '#A6531C', secondary: '#483C32' };
-            case 'yearly':
+            case 'premium':
                 return { primary: '#5C633A', secondary: '#283618' };
             default:
                 return { primary: '#5C633A', secondary: '#D4BC8C' };
@@ -334,9 +371,9 @@ export const SubscriptionPage: React.FC = () => {
                                     position: 'relative',
                                     overflow: 'visible',
                                     borderRadius: "20px",
-                                    // border: plan.recommended ? '2px solid' : 'none',
-                                    // borderColor: plan.recommended ? 'primary.main' : 'transparent',
-                                    // boxShadow: plan.recommended ? 8 : 2,
+                                    border: plan.recommended ? '2px solid' : 'none',
+                                    borderColor: plan.recommended ? '#5C633A' : 'transparent',
+                                    boxShadow: plan.recommended ? 8 : 2,
                                 }}
                             >
 
@@ -423,7 +460,7 @@ export const SubscriptionPage: React.FC = () => {
                                                         mb: 1,
                                                     }}
                                                 >
-                                                    {formatPrice(plan.regularPrice)}
+                                                    {formatPrice(plan.regularPrice, plan.currency)}
                                                 </Typography>
                                             )}
                                             <Typography
@@ -431,7 +468,7 @@ export const SubscriptionPage: React.FC = () => {
                                                 fontWeight={700}
                                                 sx={{ color: showDiscount ? 'error.main' : colors.primary }}
                                             >
-                                                {formatPrice(currentPrice)}
+                                                {formatPrice(currentPrice, plan.currency)}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary">
                                                 per {plan.period}

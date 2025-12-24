@@ -5,7 +5,7 @@ export interface Session {
   id: string;
   title: string;
   description: string;
-  type: 'SPEAKING' | 'EVENT';
+  type: 'SPEAKING' | 'EVENT' | 'STANDARD';
   hostId: string;
   hostName?: string;
   meetingUrl?: string;
@@ -99,7 +99,7 @@ interface SessionState {
   sessionForm: {
     title: string;
     description: string;
-    type: 'SPEAKING' | 'EVENT';
+    type: 'SPEAKING' | 'EVENT' | 'STANDARD';
     meetingUrl: string;
     location: string;
     scheduledAt: string;

@@ -37,9 +37,14 @@ export const CalendarPage: React.FC = () => {
     (state: RootState) => state.auth
   );
 
-  // Custom hooks
-  const { sessions, myBookings, loading, refetch } =
-    useCalendarData(selectedDate);
+  // Custom hooks - now includes bookingLimits
+  const {
+    sessions,
+    myBookings,
+    bookingLimits,
+    loading,
+    refetch,
+  } = useCalendarData(selectedDate);
   const {
     bookingDialog,
     setBookingDialog,
@@ -63,8 +68,12 @@ export const CalendarPage: React.FC = () => {
         showSnackbar("Session booked successfully!", "success");
         refetch();
       });
-    } catch (error) {
-      showError("Error", "Failed to book session");
+    } catch (error: any) {
+      setBookingDialog(null);
+      // Show detailed error message if available from API
+      const errorMessage =
+        error?.response?.data?.error?.message || "Failed to book session";
+      showError("Booking Failed", errorMessage);
     }
   };
 
@@ -145,6 +154,7 @@ export const CalendarPage: React.FC = () => {
           <MyBookings
             myBookings={myBookings}
             onCancelBooking={handleCancelBooking}
+            bookingLimits={bookingLimits}
           />
 
           <PointsBalance totalPoints={profile?.stats.totalPoints || 0} />

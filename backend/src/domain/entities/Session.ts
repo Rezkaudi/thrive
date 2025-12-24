@@ -1,6 +1,8 @@
 export enum SessionType {
   SPEAKING = 'SPEAKING',
-  EVENT = 'EVENT'
+  EVENT = 'EVENT',
+  STANDARD = 'STANDARD',
+  PREMIUM = 'PREMIUM'
 }
 
 export interface ISession {
