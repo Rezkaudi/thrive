@@ -97,13 +97,9 @@ export class PaymentService implements IPaymentService {
       sessionConfig.customer_email = params.metadata?.email
     }
 
-    // Add subscription_data only for subscription mode
-    // Stripe requires trial_end to be at least 48 hours (2 days) in the future
-    // We require at least 3 days to have a buffer and avoid edge cases
-    const trialDays = Number(ENV_CONFIG.STRIPE_FREE_DAYS);
-    const hasValidTrialDays = !isNaN(trialDays) && trialDays >= 3;
+    const trialDays = Number(ENV_CONFIG.STRIPE_FREE_DAYS) + 1;
 
-    if (params.mode === 'subscription' && !params.customerId && params.metadata?.hasTrial !== false && hasValidTrialDays) {
+    if (params.mode === 'subscription' && !params.customerId && params.metadata?.hasTrial !== false) {
       sessionConfig.subscription_data = {
         trial_end: daysToSecondsFromNow(trialDays)
       };

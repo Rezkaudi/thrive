@@ -1,12 +1,12 @@
-import { BookingRepository } from "../../../infrastructure/database/repositories/BookingRepository";
-import { ProfileRepository } from "../../../infrastructure/database/repositories/ProfileRepository";
-import { SessionRepository } from "../../../infrastructure/database/repositories/SessionRepository";
+import { ISessionRepository } from "../../../domain/repositories/ISessionRepository";
+import { IProfileRepository } from "../../../domain/repositories/IProfileRepository";
+import { IBookingValidationService } from "../../../domain/services/IBookingValidationService";
 
 export class CheckBookingEligibilityUseCase {
     constructor(
-        private sessionRepository: SessionRepository,
-        private bookingRepository: BookingRepository,
-        private profileRepository: ProfileRepository
+        private sessionRepository: ISessionRepository,
+        private profileRepository: IProfileRepository,
+        private bookingValidationService: IBookingValidationService
     ) { }
 
     async execute(params: {
@@ -15,75 +15,55 @@ export class CheckBookingEligibilityUseCase {
     }) {
         const { sessionId, userId } = params;
 
+        // Validate booking using the comprehensive validation service
+        const validationResult = await this.bookingValidationService.validateBooking({
+            userId,
+            sessionId
+        });
+
+        // Get session details for response
         const session = await this.sessionRepository.findById(sessionId);
         if (!session) {
             throw new Error('Session not found');
         }
 
-        const userBookings = await this.bookingRepository.findActiveByUserId(userId);
+        // Get user profile for points
         const profile = await this.profileRepository.findByUserId(userId);
+        const { validationDetails } = validationResult;
 
-        const eligibility = {
-            canBook: true,
-            reasons: [] as string[],
+        // Construct eligibility response with all relevant information
+        return {
+            canBook: validationResult.canBook,
+            reasons: validationResult.reasons,
             session: {
                 id: session.id,
                 title: session.title,
+                type: session.type,
                 pointsRequired: session.pointsRequired,
-                spotsAvailable: session.maxParticipants - session.currentParticipants,
+                spotsAvailable: validationDetails.spotsAvailable,
             },
             user: {
                 points: profile?.points || 0,
-                activeBookings: userBookings.length,
+                activeBookings: validationDetails.activeBookingsCount,
+                // Plan information
+                plan: validationDetails.userPlan,
+                hasActiveSubscription: validationDetails.hasActiveSubscription,
+                // Active booking limits
+                maxActiveBookings: validationDetails.maxActiveBookings,
+                activeBookingsRemaining: validationDetails.activeBookingsRemaining,
+                // Monthly limits (for Standard plan)
+                monthlyBookingCount: validationDetails.monthlyBookingCount,
+                monthlyBookingLimit: validationDetails.monthlyBookingLimit,
+                remainingMonthlyBookings: validationDetails.remainingMonthlyBookings,
+                currentMonth: validationDetails.currentMonth,
             },
+            // Additional validation details for frontend
+            validation: {
+                meetsMinimumNotice: validationDetails.meetsMinimumNotice,
+                hoursUntilSession: Math.floor(validationDetails.hoursUntilSession),
+                canAccessSessionType: validationDetails.canAccessSessionType,
+                isAlreadyBooked: validationDetails.isAlreadyBooked,
+            }
         };
-
-        const sessionStartTime = new Date(session.scheduledAt);
-        const sessionEndTime = new Date(sessionStartTime.getTime() + session.duration * 60000);
-        const now = new Date();
-        const isPast = sessionEndTime < now;
-
-        // Check if session is within 24 hours
-        const hoursUntilSession = (sessionStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-        const isWithin24Hours = hoursUntilSession <= 24 && hoursUntilSession > 0;
-
-        // Check various conditions
-        if (userBookings.find(b => b.sessionId === sessionId)) {
-            eligibility.canBook = false;
-            eligibility.reasons.push('Already booked this session');
-        }
-
-        if (userBookings.length >= 2) {
-            eligibility.canBook = false;
-            eligibility.reasons.push('Maximum active bookings reached (2)');
-        }
-
-        if (session.isFull()) {
-            eligibility.canBook = false;
-            eligibility.reasons.push('Session is full');
-        }
-
-        if (session.pointsRequired > 0 && (!profile || profile.points < session.pointsRequired)) {
-            eligibility.canBook = false;
-            eligibility.reasons.push(`Insufficient points (need ${session.pointsRequired}, have ${profile?.points || 0})`);
-        }
-
-        if (isPast) {
-            eligibility.canBook = false;
-            eligibility.reasons.push('Session has already started');
-        }
-
-        // NEW: 24-hour advance booking requirement
-        if (isWithin24Hours && !isPast) {
-            eligibility.canBook = false;
-            eligibility.reasons.push('Sessions must be booked at least 24 hours in advance');
-        }
-
-        if (!session.isActive) {
-            eligibility.canBook = false;
-            eligibility.reasons.push('Session is not active');
-        }
-
-        return eligibility;
     }
 }

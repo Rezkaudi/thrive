@@ -20,6 +20,8 @@ import {
   Cancel,
   ContentCopy,
   Schedule,
+  Lock,
+  WorkspacePremium,
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -36,6 +38,59 @@ interface SessionCardProps {
   onCopyMeetingLink: (url: string) => void;
   user?: any;
 }
+
+/**
+ * Helper to check if a session requires premium access
+ */
+const isPremiumSession = (type: string): boolean => {
+  return type === "SPEAKING" || type === "EVENT";
+};
+
+/**
+ * Helper to check if user has a standard plan
+ * Standard plans: 'standard' only
+ */
+const isStandardPlan = (plan: string | null | undefined): boolean => {
+  return plan === "standard";
+};
+
+/**
+ * Get session type chip color
+ */
+const getSessionTypeColor = (
+  type: string
+): "primary" | "secondary" | "info" | "warning" | "default" => {
+  switch (type) {
+    case "PREMIUM":
+      return "secondary";
+    case "SPEAKING":
+      return "primary";
+    case "EVENT":
+      return "warning";
+    case "STANDARD":
+      return "info";
+    default:
+      return "default";
+  }
+};
+
+/**
+ * Get session type display name
+ */
+const getSessionTypeLabel = (type: string): string => {
+  switch (type) {
+    case "PREMIUM":
+      return "Premium";
+    case "SPEAKING":
+      return "Speaking";
+    case "EVENT":
+      return "Event";
+    case "STANDARD":
+      return "Standard";
+    default:
+      return type;
+  }
+};
 
 export const SessionCard: React.FC<SessionCardProps> = ({
   session,
@@ -55,9 +110,13 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   const isPast = sessionEndTime < new Date();
   const isFull = session.currentParticipants >= session.maxParticipants;
 
+  // Check if user can access this session type based on plan
+  const userPlan = user?.plan || user?.subscriptionPlan;
+  const requiresPremium = isPremiumSession(session.type);
+  const hasStandardPlan = isStandardPlan(userPlan);
+  const cannotAccessSessionType = requiresPremium && hasStandardPlan;
 
-
-  // NEW: Check if within 24 hours
+  // Check if within 24 hours
   const within24Hours = isWithin24Hours(session.scheduledAt);
   const timeUntilSession = formatTimeUntilSession(session.scheduledAt);
 
@@ -70,15 +129,40 @@ export const SessionCard: React.FC<SessionCardProps> = ({
       <Card
         sx={{
           mb: 2,
-          opacity: isPast ? 0.7 : 1,
+          opacity: isPast ? 0.7 : cannotAccessSessionType ? 0.85 : 1,
           border: isBooked ? "2px solid" : "1px solid",
           borderColor: isBooked
             ? "primary.main"
             : within24Hours && !isBooked
             ? "warning.main"
+            : cannotAccessSessionType
+            ? "grey.300"
             : "divider",
+          position: "relative",
         }}
       >
+        {/* Premium Badge Overlay */}
+        {cannotAccessSessionType && !isBooked && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              zIndex: 1,
+            }}
+          >
+            <Tooltip title="Upgrade to Premium to access this session">
+              <Chip
+                icon={<WorkspacePremium />}
+                label="Premium Only"
+                size="small"
+                color="secondary"
+                sx={{ fontWeight: 600 }}
+              />
+            </Tooltip>
+          </Box>
+        )}
+
         <CardContent sx={{ p: compact ? 2 : 3 }}>
           <Stack
             direction="row"
@@ -115,11 +199,13 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 </Typography>
               )}
             </Box>
-            <Chip
-              label={session.type === "SPEAKING" ? "Speaking" : session.type === "STANDARD" ? "Standard" : "Event"}
-              color={session.type === "SPEAKING" ? "primary" : session.type === "STANDARD" ? "info" : "secondary"}
-              size="small"
-            />
+            {!cannotAccessSessionType && (
+              <Chip
+                label={getSessionTypeLabel(session.type)}
+                color={getSessionTypeColor(session.type)}
+                size="small"
+              />
+            )}
           </Stack>
 
           <Stack spacing={compact ? 0.5 : 1} mb={2}>
@@ -134,7 +220,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               </Typography>
             </Stack>
 
-            {/* NEW: Show time until session */}
+            {/* Show time until session */}
             {!isPast && (
               <Stack direction="row" spacing={1} alignItems="center">
                 <Schedule fontSize="small" color="action" />
@@ -227,17 +313,29 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                     </Button>
                   )}
                 </>
+              ) : cannotAccessSessionType ? (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<Lock />}
+                  onClick={() => onSessionClick(session)}
+                >
+                  Upgrade to Premium
+                </Button>
               ) : (
                 <Button
                   fullWidth
                   variant="contained"
-                  disabled={isPast || isFull || myBookings.length >= 2}
+                  disabled={isPast || isFull || within24Hours}
                   onClick={() => onSessionClick(session)}
                 >
                   {isPast
                     ? "Session Ended"
                     : isFull
                     ? "Session Full"
+                    : within24Hours
+                    ? "24h Notice Required"
                     : "Book Session"}
                 </Button>
               )}
