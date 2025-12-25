@@ -1,5 +1,10 @@
 import React from "react";
-import { Control, FieldErrors, UseFormSetValue, UseFormWatch } from "react-hook-form";
+import {
+  Control,
+  FieldErrors,
+  UseFormSetValue,
+  UseFormWatch,
+} from "react-hook-form";
 import {
   Box,
   Stack,
@@ -64,7 +69,11 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
     writeKeywords(next);
   };
 
-  const updateKeyword = (index: number, field: keyof Keyword, value: string) => {
+  const updateKeyword = (
+    index: number,
+    field: keyof Keyword,
+    value: string
+  ) => {
     const next = [...keywords];
     next[index] = { ...next[index], [field]: value };
     writeKeywords(next);
@@ -112,8 +121,17 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
           <Typography color="text.secondary" gutterBottom>
             No keywords added yet. You can:
           </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
-            <Button variant="outlined" startIcon={<AddCircleOutline />} onClick={addKeyword}>
+          <Stack
+            direction="row"
+            spacing={2}
+            justifyContent="center"
+            sx={{ mt: 2 }}
+          >
+            <Button
+              variant="outlined"
+              startIcon={<AddCircleOutline />}
+              onClick={addKeyword}
+            >
               Add Manually
             </Button>
             <Button
@@ -129,13 +147,21 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
       ) : (
         <Stack spacing={2}>
           {keywords.map((keyword, index) => (
-            <Paper key={`${keyword.japaneseText}-${keyword.englishText}-${index}`} sx={{ p: 2 }}>
+            <Paper key={index} sx={{ p: 2 }}>
               <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Typography variant="subtitle2" fontWeight={600}>
                     Keyword {index + 1}
                   </Typography>
-                  <IconButton size="small" color="error" onClick={() => removeKeyword(index)}>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => removeKeyword(index)}
+                  >
                     <DeleteOutline />
                   </IconButton>
                 </Stack>
@@ -150,9 +176,15 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
                       fullWidth
                       label="Japanese Text"
                       value={keyword.japaneseText}
-                      onChange={(e) => updateKeyword(index, "japaneseText", e.target.value)}
+                      onChange={(e) =>
+                        updateKeyword(index, "japaneseText", e.target.value)
+                      }
                       placeholder="こんにちは"
-                      InputProps={{ startAdornment: <Translate sx={{ mr: 1, color: "action.active" }} /> }}
+                      InputProps={{
+                        startAdornment: (
+                          <Translate sx={{ mr: 1, color: "action.active" }} />
+                        ),
+                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -160,9 +192,15 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
                       fullWidth
                       label="English Text"
                       value={keyword.englishText}
-                      onChange={(e) => updateKeyword(index, "englishText", e.target.value)}
+                      onChange={(e) =>
+                        updateKeyword(index, "englishText", e.target.value)
+                      }
                       placeholder="Hello"
-                      InputProps={{ startAdornment: <Translate sx={{ mr: 1, color: "action.active" }} /> }}
+                      InputProps={{
+                        startAdornment: (
+                          <Translate sx={{ mr: 1, color: "action.active" }} />
+                        ),
+                      }}
                     />
                   </Grid>
                 </Grid>
@@ -179,9 +217,15 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
                       rows={2}
                       label="Japanese Sentence"
                       value={keyword.japaneseSentence}
-                      onChange={(e) => updateKeyword(index, "japaneseSentence", e.target.value)}
+                      onChange={(e) =>
+                        updateKeyword(index, "japaneseSentence", e.target.value)
+                      }
                       placeholder="こんにちは、元気ですか？"
-                      InputProps={{ startAdornment: <Translate sx={{ mr: 1, color: "action.active" }} /> }}
+                      InputProps={{
+                        startAdornment: (
+                          <Translate sx={{ mr: 1, color: "action.active" }} />
+                        ),
+                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -191,9 +235,15 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
                       rows={2}
                       label="English Sentence"
                       value={keyword.englishSentence}
-                      onChange={(e) => updateKeyword(index, "englishSentence", e.target.value)}
+                      onChange={(e) =>
+                        updateKeyword(index, "englishSentence", e.target.value)
+                      }
                       placeholder="Hello, how are you?"
-                      InputProps={{ startAdornment: <Translate sx={{ mr: 1, color: "action.active" }} /> }}
+                      InputProps={{
+                        startAdornment: (
+                          <Translate sx={{ mr: 1, color: "action.active" }} />
+                        ),
+                      }}
                     />
                   </Grid>
                 </Grid>
@@ -208,9 +258,15 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
                       fullWidth
                       label="Japanese Word Audio URL"
                       value={keyword.japaneseAudioUrl}
-                      onChange={(e) => updateKeyword(index, "japaneseAudioUrl", e.target.value)}
+                      onChange={(e) =>
+                        updateKeyword(index, "japaneseAudioUrl", e.target.value)
+                      }
                       placeholder="https://s3.../japanese-word.mp3"
-                      InputProps={{ startAdornment: <VolumeUp sx={{ mr: 1, color: "action.active" }} /> }}
+                      InputProps={{
+                        startAdornment: (
+                          <VolumeUp sx={{ mr: 1, color: "action.active" }} />
+                        ),
+                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
@@ -218,9 +274,15 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
                       fullWidth
                       label="English Word Audio URL"
                       value={keyword.englishAudioUrl}
-                      onChange={(e) => updateKeyword(index, "englishAudioUrl", e.target.value)}
+                      onChange={(e) =>
+                        updateKeyword(index, "englishAudioUrl", e.target.value)
+                      }
                       placeholder="https://s3.../english-word.mp3"
-                      InputProps={{ startAdornment: <VolumeUp sx={{ mr: 1, color: "action.active" }} /> }}
+                      InputProps={{
+                        startAdornment: (
+                          <VolumeUp sx={{ mr: 1, color: "action.active" }} />
+                        ),
+                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
@@ -229,10 +291,18 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
                       label="Japanese Sentence Audio URL"
                       value={keyword.japaneseSentenceAudioUrl}
                       onChange={(e) =>
-                        updateKeyword(index, "japaneseSentenceAudioUrl", e.target.value)
+                        updateKeyword(
+                          index,
+                          "japaneseSentenceAudioUrl",
+                          e.target.value
+                        )
                       }
                       placeholder="https://s3.../japanese-sentence.mp3"
-                      InputProps={{ startAdornment: <VolumeUp sx={{ mr: 1, color: "action.active" }} /> }}
+                      InputProps={{
+                        startAdornment: (
+                          <VolumeUp sx={{ mr: 1, color: "action.active" }} />
+                        ),
+                      }}
                     />
                   </Grid>
                 </Grid>
@@ -242,7 +312,9 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
         </Stack>
       )}
 
-      {keywords.length > 0 && <KeywordsSummary keywords={keywords} isMobile={isMobile} />}
+      {keywords.length > 0 && (
+        <KeywordsSummary keywords={keywords} isMobile={isMobile} />
+      )}
 
       {/* Bulk Audio dialog trigger is managed in parent via setBulkAudioDialog */}
       <BulkAudioManager
