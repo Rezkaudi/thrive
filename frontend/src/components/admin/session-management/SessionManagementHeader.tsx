@@ -54,6 +54,8 @@ export const SessionManagementHeader = ({
           onClick={() => {
             dispatch(resetForm());
             handleFormChange("type", "SPEAKING");
+            handleFormChange("duration", 60);
+            handleFormChange("maxParticipants", 4);
             // Set default scheduledAt
             handleFormChange("scheduledAt", getDefaultScheduledAt());
             setSessionDialog(true);
@@ -68,6 +70,8 @@ export const SessionManagementHeader = ({
           onClick={() => {
             dispatch(resetForm());
             handleFormChange("type", "STANDARD");
+            handleFormChange("duration", 60);
+            handleFormChange("maxParticipants", 12);
             // Set default scheduledAt
             handleFormChange("scheduledAt", getDefaultScheduledAt());
             setSessionDialog(true);

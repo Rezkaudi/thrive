@@ -219,9 +219,25 @@ export const SessionDialog = ({
 
   const handleTypeChange = useCallback(
     (val: SessionType) => {
-      syncNow({ type: val });
+      const patch: Partial<SessionFormShape> = { type: val };
+
+      if (!isEditing) {
+        if (val === "STANDARD") {
+          patch.duration = 60;
+          patch.maxParticipants = 12;
+          setValue("duration", 60, { shouldDirty: true });
+          setValue("maxParticipants", 12, { shouldDirty: true });
+        } else if (val === "SPEAKING") {
+          patch.duration = 60;
+          patch.maxParticipants = 4;
+          setValue("duration", 60, { shouldDirty: true });
+          setValue("maxParticipants", 4, { shouldDirty: true });
+        }
+      }
+
+      syncNow(patch);
     },
-    [syncNow]
+    [isEditing, setValue, syncNow]
   );
 
   return (
@@ -414,13 +430,13 @@ export const SessionDialog = ({
                       inputProps={{ min: 15, max: 180, inputMode: "numeric" }}
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       onChange={(e) =>
-                        field.onChange(asInt(e.target.value, 30))
+                        field.onChange(asInt(e.target.value, 60))
                       }
                       onBlur={(e) =>
                         syncNow({
                           duration: asInt(
                             (e.target as HTMLInputElement).value,
-                            30
+                            60
                           ),
                         })
                       }
