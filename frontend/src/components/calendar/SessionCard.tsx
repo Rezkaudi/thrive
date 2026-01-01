@@ -66,9 +66,9 @@ const getSessionTypeColor = (
     case "SPEAKING":
       return "primary";
     case "EVENT":
-      return "warning";
+      return "secondary";
     case "STANDARD":
-      return "info";
+      return "warning";
     default:
       return "default";
   }
@@ -130,9 +130,15 @@ export const SessionCard: React.FC<SessionCardProps> = ({
         sx={{
           mb: 2,
           opacity: isPast ? 0.7 : cannotAccessSessionType ? 0.85 : 1,
-          border: isBooked ? "2px solid" : "1px solid",
+          border: isBooked
+            ? "2px solid"
+            : session.type === "STANDARD"
+            ? "1px dashed"
+            : "1px solid",
           borderColor: isBooked
             ? "primary.main"
+            : session.type === "STANDARD"
+            ? "warning.main"
             : within24Hours && !isBooked
             ? "warning.main"
             : cannotAccessSessionType
@@ -204,6 +210,9 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 label={getSessionTypeLabel(session.type)}
                 color={getSessionTypeColor(session.type)}
                 size="small"
+                sx={
+                  session.type === "STANDARD" ? { borderRadius: 0 } : undefined
+                }
               />
             )}
           </Stack>

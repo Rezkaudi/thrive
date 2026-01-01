@@ -72,7 +72,18 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
   const monthlyRemaining = eligibility?.user.remainingMonthlyBookings || 0;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          border: session.type === "STANDARD" ? "1px dashed" : "1px solid",
+          borderColor: session.type === "STANDARD" ? "warning.main" : "rgba(0,0,0,0.12)",
+        },
+      }}
+    >
       <DialogTitle>
         <Stack
           direction="row"
@@ -84,14 +95,15 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             label={session.type}
             size="small"
             color={
-              session.type === "PREMIUM"
-                ? "secondary"
+              session.type === "STANDARD"
+                ? "warning"
                 : session.type === "SPEAKING"
                 ? "primary"
                 : session.type === "EVENT"
-                ? "warning"
+                ? "secondary"
                 : "default"
             }
+            sx={session.type === "STANDARD" ? { borderRadius: 0 } : undefined}
           />
         </Stack>
       </DialogTitle>
