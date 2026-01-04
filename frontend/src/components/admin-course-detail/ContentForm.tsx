@@ -36,7 +36,7 @@ export const ContentForm: React.FC<ContentFormProps> = memo(
     isMobile,
     setBulkAudioDialog,
   }) => {
-    const { getValues } = useFormContext<LessonFormState>();
+    const { getValues, clearErrors } = useFormContext<LessonFormState>();
 
     // Normalize minimal safe defaults when switching types
     useEffect(() => {
@@ -83,6 +83,7 @@ export const ContentForm: React.FC<ContentFormProps> = memo(
         <KeywordsForm
           control={control}
           errors={errors}
+          clearErrors={clearErrors}
           isMobile={isMobile}
           setBulkAudioDialog={setBulkAudioDialog}
         />

@@ -1,5 +1,10 @@
 import React, { memo, useCallback } from "react";
-import { Control, FieldErrors, useFieldArray } from "react-hook-form";
+import {
+  Control,
+  FieldErrors,
+  useFieldArray,
+  UseFormClearErrors,
+} from "react-hook-form";
 import {
   Box,
   Stack,
@@ -24,6 +29,7 @@ import { KeywordsSummary } from "./KeywordsSummary";
 interface KeywordsFormProps {
   control: Control<LessonFormState>;
   errors: FieldErrors<LessonFormState>;
+  clearErrors: UseFormClearErrors<LessonFormState>;
   isMobile: boolean;
   setBulkAudioDialog: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -34,10 +40,11 @@ interface KeywordItemProps {
   keyword: Keyword;
   onUpdate: (index: number, field: keyof Keyword, value: string) => void;
   onRemove: (index: number) => void;
+  onClearError: (index: number) => void;
 }
 
 const KeywordItem = memo<KeywordItemProps>(
-  ({ index, keyword, onUpdate, onRemove }) => {
+  ({ index, keyword, onUpdate, onRemove, onClearError }) => {
     return (
       <Paper sx={{ p: 2 }}>
         <Stack spacing={2}>
@@ -68,6 +75,7 @@ const KeywordItem = memo<KeywordItemProps>(
                 fullWidth
                 label="Japanese Text"
                 defaultValue={keyword.japaneseText}
+                onChange={() => onClearError(index)}
                 onBlur={(e) => onUpdate(index, "japaneseText", e.target.value)}
                 placeholder="こんにちは"
                 InputProps={{
@@ -82,6 +90,7 @@ const KeywordItem = memo<KeywordItemProps>(
                 fullWidth
                 label="English Text"
                 defaultValue={keyword.englishText}
+                onChange={() => onClearError(index)}
                 onBlur={(e) => onUpdate(index, "englishText", e.target.value)}
                 placeholder="Hello"
                 InputProps={{
@@ -105,6 +114,7 @@ const KeywordItem = memo<KeywordItemProps>(
                 rows={2}
                 label="Japanese Sentence"
                 defaultValue={keyword.japaneseSentence}
+                onChange={() => onClearError(index)}
                 onBlur={(e) =>
                   onUpdate(index, "japaneseSentence", e.target.value)
                 }
@@ -123,6 +133,7 @@ const KeywordItem = memo<KeywordItemProps>(
                 rows={2}
                 label="English Sentence"
                 defaultValue={keyword.englishSentence}
+                onChange={() => onClearError(index)}
                 onBlur={(e) =>
                   onUpdate(index, "englishSentence", e.target.value)
                 }
@@ -146,6 +157,7 @@ const KeywordItem = memo<KeywordItemProps>(
                 fullWidth
                 label="Japanese Word Audio URL"
                 defaultValue={keyword.japaneseAudioUrl}
+                onChange={() => onClearError(index)}
                 onBlur={(e) =>
                   onUpdate(index, "japaneseAudioUrl", e.target.value)
                 }
@@ -162,6 +174,7 @@ const KeywordItem = memo<KeywordItemProps>(
                 fullWidth
                 label="English Word Audio URL"
                 defaultValue={keyword.englishAudioUrl}
+                onChange={() => onClearError(index)}
                 onBlur={(e) =>
                   onUpdate(index, "englishAudioUrl", e.target.value)
                 }
@@ -178,6 +191,7 @@ const KeywordItem = memo<KeywordItemProps>(
                 fullWidth
                 label="Japanese Sentence Audio URL"
                 defaultValue={keyword.japaneseSentenceAudioUrl}
+                onChange={() => onClearError(index)}
                 onBlur={(e) =>
                   onUpdate(index, "japaneseSentenceAudioUrl", e.target.value)
                 }
@@ -201,6 +215,7 @@ KeywordItem.displayName = "KeywordItem";
 export const KeywordsForm: React.FC<KeywordsFormProps> = ({
   control,
   errors,
+  clearErrors,
   isMobile,
   setBulkAudioDialog,
 }) => {
@@ -219,7 +234,8 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
       japaneseSentence: "",
       japaneseSentenceAudioUrl: "",
     });
-  }, [append]);
+    clearErrors("keywords");
+  }, [append, clearErrors]);
 
   const removeKeyword = useCallback(
     (index: number) => {
@@ -233,9 +249,19 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
       const currentField = fields[index];
       if (currentField) {
         update(index, { ...currentField, [field]: value });
+        clearErrors("keywords");
+        clearErrors(`keywords.${index}` as any);
       }
     },
-    [fields, update]
+    [fields, update, clearErrors]
+  );
+
+  const clearKeywordError = useCallback(
+    (index: number) => {
+      clearErrors("keywords");
+      clearErrors(`keywords.${index}` as any);
+    },
+    [clearErrors]
   );
 
   return (
@@ -312,6 +338,7 @@ export const KeywordsForm: React.FC<KeywordsFormProps> = ({
               keyword={field as Keyword}
               onUpdate={updateKeyword}
               onRemove={removeKeyword}
+              onClearError={clearKeywordError}
             />
           ))}
         </Stack>
