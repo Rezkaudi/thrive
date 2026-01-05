@@ -61,6 +61,7 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
       index,
       onUpdate,
       onUpdateContent,
+      key: slide.id
     };
 
     switch (slide.content.type) {
