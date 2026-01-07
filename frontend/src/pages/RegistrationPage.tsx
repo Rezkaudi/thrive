@@ -28,7 +28,7 @@ import { motion } from "framer-motion";
 import api from "../services/api";
 import { PasswordStrength } from "../types/registration.types";
 import { calculatePasswordStrength } from "../utils/passwordStrength";
-import { PasswordStrengthMeter } from "../components/auth";
+import { PasswordStrengthMeter, StepIndicator } from "../components/auth";
 
 export const RegistrationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -159,41 +159,7 @@ export const RegistrationPage: React.FC = () => {
               </Box>
 
               {/* Progress Indicator */}
-              <Box sx={{ mb: 4 }}>
-                <Stack direction="row" spacing={2} justifyContent="center">
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 4,
-                      bgcolor: "primary.main",
-                      borderRadius: 2,
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 4,
-                      bgcolor: "grey.300",
-                      borderRadius: 2,
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 4,
-                      bgcolor: "grey.300",
-                      borderRadius: 2,
-                    }}
-                  />
-                </Stack>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", textAlign: "center", mt: 1 }}
-                >
-                  Step 1 of 3: Account Information
-                </Typography>
-              </Box>
+              <StepIndicator currentStep={1} label="Account Information" />
 
               {error && (
                 <Alert
@@ -274,7 +240,9 @@ export const RegistrationPage: React.FC = () => {
                     />
 
                     {formData.password && (
-                      <PasswordStrengthMeter passwordStrength={passwordStrength} />
+                      <PasswordStrengthMeter
+                        passwordStrength={passwordStrength}
+                      />
                     )}
                   </Box>
 
