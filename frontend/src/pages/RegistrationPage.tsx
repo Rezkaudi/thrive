@@ -1,6 +1,4 @@
-// frontend/src/pages/RegistrationPage.tsx
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Box,
   Container,
@@ -25,81 +23,26 @@ import {
   Person,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
-import api from "../services/api";
-import { PasswordStrength } from "../types/registration.types";
-import { calculatePasswordStrength } from "../utils/passwordStrength";
 import { PasswordStrengthMeter, StepIndicator } from "../components/auth";
+import { useRegistration } from "../hooks/useRegistration";
 
 export const RegistrationPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
-    score: 0,
-    feedback: [],
-    color: "error",
-  });
-
-  const handlePasswordChange = (value: string) => {
-    setFormData({ ...formData, password: value });
-    setPasswordStrength(calculatePasswordStrength(value));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    // Validation
-    if (!formData.name.trim()) {
-      setError("Please enter your name");
-      return;
-    }
-
-    if (passwordStrength.score < 100) {
-      setError("Please create a stronger password");
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await api.post("/auth/register-new", {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        isVerifyEmail: false,
-      });
-
-      // Store email for next step
-      sessionStorage.setItem("registration_email", formData.email);
-
-      // Navigate to verification page
-      navigate("/register/verify");
-    } catch (err: any) {
-      setError(
-        err.response?.data?.error.message ||
-          err.response?.data?.error ||
-          "Registration failed"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    register,
+    handleSubmit,
+    setShowPassword,
+    setShowConfirmPassword,
+    onSubmit,
+    setServerError,
+    errors,
+    isValid,
+    showPassword,
+    showConfirmPassword,
+    loading,
+    serverError,
+    passwordStrength,
+    passwordValue,
+  } = useRegistration();
 
   return (
     <Box
@@ -161,26 +104,25 @@ export const RegistrationPage: React.FC = () => {
               {/* Progress Indicator */}
               <StepIndicator currentStep={1} label="Account Information" />
 
-              {error && (
+              {serverError && (
                 <Alert
                   severity="error"
                   sx={{ mb: 3 }}
-                  onClose={() => setError("")}
+                  onClose={() => setServerError("")}
                 >
-                  {error}
+                  {serverError}
                 </Alert>
               )}
 
-              <form onSubmit={handleSubmit}>
+              {/* Note: We pass the handleSubmit from RHF here */}
+              <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 <Stack spacing={3}>
                   <TextField
                     fullWidth
                     label="Your Name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
+                    {...register("name")}
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -194,11 +136,9 @@ export const RegistrationPage: React.FC = () => {
                     fullWidth
                     label="Email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    required
+                    {...register("email")}
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -213,9 +153,9 @@ export const RegistrationPage: React.FC = () => {
                       fullWidth
                       type={showPassword ? "text" : "password"}
                       label="Create Password"
-                      value={formData.password}
-                      onChange={(e) => handlePasswordChange(e.target.value)}
-                      required
+                      {...register("password")}
+                      error={!!errors.password}
+                      helperText={errors.password?.message}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -239,7 +179,8 @@ export const RegistrationPage: React.FC = () => {
                       }}
                     />
 
-                    {formData.password && (
+                    {/* Only show strength meter if user has typed something */}
+                    {passwordValue && (
                       <PasswordStrengthMeter
                         passwordStrength={passwordStrength}
                       />
@@ -250,24 +191,9 @@ export const RegistrationPage: React.FC = () => {
                     fullWidth
                     type={showConfirmPassword ? "text" : "password"}
                     label="Confirm Password"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    error={
-                      !!formData.confirmPassword &&
-                      formData.password !== formData.confirmPassword
-                    }
-                    helperText={
-                      formData.confirmPassword &&
-                      formData.password !== formData.confirmPassword
-                        ? "Passwords do not match"
-                        : ""
-                    }
-                    required
+                    {...register("confirmPassword")}
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword?.message}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -295,11 +221,7 @@ export const RegistrationPage: React.FC = () => {
 
                   <FormControlLabel
                     control={
-                      <Checkbox
-                        checked={agreeToTerms}
-                        onChange={(e) => setAgreeToTerms(e.target.checked)}
-                        color="primary"
-                      />
+                      <Checkbox {...register("agreeToTerms")} color="primary" />
                     }
                     label={
                       <Typography variant="body2">
@@ -308,7 +230,7 @@ export const RegistrationPage: React.FC = () => {
                           to="/privacy-policy"
                           target="_blank"
                           rel="noopener noreferrer"
-                          color="primary"
+                          style={{ color: "#1976d2", textDecoration: "none" }}
                         >
                           terms and conditions
                         </Link>
@@ -316,6 +238,11 @@ export const RegistrationPage: React.FC = () => {
                     }
                     sx={{ mt: 2 }}
                   />
+                  {errors.agreeToTerms && (
+                    <Typography variant="caption" color="error">
+                      {errors.agreeToTerms.message}
+                    </Typography>
+                  )}
 
                   <Button
                     type="submit"
@@ -323,16 +250,12 @@ export const RegistrationPage: React.FC = () => {
                     variant="contained"
                     size="large"
                     disabled={
-                      loading ||
-                      !formData.name ||
-                      passwordStrength.score < 100 ||
-                      formData.password !== formData.confirmPassword ||
-                      !agreeToTerms
+                      loading || passwordStrength.score < 100 || !isValid
                     }
                     sx={{ py: 1.5 }}
                   >
                     {loading ? (
-                      <CircularProgress size={24} />
+                      <CircularProgress size={24} color="inherit" />
                     ) : (
                       "Continue to Verification"
                     )}
