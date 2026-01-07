@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import {
   Dialog,
   DialogActions,
@@ -43,6 +43,10 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
   setBulkAudioDialog,
   setLessonDialog,
 }) => {
+  const methods = useForm<LessonFormState>({
+    defaultValues: lessonForm,
+  });
+
   const {
     control,
     handleSubmit,
@@ -52,9 +56,7 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
     formState: { errors },
     setError,
     clearErrors,
-  } = useForm<LessonFormState>({
-    defaultValues: lessonForm,
-  });
+  } = methods;
 
   const lessonType = watch("lessonType");
 
@@ -77,7 +79,9 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
             : null,
         keywords:
           lessonForm.lessonType === "KEYWORDS"
-            ? Array.isArray(lessonForm.keywords) ? lessonForm.keywords : []
+            ? Array.isArray(lessonForm.keywords)
+              ? lessonForm.keywords
+              : []
             : [],
       };
       reset(normalized, { keepErrors: false, keepDirty: false });
@@ -89,25 +93,32 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
   useEffect(() => {
     if (!lessonDialog || lessonType !== "KEYWORDS") return;
 
-    const incoming = Array.isArray(lessonForm.keywords) ? lessonForm.keywords : [];
+    const incoming = Array.isArray(lessonForm.keywords)
+      ? lessonForm.keywords
+      : [];
     const current = (watch("keywords") ?? []) as LessonFormState["keywords"];
 
     // Cheap guard to avoid redundant setValue work
     const sameLength = (current?.length ?? 0) === incoming.length;
     const shallowEqual =
       sameLength &&
-      current!.every((k, i) =>
-        k.englishText === incoming[i].englishText &&
-        k.japaneseText === incoming[i].japaneseText &&
-        k.englishAudioUrl === incoming[i].englishAudioUrl &&
-        k.japaneseAudioUrl === incoming[i].japaneseAudioUrl &&
-        (k.englishSentence ?? "") === (incoming[i].englishSentence ?? "") &&
-        (k.japaneseSentence ?? "") === (incoming[i].japaneseSentence ?? "") &&
-        (k.japaneseSentenceAudioUrl ?? "") === (incoming[i].japaneseSentenceAudioUrl ?? "")
+      current!.every(
+        (k, i) =>
+          k.englishText === incoming[i].englishText &&
+          k.japaneseText === incoming[i].japaneseText &&
+          k.englishAudioUrl === incoming[i].englishAudioUrl &&
+          k.japaneseAudioUrl === incoming[i].japaneseAudioUrl &&
+          (k.englishSentence ?? "") === (incoming[i].englishSentence ?? "") &&
+          (k.japaneseSentence ?? "") === (incoming[i].japaneseSentence ?? "") &&
+          (k.japaneseSentenceAudioUrl ?? "") ===
+            (incoming[i].japaneseSentenceAudioUrl ?? "")
       );
 
     if (!shallowEqual) {
-      setValue("keywords", incoming, { shouldDirty: true, shouldValidate: true });
+      setValue("keywords", incoming, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonDialog, lessonType, lessonForm.keywords]);
@@ -135,7 +146,9 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
         list.forEach((k, i) => {
           if (!k.japaneseText?.trim() || !k.englishText?.trim()) {
             setError(`keywords.${i}` as any, {
-              message: `Keyword ${i + 1} must have both Japanese and English text`,
+              message: `Keyword ${
+                i + 1
+              } must have both Japanese and English text`,
             });
             isValid = false;
           }
@@ -144,7 +157,9 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
     } else if (data.lessonType === "QUIZ") {
       const questions = (data.contentData as any)?.questions ?? [];
       if (!Array.isArray(questions) || questions.length === 0) {
-        setError("contentData", { message: "Please add at least one quiz question" });
+        setError("contentData", {
+          message: "Please add at least one quiz question",
+        });
         isValid = false;
       }
     } else if (data.lessonType === "SLIDES") {
@@ -156,7 +171,9 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
     } else {
       if (!data.contentUrl?.trim()) {
         setError("contentUrl", {
-          message: `Please provide a ${data.lessonType === "VIDEO" ? "video" : "PDF"} URL`,
+          message: `Please provide a ${
+            data.lessonType === "VIDEO" ? "video" : "PDF"
+          } URL`,
         });
         isValid = false;
       }
@@ -172,22 +189,28 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
       ...data,
       keywords:
         data.lessonType === "KEYWORDS"
-          ? (Array.isArray(data.keywords) ? data.keywords : [])
+          ? Array.isArray(data.keywords)
+            ? data.keywords
+            : []
           : undefined,
       contentData:
         data.lessonType === "QUIZ"
-          ? (data.contentData ?? { questions: [] })
+          ? data.contentData ?? { questions: [] }
           : data.lessonType === "SLIDES"
-          ? (data.contentData ?? { slides: [] })
+          ? data.contentData ?? { slides: [] }
           : undefined,
-      passingScore: data.lessonType === "QUIZ" ? (data.passingScore ?? 70) : undefined,
+      passingScore:
+        data.lessonType === "QUIZ" ? data.passingScore ?? 70 : undefined,
     };
 
     try {
       if (editingLesson) {
         await api.put(`/admin/lessons/${editingLesson.id}`, lessonData);
       } else {
-        await api.post(`/admin/courses/${selectedCourse!.id}/lessons`, lessonData);
+        await api.post(
+          `/admin/courses/${selectedCourse!.id}/lessons`,
+          lessonData
+        );
       }
 
       // Optionally push final submitted values to parent once (non-reactive)
@@ -198,7 +221,9 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
       fetchCourses();
     } catch (error) {
       console.error("Failed to save lesson:", error);
-      setError("root" as any, { message: "Failed to save lesson. Please try again." });
+      setError("root" as any, {
+        message: "Failed to save lesson. Please try again.",
+      });
     }
   };
 
@@ -210,32 +235,45 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
   };
 
   return (
-    <Dialog open={lessonDialog} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
-      <DialogTitle>{editingLesson ? "Edit Lesson" : "Add New Lesson"}</DialogTitle>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent>
-          <Stack spacing={3} sx={{ pt: 2 }}>
-            <BasicInfoForm isEditing={!!editingLesson} control={control} errors={errors} lessons={lessons} />
-            <LessonTypeSelector control={control} />
-            <ContentForm
-              control={control}
-              errors={errors}
-              lessonType={lessonType}
-              editingLesson={editingLesson}
-              setValue={setValue}
-              watch={watch}
-              isMobile={isMobile}
-              setBulkAudioDialog={setBulkAudioDialog}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button type="submit" variant="contained" sx={{ color: "white" }}>
-            Save Lesson
-          </Button>
-        </DialogActions>
-      </form>
+    <Dialog
+      open={lessonDialog}
+      onClose={handleCloseDialog}
+      maxWidth="lg"
+      fullWidth
+    >
+      <DialogTitle>
+        {editingLesson ? "Edit Lesson" : "Add New Lesson"}
+      </DialogTitle>
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogContent>
+            <Stack spacing={3} sx={{ pt: 2 }}>
+              <BasicInfoForm
+                control={control}
+                errors={errors}
+                lessons={lessons}
+                isEditing={!!editingLesson}
+              />
+              <LessonTypeSelector control={control} />
+              <ContentForm
+                control={control}
+                errors={errors}
+                lessonType={lessonType}
+                editingLesson={editingLesson}
+                setValue={setValue}
+                isMobile={isMobile}
+                setBulkAudioDialog={setBulkAudioDialog}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button type="submit" variant="contained" sx={{ color: "white" }}>
+              Save Lesson
+            </Button>
+          </DialogActions>
+        </form>
+      </FormProvider>
     </Dialog>
   );
 };
