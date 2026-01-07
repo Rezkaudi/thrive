@@ -1,17 +1,15 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import {
   Box,
-  Container,
   Card,
   CardContent,
   Typography,
-  TextField,
   Button,
   Alert,
   CircularProgress,
-  InputAdornment,
-  IconButton,
   Stack,
+  IconButton,
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
@@ -23,202 +21,136 @@ import {
   Person,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
+
+// Custom Components
 import { PasswordStrengthMeter, StepIndicator } from "../components/auth";
+import { FormInput } from "../components/ui/FormInput"; // <--- New
+
 import { useRegistration } from "../hooks/useRegistration";
+import { AuthLayout } from "../components/layout/AuthLayout";
 
 export const RegistrationPage: React.FC = () => {
+  // Logic
   const {
     register,
     handleSubmit,
-    setShowPassword,
-    setShowConfirmPassword,
     onSubmit,
-    setServerError,
     errors,
     isValid,
-    showPassword,
-    showConfirmPassword,
     loading,
     serverError,
+    setServerError,
+    showPassword,
+    setShowPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
     passwordStrength,
     passwordValue,
   } = useRegistration();
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #5C633A 0%, #D4BC8C 100%)",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Background decoration */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: -200,
-          right: -200,
-          width: 400,
-          height: 400,
-          borderRadius: "50%",
-          background: "rgba(255, 255, 255, 0.1)",
-        }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: -300,
-          left: -300,
-          width: 600,
-          height: 600,
-          borderRadius: "50%",
-          background: "rgba(255, 255, 255, 0.05)",
-        }}
-      />
+    <AuthLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card sx={{ borderRadius: 3, boxShadow: 10, my: 4 }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
+            {/* Header Section */}
+            <Box textAlign="center" m={4}>
+              <Typography
+                variant="h4"
+                fontWeight={700}
+                color="primary"
+                gutterBottom
+              >
+                Sign up for a free 14 day trial
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Learn Japanese and start thriving in Japan with us
+              </Typography>
+            </Box>
 
-      <Container maxWidth="sm" sx={{ position: "relative", zIndex: 1 }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card sx={{ borderRadius: 3, boxShadow: 10, my: 4 }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
-              <Box textAlign="center" m={4}>
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  color="primary"
-                  gutterBottom
-                >
-                  Sign up for a free 14 day trial
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Learn Japanese and start thriving in Japan with us
-                </Typography>
-              </Box>
+            <StepIndicator currentStep={1} label="Account Information" />
 
-              {/* Progress Indicator */}
-              <StepIndicator currentStep={1} label="Account Information" />
+            {serverError && (
+              <Alert
+                severity="error"
+                sx={{ mb: 3 }}
+                onClose={() => setServerError("")}
+              >
+                {serverError}
+              </Alert>
+            )}
 
-              {serverError && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 3 }}
-                  onClose={() => setServerError("")}
-                >
-                  {serverError}
-                </Alert>
-              )}
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+              <Stack spacing={3}>
+                {/* 1. Name */}
+                <FormInput
+                  label="Your Name"
+                  registration={register("name")}
+                  error={errors.name}
+                  icon={<Person color="action" />}
+                  isRequired
+                />
 
-              {/* Note: We pass the handleSubmit from RHF here */}
-              <form onSubmit={handleSubmit(onSubmit)} noValidate>
-                <Stack spacing={3}>
-                  <TextField
-                    fullWidth
-                    label="Your Name"
-                    {...register("name")}
-                    error={!!errors.name}
-                    helperText={errors.name?.message}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
+                {/* 2. Email */}
+                <FormInput
+                  label="Email"
+                  type="email"
+                  registration={register("email")}
+                  error={errors.email}
+                  icon={<Email color="action" />}
+                  isRequired
+                />
+
+                {/* 3. Password */}
+                <Box>
+                  <FormInput
+                    label="Create Password"
+                    type={showPassword ? "text" : "password"}
+                    registration={register("password")}
+                    icon={<Lock color="action" />}
+                    isRequired
+                    endIcon={
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    }
                   />
-
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    type="email"
-                    {...register("email")}
-                    error={!!errors.email}
-                    helperText={errors.email?.message}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Email color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
-                  <Box>
-                    <TextField
-                      fullWidth
-                      type={showPassword ? "text" : "password"}
-                      label="Create Password"
-                      {...register("password")}
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Lock color="action" />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? (
-                                <VisibilityOff />
-                              ) : (
-                                <Visibility />
-                              )}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
+                  {passwordValue && (
+                    <PasswordStrengthMeter
+                      passwordStrength={passwordStrength}
                     />
+                  )}
+                </Box>
 
-                    {/* Only show strength meter if user has typed something */}
-                    {passwordValue && (
-                      <PasswordStrengthMeter
-                        passwordStrength={passwordStrength}
-                      />
-                    )}
-                  </Box>
+                {/* 4. Confirm Password */}
+                <FormInput
+                  label="Confirm Password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  registration={register("confirmPassword")}
+                  error={errors.confirmPassword}
+                  icon={<Lock color="action" />}
+                  isRequired
+                  endIcon={
+                    <IconButton
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      edge="end"
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  }
+                />
 
-                  <TextField
-                    fullWidth
-                    type={showConfirmPassword ? "text" : "password"}
-                    label="Confirm Password"
-                    {...register("confirmPassword")}
-                    error={!!errors.confirmPassword}
-                    helperText={errors.confirmPassword?.message}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Lock color="action" />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
-                            edge="end"
-                          >
-                            {showConfirmPassword ? (
-                              <VisibilityOff />
-                            ) : (
-                              <Visibility />
-                            )}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
+                {/* 5. Terms Checkbox */}
+                <Box>
                   <FormControlLabel
                     control={
                       <Checkbox {...register("agreeToTerms")} color="primary" />
@@ -230,51 +162,48 @@ export const RegistrationPage: React.FC = () => {
                           to="/privacy-policy"
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: "#1976d2", textDecoration: "none" }}
+                          style={{ color: "#1976d2"}}
                         >
                           terms and conditions
                         </Link>
                       </Typography>
                     }
-                    sx={{ mt: 2 }}
                   />
                   {errors.agreeToTerms && (
-                    <Typography variant="caption" color="error">
+                    <Typography variant="caption" color="error" display="block">
                       {errors.agreeToTerms.message}
                     </Typography>
                   )}
+                </Box>
 
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    disabled={
-                      loading || passwordStrength.score < 100 || !isValid
-                    }
-                    sx={{ py: 1.5 }}
-                  >
-                    {loading ? (
-                      <CircularProgress size={24} color="inherit" />
-                    ) : (
-                      "Continue to Verification"
-                    )}
-                  </Button>
-                </Stack>
-              </form>
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={loading || passwordStrength.score < 100 || !isValid}
+                  sx={{ py: 1.5 }}
+                >
+                  {loading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    "Continue to Verification"
+                  )}
+                </Button>
+              </Stack>
+            </form>
 
-              <Box textAlign="center" mt={3}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Already have an account?
-                </Typography>
+            <Box textAlign="center" mt={3}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Already have an account?{" "}
                 <Button component={Link} to="/login" color="primary">
                   Login here
                 </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Container>
-    </Box>
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </AuthLayout>
   );
 };
