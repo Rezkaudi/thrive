@@ -16,7 +16,7 @@ import { fetchDashboardData } from './store/slices/dashboardSlice';
 import { LoginPage } from './pages/LoginPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { NewRegistrationPage } from './pages/NewRegistrationPage';
+import { RegistrationPage } from './pages/RegistrationPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 // Admin Pages
@@ -82,7 +82,7 @@ function AppContent() {
     <Router>
       <Routes>
 
-        <Route path="/register" element={<NewRegistrationPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
         <Route path="/register/verify" element={<VerifyEmailPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/profile/:userId" element={<PublicProfilePage />} />
