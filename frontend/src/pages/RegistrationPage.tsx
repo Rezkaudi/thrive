@@ -37,7 +37,7 @@ interface PasswordStrength {
     color: string;
 }
 
-export const NewRegistrationPage: React.FC = () => {
+export const RegistrationPage: React.FC = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
