@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { calculatePasswordStrength } from "../utils/passwordStrength";
 import api from "../services/api";
 import { useForm } from "react-hook-form";
+import { setStoredPlan, isValidPlanType } from "../utils/planStorage";
 
 export const useRegistration = () => {
   const navigate = useNavigate();
@@ -51,8 +52,8 @@ export const useRegistration = () => {
     const params = new URLSearchParams(location.search);
     const preSelectedPlan = params.get("plan");
 
-    if (preSelectedPlan === "standard" || preSelectedPlan === "premium") {
-      sessionStorage.setItem("selectedPlan", preSelectedPlan);
+    if (preSelectedPlan && isValidPlanType(preSelectedPlan)) {
+      setStoredPlan(preSelectedPlan);
     }
   }, [location])
 
