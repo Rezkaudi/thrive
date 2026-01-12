@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { PasswordStrength } from "../types/registration.types";
 import { RegistrationFormInputs, registrationSchema } from "../validation/auth.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { calculatePasswordStrength } from "../utils/passwordStrength";
 import api from "../services/api";
 import { useForm } from "react-hook-form";
+import { setStoredPlan, isValidPlanType } from "../utils/planStorage";
 
 export const useRegistration = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // UI State
   const [showPassword, setShowPassword] = useState(false);
@@ -43,6 +45,17 @@ export const useRegistration = () => {
 
   // Watch password field to update strength meter
   const passwordValue = watch("password");
+
+
+  // Get params about plan type from URL and store in session storage
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const preSelectedPlan = params.get("plan");
+
+    if (preSelectedPlan && isValidPlanType(preSelectedPlan)) {
+      setStoredPlan(preSelectedPlan);
+    }
+  }, [location])
 
   useEffect(() => {
     if (passwordValue) {

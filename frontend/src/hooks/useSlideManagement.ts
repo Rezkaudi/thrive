@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Slide, SlideContent } from '../types/slide.types';
 import { getDefaultContent } from '../utils/lideDefaults';
 
@@ -8,7 +8,7 @@ interface UseSlideManagementProps {
 }
 
 export const useSlideManagement = ({ initialSlides, onChange }: UseSlideManagementProps) => {
-  const [slides, setSlides] = useState<Slide[]>(
+  const [slides, setSlides] = useState<Slide[]>(() =>
     initialSlides.length > 0 ? initialSlides : [{
       id: Date.now().toString(),
       content: getDefaultContent('text'),
@@ -17,62 +17,90 @@ export const useSlideManagement = ({ initialSlides, onChange }: UseSlideManageme
 
   const [activeSlide, setActiveSlide] = useState(0);
 
-  const updateSlides = (newSlides: Slide[]) => {
-    setSlides(newSlides);
-    onChange(newSlides);
-  };
+  // Track if this is the initial mount to avoid calling onChange on mount
+  const isInitialMount = useRef(true);
 
-  const updateSlide = (index: number, updates: Partial<Slide>) => {
-    const newSlides = [...slides];
-    newSlides[index] = { ...newSlides[index], ...updates };
-    updateSlides(newSlides);
-  };
+  // Store the latest onChange in a ref to avoid stale closures
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
-  const updateSlideContent = (index: number, contentUpdates: Partial<SlideContent>) => {
-    const newSlides = [...slides];
-    newSlides[index].content = { ...newSlides[index].content, ...contentUpdates };
-    updateSlides(newSlides);
-  };
-
-  const addSlide = (type: SlideContent['type'] = 'text') => {
-    const newSlide: Slide = {
-      id: Date.now().toString(),
-      content: getDefaultContent(type),
-    };
-    const newSlides = [...slides, newSlide];
-    updateSlides(newSlides);
-    setActiveSlide(slides.length);
-  };
-
-  const duplicateSlide = (index: number) => {
-    const slideToDuplicate = slides[index];
-    const newSlide: Slide = {
-      ...slideToDuplicate,
-      id: Date.now().toString(),
-      content: { ...slideToDuplicate.content },
-    };
-    const newSlides = [...slides];
-    newSlides.splice(index + 1, 0, newSlide);
-    updateSlides(newSlides);
-    setActiveSlide(index + 1);
-  };
-
-  const removeSlide = (index: number) => {
-    if (slides.length === 1) return;
-    const newSlides = slides.filter((_, i) => i !== index);
-    updateSlides(newSlides);
-    if (activeSlide >= newSlides.length) {
-      setActiveSlide(newSlides.length - 1);
+  // Sync slides changes to parent via useEffect (avoids synchronous state update loops)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  };
+    onChangeRef.current(slides);
+  }, [slides]);
 
-  const changeSlideType = (index: number, newType: SlideContent['type']) => {
-    updateSlideContent(index, getDefaultContent(newType));
-  };
+  const updateSlide = useCallback((index: number, updates: Partial<Slide>) => {
+    setSlides(prev => {
+      const newSlides = [...prev];
+      newSlides[index] = { ...newSlides[index], ...updates };
+      return newSlides;
+    });
+  }, []);
 
-  const reorderSlides = (newSlides: Slide[]) => {
-    updateSlides(newSlides);
-  };
+  const updateSlideContent = useCallback((index: number, contentUpdates: Partial<SlideContent>) => {
+    setSlides(prev => {
+      const newSlides = [...prev];
+      newSlides[index] = {
+        ...newSlides[index],
+        content: { ...newSlides[index].content, ...contentUpdates }
+      };
+      return newSlides;
+    });
+  }, []);
+
+  const addSlide = useCallback((type: SlideContent['type'] = 'text') => {
+    setSlides(prev => {
+      const newSlide: Slide = {
+        id: Date.now().toString(),
+        content: getDefaultContent(type),
+      };
+      setActiveSlide(prev.length);
+      return [...prev, newSlide];
+    });
+  }, []);
+
+  const duplicateSlide = useCallback((index: number) => {
+    setSlides(prev => {
+      const slideToDuplicate = prev[index];
+      const newSlide: Slide = {
+        ...slideToDuplicate,
+        id: Date.now().toString(),
+        content: { ...slideToDuplicate.content },
+      };
+      const newSlides = [...prev];
+      newSlides.splice(index + 1, 0, newSlide);
+      setActiveSlide(index + 1);
+      return newSlides;
+    });
+  }, []);
+
+  const removeSlide = useCallback((index: number) => {
+    setSlides(prev => {
+      if (prev.length === 1) return prev;
+      const newSlides = prev.filter((_, i) => i !== index);
+      setActiveSlide(current => current >= newSlides.length ? newSlides.length - 1 : current);
+      return newSlides;
+    });
+  }, []);
+
+  const changeSlideType = useCallback((index: number, newType: SlideContent['type']) => {
+    setSlides(prev => {
+      const newSlides = [...prev];
+      newSlides[index] = {
+        ...newSlides[index],
+        content: getDefaultContent(newType)
+      };
+      return newSlides;
+    });
+  }, []);
+
+  const reorderSlides = useCallback((newSlides: Slide[]) => {
+    setSlides(newSlides);
+  }, []);
 
   return {
     slides,
@@ -84,6 +112,6 @@ export const useSlideManagement = ({ initialSlides, onChange }: UseSlideManageme
     duplicateSlide,
     removeSlide,
     changeSlideType,
-    reorderSlides, // Export the new function
+    reorderSlides,
   };
 };

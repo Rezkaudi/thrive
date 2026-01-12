@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Container, useTheme, useMediaQuery } from "@mui/material";
 import api from "../../services/api";
 import { BulkAudioManager } from "../../components/admin/BulkAudioManager";
-import { AddLessonDialog, CourseDetailHeader, LessonsList } from "../../components/admin-course-detail";
+// import { AddLessonDialog, CourseDetailHeader, LessonsList } from "../../components/admin-course-detail";
+import { CourseDetailHeader, AddLessonDialog, LessonsList} from "../../components/admin-course-detail";
 import { LessonFormState } from "../../types/lsesson-form.types";
 import { useParams } from "react-router-dom";
 
