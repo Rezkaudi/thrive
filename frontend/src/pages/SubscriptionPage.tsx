@@ -144,6 +144,7 @@ export const SubscriptionPage: React.FC = () => {
   );
   const [loadingDiscount, setLoadingDiscount] = useState(true);
   const [autoCheckoutInProgress, setAutoCheckoutInProgress] = useState(false);
+  const [hasPreSelectedPlan, setHasPreSelectedPlan] = useState(false);
   const { hasSubscription } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
@@ -176,7 +177,19 @@ export const SubscriptionPage: React.FC = () => {
 
   useEffect(() => {
     fetchDiscountStatus();
-  }, []);
+
+    // Check if user has a pre-selected plan (from session storage or URL)
+    const storedPlan = getStoredPlan();
+    const params = new URLSearchParams(location.search);
+    const urlPlan = params.get("plan");
+
+    if (
+      (storedPlan && isValidPlanType(storedPlan)) ||
+      (urlPlan && isValidPlanType(urlPlan))
+    ) {
+      setHasPreSelectedPlan(true);
+    }
+  }, [location.search]);
 
   /**
    * Auto-checkout effect: If user arrives with a pre-selected plan,
@@ -246,6 +259,9 @@ export const SubscriptionPage: React.FC = () => {
         standard: "standard",
         premium: "premium",
       };
+      // If user came with pre-selected plan, no free trial
+      const shouldHaveTrial = !hasPreSelectedPlan && !hasSubscription;
+
       const response = await paymentService.createCheckoutSession({
         planType: planTypeMap[planId],
         mode: "subscription",
@@ -254,6 +270,7 @@ export const SubscriptionPage: React.FC = () => {
         metadata: {
           plan: planId,
         },
+        hasTrial: shouldHaveTrial,
       });
 
       // Redirect to Stripe Checkout
@@ -645,12 +662,12 @@ export const SubscriptionPage: React.FC = () => {
                                 variant="caption"
                                 sx={{ fontSize: 20 }}
                               >
-                                {hasSubscription
+                                {hasSubscription || hasPreSelectedPlan
                                   ? "Subscribe Now"
                                   : "14-Day Free Trial"}
                               </Typography>
                             </Stack>
-                          ) : hasSubscription ? (
+                          ) : hasSubscription || hasPreSelectedPlan ? (
                             "Subscribe Now"
                           ) : (
                             "Start 14-Day Free Trial"

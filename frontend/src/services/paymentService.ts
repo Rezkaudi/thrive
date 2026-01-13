@@ -25,8 +25,15 @@ export const paymentService = {
         successUrl: string;
         cancelUrl: string;
         metadata?: any;
+        hasTrial?: boolean;
     }): Promise<CheckoutSessionResponse> {
-        const response = await api.post('/payment/create-checkout-session', data);
+        const response = await api.post('/payment/create-checkout-session', {
+            ...data,
+            metadata: {
+                ...data.metadata,
+                hasTrial: data.hasTrial ?? true,
+            },
+        });
         return response.data;
     },
 };
