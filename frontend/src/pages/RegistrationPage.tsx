@@ -28,6 +28,7 @@ import { FormInput } from "../components/ui/FormInput"; // <--- New
 
 import { useRegistration } from "../hooks/useRegistration";
 import { AuthLayout } from "../components/layout/AuthLayout";
+import { getStoredPlan, hasStoredPlan } from "../utils/planStorage";
 
 export const RegistrationPage: React.FC = () => {
   // Logic
@@ -65,7 +66,11 @@ export const RegistrationPage: React.FC = () => {
                 color="primary"
                 gutterBottom
               >
-                Sign up for a free 14 day trial
+                {`Sign up ${
+                  hasStoredPlan()
+                    ? "for the " + getStoredPlan() + " plan"
+                    : "for a free 14 day trial"
+                } `}
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Learn Japanese and start thriving in Japan with us
@@ -162,7 +167,7 @@ export const RegistrationPage: React.FC = () => {
                           to="/privacy-policy"
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: "#1976d2"}}
+                          style={{ color: "#1976d2" }}
                         >
                           terms and conditions
                         </Link>
