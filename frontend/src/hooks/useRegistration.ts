@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PasswordStrength } from "../types/registration.types";
 import { RegistrationFormInputs, registrationSchema } from "../validation/auth.schema";
@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { calculatePasswordStrength } from "../utils/passwordStrength";
 import api from "../services/api";
 import { useForm } from "react-hook-form";
-import { setStoredPlan, isValidPlanType } from "../utils/planStorage";
+import { setStoredPlan, isValidPlanType, clearStoredPlan } from "../utils/planStorage";
 
 export const useRegistration = () => {
   const navigate = useNavigate();
@@ -101,12 +101,36 @@ export const useRegistration = () => {
     }
   };
 
+  const isProceeding = useRef(false);
+
+  // If a server error occurs, it means we didn't navigate away successfully.
+  // Reset the flag so if the user leaves now, we clear the plan.
+  useEffect(() => {
+    if (serverError) {
+      isProceeding.current = false;
+    }
+  }, [serverError]);
+
+  // Clear the stored plan on unmount unless we are proceeding to the next step
+  useEffect(() => {
+    return () => {
+      if (!isProceeding.current) {
+        clearStoredPlan();
+      }
+    };
+  }, []);
+
+  const onValidSubmit = async (data: any) => {
+    isProceeding.current = true;
+    await onSubmit(data);
+  };
+
   return {
     register,
     handleSubmit,
     setShowPassword,
     setShowConfirmPassword,
-    onSubmit,
+    onValidSubmit,
     setServerError,
     errors,
     isValid,
