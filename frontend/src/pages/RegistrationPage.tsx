@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Box,
@@ -28,14 +28,18 @@ import { FormInput } from "../components/ui/FormInput"; // <--- New
 
 import { useRegistration } from "../hooks/useRegistration";
 import { AuthLayout } from "../components/layout/AuthLayout";
-import { getStoredPlan, hasStoredPlan } from "../utils/planStorage";
+import {
+  getStoredPlan,
+  hasStoredPlan,
+  clearStoredPlan,
+} from "../utils/planStorage";
 
 export const RegistrationPage: React.FC = () => {
   // Logic
   const {
     register,
     handleSubmit,
-    onSubmit,
+    onValidSubmit,
     errors,
     isValid,
     loading,
@@ -89,7 +93,7 @@ export const RegistrationPage: React.FC = () => {
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <form onSubmit={handleSubmit(onValidSubmit)} noValidate>
               <Stack spacing={3}>
                 {/* 1. Name */}
                 <FormInput
