@@ -1,22 +1,62 @@
-import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { PasswordStrength } from "../types/registration.types";
 import { RegistrationFormInputs, registrationSchema } from "../validation/auth.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { calculatePasswordStrength } from "../utils/passwordStrength";
 import api from "../services/api";
 import { useForm } from "react-hook-form";
-import { setStoredPlan, isValidPlanType, clearStoredPlan } from "../utils/planStorage";
+import { setStoredPlan, isValidPlanType, clearStoredPlan, getStoredPlan } from "../utils/planStorage";
 
 export const useRegistration = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+
+  // --- STRICT PLAN SYNC LOGIC ---
+
+  // 1. Derived State (Source of Truth)
+  const effectivePlan = useMemo(() => {
+    const urlPlan = searchParams.get("plan");
+
+    // Case A: User specifically requested a plan in URL
+    if (urlPlan !== null) {
+      if (isValidPlanType(urlPlan)) {
+        return urlPlan; // URL is valid -> Use it
+      }
+      // URL is invalid (e.g. ?plan=sta) -> Treat as Default (Free Trial)
+      // CRITICAL FIX: Do NOT fallback to getStoredPlan() here. 
+      // The URL overrides the session.
+      return null; 
+    }
+
+    // Case B: No plan in URL -> Check if we have a saved one from before
+    return getStoredPlan();
+  }, [searchParams]);
+
+  // 2. Storage Synchronization (Side Effect)
+  useEffect(() => {
+    const urlPlan = searchParams.get("plan");
+
+    if (urlPlan !== null) {
+      if (isValidPlanType(urlPlan)) {
+        // Valid plan in URL -> Save to storage
+        setStoredPlan(urlPlan);
+      } else {
+        // Invalid plan in URL -> Explicitly CLEAR storage to match UI
+        clearStoredPlan();
+      }
+    }
+    // If urlPlan is null (missing), we change nothing in storage 
+    // to allow persistence across refreshes.
+  }, [searchParams]);
+
+  // --- END PLAN LOGIC ---
 
   // Password Logic State
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
@@ -25,7 +65,6 @@ export const useRegistration = () => {
     color: "error",
   });
 
-  // React Hook Form Setup
   const {
     register,
     handleSubmit,
@@ -43,19 +82,7 @@ export const useRegistration = () => {
     },
   });
 
-  // Watch password field to update strength meter
   const passwordValue = watch("password");
-
-
-  // Get params about plan type from URL and store in session storage
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const preSelectedPlan = params.get("plan");
-
-    if (preSelectedPlan && isValidPlanType(preSelectedPlan)) {
-      setStoredPlan(preSelectedPlan);
-    }
-  }, [location])
 
   useEffect(() => {
     if (passwordValue) {
@@ -65,11 +92,9 @@ export const useRegistration = () => {
     }
   }, [passwordValue]);
 
-  // Form Submission Handler
   const onSubmit = async (data: RegistrationFormInputs) => {
     setServerError("");
 
-    // Secondary check for password strength (optional, as visual meter warns user)
     if (passwordStrength.score < 100) {
       setServerError("Please create a stronger password before continuing.");
       return;
@@ -85,10 +110,7 @@ export const useRegistration = () => {
         isVerifyEmail: false,
       });
 
-      // Store email for next step
       sessionStorage.setItem("registration_email", data.email);
-
-      // Navigate to verification page
       navigate("/register/verify");
     } catch (err: any) {
       setServerError(
@@ -103,15 +125,12 @@ export const useRegistration = () => {
 
   const isProceeding = useRef(false);
 
-  // If a server error occurs, it means we didn't navigate away successfully.
-  // Reset the flag so if the user leaves now, we clear the plan.
   useEffect(() => {
     if (serverError) {
       isProceeding.current = false;
     }
   }, [serverError]);
 
-  // Clear the stored plan on unmount unless we are proceeding to the next step
   useEffect(() => {
     return () => {
       if (!isProceeding.current) {
@@ -139,6 +158,7 @@ export const useRegistration = () => {
     loading,
     serverError,
     passwordStrength,
-    passwordValue
-  }
-}
+    passwordValue,
+    effectivePlan,
+  };
+};
