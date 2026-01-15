@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
   Box,
@@ -22,20 +22,12 @@ import {
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
-// Custom Components
 import { PasswordStrengthMeter, StepIndicator } from "../components/auth";
-import { FormInput } from "../components/ui/FormInput"; // <--- New
-
+import { FormInput } from "../components/ui/FormInput";
 import { useRegistration } from "../hooks/useRegistration";
 import { AuthLayout } from "../components/layout/AuthLayout";
-import {
-  getStoredPlan,
-  hasStoredPlan,
-  clearStoredPlan,
-} from "../utils/planStorage";
 
 export const RegistrationPage: React.FC = () => {
-  // Logic
   const {
     register,
     handleSubmit,
@@ -51,6 +43,7 @@ export const RegistrationPage: React.FC = () => {
     setShowConfirmPassword,
     passwordStrength,
     passwordValue,
+    effectivePlan, 
   } = useRegistration();
 
   return (
@@ -62,7 +55,6 @@ export const RegistrationPage: React.FC = () => {
       >
         <Card sx={{ borderRadius: 3, boxShadow: 10, my: 4 }}>
           <CardContent sx={{ p: { xs: 2, sm: 3, md: 5 } }}>
-            {/* Header Section */}
             <Box textAlign="center" m={4}>
               <Typography
                 variant="h4"
@@ -70,9 +62,12 @@ export const RegistrationPage: React.FC = () => {
                 color="primary"
                 gutterBottom
               >
+                {/* If effectivePlan is null (because URL was invalid or missing), 
+                   it correctly defaults to Free Trial here. 
+                */}
                 {`Sign up ${
-                  hasStoredPlan()
-                    ? "for the " + getStoredPlan() + " plan"
+                  effectivePlan
+                    ? "for the " + effectivePlan + " plan"
                     : "for a free 14 day trial"
                 } `}
               </Typography>
@@ -95,7 +90,6 @@ export const RegistrationPage: React.FC = () => {
 
             <form onSubmit={handleSubmit(onValidSubmit)} noValidate>
               <Stack spacing={3}>
-                {/* 1. Name */}
                 <FormInput
                   label="Your Name"
                   registration={register("name")}
@@ -103,8 +97,6 @@ export const RegistrationPage: React.FC = () => {
                   icon={<Person color="action" />}
                   isRequired
                 />
-
-                {/* 2. Email */}
                 <FormInput
                   label="Email"
                   type="email"
@@ -113,8 +105,6 @@ export const RegistrationPage: React.FC = () => {
                   icon={<Email color="action" />}
                   isRequired
                 />
-
-                {/* 3. Password */}
                 <Box>
                   <FormInput
                     label="Create Password"
@@ -137,8 +127,6 @@ export const RegistrationPage: React.FC = () => {
                     />
                   )}
                 </Box>
-
-                {/* 4. Confirm Password */}
                 <FormInput
                   label="Confirm Password"
                   type={showConfirmPassword ? "text" : "password"}
@@ -157,8 +145,6 @@ export const RegistrationPage: React.FC = () => {
                     </IconButton>
                   }
                 />
-
-                {/* 5. Terms Checkbox */}
                 <Box>
                   <FormControlLabel
                     control={
@@ -184,7 +170,6 @@ export const RegistrationPage: React.FC = () => {
                     </Typography>
                   )}
                 </Box>
-
                 <Button
                   type="submit"
                   fullWidth
@@ -201,7 +186,6 @@ export const RegistrationPage: React.FC = () => {
                 </Button>
               </Stack>
             </form>
-
             <Box textAlign="center" mt={3}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Already have an account?{" "}
