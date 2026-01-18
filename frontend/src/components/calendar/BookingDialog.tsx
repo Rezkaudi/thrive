@@ -1,3 +1,5 @@
+// frontend/src/components/calendar/BookingDialog.tsx
+
 import React from "react";
 import {
   Dialog,
@@ -66,6 +68,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
 
   const isSubscribed = userStatus === "active" || userStatus === "trialing";
   const userPlan = eligibility?.user.plan || null;
+  const isTrialing = userStatus === "trialing"; // Helper for trial status
 
   // Calculate booking limits display
   const hasMonthlyLimit = eligibility?.user.monthlyBookingLimit !== null;
@@ -80,7 +83,8 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
       PaperProps={{
         sx: {
           border: session.type === "STANDARD" ? "1px dashed" : "1px solid",
-          borderColor: session.type === "STANDARD" ? "warning.main" : "rgba(0,0,0,0.12)",
+          borderColor:
+            session.type === "STANDARD" ? "warning.main" : "rgba(0,0,0,0.12)",
         },
       }}
     >
@@ -163,11 +167,12 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             </Alert>
           )}
 
-          {/* Session Type Access Warning */}
+          {/* Session Type Access Warning (Skipped for Trial users) */}
           {isSubscribed &&
             eligibility &&
             !eligibility.validation?.canAccessSessionType &&
-            session.type !== "STANDARD" && (
+            session.type !== "STANDARD" &&
+            !isTrialing && (
               <Alert severity="warning" icon={<Warning />}>
                 <Typography variant="body2" fontWeight={600} gutterBottom>
                   Premium Session
@@ -179,13 +184,16 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
               </Alert>
             )}
 
+          {/* Trial Limit Warning (Optional: If they used their 1 slot, reasons will handle it, but we can add a specific alert if needed) */}
+
           {/* General Booking Errors */}
           {isSubscribed &&
             eligibility &&
             !eligibility.canBook &&
             session &&
             !isWithin24Hours(session.scheduledAt) &&
-            eligibility.validation?.canAccessSessionType !== false && (
+            (isTrialing ||
+              eligibility.validation?.canAccessSessionType !== false) && (
               <Alert severity="warning">
                 <Typography variant="body2" fontWeight={600} gutterBottom>
                   Cannot book this session:
@@ -246,18 +254,23 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
+
         {isSubscribed ? (
-          // Check if Standard user needs to upgrade
+          // Check if Standard user (Non-Trial) needs to upgrade
           (() => {
             const needsUpgradeForSessionType =
+              !isTrialing && // Trial users bypass this check
               isStandardPlan(userPlan) &&
               (session.type === "SPEAKING" ||
                 session.type === "EVENT" ||
                 session.type === "PREMIUM");
+
             const needsUpgradeForMonthlyLimit =
+              !isTrialing && // Trial users bypass monthly limit logic (handled by lifetime limit)
               isStandardPlan(userPlan) &&
               hasMonthlyLimit &&
               monthlyRemaining <= 0;
+
             const needsUpgrade =
               needsUpgradeForSessionType || needsUpgradeForMonthlyLimit;
 
@@ -269,6 +282,23 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                   onClick={onNavigateToSubscription}
                 >
                   Upgrade to Premium
+                </Button>
+              );
+            }
+
+            // Check if Trial user needs to upgrade (Limit reached)
+            if (
+              isTrialing &&
+              eligibility &&
+              eligibility.user.activeBookingsRemaining <= 0
+            ) {
+              return (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={onNavigateToSubscription}
+                >
+                  Upgrade Now
                 </Button>
               );
             }

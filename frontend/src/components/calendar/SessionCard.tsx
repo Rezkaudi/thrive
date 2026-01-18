@@ -43,7 +43,7 @@ interface SessionCardProps {
  * Helper to check if a session requires premium access
  */
 const isPremiumSession = (type: string): boolean => {
-  return type === "SPEAKING" || type === "EVENT";
+  return type === "SPEAKING" || type === "EVENT" || type === "PREMIUM";
 };
 
 /**
@@ -112,9 +112,15 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 
   // Check if user can access this session type based on plan
   const userPlan = user?.plan || user?.subscriptionPlan;
+  // UPDATED: Check for trial status
+  const userStatus = user?.subscriptionStatus || user?.status;
+  const isTrialing = userStatus === 'trialing';
+
   const requiresPremium = isPremiumSession(session.type);
   const hasStandardPlan = isStandardPlan(userPlan);
-  const cannotAccessSessionType = requiresPremium && hasStandardPlan;
+  
+  // UPDATED: Trial users (Standard or Premium) can access ALL session types
+  const cannotAccessSessionType = requiresPremium && hasStandardPlan && !isTrialing;
 
   // Check if within 24 hours
   const within24Hours = isWithin24Hours(session.scheduledAt);
