@@ -790,12 +790,14 @@ export const setupDependencies = (): DependencyContainer => {
             repositories.comment,
             repositories.post, // Default to post repository, can be switched to announcement
             repositories.user,
-            repositories.profile
+            repositories.profile,
+            repositories.subscription
         ),
         createPost: new CreatePostUseCase(
             repositories.post,
             repositories.user,
             repositories.profile,
+            repositories.subscription,
             services.activity
         ),
         getComments: new GetCommentsUseCase(
@@ -941,7 +943,8 @@ export const setupDependencies = (): DependencyContainer => {
                 repositories.comment,
                 repositories.feedback, // FeedbackRepository implements ICommentableRepository
                 repositories.user,
-                repositories.profile
+                repositories.profile,
+                repositories.subscription
             )
         ),
         feedbackGetCommentCount: new FeedbackGetCommentCountUseCase(
