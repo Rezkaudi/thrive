@@ -23,6 +23,7 @@ export const useCourseDetails = () => {
   // Loading State
   const [loading, setLoading] = useState(true);
   const [lessonLoading, setLessonLoading] = useState(false);
+  const [completingLesson, setCompletingLesson] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 1. MEMOIZED LESSONS (Prevents loops)
@@ -131,6 +132,7 @@ export const useCourseDetails = () => {
   const handleCompleteLesson = async (quizScore?: number) => {
     if (!selectedLesson || !selectedCourse) return;
     try {
+      setCompletingLesson(true);
       // ... complete logic
       await api.post(`/courses/lessons/${selectedLesson.id}/complete`, { quizScore });
 
@@ -139,6 +141,8 @@ export const useCourseDetails = () => {
       // ... rest of logic
     } catch (err) {
       console.error(err);
+    } finally {
+      setCompletingLesson(false);
     }
   };
 
@@ -167,6 +171,7 @@ export const useCourseDetails = () => {
     courseProgress,
     loading,
     lessonLoading,
+    completingLesson,
     error,
     handleCompleteLesson,
     handleEnroll,

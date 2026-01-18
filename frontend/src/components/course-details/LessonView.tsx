@@ -1,5 +1,5 @@
 import React from "react";
-import { Paper, Typography } from "@mui/material";
+import { Paper, Typography, CircularProgress } from "@mui/material";
 import { School } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { CourseLessonHeader } from "./CourseLessonHeader";
@@ -15,6 +15,7 @@ interface LessonViewProps {
   isEnrolled: boolean;
   onEnroll: () => void;
   onComplete: (score?: number) => void;
+  isLoadingNextLesson?: boolean;
 }
 
 export const LessonView: React.FC<LessonViewProps> = ({
@@ -23,8 +24,38 @@ export const LessonView: React.FC<LessonViewProps> = ({
   isEnrolled,
   onEnroll,
   onComplete,
+  isLoadingNextLesson = false,
 }) => {
   const selectedCourseColors = getCourseColors(selectedCourse?.type || "");
+
+  // Loading state when completing lesson and fetching next
+  if (isLoadingNextLesson) {
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          textAlign: "center",
+          py: 12,
+          borderRadius: 4,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 3,
+        }}
+      >
+        <CircularProgress
+          size={60}
+          sx={{ color: selectedCourseColors.primary || "primary.main" }}
+        />
+        <Typography variant="h5" color="text.secondary" fontWeight={600}>
+          Loading next lesson...
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Great job! Preparing your next lesson
+        </Typography>
+      </Paper>
+    );
+  }
 
   if (!selectedLesson) {
     return (
@@ -33,7 +64,12 @@ export const LessonView: React.FC<LessonViewProps> = ({
         sx={{ textAlign: "center", py: 12, borderRadius: 4 }}
       >
         <School sx={{ fontSize: 100, color: "text.secondary", mb: 3 }} />
-        <Typography variant="h4" color="text.secondary" gutterBottom fontWeight={600}>
+        <Typography
+          variant="h4"
+          color="text.secondary"
+          gutterBottom
+          fontWeight={600}
+        >
           Select a lesson to begin
         </Typography>
         <Typography variant="body1" color="text.secondary">
