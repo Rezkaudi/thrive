@@ -42,6 +42,7 @@ export const CourseDetailPage: React.FC = () => {
     enrollments,
     courseProgress,
     lessonLoading,
+    completingLesson,
     handleCompleteLesson,
     handleEnroll,
     navigate,
@@ -187,6 +188,7 @@ export const CourseDetailPage: React.FC = () => {
             isEnrolled={isEnrolled}
             onEnroll={handleEnroll}
             onComplete={onCompleteInstant}
+            isLoadingNextLesson={completingLesson}
           />
         </Container>
       </Box>
