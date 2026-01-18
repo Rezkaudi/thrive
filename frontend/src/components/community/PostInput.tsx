@@ -1,3 +1,5 @@
+// frontend/src/components/community/PostInput.tsx
+
 import React from "react";
 import {
   Card,
@@ -8,11 +10,16 @@ import {
   Box,
   Paper,
   Typography,
+  Button,
+  Alert,
 } from "@mui/material";
-import { AttachFile } from "@mui/icons-material";
+import { AttachFile, Lock } from "@mui/icons-material";
 import { usePostInput } from "../../hooks/usePostInput";
 import PostInputHeader from "./PostInputHeader";
 import PostInputActions from "./PostInputActions";
+import { useSelector } from "react-redux"; // Import useSelector
+import { RootState } from "../../store/store"; // Import RootState
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 interface IPostInputProps {
   onShowSnackbar?: (
@@ -22,6 +29,11 @@ interface IPostInputProps {
 }
 
 export const PostInput = ({ onShowSnackbar }: IPostInputProps) => {
+  const navigate = useNavigate();
+  // Check subscription status from Redux
+  const subStatus = useSelector((state: RootState) => state.auth.status);
+  const isCanceled = subStatus === 'canceled';
+
   const {
     newPost,
     setNewPost,
@@ -43,6 +55,28 @@ export const PostInput = ({ onShowSnackbar }: IPostInputProps) => {
     handleCreatePost,
     handleShowSnackbar,
   } = usePostInput({ onShowSnackbar });
+
+  // --- RESTRICTION VIEW ---
+  if (isCanceled) {
+    return (
+      <Card sx={{ mb: 4, p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
+        <Lock sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+        <Typography variant="h6" gutterBottom>
+          Community Access Paused
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Your subscription is currently canceled. Renew your plan to create posts, share feedback, and interact with the community.
+        </Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={() => navigate('/subscription')}
+        >
+          Renew Subscription
+        </Button>
+      </Card>
+    );
+  }
 
   return (
     <Card
