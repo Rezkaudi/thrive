@@ -159,13 +159,16 @@ export const SpecialSubscriptionPage: React.FC = () => {
             });
 
             // Redirect to Stripe Checkout
-            const result = await stripe.redirectToCheckout({
-                sessionId: response.sessionId,
-            });
+            if (response.sessionId) {
+                const result = await stripe.redirectToCheckout({
+                    sessionId: response.sessionId,
+                });
 
-            if (result.error) {
-                throw new Error(result.error.message);
+                if (result.error) {
+                    throw new Error(result.error.message);
+                }
             }
+
         } catch (err: any) {
             setError(err.message || 'Failed to process payment');
             setLoading(false);
