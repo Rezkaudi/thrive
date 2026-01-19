@@ -9,8 +9,13 @@ export interface DiscountStatus {
 }
 
 export interface CheckoutSessionResponse {
-    sessionId: string;
+    sessionId?: string;
     isDiscounted: boolean;
+    isUpgrade?: boolean;
+    isDowngrade?: boolean;
+    upgraded?: boolean;
+    isPaidNow?: boolean;
+    message?: string;
 }
 
 export const paymentService = {
