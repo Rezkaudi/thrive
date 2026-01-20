@@ -169,13 +169,39 @@ export const AddLessonDialog: React.FC<IAddLessonDialogProps> = ({
         isValid = false;
       }
     } else {
-      if (!data.contentUrl?.trim()) {
+      // Logic for VIDEO and PDF URL validation
+      const url = data.contentUrl?.trim() || "";
+      
+      if (!url) {
         setError("contentUrl", {
           message: `Please provide a ${
             data.lessonType === "VIDEO" ? "video" : "PDF"
           } URL`,
         });
         isValid = false;
+      } else {
+        const lowerUrl = url.toLowerCase();
+        
+        // Strict Validation Check
+        if (data.lessonType === "VIDEO") {
+          // Checks for .mp4, .webm, .ogg, .mov, .m4v and allows query params (e.g. ?signature=...)
+          const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(lowerUrl);
+          if (!isVideo) {
+            setError("contentUrl", {
+              message: "Invalid format. URL must end in .mp4, .webm, .ogg, or .mov",
+            });
+            isValid = false;
+          }
+        } else if (data.lessonType === "PDF") {
+          // Checks for .pdf extension and allows query params
+          const isPdf = /\.pdf(\?.*)?$/i.test(lowerUrl);
+          if (!isPdf) {
+            setError("contentUrl", {
+              message: "Invalid format. URL must match a PDF file (.pdf)",
+            });
+            isValid = false;
+          }
+        }
       }
     }
 
