@@ -4,14 +4,15 @@ import api from './api';
 export interface SubscriptionStatus {
     hasAccessToCourses: boolean;
     hasSubscription: boolean;
-    status: string | null
-    subscriptions: {
+    status: string | null;
+    currentPlan: string | null;
+    isTrialing: boolean;
+    subscription: {
         id: string;
         plan: string;
         status: string;
-        expiresAt: string;
-        courseId?: string;
-    }[];
+        currentPeriodEnd: string;
+    } | null;
 }
 
 export interface Subscription {
@@ -37,7 +38,6 @@ export const subscriptionService = {
     async createCustomerPortal(): Promise<any> {
         const response = await api.get(`/payment/create-customer-portal`);
         return response.data;
-
     },
 
     async endTrial(): Promise<void> {

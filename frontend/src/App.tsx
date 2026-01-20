@@ -63,7 +63,7 @@ function AppContent() {
     initApp();
   }, [dispatch]);
 
-  if (authChecking || paymentChecking) {
+  if (authChecking) {
     return (
       <Box
         sx={{

@@ -32,7 +32,7 @@ export const PostInput = ({ onShowSnackbar }: IPostInputProps) => {
   const navigate = useNavigate();
   // Check subscription status from Redux
   const subStatus = useSelector((state: RootState) => state.auth.status);
-  const isCanceled = subStatus === 'canceled';
+  const isCanceled = subStatus === 'canceled' || subStatus === 'past_due' || subStatus === 'unpaid';
 
   const {
     newPost,
@@ -67,9 +67,9 @@ export const PostInput = ({ onShowSnackbar }: IPostInputProps) => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Your subscription is currently canceled. Renew your plan to create posts, share feedback, and interact with the community.
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <Button
+          variant="contained"
+          color="primary"
           onClick={() => navigate('/subscription')}
         >
           Renew Subscription
