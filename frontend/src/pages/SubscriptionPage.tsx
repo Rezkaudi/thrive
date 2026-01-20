@@ -265,7 +265,7 @@ export const SubscriptionPage: React.FC = () => {
       const response = await paymentService.createCheckoutSession({
         planType: planTypeMap[planId],
         mode: "subscription",
-                successUrl: `${window.location.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        successUrl: `${window.location.origin}/dashboard`,
         cancelUrl: `${window.location.origin}/subscription`,
         metadata: {
           plan: planId,

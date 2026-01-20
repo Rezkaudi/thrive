@@ -47,7 +47,6 @@ import { AdminVideoPage } from './pages/admin/AdminVideoPage';
 import { SpecialSubscriptionPage } from './pages/studentOfShiego/SpecialSubscriptionPage';
 import { SpecialVerifyEmailPage } from './pages/studentOfShiego/SpecialVerifyEmailPage';
 import { SpecialNewRegistrationPage } from './pages/studentOfShiego/SpecialNewRegistrationPage';
-import { SubscriptionSuccessPage } from './pages/SubscriptionSuccessPage';
 
 
 function AppContent() {
@@ -88,25 +87,9 @@ function AppContent() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/profile/:userId" element={<PublicProfilePage />} />
 
-         <Route
-          path="/subscription"
-          element={
-            isAuthenticated ? (
-              <SubscriptionPage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
         <Route
-          path="/subscription/success"
-          element={
-            isAuthenticated ? (
-              <SubscriptionSuccessPage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          path="/subscription"
+          element={isAuthenticated ? <SubscriptionPage /> : <Navigate to="/login" replace />}
         />
 
         {/* Student of Shiego */}
