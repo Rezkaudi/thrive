@@ -24,6 +24,7 @@ interface PostCardHeaderProps {
   isEditing: boolean;
   onMenuClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isDeleting: boolean;
+  isOwnItem?: boolean;
 }
 
 export const PostCardHeader: React.FC<PostCardHeaderProps> = ({
@@ -37,6 +38,7 @@ export const PostCardHeader: React.FC<PostCardHeaderProps> = ({
   isEditing,
   onMenuClick,
   isDeleting,
+  isOwnItem,
 }) => {
   return (
     <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
@@ -107,20 +109,22 @@ export const PostCardHeader: React.FC<PostCardHeaderProps> = ({
         </Typography>
       </Stack>
 
-      <IconButton
-        size="small"
-        onClick={onMenuClick}
-        disabled={isDeleting}
-        sx={{
-          color: "text.secondary",
-          "&:hover": {
-            color: "text.primary",
-            bgcolor: "action.hover",
-          },
-        }}
-      >
-        <MoreVert />
-      </IconButton>
+      {isOwnItem && (
+        <IconButton
+          size="small"
+          onClick={onMenuClick}
+          disabled={isDeleting}
+          sx={{
+            color: "text.secondary",
+            "&:hover": {
+              color: "text.primary",
+              bgcolor: "action.hover",
+            },
+          }}
+        >
+          <MoreVert />
+        </IconButton>
+      )}
     </Stack>
   );
 };
