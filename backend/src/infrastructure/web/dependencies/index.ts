@@ -27,6 +27,7 @@ import { VideoRepository } from "../../database/repositories/VideoRepository";
 // ========== SERVICES (9) ==========
 import { ActivityService } from "../../services/ActivityService";
 import { EmailService } from "../../services/EmailService";
+import { ResendEmailService } from "../../services/ResendEmailService";
 import { PaymentService } from "../../services/PaymentService";
 import { PasswordService } from "../../services/PasswordService";
 import { TokenService } from "../../services/TokenService";
@@ -255,7 +256,8 @@ export interface DependencyContainer {
     // Services
     services: {
         activity: ActivityService;
-        email: EmailService;
+        // email: EmailService;
+        email: ResendEmailService;
         payment: PaymentService;
         password: PasswordService;
         token: TokenService;
@@ -498,7 +500,8 @@ export const setupDependencies = (): DependencyContainer => {
     // ========== Initialize Services ==========
     const services = {
         activity: new ActivityService(),
-        email: new EmailService(),
+        // email: new EmailService(),
+        email: new ResendEmailService(),
         payment: new PaymentService(),
         password: new PasswordService(),
         token: new TokenService(),
