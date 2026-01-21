@@ -62,7 +62,7 @@ interface PostCardProps {
   currentUserId?: string;
   onShowSnackbar: (
     message: string,
-    severity: "success" | "error" | "info" | "warning"
+    severity: "success" | "error" | "info" | "warning",
   ) => void;
   isHighlighted?: boolean;
   currentTab: number;
@@ -87,7 +87,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [editSelectedMedia, setEditSelectedMedia] = useState<SelectedMedia[]>(
-    []
+    [],
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -119,7 +119,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 ? "video/mp4"
                 : "image/jpeg",
           }),
-        })
+        }),
       );
       setEditSelectedMedia(existingMedia);
     }
@@ -158,8 +158,8 @@ export const PostCard: React.FC<PostCardProps> = ({
       currentTab === 0
         ? "announcements"
         : currentTab === 1
-        ? "posts"
-        : "feedback";
+          ? "posts"
+          : "feedback";
     const itemUrl = `${window.location.origin}/community?tab=${tabParam}&highlight=${post.id}`;
     setShareUrl(itemUrl);
     setShareDialog(true);
@@ -171,7 +171,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       `${
         itemType.charAt(0).toUpperCase() + itemType.slice(1)
       } URL copied to clipboard!`,
-      "success"
+      "success",
     );
   };
 
@@ -211,7 +211,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         // Handle media for posts and feedback (not announcements)
         if (!post.isAnnouncement && editSelectedMedia.length > 0) {
           const newFiles = editSelectedMedia.filter(
-            (media) => !media.preview.startsWith("http") && media.file.size > 0
+            (media) => !media.preview.startsWith("http") && media.file.size > 0,
           );
 
           if (newFiles.length > 0) {
@@ -305,8 +305,8 @@ export const PostCard: React.FC<PostCardProps> = ({
     post.commentsCount !== undefined
       ? post.commentsCount
       : post.commentsInitialized
-      ? 0
-      : "...";
+        ? 0
+        : "...";
 
   return (
     <motion.div
@@ -358,6 +358,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             isFeedback={post.isFeedback}
             isEditing={isEditing}
             onMenuClick={handleMenuClick}
+            isOwnItem={isOwnItem}
             isDeleting={post.isDeleting || false}
           />
 
@@ -467,17 +468,19 @@ export const PostCard: React.FC<PostCardProps> = ({
       </Card>
 
       {/* Menus and Dialogs */}
-      <PostCardMenu
-        anchorEl={anchorEl}
-        open={menuOpen}
-        onClose={handleMenuClose}
-        isOwnItem={isOwnItem}
-        isEditing={isEditing}
-        isDeleting={post.isDeleting || false}
-        onEdit={handleEdit}
-        onDelete={handleDeleteClick}
-        onReport={handleReportClick}
-      />
+      {isOwnItem && (
+        <PostCardMenu
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={handleMenuClose}
+          isOwnItem={isOwnItem}
+          isEditing={isEditing}
+          isDeleting={post.isDeleting || false}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          onReport={handleReportClick}
+        />
+      )}
 
       <PostCardDialogs
         deleteDialogOpen={deleteDialogOpen}
