@@ -110,6 +110,11 @@ export class PaymentService implements IPaymentService {
           quantity: 1,
         },
       ],
+      custom_text: {
+        submit: {
+          message: 'Secure payment with Stripe. All transactions are encrypted and 100% secure.',
+        },
+      },
       mode: params.mode,
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,

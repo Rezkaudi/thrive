@@ -1,0 +1,124 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class Migrations1769800628102 implements MigrationInterface {
+    name = 'Migrations1769800628102'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('ADMIN', 'INSTRUCTOR', 'STUDENT')`);
+        await queryRunner.query(`CREATE TABLE "users" ("id" character varying NOT NULL, "email" character varying NOT NULL, "password" character varying NOT NULL, "role" "public"."users_role_enum" NOT NULL DEFAULT 'STUDENT', "isActive" boolean NOT NULL DEFAULT true, "isverify" boolean NOT NULL DEFAULT false, "verificationCode" character varying, "exprirat" TIMESTAMP, "hasSeedTourVideo" boolean NOT NULL DEFAULT false, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."video_videotype_enum" AS ENUM('YOUTUBE', 'S3')`);
+        await queryRunner.query(`CREATE TABLE "video" ("id" character varying NOT NULL, "description" text NOT NULL, "videoUrl" character varying NOT NULL, "videoType" "public"."video_videotype_enum" NOT NULL DEFAULT 'YOUTUBE', "thumbnailUrl" character varying, "duration" integer, "isActive" boolean NOT NULL DEFAULT true, "createdBy" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_1a2f3856250765d72e7e1636c8e" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."recent_activities_activitytype_enum" AS ENUM('USER_REGISTERED', 'LESSON_COMPLETED', 'POST_CREATED', 'SESSION_BOOKED', 'SESSION_ATTENDED', 'COURSE_COMPLETED', 'ACHIEVEMENT_EARNED', 'POINTS_EARNED', 'LEVEL_UP', 'PROFILE_UPDATED')`);
+        await queryRunner.query(`CREATE TABLE "recent_activities" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "activityType" "public"."recent_activities_activitytype_enum" NOT NULL, "title" character varying NOT NULL, "description" text, "metadata" jsonb, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_e01fcee4b30cde25eb0b08fd62f" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_248c2ca2f95bcc3c42de0df497" ON "recent_activities" ("createdAt") `);
+        await queryRunner.query(`CREATE INDEX "IDX_b65f6c266d808c17e474b3d0b1" ON "recent_activities" ("userId", "createdAt") `);
+        await queryRunner.query(`CREATE TYPE "public"."courses_type_enum" AS ENUM('JAPAN_IN_CONTEXT', 'JLPT_IN_CONTEXT')`);
+        await queryRunner.query(`CREATE TABLE "courses" ("id" character varying NOT NULL, "title" character varying NOT NULL, "description" text NOT NULL, "type" "public"."courses_type_enum" NOT NULL, "icon" character varying NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "freeLessonCount" integer NOT NULL DEFAULT '0', "order" integer NOT NULL DEFAULT '1', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_3f70a487cc718ad8eda4e6d58c9" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."lessons_lessontype_enum" AS ENUM('VIDEO', 'PDF', 'KEYWORDS', 'QUIZ', 'SLIDES')`);
+        await queryRunner.query(`CREATE TABLE "lessons" ("id" character varying NOT NULL, "courseId" character varying NOT NULL, "title" character varying NOT NULL, "description" text NOT NULL, "order" integer NOT NULL, "lessonType" "public"."lessons_lessontype_enum" NOT NULL DEFAULT 'VIDEO', "contentUrl" character varying, "contentData" jsonb, "audioFiles" text NOT NULL, "resources" text NOT NULL, "requiresReflection" boolean NOT NULL DEFAULT false, "pointsReward" integer NOT NULL DEFAULT '0', "passingScore" integer, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_9b9a8d455cac672d262d7275730" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "progress" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "lessonId" character varying NOT NULL, "courseId" character varying NOT NULL, "isCompleted" boolean NOT NULL DEFAULT false, "completedAt" TIMESTAMP, "reflectionSubmitted" boolean, "quizScore" double precision, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_79abdfd87a688f9de756a162b6f" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "posts" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "content" text NOT NULL, "mediaUrls" character varying NOT NULL DEFAULT '', "likesCount" integer NOT NULL DEFAULT '0', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_2829ac61eff60fcec60d7274b9e" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."subscriptions_subscriptionplan_enum" AS ENUM('monthly', 'yearly', 'one-time', 'standard', 'premium')`);
+        await queryRunner.query(`CREATE TYPE "public"."subscriptions_status_enum" AS ENUM('active', 'canceled', 'past_due', 'unpaid', 'trialing')`);
+        await queryRunner.query(`CREATE TABLE "subscriptions" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "email" character varying NOT NULL, "stripeCustomerId" character varying NOT NULL, "stripeSubscriptionId" character varying, "stripePaymentIntentId" character varying, "subscriptionPlan" "public"."subscriptions_subscriptionplan_enum" NOT NULL, "status" "public"."subscriptions_status_enum" NOT NULL DEFAULT 'active', "currentPeriodStart" TIMESTAMP NOT NULL, "currentPeriodEnd" TIMESTAMP NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_fbdba4e2ac694cf8c9cecf4dc84" UNIQUE ("userId"), CONSTRAINT "UQ_fbdba4e2ac694cf8c9cecf4dc84" UNIQUE ("userId"), CONSTRAINT "REL_fbdba4e2ac694cf8c9cecf4dc8" UNIQUE ("userId"), CONSTRAINT "PK_a87248d73155605cf782be9ee5e" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_f2a37d226c4f58242548e53c6b" ON "subscriptions" ("userId", "status") `);
+        await queryRunner.query(`CREATE TYPE "public"."sessions_type_enum" AS ENUM('SPEAKING', 'EVENT', 'STANDARD', 'PREMIUM')`);
+        await queryRunner.query(`CREATE TABLE "sessions" ("id" character varying NOT NULL, "title" character varying NOT NULL, "description" text NOT NULL, "type" "public"."sessions_type_enum" NOT NULL, "hostId" character varying NOT NULL, "meetingUrl" character varying, "location" character varying, "scheduledAt" TIMESTAMP NOT NULL, "duration" integer NOT NULL, "maxParticipants" integer NOT NULL, "currentParticipants" integer NOT NULL DEFAULT '0', "pointsRequired" integer NOT NULL DEFAULT '0', "isActive" boolean NOT NULL DEFAULT true, "isRecurring" boolean NOT NULL DEFAULT false, "recurringParentId" character varying, "recurringWeeks" integer, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_3238ef96f18b355b671619111bc" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "profiles" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "name" character varying NOT NULL, "bio" character varying, "profilePhoto" character varying, "languageLevel" character varying, "points" integer NOT NULL DEFAULT '0', "badges" text NOT NULL DEFAULT '', "level" integer NOT NULL DEFAULT '1', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "REL_315ecd98bd1a42dcf2ec4e2e98" UNIQUE ("userId"), CONSTRAINT "PK_8e520eb4da7dc01d0e190447c8e" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "post_likes" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "postId" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_e4ac7cb9daf243939c6eabb2e0d" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_30ee85070afe5b92b5920957b1" ON "post_likes" ("userId", "postId") `);
+        await queryRunner.query(`CREATE TABLE "feedbacks" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "content" text NOT NULL, "mediaUrls" character varying NOT NULL DEFAULT '', "likesCount" integer NOT NULL DEFAULT '0', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_79affc530fdd838a9f1e0cc30be" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "enrollments" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "courseId" character varying NOT NULL, "enrolledAt" TIMESTAMP NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_7c0f752f9fb68bf6ed7367ab00f" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "comment" ("id" character varying NOT NULL, "postId" character varying NOT NULL, "userId" character varying NOT NULL, "content" character varying NOT NULL, "parentCommentId" character varying, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_0b0e4bbc8415ec426f87f3a88e2" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "feedback_likes" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "feedbackId" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_092061985921001623c5157bb71" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "announcements" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "content" text NOT NULL, "likesCount" integer NOT NULL DEFAULT '0', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_b3ad760876ff2e19d58e05dc8b0" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."bookings_status_enum" AS ENUM('CONFIRMED', 'CANCELLED', 'COMPLETED')`);
+        await queryRunner.query(`CREATE TABLE "bookings" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "sessionId" character varying NOT NULL, "status" "public"."bookings_status_enum" NOT NULL DEFAULT 'CONFIRMED', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_bee6805982cc1e248e94ce94957" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "announcement_likes" ("id" character varying NOT NULL, "userId" character varying NOT NULL, "announcementId" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_a2d34cc3be8cc38da83df343ea8" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "keywords" ("id" character varying NOT NULL, "lessonId" character varying NOT NULL, "englishText" character varying NOT NULL, "japaneseText" character varying NOT NULL, "englishSentence" character varying, "japaneseSentence" character varying, "englishAudioUrl" character varying, "japaneseAudioUrl" character varying, "japaneseSentenceAudioUrl" character varying, "order" integer NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_4aa660a7a585ed828da68f3c28e" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`ALTER TABLE "video" ADD CONSTRAINT "FK_b55e1695784d2a393c0e379d25b" FOREIGN KEY ("createdBy") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "recent_activities" ADD CONSTRAINT "FK_7e5b29428c999404e4a3e3a2807" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "lessons" ADD CONSTRAINT "FK_1a9ff2409a84c76560ae8a92590" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "progress" ADD CONSTRAINT "FK_0366c96237f98ea1c8ba6e1ec35" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "progress" ADD CONSTRAINT "FK_df6c728a3df388df34e03d08088" FOREIGN KEY ("lessonId") REFERENCES "lessons"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "progress" ADD CONSTRAINT "FK_cb4d1477194c4ba8cf55bb6eb4b" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "posts" ADD CONSTRAINT "FK_ae05faaa55c866130abef6e1fee" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "subscriptions" ADD CONSTRAINT "FK_fbdba4e2ac694cf8c9cecf4dc84" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "profiles" ADD CONSTRAINT "FK_315ecd98bd1a42dcf2ec4e2e985" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "post_likes" ADD CONSTRAINT "FK_37d337ad54b1aa6b9a44415a498" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "post_likes" ADD CONSTRAINT "FK_6999d13aca25e33515210abaf16" FOREIGN KEY ("postId") REFERENCES "posts"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" ADD CONSTRAINT "FK_e9b6450d76be18b05b5f09d577b" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "enrollments" ADD CONSTRAINT "FK_de33d443c8ae36800c37c58c929" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "enrollments" ADD CONSTRAINT "FK_60dd0ae4e21002e63a5fdefeec8" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "comment" ADD CONSTRAINT "FK_c0354a9a009d3bb45a08655ce3b" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "comment" ADD CONSTRAINT "FK_73aac6035a70c5f0313c939f237" FOREIGN KEY ("parentCommentId") REFERENCES "comment"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "feedback_likes" ADD CONSTRAINT "FK_3b55efce420c5029a67d0f80a7a" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "feedback_likes" ADD CONSTRAINT "FK_2be52f77fa6bc4eeddfb8bdc3b5" FOREIGN KEY ("feedbackId") REFERENCES "feedbacks"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "announcements" ADD CONSTRAINT "FK_1968b95a7c6d64a81b1b3b5aad4" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "bookings" ADD CONSTRAINT "FK_38a69a58a323647f2e75eb994de" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "bookings" ADD CONSTRAINT "FK_819d15e3fad49eb18f691e86935" FOREIGN KEY ("sessionId") REFERENCES "sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "announcement_likes" ADD CONSTRAINT "FK_80fb38d4de29dc45c38a8b1b4ec" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "announcement_likes" ADD CONSTRAINT "FK_731a70928d6e41917376c41f1c1" FOREIGN KEY ("announcementId") REFERENCES "announcements"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+        await queryRunner.query(`ALTER TABLE "keywords" ADD CONSTRAINT "FK_88de6f201f3979bee6885171ae5" FOREIGN KEY ("lessonId") REFERENCES "lessons"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "keywords" DROP CONSTRAINT "FK_88de6f201f3979bee6885171ae5"`);
+        await queryRunner.query(`ALTER TABLE "announcement_likes" DROP CONSTRAINT "FK_731a70928d6e41917376c41f1c1"`);
+        await queryRunner.query(`ALTER TABLE "announcement_likes" DROP CONSTRAINT "FK_80fb38d4de29dc45c38a8b1b4ec"`);
+        await queryRunner.query(`ALTER TABLE "bookings" DROP CONSTRAINT "FK_819d15e3fad49eb18f691e86935"`);
+        await queryRunner.query(`ALTER TABLE "bookings" DROP CONSTRAINT "FK_38a69a58a323647f2e75eb994de"`);
+        await queryRunner.query(`ALTER TABLE "announcements" DROP CONSTRAINT "FK_1968b95a7c6d64a81b1b3b5aad4"`);
+        await queryRunner.query(`ALTER TABLE "feedback_likes" DROP CONSTRAINT "FK_2be52f77fa6bc4eeddfb8bdc3b5"`);
+        await queryRunner.query(`ALTER TABLE "feedback_likes" DROP CONSTRAINT "FK_3b55efce420c5029a67d0f80a7a"`);
+        await queryRunner.query(`ALTER TABLE "comment" DROP CONSTRAINT "FK_73aac6035a70c5f0313c939f237"`);
+        await queryRunner.query(`ALTER TABLE "comment" DROP CONSTRAINT "FK_c0354a9a009d3bb45a08655ce3b"`);
+        await queryRunner.query(`ALTER TABLE "enrollments" DROP CONSTRAINT "FK_60dd0ae4e21002e63a5fdefeec8"`);
+        await queryRunner.query(`ALTER TABLE "enrollments" DROP CONSTRAINT "FK_de33d443c8ae36800c37c58c929"`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" DROP CONSTRAINT "FK_e9b6450d76be18b05b5f09d577b"`);
+        await queryRunner.query(`ALTER TABLE "post_likes" DROP CONSTRAINT "FK_6999d13aca25e33515210abaf16"`);
+        await queryRunner.query(`ALTER TABLE "post_likes" DROP CONSTRAINT "FK_37d337ad54b1aa6b9a44415a498"`);
+        await queryRunner.query(`ALTER TABLE "profiles" DROP CONSTRAINT "FK_315ecd98bd1a42dcf2ec4e2e985"`);
+        await queryRunner.query(`ALTER TABLE "subscriptions" DROP CONSTRAINT "FK_fbdba4e2ac694cf8c9cecf4dc84"`);
+        await queryRunner.query(`ALTER TABLE "posts" DROP CONSTRAINT "FK_ae05faaa55c866130abef6e1fee"`);
+        await queryRunner.query(`ALTER TABLE "progress" DROP CONSTRAINT "FK_cb4d1477194c4ba8cf55bb6eb4b"`);
+        await queryRunner.query(`ALTER TABLE "progress" DROP CONSTRAINT "FK_df6c728a3df388df34e03d08088"`);
+        await queryRunner.query(`ALTER TABLE "progress" DROP CONSTRAINT "FK_0366c96237f98ea1c8ba6e1ec35"`);
+        await queryRunner.query(`ALTER TABLE "lessons" DROP CONSTRAINT "FK_1a9ff2409a84c76560ae8a92590"`);
+        await queryRunner.query(`ALTER TABLE "recent_activities" DROP CONSTRAINT "FK_7e5b29428c999404e4a3e3a2807"`);
+        await queryRunner.query(`ALTER TABLE "video" DROP CONSTRAINT "FK_b55e1695784d2a393c0e379d25b"`);
+        await queryRunner.query(`DROP TABLE "keywords"`);
+        await queryRunner.query(`DROP TABLE "announcement_likes"`);
+        await queryRunner.query(`DROP TABLE "bookings"`);
+        await queryRunner.query(`DROP TYPE "public"."bookings_status_enum"`);
+        await queryRunner.query(`DROP TABLE "announcements"`);
+        await queryRunner.query(`DROP TABLE "feedback_likes"`);
+        await queryRunner.query(`DROP TABLE "comment"`);
+        await queryRunner.query(`DROP TABLE "enrollments"`);
+        await queryRunner.query(`DROP TABLE "feedbacks"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_30ee85070afe5b92b5920957b1"`);
+        await queryRunner.query(`DROP TABLE "post_likes"`);
+        await queryRunner.query(`DROP TABLE "profiles"`);
+        await queryRunner.query(`DROP TABLE "sessions"`);
+        await queryRunner.query(`DROP TYPE "public"."sessions_type_enum"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_f2a37d226c4f58242548e53c6b"`);
+        await queryRunner.query(`DROP TABLE "subscriptions"`);
+        await queryRunner.query(`DROP TYPE "public"."subscriptions_status_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."subscriptions_subscriptionplan_enum"`);
+        await queryRunner.query(`DROP TABLE "posts"`);
+        await queryRunner.query(`DROP TABLE "progress"`);
+        await queryRunner.query(`DROP TABLE "lessons"`);
+        await queryRunner.query(`DROP TYPE "public"."lessons_lessontype_enum"`);
+        await queryRunner.query(`DROP TABLE "courses"`);
+        await queryRunner.query(`DROP TYPE "public"."courses_type_enum"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_b65f6c266d808c17e474b3d0b1"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_248c2ca2f95bcc3c42de0df497"`);
+        await queryRunner.query(`DROP TABLE "recent_activities"`);
+        await queryRunner.query(`DROP TYPE "public"."recent_activities_activitytype_enum"`);
+        await queryRunner.query(`DROP TABLE "video"`);
+        await queryRunner.query(`DROP TYPE "public"."video_videotype_enum"`);
+        await queryRunner.query(`DROP TABLE "users"`);
+        await queryRunner.query(`DROP TYPE "public"."users_role_enum"`);
+    }
+
+}
