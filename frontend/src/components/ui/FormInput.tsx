@@ -36,5 +36,12 @@ export const FormInput = ({
         <InputAdornment position="end">{endIcon}</InputAdornment>
       ) : undefined,
     }}
+    InputLabelProps={{
+      sx: {
+        "& .MuiFormLabel-asterisk": {
+          color: "red",
+        },
+      },
+    }}
   />
 );

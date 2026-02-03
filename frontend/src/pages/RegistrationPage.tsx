@@ -152,6 +152,7 @@ export const RegistrationPage: React.FC = () => {
                     }
                     label={
                       <Typography variant="body2">
+                        <span style={{ color: "red" }}>*</span> {" "}
                         I agree to the{" "}
                         <Link
                           to="/privacy-policy"
