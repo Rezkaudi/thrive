@@ -20,7 +20,7 @@ import {
   Lock,
   Person,
 } from "@mui/icons-material";
-import { motion } from "framer-motion";
+import { color, motion } from "framer-motion";
 
 import { PasswordStrengthMeter, StepIndicator } from "../components/auth";
 import { FormInput } from "../components/ui/FormInput";
@@ -43,7 +43,7 @@ export const RegistrationPage: React.FC = () => {
     setShowConfirmPassword,
     passwordStrength,
     passwordValue,
-    effectivePlan, 
+    effectivePlan,
   } = useRegistration();
 
   return (
@@ -161,6 +161,7 @@ export const RegistrationPage: React.FC = () => {
                         >
                           terms and conditions
                         </Link>
+                        .
                       </Typography>
                     }
                   />
@@ -169,6 +170,19 @@ export const RegistrationPage: React.FC = () => {
                       {errors.agreeToTerms.message}
                     </Typography>
                   )}
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...register("marketingEmails")}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <Typography variant="body2">
+                        I would like to receive marketing emails and updates.
+                      </Typography>
+                    }
+                  />
                 </Box>
                 <Button
                   type="submit"

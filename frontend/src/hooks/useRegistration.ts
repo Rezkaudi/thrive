@@ -79,6 +79,7 @@ export const useRegistration = () => {
       password: "",
       confirmPassword: "",
       agreeToTerms: false,
+      marketingEmails: false,
     },
   });
 
@@ -108,6 +109,7 @@ export const useRegistration = () => {
         email: data.email,
         password: data.password,
         isVerifyEmail: false,
+        marketingEmails: data.marketingEmails || false,
       });
 
       sessionStorage.setItem("registration_email", data.email);

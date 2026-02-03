@@ -10,6 +10,7 @@ export interface RegisterWithVerificationDTO {
     name: string;
     email: string;
     password: string;
+    marketingEmails?: boolean;
 }
 
 export class RegisterWithVerificationUseCase {
@@ -41,6 +42,9 @@ export class RegisterWithVerificationUseCase {
             existingUser.password = await this.passwordService.hash(dto.password);
             existingUser.verificationCode = verificationCode;
             existingUser.exprirat = expirationDate;
+            if (typeof dto.marketingEmails === 'boolean') {
+                existingUser.marketingEmails = dto.marketingEmails;
+            }
             existingUser.updatedAt = new Date();
 
             const updatedUser = await this.userRepository.update(existingUser);
@@ -80,6 +84,7 @@ export class RegisterWithVerificationUseCase {
             verificationCode,
             expirationDate,
             false,
+            dto.marketingEmails || false,
             new Date(),
             new Date()
         );
