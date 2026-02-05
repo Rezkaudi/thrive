@@ -38,11 +38,9 @@ export const ENV_CONFIG = {
     EMAIL_PORT: parseInt(process.env.EMAIL_PORT!) || 587,
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
-    RESEND_API_KEY: process.env.RESEND_API_KEY || 're_84Y6keyh_GbwpFve9wuv3tucVH6G6Uq17',
-    EMAIL_FROM: process.env.EMAIL_FROM || "info@thriveinjapan.com",
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    EMAIL_FROM: process.env.EMAIL_FROM,
 
-    // EMAIL_FROM: process.env.EMAIL_FROM || "onboarding@resend.dev",
-    //re_Wj12awkb_H9iEqFTxDdQ296o1nzHmb6zp
     // AWS Configuration
     AWS_REGION: process.env.AWS_REGION,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
