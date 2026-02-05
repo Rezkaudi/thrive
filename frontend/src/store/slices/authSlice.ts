@@ -18,6 +18,11 @@ interface AuthState {
   status: string | null;
   currentPlan: string | null;
   isTrialing: boolean;
+  // Free trial state (no credit card)
+  isInFreeTrial: boolean;
+  freeTrialExpired: boolean;
+  freeTrialEndDate: Date | null;
+  trialConvertedToPaid: boolean;
   loading: boolean;
   authChecking: boolean;
   paymentChecking: boolean;
@@ -34,6 +39,11 @@ const initialState: AuthState = {
   status: null,
   currentPlan: null,
   isTrialing: false,
+  // Free trial state (no credit card)
+  isInFreeTrial: false,
+  freeTrialExpired: false,
+  freeTrialEndDate: null,
+  trialConvertedToPaid: false,
   authChecking: true,
   paymentChecking: true,
   error: null,
@@ -162,6 +172,11 @@ const authSlice = createSlice({
         state.hasSubscription = action.payload.hasSubscription;
         state.currentPlan = action.payload.currentPlan;
         state.isTrialing = action.payload.isTrialing;
+        // Free trial state (no credit card)
+        state.isInFreeTrial = action.payload.isInFreeTrial || false;
+        state.freeTrialExpired = action.payload.freeTrialExpired || false;
+        state.freeTrialEndDate = action.payload.freeTrialEndDate || null;
+        state.trialConvertedToPaid = action.payload.trialConvertedToPaid || false;
       })
       .addCase(checkPayment.rejected, (state) => {
         state.paymentChecking = false;
@@ -170,6 +185,10 @@ const authSlice = createSlice({
         state.hasSubscription = false;
         state.currentPlan = null;
         state.isTrialing = false;
+        state.isInFreeTrial = false;
+        state.freeTrialExpired = false;
+        state.freeTrialEndDate = null;
+        state.trialConvertedToPaid = false;
       });
   },
 });
