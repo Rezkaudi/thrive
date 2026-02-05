@@ -1,6 +1,6 @@
 // frontend/src/pages/SubscriptionPage.tsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -12,7 +12,7 @@ import {
   Card,
   CardContent,
   Chip,
-} from "@mui/material";
+} from '@mui/material';
 import {
   ArrowBack,
   Check,
@@ -23,20 +23,20 @@ import {
   Star,
   TrendingUp,
   TrendingDown,
-} from "@mui/icons-material";
-import { motion, AnimatePresence } from "framer-motion";
-import { loadStripe } from "@stripe/stripe-js";
-import { AppDispatch, RootState } from "../store/store";
-import { useDispatch, useSelector } from "react-redux";
-import { paymentService, DiscountStatus } from "../services/paymentService";
-import { logout, checkPayment } from "../store/slices/authSlice";
+} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { loadStripe } from '@stripe/stripe-js';
+import { AppDispatch, RootState } from '../store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { paymentService, DiscountStatus } from '../services/paymentService';
+import { logout, checkPayment } from '../store/slices/authSlice';
 import {
   getStoredPlan,
   clearStoredPlan,
   isValidPlanType,
   PlanType,
-} from "../utils/planStorage";
-import { useSweetAlert } from "../utils/sweetAlert";
+} from '../utils/planStorage';
+import { useSweetAlert } from '../utils/sweetAlert';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY!);
 
@@ -144,12 +144,7 @@ const PLAN_HIERARCHY: Record<string, number> = {
   premium: 2,
 };
 
-type ButtonVariant =
-  | "subscribe"
-  | "payNow"
-  | "upgrade"
-  | "downgrade"
-  | "current";
+type ButtonVariant = 'subscribe' | 'payNow' | 'upgrade' | 'downgrade' | 'current';
 
 interface ButtonState {
   disabled: boolean;
@@ -164,32 +159,24 @@ export const SubscriptionPage: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
 
-  const [selectedPlan, setSelectedPlan] = useState<string>("standard");
+  const [selectedPlan, setSelectedPlan] = useState<string>('standard');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const { showSuccessToast } = useSweetAlert();
-  const [discountStatus, setDiscountStatus] = useState<DiscountStatus | null>(
-    null,
-  );
+  const [discountStatus, setDiscountStatus] = useState<DiscountStatus | null>(null);
   const [loadingDiscount, setLoadingDiscount] = useState(true);
   const [autoCheckoutInProgress, setAutoCheckoutInProgress] = useState(false);
   const [hasPreSelectedPlan, setHasPreSelectedPlan] = useState(false);
 
-  const {
-    hasSubscription,
-    currentPlan,
-    isTrialing,
-    status,
-    isInFreeTrial,
-    freeTrialExpired,
-    freeTrialEndDate,
-  } = useSelector((state: RootState) => state.auth);
+  const { hasSubscription, currentPlan, isTrialing, status } = useSelector(
+    (state: RootState) => state.auth
+  );
 
   const autoCheckoutTriggered = useRef(false);
 
   const getAutoCheckoutPlan = useCallback((): PlanType | null => {
     const params = new URLSearchParams(location.search);
-    const urlPlan = params.get("plan");
+    const urlPlan = params.get('plan');
 
     if (urlPlan && isValidPlanType(urlPlan)) {
       return urlPlan;
@@ -208,7 +195,7 @@ export const SubscriptionPage: React.FC = () => {
 
     const storedPlan = getStoredPlan();
     const params = new URLSearchParams(location.search);
-    const urlPlan = params.get("plan");
+    const urlPlan = params.get('plan');
 
     if (
       (storedPlan && isValidPlanType(storedPlan)) ||
@@ -255,30 +242,21 @@ export const SubscriptionPage: React.FC = () => {
   const getButtonState = (planId: string): ButtonState => {
     const isCurrentPlan = currentPlan === planId;
 
-    // User is in free trial (no credit card) OR has expired trial - show Subscribe
-    if (isInFreeTrial || freeTrialExpired) {
-      return {
-        disabled: false,
-        label: freeTrialExpired ? "Subscribe Now" : "Upgrade to Paid",
-        variant: "subscribe",
-      };
-    }
-
     // No subscription - show normal subscribe button
     if (!hasSubscription || !currentPlan) {
       return {
         disabled: false,
-        label: "Start 14-Day Free Trial",
-        variant: "subscribe",
+        label: 'Start 14-Day Free Trial',
+        variant: 'subscribe',
       };
     }
 
     // ===== CASE 2: Subscription is CANCELED =====
-    if (status !== "active" && status !== "trialing") {
+    if (status !== 'active' && status !== 'trialing') {
       return {
         disabled: false,
-        label: isCurrentPlan ? "Reactivate Plan" : "Subscribe",
-        variant: "subscribe",
+        label: isCurrentPlan ? 'Reactivate Plan' : 'Subscribe',
+        variant: 'subscribe',
       };
     }
 
@@ -286,8 +264,8 @@ export const SubscriptionPage: React.FC = () => {
     if (isCurrentPlan && isTrialing) {
       return {
         disabled: false,
-        label: "Pay Now",
-        variant: "payNow",
+        label: 'Pay Now',
+        variant: 'payNow',
       };
     }
 
@@ -295,8 +273,8 @@ export const SubscriptionPage: React.FC = () => {
     if (isCurrentPlan && !isTrialing) {
       return {
         disabled: true,
-        label: "Current Plan",
-        variant: "current",
+        label: 'Current Plan',
+        variant: 'current',
       };
     }
 
@@ -308,16 +286,16 @@ export const SubscriptionPage: React.FC = () => {
       // UPGRADE
       return {
         disabled: false,
-        label: isTrialing ? "Upgrade Now" : "Upgrade",
-        variant: "upgrade",
+        label: isTrialing ? 'Upgrade Now' : 'Upgrade',
+        variant: 'upgrade',
         icon: <TrendingUp sx={{ fontSize: 18, mr: 1 }} />,
       };
     } else {
       // DOWNGRADE
       return {
         disabled: false,
-        label: isTrialing ? "Downgrade Now" : "Downgrade",
-        variant: "downgrade",
+        label: isTrialing ? 'Downgrade Now' : 'Downgrade',
+        variant: 'downgrade',
         icon: <TrendingDown sx={{ fontSize: 18, mr: 1 }} />,
       };
     }
@@ -325,45 +303,32 @@ export const SubscriptionPage: React.FC = () => {
 
   const handleSelectPlan = async (planId: string) => {
     setSelectedPlan(planId);
-    setError("");
+    setError('');
     setLoading(true);
 
     try {
       const stripe = await stripePromise;
       if (!stripe) {
-        throw new Error("Stripe failed to load");
+        throw new Error('Stripe failed to load');
       }
 
       const plan = plans.find((p) => p.id === planId);
       if (!plan) {
-        throw new Error("Invalid plan selected");
+        throw new Error('Invalid plan selected');
       }
 
       const planTypeMap: {
-        [key: string]:
-          | "monthly"
-          | "yearly"
-          | "monthlySpecial"
-          | "standard"
-          | "premium";
+        [key: string]: 'monthly' | 'yearly' | 'monthlySpecial' | 'standard' | 'premium';
       } = {
-        standard: "standard",
-        premium: "premium",
+        standard: 'standard',
+        premium: 'premium',
       };
 
-      // Don't offer Stripe trial if:
-      // - User already had free trial (isInFreeTrial or freeTrialExpired)
-      // - User has pre-selected plan
-      // - User already has subscription
-      const shouldHaveTrial =
-        !hasPreSelectedPlan &&
-        !hasSubscription &&
-        !isInFreeTrial &&
-        !freeTrialExpired;
+      const shouldHaveTrial = !hasPreSelectedPlan && !hasSubscription;
 
       const response = await paymentService.createCheckoutSession({
         planType: planTypeMap[planId],
-        mode: "subscription",
+        mode: 'subscription',
         successUrl: `${window.location.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${window.location.origin}/subscription`,
         metadata: {
@@ -372,18 +337,16 @@ export const SubscriptionPage: React.FC = () => {
         hasTrial: shouldHaveTrial,
       });
 
-      console.log("Checkout session response:", response);
+      console.log('Checkout session response:', response);
 
       // Handle direct upgrade/downgrade or pay now (no checkout needed)
       if (response.isUpgrade || response.isPaidNow || response.isDowngrade) {
-        showSuccessToast(
-          response.message || "Subscription updated successfully!",
-        );
+        showSuccessToast(response.message || 'Subscription updated successfully!');
         setLoading(false);
 
         // Redirect after showing success message
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = '/dashboard';
         }, 2000);
 
         // Refresh subscription status
@@ -403,17 +366,18 @@ export const SubscriptionPage: React.FC = () => {
         }
 
         setLoading(false);
+
       }
     } catch (err: any) {
-      setError(err.message || "Failed to process payment");
+      setError(err.message || 'Failed to process payment');
       setLoading(false);
       setAutoCheckoutInProgress(false);
     }
   };
 
-  const formatPrice = (price: number, currency: string = "JPY") => {
-    return new Intl.NumberFormat("ja-JP", {
-      style: "currency",
+  const formatPrice = (price: number, currency: string = 'JPY') => {
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
@@ -422,25 +386,26 @@ export const SubscriptionPage: React.FC = () => {
 
   const getPlanIcon = (planId: string) => {
     switch (planId) {
-      case "standard":
-        return <CalendarMonth sx={{ fontSize: 40, color: "white" }} />;
-      case "premium":
-        return <School sx={{ fontSize: 40, color: "white" }} />;
+      case 'standard':
+        return <CalendarMonth sx={{ fontSize: 40, color: 'white' }} />;
+      case 'premium':
+        return <School sx={{ fontSize: 40, color: 'white' }} />;
       default:
-        return <School sx={{ fontSize: 40, color: "white" }} />;
+        return <School sx={{ fontSize: 40, color: 'white' }} />;
     }
   };
 
   const getPlanColor = (planId: string) => {
     switch (planId) {
-      case "standard":
-        return { primary: "#A6531C", secondary: "#483C32" };
-      case "premium":
-        return { primary: "#5C633A", secondary: "#283618" };
+      case 'standard':
+        return { primary: '#A6531C', secondary: '#483C32' };
+      case 'premium':
+        return { primary: '#5C633A', secondary: '#283618' };
       default:
-        return { primary: "#5C633A", secondary: "#D4BC8C" };
+        return { primary: '#5C633A', secondary: '#D4BC8C' };
     }
   };
+
 
   const isDiscountActive = discountStatus?.isEligible ?? false;
 
@@ -448,11 +413,11 @@ export const SubscriptionPage: React.FC = () => {
     return (
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
           gap: 2,
         }}
       >
@@ -469,34 +434,34 @@ export const SubscriptionPage: React.FC = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)",
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
         py: 4,
-        position: "relative",
-        overflow: "hidden",
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
       {/* Background decoration */}
       <Box
         sx={{
-          position: "absolute",
+          position: 'absolute',
           top: -200,
           right: -200,
           width: 400,
           height: 400,
-          borderRadius: "50%",
-          background: "rgba(255, 107, 107, 0.1)",
+          borderRadius: '50%',
+          background: 'rgba(255, 107, 107, 0.1)',
         }}
       />
       <Box
         sx={{
-          position: "absolute",
+          position: 'absolute',
           bottom: -300,
           left: -300,
           width: 600,
           height: 600,
-          borderRadius: "50%",
-          background: "rgba(78, 205, 196, 0.05)",
+          borderRadius: '50%',
+          background: 'rgba(78, 205, 196, 0.05)',
         }}
       />
 
@@ -506,8 +471,8 @@ export const SubscriptionPage: React.FC = () => {
           onClick={handleLogout}
           sx={{
             mb: 3,
-            "&:hover": {
-              bgcolor: "rgba(0, 0, 0, 0.04)",
+            '&:hover': {
+              bgcolor: 'rgba(0, 0, 0, 0.04)',
             },
           }}
         >
@@ -522,54 +487,12 @@ export const SubscriptionPage: React.FC = () => {
             transition={{ duration: 0.5 }}
           >
             <Typography variant="h3" fontWeight={700} gutterBottom>
-              {hasSubscription
-                ? "Manage Your Subscription"
-                : "Choose Your Learning Journey"}
+              {hasSubscription ? 'Manage Your Subscription' : 'Choose Your Learning Journey'}
             </Typography>
-
-            {/* Trial Expired Banner */}
-            {freeTrialExpired && !hasSubscription && (
-              <Alert
-                severity="warning"
-                sx={{
-                  maxWidth: "md",
-                  mx: "auto",
-                  mt: 2,
-                  mb: 2,
-                  "& .MuiAlert-message": {
-                    width: "100%",
-                    textAlign: "center",
-                  },
-                }}
-              >
-                <Typography variant="body1" fontWeight={600}>
-                  Your free trial has ended
-                  {freeTrialEndDate && (
-                    <>
-                      {" "}
-                      on{" "}
-                      {new Date(freeTrialEndDate).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </>
-                  )}
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  Subscribe now to continue your Japanese learning journey!
-                </Typography>
-              </Alert>
-            )}
 
             {/* Current Plan Indicator */}
             {currentPlan && (
-              <Stack
-                direction="row"
-                spacing={2}
-                justifyContent="center"
-                sx={{ mt: 2 }}
-              >
+              <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
                 <Chip
                   icon={<Star />}
                   label={`Current Plan: ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`}
@@ -654,14 +577,14 @@ export const SubscriptionPage: React.FC = () => {
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 sx={{
                   flex: 1,
-                  position: "relative",
-                  overflow: "visible",
-                  borderRadius: "20px",
+                  position: 'relative',
+                  overflow: 'visible',
+                  borderRadius: '20px',
                   border: isCurrentPlanCard
-                    ? "3px solid #2196F3"
+                    ? '3px solid #2196F3'
                     : plan.recommended
-                      ? "2px solid #5C633A"
-                      : "none",
+                      ? '2px solid #5C633A'
+                      : 'none',
                   boxShadow: isCurrentPlanCard ? 10 : plan.recommended ? 8 : 2,
                 }}
               >
@@ -670,20 +593,20 @@ export const SubscriptionPage: React.FC = () => {
                   <motion.div
                     initial={{ scale: 0, rotate: -15 }}
                     animate={{ scale: 1, rotate: -15 }}
-                    transition={{ delay: 0.4, type: "spring" }}
+                    transition={{ delay: 0.4, type: 'spring' }}
                   >
                     <Box
                       sx={{
-                        position: "absolute",
+                        position: 'absolute',
                         top: { xs: -15, md: 60, lg: 20 },
                         right: -10,
-                        bgcolor: "error.main",
-                        color: "white",
+                        bgcolor: 'error.main',
+                        color: 'white',
                         px: 2,
                         py: 0.5,
                         borderRadius: 2,
                         fontWeight: 700,
-                        fontSize: "0.875rem",
+                        fontSize: '0.875rem',
                         boxShadow: 3,
                         zIndex: 1,
                       }}
@@ -697,28 +620,28 @@ export const SubscriptionPage: React.FC = () => {
                 <Box
                   sx={{
                     background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
-                    color: "white",
+                    color: 'white',
                     py: 3,
-                    borderRadius: "18px 18px 0 0",
-                    textAlign: "center",
-                    position: "relative",
+                    borderRadius: '18px 18px 0 0',
+                    textAlign: 'center',
+                    position: 'relative',
                   }}
                 >
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.2 + index * 0.1, type: "spring" }}
+                    transition={{ delay: 0.2 + index * 0.1, type: 'spring' }}
                   >
                     <Box
                       sx={{
                         width: 80,
                         height: 80,
-                        borderRadius: "50%",
-                        background: "rgba(255, 255, 255, 0.2)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mx: "auto",
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
                         mb: 2,
                       }}
                     >
@@ -742,8 +665,8 @@ export const SubscriptionPage: React.FC = () => {
                         <Typography
                           variant="h5"
                           sx={{
-                            textDecoration: "line-through",
-                            color: "text.secondary",
+                            textDecoration: 'line-through',
+                            color: 'text.secondary',
                             mb: 1,
                           }}
                         >
@@ -754,7 +677,7 @@ export const SubscriptionPage: React.FC = () => {
                         variant="h3"
                         fontWeight={700}
                         sx={{
-                          color: showDiscount ? "error.main" : colors.primary,
+                          color: showDiscount ? 'error.main' : colors.primary,
                         }}
                       >
                         {formatPrice(currentPrice, plan.currency)}
@@ -778,24 +701,16 @@ export const SubscriptionPage: React.FC = () => {
                       >
                         <Stack direction="row" spacing={1} alignItems="center">
                           {feature.included ? (
-                            <Check
-                              sx={{ color: "success.main", fontSize: 20 }}
-                            />
+                            <Check sx={{ color: 'success.main', fontSize: 20 }} />
                           ) : (
-                            <Close sx={{ color: "error.main", fontSize: 20 }} />
+                            <Close sx={{ color: 'error.main', fontSize: 20 }} />
                           )}
                           <Typography
                             variant="body2"
                             sx={{
-                              textDecoration: feature.included
-                                ? "none"
-                                : "line-through",
-                              color: feature.included
-                                ? "text.primary"
-                                : "text.secondary",
-                              fontWeight: feature.title.includes("FREE")
-                                ? 600
-                                : 400,
+                              textDecoration: feature.included ? 'none' : 'line-through',
+                              color: feature.included ? 'text.primary' : 'text.secondary',
+                              fontWeight: feature.title.includes('FREE') ? 600 : 400,
                             }}
                           >
                             {feature.title}
@@ -811,23 +726,20 @@ export const SubscriptionPage: React.FC = () => {
                     variant="contained"
                     size="large"
                     onClick={() => handleSelectPlan(plan.id)}
-                    disabled={
-                      buttonState.disabled ||
-                      (loading && selectedPlan === plan.id)
-                    }
+                    disabled={buttonState.disabled || (loading && selectedPlan === plan.id)}
                     sx={{
                       py: 1.5,
                       background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
-                      color: buttonState.disabled ? "text.disabled" : "white",
+                      color: buttonState.disabled ? 'text.disabled' : 'white',
                       fontWeight: 600,
-                      position: "relative",
-                      overflow: "hidden",
-                      "&:hover": {
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&:hover': {
                         background: `linear-gradient(135deg, ${colors.secondary} 0%, ${colors.primary} 100%)`,
                       },
-                      "&:disabled": {
-                        background: "rgba(0, 0, 0, 0.12)",
-                        color: "rgba(0, 0, 0, 0.38)",
+                      '&:disabled': {
+                        background: 'rgba(0, 0, 0, 0.12)',
+                        color: 'rgba(0, 0, 0, 0.38)',
                       },
                     }}
                   >
@@ -846,11 +758,7 @@ export const SubscriptionPage: React.FC = () => {
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                         >
-                          <Stack
-                            direction="row"
-                            alignItems="center"
-                            justifyContent="center"
-                          >
+                          <Stack direction="row" alignItems="center" justifyContent="center">
                             {buttonState.icon}
                             {buttonState.label}
                           </Stack>
