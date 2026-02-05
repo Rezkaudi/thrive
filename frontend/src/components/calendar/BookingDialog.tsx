@@ -66,9 +66,14 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
 }) => {
   if (!session) return null;
 
-  const isSubscribed = userStatus === "active" || userStatus === "trialing";
+  // Handle both subscription-based trial and free trial (no credit card)
+  const isSubscribed =
+    userStatus === "active" ||
+    userStatus === "trialing" ||
+    userStatus === "free_trial";
   const userPlan = eligibility?.user.plan || null;
-  const isTrialing = userStatus === "trialing"; // Helper for trial status
+  // isTrialing is true for both subscription-based trial AND free trial
+  const isTrialing = userStatus === "trialing" || userStatus === "free_trial";
 
   // Calculate booking limits display
   const hasMonthlyLimit = eligibility?.user.monthlyBookingLimit !== null;
@@ -102,10 +107,10 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
               session.type === "STANDARD"
                 ? "warning"
                 : session.type === "SPEAKING"
-                ? "primary"
-                : session.type === "EVENT"
-                ? "secondary"
-                : "default"
+                  ? "primary"
+                  : session.type === "EVENT"
+                    ? "secondary"
+                    : "default"
             }
             sx={session.type === "STANDARD" ? { borderRadius: 0 } : undefined}
           />
