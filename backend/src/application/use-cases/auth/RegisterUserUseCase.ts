@@ -39,18 +39,26 @@ export class RegisterUserUseCase {
     const temporaryPassword = this.passwordService.generateTemporaryPassword();
     const hashedPassword = await this.passwordService.hash(temporaryPassword);
 
+    // Generate verification code and expiration date
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expirationDate = new Date();
+    expirationDate.setMinutes(expirationDate.getMinutes() + 10);
+
     // Create user
     const user = new User(
       `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-      dto.email,
+      dto.email.trim(),
       hashedPassword,
       UserRole.STUDENT,
       true,
-      false,
-      null,
-      null,
-      false,
+      false, // isverify
+      verificationCode,
+      expirationDate,
+      false, // hasSeedTourVideo
       dto.marketingEmails || false,
+      null, // trialStartDate - set on email verification
+      null, // trialEndDate - set on email verification
+      false, // trialConvertedToPaid
       new Date(),
       new Date()
     );
