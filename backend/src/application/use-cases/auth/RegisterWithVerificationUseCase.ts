@@ -29,6 +29,7 @@ export class RegisterWithVerificationUseCase {
 
         if (existingUser) {
             const userProfile = await this.profileRepository.findByUserId(existingUser.id);
+            const isAddedToMarketingEmails = existingUser.marketingEmails;
 
             if (existingUser.isverify) {
                 throw new Error('User already exists');
@@ -47,7 +48,6 @@ export class RegisterWithVerificationUseCase {
                 existingUser.marketingEmails = dto.marketingEmails;
             }
             existingUser.updatedAt = new Date();
-            existingUser.marketingEmails = dto.marketingEmails || false;
 
             const updatedUser = await this.userRepository.update(existingUser);
 
@@ -62,6 +62,10 @@ export class RegisterWithVerificationUseCase {
 
             // Send verification email
             await this.emailService.sendVerificationCode(dto.email, verificationCode);
+
+            if (!isAddedToMarketingEmails) {
+                await this.brevoService.syncContactToLists(dto.email, dto.name, !!dto.marketingEmails);
+            }
 
             return { user: updatedUser, verificationCode };
         }
