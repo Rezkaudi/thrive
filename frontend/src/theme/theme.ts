@@ -60,6 +60,15 @@ export const theme = responsiveFontSizes(createTheme({
     borderRadius: 12,
   },
   components: {
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          '& .MuiFormLabel-asterisk': {
+            color: '#d32f2f',
+          },
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {

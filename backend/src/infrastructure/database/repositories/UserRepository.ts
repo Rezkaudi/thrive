@@ -55,6 +55,7 @@ export class UserRepository implements IUserRepository {
       entity.verificationCode,
       entity.exprirat,
       entity.hasSeedTourVideo, // ADD THIS FIELD
+      entity.marketingEmails,
       entity.createdAt,
       entity.updatedAt
     );
@@ -71,6 +72,7 @@ export class UserRepository implements IUserRepository {
     entity.verificationCode = domain.verificationCode;
     entity.exprirat = domain.exprirat;
     entity.hasSeedTourVideo = domain.hasSeedTourVideo; // ADD THIS FIELD
+    entity.marketingEmails = domain.marketingEmails;
     entity.createdAt = domain.createdAt;
     entity.updatedAt = domain.updatedAt;
     return entity;

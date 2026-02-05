@@ -203,12 +203,13 @@ export class AuthController {
 
   async registerWithVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { name, email, password } = req.body;
+      const { name, email, password, marketingEmails } = req.body;
 
       const { user, verificationCode } = await this.registerWithVerificationUseCase.execute({
         name,
         email,
         password,
+        marketingEmails
       });
 
       res.status(201).json({

@@ -15,6 +15,7 @@ export interface IUser {
   verificationCode: string | null;
   exprirat: Date | null;
   hasSeedTourVideo: boolean; // ADD THIS FIELD
+  marketingEmails: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +31,7 @@ export class User implements IUser {
     public verificationCode: string | null,
     public exprirat: Date | null,
     public hasSeedTourVideo: boolean, // ADD THIS FIELD
+    public marketingEmails: boolean,
     public createdAt: Date,
     public updatedAt: Date
   ) { }

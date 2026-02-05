@@ -9,6 +9,7 @@ import { IPaymentService } from '../../../domain/services/IPaymentService';
 export interface RegisterUserDTO {
   email: string;
   stripePaymentIntentId: string;
+  marketingEmails?: boolean;
 }
 
 export interface RegisterUserWithPasswordDTO {
@@ -49,6 +50,7 @@ export class RegisterUserUseCase {
       null,
       null,
       false,
+      dto.marketingEmails || false,
       new Date(),
       new Date()
     );

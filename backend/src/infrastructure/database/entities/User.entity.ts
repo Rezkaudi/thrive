@@ -35,6 +35,9 @@ export class UserEntity {
   @Column({ default: false })
   hasSeedTourVideo!: boolean; // ADD THIS FIELD
 
+  @Column({ default: false })
+  marketingEmails!: boolean; // ADD THIS FIELD
+
   @CreateDateColumn()
   createdAt!: Date;
 

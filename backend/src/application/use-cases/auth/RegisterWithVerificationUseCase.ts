@@ -4,12 +4,14 @@ import { User, UserRole } from '../../../domain/entities/User';
 import { IPasswordService } from '../../../domain/services/IPasswordService';
 import { IEmailService } from '../../../domain/services/IEmailService';
 import { IProfileRepository } from '../../../domain/repositories/IProfileRepository';
+import { IBrevoService } from '../../../domain/services/IBrevoService';
 import { Profile } from '../../../domain/entities/Profile';
 
 export interface RegisterWithVerificationDTO {
     name: string;
     email: string;
     password: string;
+    marketingEmails?: boolean;
 }
 
 export class RegisterWithVerificationUseCase {
@@ -18,7 +20,7 @@ export class RegisterWithVerificationUseCase {
         private passwordService: IPasswordService,
         private emailService: IEmailService,
         private profileRepository: IProfileRepository,
-
+        private brevoService: IBrevoService
     ) { }
 
     async execute(dto: RegisterWithVerificationDTO): Promise<{ user: User; verificationCode: string }> {
@@ -41,6 +43,9 @@ export class RegisterWithVerificationUseCase {
             existingUser.password = await this.passwordService.hash(dto.password);
             existingUser.verificationCode = verificationCode;
             existingUser.exprirat = expirationDate;
+            if (typeof dto.marketingEmails === 'boolean') {
+                existingUser.marketingEmails = dto.marketingEmails;
+            }
             existingUser.updatedAt = new Date();
 
             const updatedUser = await this.userRepository.update(existingUser);
@@ -80,6 +85,7 @@ export class RegisterWithVerificationUseCase {
             verificationCode,
             expirationDate,
             false,
+            dto.marketingEmails || false,
             new Date(),
             new Date()
         );
@@ -105,6 +111,8 @@ export class RegisterWithVerificationUseCase {
 
         // Send verification email
         await this.emailService.sendVerificationCode(dto.email, verificationCode);
+
+        await this.brevoService.syncContactToLists(dto.email, dto.name, !!dto.marketingEmails);
 
         return { user: savedUser, verificationCode };
     }

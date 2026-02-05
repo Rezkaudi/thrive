@@ -10,6 +10,7 @@ export const registrationSchema = z
     agreeToTerms: z.boolean().refine((val) => val === true, {
       message: "You must agree to the terms",
     }),
+    marketingEmails: z.boolean().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
