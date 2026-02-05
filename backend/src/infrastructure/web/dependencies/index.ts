@@ -975,7 +975,8 @@ export const setupDependencies = (): DependencyContainer => {
             repositories.subscription
         ),
         verifyCheckoutSession: new VerifyCheckoutSessionUseCase(
-            services.payment
+            services.payment,
+            repositories.user
         ),
         createCustomerPortal: new CreateCustomerPortalUseCase(
             services.payment,

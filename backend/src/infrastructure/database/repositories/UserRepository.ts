@@ -54,8 +54,11 @@ export class UserRepository implements IUserRepository {
       entity.isverify,
       entity.verificationCode,
       entity.exprirat,
-      entity.hasSeedTourVideo, // ADD THIS FIELD
+      entity.hasSeedTourVideo,
       entity.marketingEmails,
+      entity.trialStartDate,
+      entity.trialEndDate,
+      entity.trialConvertedToPaid,
       entity.createdAt,
       entity.updatedAt
     );
@@ -71,8 +74,11 @@ export class UserRepository implements IUserRepository {
     entity.isverify = domain.isverify;
     entity.verificationCode = domain.verificationCode;
     entity.exprirat = domain.exprirat;
-    entity.hasSeedTourVideo = domain.hasSeedTourVideo; // ADD THIS FIELD
+    entity.hasSeedTourVideo = domain.hasSeedTourVideo;
     entity.marketingEmails = domain.marketingEmails;
+    entity.trialStartDate = domain.trialStartDate;
+    entity.trialEndDate = domain.trialEndDate;
+    entity.trialConvertedToPaid = domain.trialConvertedToPaid;
     entity.createdAt = domain.createdAt;
     entity.updatedAt = domain.updatedAt;
     return entity;

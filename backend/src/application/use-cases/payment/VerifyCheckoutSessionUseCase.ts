@@ -1,4 +1,5 @@
 import { PaymentService } from "../../../infrastructure/services/PaymentService";
+import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 
 export interface VerifyCheckoutSessionRequest {
     sessionId: string;
@@ -19,10 +20,18 @@ export interface VerifyCheckoutSessionResponse {
         isTrial: boolean;
         interval: string;
     };
+    // New fields for trial conversion analytics
+    trialConversion: {
+        wasInFreeTrial: boolean;
+        isFirstConversion: boolean; // Only true if this is the FIRST time converting
+    };
 }
 
 export class VerifyCheckoutSessionUseCase {
-    constructor(private paymentService: PaymentService) { }
+    constructor(
+        private paymentService: PaymentService,
+        private userRepository?: IUserRepository
+    ) { }
 
     async execute(request: VerifyCheckoutSessionRequest): Promise<VerifyCheckoutSessionResponse> {
         const { sessionId } = request;
@@ -45,6 +54,28 @@ export class VerifyCheckoutSessionUseCase {
             }
         }
 
+        // Check trial conversion status
+        let wasInFreeTrial = false;
+        let isFirstConversion = false;
+
+        const userId = session.metadata?.userId;
+        if (userId && this.userRepository) {
+            const user = await this.userRepository.findById(userId);
+            if (user) {
+                // User was in free trial if they had trial dates set
+                wasInFreeTrial = user.trialStartDate !== null && user.trialEndDate !== null;
+
+                // Check if this is the first conversion
+                // The webhook already set trialConvertedToPaid=true if this was a conversion
+                // So isFirstConversion should only be true if user just converted
+                // We track this by checking if they had a trial AND trialConvertedToPaid is now true
+                // BUT we need to detect if this specific payment is the conversion
+                // Since webhook sets it, we check if the payment is not a trial (isTrial=false)
+                // and user was in trial before
+                isFirstConversion = wasInFreeTrial && !isTrial && user.trialConvertedToPaid;
+            }
+        }
+
         return {
             status: session.payment_status,
             paymentIntentId: session.payment_intent,
@@ -59,6 +90,10 @@ export class VerifyCheckoutSessionUseCase {
                 customerId: session.customer as string || 'cus_guest',
                 isTrial: isTrial,
                 interval: session.metadata?.interval || 'monthly'
+            },
+            trialConversion: {
+                wasInFreeTrial,
+                isFirstConversion,
             }
         };
     }
