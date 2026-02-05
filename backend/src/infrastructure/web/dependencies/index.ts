@@ -512,7 +512,8 @@ export const setupDependencies = (): DependencyContainer => {
             repositories.session,
             repositories.booking,
             repositories.subscription,
-            repositories.profile
+            repositories.profile,
+            repositories.user
         ),
         brevo: new BrevoService(),
     };

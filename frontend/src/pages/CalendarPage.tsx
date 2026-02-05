@@ -34,17 +34,12 @@ export const CalendarPage: React.FC = () => {
   const navigate = useNavigate();
   const profile = useSelector((state: RootState) => state.dashboard.data);
   const { user, status, hasAccessToCourses } = useSelector(
-    (state: RootState) => state.auth
+    (state: RootState) => state.auth,
   );
 
   // Custom hooks - now includes bookingLimits
-  const {
-    sessions,
-    myBookings,
-    bookingLimits,
-    loading,
-    refetch,
-  } = useCalendarData(selectedDate);
+  const { sessions, myBookings, bookingLimits, loading, refetch } =
+    useCalendarData(selectedDate);
   const {
     bookingDialog,
     setBookingDialog,
@@ -57,7 +52,7 @@ export const CalendarPage: React.FC = () => {
 
   const showSnackbar = (
     message: string,
-    severity: "success" | "error" | "warning" | "info"
+    severity: "success" | "error" | "warning" | "info",
   ) => {
     setSnackbar({ open: true, message, severity });
   };
@@ -145,7 +140,7 @@ export const CalendarPage: React.FC = () => {
             onAttendeesClick={handleFetchAttendees}
             onCancelBooking={handleCancelBooking}
             onCopyMeetingLink={copyMeetingLink}
-            user={user}
+            user={{ ...user, status }}
           />
         </Grid>
 

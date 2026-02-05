@@ -72,7 +72,8 @@ export class CheckUserSubscriptionUseCase {
         const hasAccessToCourses = activeSubscription !== null || isInFreeTrial;
         const status = subscription ? subscription.status : (isInFreeTrial ? 'free_trial' : null);
         const currentPlan = subscription ? subscription.subscriptionPlan : null;
-        const isTrialing = subscription?.status === 'trialing';
+        // isTrialing is true for subscription-based trial OR free trial (no credit card)
+        const isTrialing = subscription?.status === 'trialing' || isInFreeTrial;
 
         return {
             hasSubscription,
