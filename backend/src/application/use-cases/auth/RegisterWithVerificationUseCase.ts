@@ -47,6 +47,7 @@ export class RegisterWithVerificationUseCase {
                 existingUser.marketingEmails = dto.marketingEmails;
             }
             existingUser.updatedAt = new Date();
+            existingUser.marketingEmails = dto.marketingEmails || false;
 
             const updatedUser = await this.userRepository.update(existingUser);
 
