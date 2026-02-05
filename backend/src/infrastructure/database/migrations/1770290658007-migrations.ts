@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class Migrations1770229197874 implements MigrationInterface {
-    name = 'Migrations1770229197874'
+export class Migrations1770290658007 implements MigrationInterface {
+    name = 'Migrations1770290658007'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "users" ADD "trialStartDate" TIMESTAMP`);
