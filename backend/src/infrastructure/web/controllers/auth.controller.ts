@@ -227,12 +227,11 @@ export class AuthController {
 
   async verifyEmailCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { email, code, skipTrialSetup } = req.body;
+      const { email, code } = req.body;
 
-      const { user, tokens, csrfToken, trialInfo } = await this.verifyEmailWithCodeUseCase.execute({
+      const { user, tokens, csrfToken } = await this.verifyEmailWithCodeUseCase.execute({
         email,
-        code,
-        skipTrialSetup: skipTrialSetup || false
+        code
       });
 
       // Set cookies
@@ -252,7 +251,6 @@ export class AuthController {
       res.json({
         user,
         csrfToken,
-        trialInfo,
         message: 'Email verified successfully'
       });
     } catch (error: any) {

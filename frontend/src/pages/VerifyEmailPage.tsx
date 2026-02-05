@@ -21,14 +21,6 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store/store";
 import { handlePasteCode } from "../utils/handlePasteCode";
 import { getStoredPlan } from "../utils/planStorage";
-import { StepIndicator } from "../components/auth";
-import { useRegistrationFlowData } from "../utils/registrationFlow";
-
-declare global {
-  interface Window {
-    dataLayer: any[];
-  }
-}
 
 export const VerifyEmailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -47,10 +39,6 @@ export const VerifyEmailPage: React.FC = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const dispatch = useDispatch<AppDispatch>();
-
-  // Get dynamic step configuration based on flow type
-  const { totalSteps, currentStepLabel } =
-    useRegistrationFlowData("verify_email");
 
   useEffect(() => {
     // Get email from session storage
@@ -100,64 +88,22 @@ export const VerifyEmailPage: React.FC = () => {
     setError("");
 
     try {
-      // Check if user has a pre-selected plan
-      const storedPlan = getStoredPlan();
-
-      // Pass skipTrialSetup=true if user is in paid flow (has pre-selected plan)
-      const response = await api.post("/auth/verify-email-code", {
-        email,
-        code,
-        skipTrialSetup: !!storedPlan, // Skip trial setup if going to paid flow
-      });
+      await api.post("/auth/verify-email-code", { email, code });
       sessionStorage.removeItem("registration_email");
 
-      // NEW FLOW:
-      // - If user has pre-selected plan: go to subscription page (paid flow)
-      // - If no plan selected: go directly to dashboard (free trial flow)
-      if (storedPlan) {
-        // Paid flow: redirect to subscription checkout
-        window.location.href = `/subscription?plan=${storedPlan}`;
-      } else {
-        // Free trial flow: Fire signup_free_trial event and redirect to dashboard
-        window.dataLayer = window.dataLayer || [];
+      // Check if user has a pre-selected plan - skip plan selection and go directly to checkout
+      const storedPlan = getStoredPlan();
+      const redirectUrl = storedPlan
+        ? `/subscription?plan=${storedPlan}`
+        : "/subscription";
 
-        const trialEventData = {
-          event: "signup_free_trial",
-          value: 0,
-          currency: "JPY",
-          is_trial: true,
-          transaction_id: null,
-          ecommerce: {
-            transaction_id: null,
-            value: 0,
-            currency: "JPY",
-            items: [
-              {
-                item_id: "trial_free",
-                item_name: "Free Trial (No Credit Card)",
-                item_category: "Subscription",
-                price: 0,
-                quantity: 1,
-              },
-            ],
-          },
-          user_id: response.data?.userId || null,
-          is_subscription_paid: false,
-          subscription_status: "trial",
-        };
-
-        console.log("📊 DataLayer Push (Free Trial - No CC):", trialEventData);
-        window.dataLayer.push(trialEventData);
-
-        window.location.href = "/dashboard";
-      }
-
+      window.location.href = redirectUrl;
       await dispatch(checkAuth());
     } catch (err: any) {
       setError(
         err.response?.data?.error.message ||
           err.response?.data?.error ||
-          "Invalid verification code",
+          "Invalid verification code"
       );
     } finally {
       setLoading(false);
@@ -192,7 +138,7 @@ export const VerifyEmailPage: React.FC = () => {
       setError(
         err.response?.data?.error.message ||
           err.response?.data?.error ||
-          "Failed to resend verification code",
+          "Failed to resend verification code"
       );
     } finally {
       setResendLoading(false);
@@ -281,12 +227,42 @@ export const VerifyEmailPage: React.FC = () => {
                 </Typography>
               </Box>
 
-              {/* Progress Indicator - Dynamic based on flow type */}
-              <StepIndicator
-                currentStep={2}
-                label={currentStepLabel}
-                totalSteps={totalSteps}
-              />
+              {/* Progress Indicator */}
+              <Box sx={{ mb: 4 }}>
+                <Stack direction="row" spacing={2} justifyContent="center">
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 4,
+                      bgcolor: "success.main",
+                      borderRadius: 2,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 4,
+                      bgcolor: "primary.main",
+                      borderRadius: 2,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 4,
+                      bgcolor: "grey.300",
+                      borderRadius: 2,
+                    }}
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", textAlign: "center", mt: 1 }}
+                >
+                  Step 2 of 3: Email Verification
+                </Typography>
+              </Box>
 
               {error && (
                 <Alert
@@ -320,7 +296,7 @@ export const VerifyEmailPage: React.FC = () => {
                           e,
                           verificationCode,
                           setVerificationCode,
-                          inputRefs,
+                          inputRefs
                         )
                       }
                       inputProps={{

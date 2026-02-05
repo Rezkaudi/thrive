@@ -11,16 +11,15 @@ export class VerifyEmailWithCodeUseCase {
     async execute(params: {
         email: string;
         code: string;
-        skipTrialSetup?: boolean; // Pass true when user has pre-selected a plan
     }) {
-        const { email, code, skipTrialSetup } = params;
+        const { email, code } = params;
 
         const verifyEmailUseCase = new VerifyEmailUseCase(
             this.userRepository,
             this.tokenService
         );
 
-        const result = await verifyEmailUseCase.execute({ email, code, skipTrialSetup });
+        const result = await verifyEmailUseCase.execute({ email, code });
 
         return result;
     }

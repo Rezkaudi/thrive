@@ -77,7 +77,6 @@ const authRouter = (authController: AuthController): Router => {
     [
       body('email').isEmail(),
       body('code').isLength({ min: 6, max: 6 }).isNumeric(),
-      body('skipTrialSetup').optional().isBoolean(),
     ],
     validateRequest,
     authController.verifyEmailCode.bind(authController)

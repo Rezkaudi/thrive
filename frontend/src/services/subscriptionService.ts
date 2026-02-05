@@ -7,11 +7,6 @@ export interface SubscriptionStatus {
     status: string | null;
     currentPlan: string | null;
     isTrialing: boolean;
-    // Free trial state (no credit card)
-    isInFreeTrial: boolean;
-    freeTrialExpired: boolean;
-    freeTrialEndDate: Date | null;
-    trialConvertedToPaid: boolean;
     subscription: {
         id: string;
         plan: string;
