@@ -58,7 +58,7 @@ const isStandardPlan = (plan: string | null | undefined): boolean => {
  * Get session type chip color
  */
 const getSessionTypeColor = (
-  type: string
+  type: string,
 ): "primary" | "secondary" | "info" | "warning" | "default" => {
   switch (type) {
     case "PREMIUM":
@@ -105,22 +105,24 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   const isBooked = myBookings.some((b) => b.sessionId === session.id);
   const sessionStartTime = new Date(session.scheduledAt);
   const sessionEndTime = new Date(
-    sessionStartTime.getTime() + session.duration * 60000
+    sessionStartTime.getTime() + session.duration * 60000,
   );
   const isPast = sessionEndTime < new Date();
   const isFull = session.currentParticipants >= session.maxParticipants;
 
   // Check if user can access this session type based on plan
   const userPlan = user?.plan || user?.subscriptionPlan;
-  // UPDATED: Check for trial status
+  // UPDATED: Check for trial status (includes free_trial)
   const userStatus = user?.subscriptionStatus || user?.status;
-  const isTrialing = userStatus === 'trialing';
+  // isTrialing is true for both subscription-based trial AND free trial (no credit card)
+  const isTrialing = userStatus === "trialing" || userStatus === "free_trial";
 
   const requiresPremium = isPremiumSession(session.type);
   const hasStandardPlan = isStandardPlan(userPlan);
-  
-  // UPDATED: Trial users (Standard or Premium) can access ALL session types
-  const cannotAccessSessionType = requiresPremium && hasStandardPlan && !isTrialing;
+
+  // UPDATED: Trial users (including free trial) can access ALL session types
+  const cannotAccessSessionType =
+    requiresPremium && hasStandardPlan && !isTrialing;
 
   // Check if within 24 hours
   const within24Hours = isWithin24Hours(session.scheduledAt);
@@ -139,17 +141,17 @@ export const SessionCard: React.FC<SessionCardProps> = ({
           border: isBooked
             ? "2px solid"
             : session.type === "STANDARD"
-            ? "1px dashed"
-            : "1px solid",
+              ? "1px dashed"
+              : "1px solid",
           borderColor: isBooked
             ? "primary.main"
             : session.type === "STANDARD"
-            ? "warning.main"
-            : within24Hours && !isBooked
-            ? "warning.main"
-            : cannotAccessSessionType
-            ? "grey.300"
-            : "divider",
+              ? "warning.main"
+              : within24Hours && !isBooked
+                ? "warning.main"
+                : cannotAccessSessionType
+                  ? "grey.300"
+                  : "divider",
           position: "relative",
         }}
       >
@@ -229,7 +231,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               <Typography variant="body2">
                 {format(
                   new Date(session.scheduledAt),
-                  compact ? "h:mm a" : "MMM d, yyyy • h:mm a"
+                  compact ? "h:mm a" : "MMM d, yyyy • h:mm a",
                 )}{" "}
                 ({session.duration} min)
               </Typography>
@@ -308,7 +310,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                       startIcon={<Cancel />}
                       onClick={() => {
                         const booking = myBookings.find(
-                          (b) => b.sessionId === session.id
+                          (b) => b.sessionId === session.id,
                         );
                         if (booking) onCancelBooking(booking);
                       }}
@@ -348,10 +350,10 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                   {isPast
                     ? "Session Ended"
                     : isFull
-                    ? "Session Full"
-                    : within24Hours
-                    ? "24h Notice Required"
-                    : "Book Session"}
+                      ? "Session Full"
+                      : within24Hours
+                        ? "24h Notice Required"
+                        : "Book Session"}
                 </Button>
               )}
             </Stack>

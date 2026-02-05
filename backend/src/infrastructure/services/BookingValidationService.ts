@@ -5,6 +5,7 @@ import { ISessionRepository } from '../../domain/repositories/ISessionRepository
 import { IBookingRepository } from '../../domain/repositories/IBookingRepository';
 import { ISubscriptionRepository } from '../../domain/repositories/ISubscriptionRepository';
 import { IProfileRepository } from '../../domain/repositories/IProfileRepository';
+import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { SessionType } from '../../domain/entities/Session';
 import { SubscriptionPlan } from '../../domain/entities/Subscription';
 
@@ -20,8 +21,26 @@ export class BookingValidationService implements IBookingValidationService {
     private sessionRepository: ISessionRepository,
     private bookingRepository: IBookingRepository,
     private subscriptionRepository: ISubscriptionRepository,
-    private profileRepository: IProfileRepository
+    private profileRepository: IProfileRepository,
+    private userRepository: IUserRepository
   ) { }
+
+  /**
+   * Check if user is in free trial (no subscription, but has trial dates set)
+   */
+  private async isUserInFreeTrial(userId: string): Promise<{ isInFreeTrial: boolean; trialEndDate: Date | null }> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      return { isInFreeTrial: false, trialEndDate: null };
+    }
+
+    const now = new Date();
+    const isInFreeTrial = user.trialStartDate !== null &&
+      user.trialEndDate !== null &&
+      now < user.trialEndDate;
+
+    return { isInFreeTrial, trialEndDate: user.trialEndDate };
+  }
 
   private isPremiumPlan(plan: SubscriptionPlan): boolean {
     return ['premium', 'monthly', 'yearly'].includes(plan);
@@ -65,6 +84,28 @@ export class BookingValidationService implements IBookingValidationService {
   async getBookingLimits(userId: string): Promise<BookingLimitsInfo> {
     const subscription = await this.subscriptionRepository.findActiveByUserId(userId);
 
+    // Check for free trial (no subscription but has trial dates)
+    const { isInFreeTrial } = await this.isUserInFreeTrial(userId);
+
+    // Handle FREE TRIAL (no subscription, but trial dates set)
+    if (!subscription && isInFreeTrial) {
+      const allBookings = await this.bookingRepository.findByUserId(userId);
+      const validHistoryCount = allBookings.filter(b => b.status !== 'CANCELLED').length;
+      const activeBookings = await this.bookingRepository.findActiveByUserId(userId);
+
+      return {
+        userPlan: null, // No plan during free trial
+        hasActiveSubscription: false, // No subscription, but has access via free trial
+        activeBookingsCount: activeBookings.length,
+        maxActiveBookings: this.TRIAL_LIFETIME_LIMIT,
+        activeBookingsRemaining: validHistoryCount >= this.TRIAL_LIFETIME_LIMIT ? 0 : 1,
+        monthlyBookingCount: validHistoryCount,
+        monthlyBookingLimit: this.TRIAL_LIFETIME_LIMIT,
+        remainingMonthlyBookings: Math.max(0, this.TRIAL_LIFETIME_LIMIT - validHistoryCount),
+        currentMonth: this.getCurrentMonthString()
+      };
+    }
+
     if (!subscription) {
       return this.getEmptyBookingLimits();
     }
@@ -72,7 +113,7 @@ export class BookingValidationService implements IBookingValidationService {
     const userPlan = subscription.subscriptionPlan;
     const isTrial = subscription.status === 'trialing';
 
-    // 1. TRIAL LOGIC (Overrides Plan Limits)
+    // 1. SUBSCRIPTION-BASED TRIAL LOGIC (Overrides Plan Limits)
     if (isTrial) {
       const allBookings = await this.bookingRepository.findByUserId(userId);
       const validHistoryCount = allBookings.filter(b => b.status !== 'CANCELLED').length;
@@ -149,8 +190,14 @@ export class BookingValidationService implements IBookingValidationService {
     const userPlan = subscription?.subscriptionPlan || null;
     const subStatus = subscription?.status;
 
-    if (!hasActiveSubscription) reasons.push('Active subscription required to book sessions');
-    
+    // Check for free trial (no subscription but has trial dates)
+    const { isInFreeTrial } = await this.isUserInFreeTrial(userId);
+
+    // User has access if they have subscription OR are in free trial
+    const hasAccess = hasActiveSubscription || isInFreeTrial;
+
+    if (!hasAccess) reasons.push('Active subscription or free trial required to book sessions');
+
     const isAlreadyBooked = activeBookings.some(b => b.sessionId === sessionId);
     if (isAlreadyBooked) reasons.push('You have already booked this session');
 
@@ -169,7 +216,7 @@ export class BookingValidationService implements IBookingValidationService {
     if (!hasEnoughPoints) reasons.push(`Insufficient points.`);
 
     // --- SUBSCRIPTION SPECIFIC VALIDATION ---
-    
+
     let canAccessSessionType = false;
     let maxActiveBookings = 0;
     let monthlyLimit: number | null = null;
@@ -177,50 +224,64 @@ export class BookingValidationService implements IBookingValidationService {
     let monthlyBookingCount = 0;
     let remainingMonthlyBookings: number | null = null;
 
-    if (hasActiveSubscription && userPlan && subStatus) {
+    // === CASE 0: FREE TRIAL USERS (no subscription, but trial dates set) ===
+    if (isInFreeTrial && !hasActiveSubscription) {
+      maxActiveBookings = this.TRIAL_LIFETIME_LIMIT;
+      canAccessSessionType = true; // Free trial can access ALL session types
 
-      // === CASE 1: TRIAL USERS ===
+      const allHistory = await this.bookingRepository.findByUserId(userId);
+      const validHistory = allHistory.filter(b => b.status !== 'CANCELLED');
+
+      if (validHistory.length >= this.TRIAL_LIFETIME_LIMIT) {
+        reasons.push('Free trial users can only book one session. Subscribe to book more sessions.');
+      }
+
+      activeBookingsRemaining = Math.max(0, this.TRIAL_LIFETIME_LIMIT - validHistory.length);
+    }
+    // === CASE 1: SUBSCRIPTION-BASED TRIAL USERS ===
+    else if (hasActiveSubscription && userPlan && subStatus) {
+
       if (subStatus === 'trialing') {
         maxActiveBookings = this.TRIAL_LIFETIME_LIMIT;
         canAccessSessionType = true; // Trial can access everything
 
         const allHistory = await this.bookingRepository.findByUserId(userId);
         const validHistory = allHistory.filter(b => b.status !== 'CANCELLED');
-        
+
         if (validHistory.length >= this.TRIAL_LIFETIME_LIMIT) {
           reasons.push('Trial users can only book one session for the entire trial duration.');
         }
-        
+
         activeBookingsRemaining = Math.max(0, this.TRIAL_LIFETIME_LIMIT - validHistory.length);
-      } 
-      
+      }
+
       // === CASE 2: ACTIVE USERS ===
       else if (subStatus === 'active') {
         const limits = this.getActivePlanLimits(userPlan); // Use the safe helper here
 
         maxActiveBookings = limits.maxActive;
         monthlyLimit = limits.monthlyLimit;
-        
+
         // Session Type Check
         if (limits.canAccessAllTypes) {
-           canAccessSessionType = true;
+          canAccessSessionType = true;
         } else {
-           canAccessSessionType = session.type === SessionType.STANDARD;
-           if (!canAccessSessionType) {
-             reasons.push('Standard plans can only access Standard sessions. Upgrade to Premium for access.');
-           }
+          canAccessSessionType = session.type === SessionType.STANDARD;
+          if (!canAccessSessionType) {
+            reasons.push('Standard plans can only access Standard sessions. Upgrade to Premium for access.');
+          }
         }
 
         // Active Limit Check
         if (activeBookings.length >= maxActiveBookings) {
-           reasons.push(`${userPlan === 'premium' ? 'Premium' : 'Standard'} users can only have ${maxActiveBookings} active upcoming sessions at a time.`);
+          reasons.push(`${userPlan === 'premium' ? 'Premium' : 'Standard'} users can only have ${maxActiveBookings} active upcoming sessions at a time.`);
         }
 
         // Monthly Limit Check
         if (monthlyLimit !== null) {
           const sessionYear = session.scheduledAt.getUTCFullYear();
           const sessionMonth = session.scheduledAt.getUTCMonth() + 1;
-          
+
           monthlyBookingCount = await this.bookingRepository.countMonthlyStandardSessionBookings(
             userId,
             sessionYear,
@@ -232,10 +293,10 @@ export class BookingValidationService implements IBookingValidationService {
           }
           remainingMonthlyBookings = Math.max(0, monthlyLimit - monthlyBookingCount);
         }
-        
+
         activeBookingsRemaining = Math.max(0, maxActiveBookings - activeBookings.length);
-      } 
-      
+      }
+
       else {
         reasons.push('Your subscription is not in a valid state for booking.');
       }
@@ -270,15 +331,15 @@ export class BookingValidationService implements IBookingValidationService {
   // ... (Empty helpers remain the same)
   private getEmptyBookingLimits(): BookingLimitsInfo {
     return {
-        userPlan: null,
-        hasActiveSubscription: false,
-        activeBookingsCount: 0,
-        maxActiveBookings: 0,
-        activeBookingsRemaining: 0,
-        monthlyBookingCount: 0,
-        monthlyBookingLimit: null,
-        remainingMonthlyBookings: null,
-        currentMonth: this.getCurrentMonthString()
+      userPlan: null,
+      hasActiveSubscription: false,
+      activeBookingsCount: 0,
+      maxActiveBookings: 0,
+      activeBookingsRemaining: 0,
+      monthlyBookingCount: 0,
+      monthlyBookingLimit: null,
+      remainingMonthlyBookings: null,
+      currentMonth: this.getCurrentMonthString()
     };
   }
 

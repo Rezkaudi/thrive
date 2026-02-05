@@ -26,6 +26,7 @@ import { PasswordStrengthMeter, StepIndicator } from "../components/auth";
 import { FormInput } from "../components/ui/FormInput";
 import { useRegistration } from "../hooks/useRegistration";
 import { AuthLayout } from "../components/layout/AuthLayout";
+import { useRegistrationFlowData } from "../utils/registrationFlow";
 
 export const RegistrationPage: React.FC = () => {
   const {
@@ -45,6 +46,10 @@ export const RegistrationPage: React.FC = () => {
     passwordValue,
     effectivePlan,
   } = useRegistration();
+
+  // Get dynamic step configuration based on flow type
+  const { totalSteps, currentStepLabel } =
+    useRegistrationFlowData("basic_info");
 
   return (
     <AuthLayout>
@@ -76,7 +81,11 @@ export const RegistrationPage: React.FC = () => {
               </Typography>
             </Box>
 
-            <StepIndicator currentStep={1} label="Account Information" />
+            <StepIndicator
+              currentStep={1}
+              label={currentStepLabel}
+              totalSteps={totalSteps}
+            />
 
             {serverError && (
               <Alert
@@ -152,8 +161,7 @@ export const RegistrationPage: React.FC = () => {
                     }
                     label={
                       <Typography variant="body2">
-                        <span style={{ color: "red" }}>*</span> {" "}
-                        I agree to the{" "}
+                        <span style={{ color: "red" }}>*</span> I agree to the{" "}
                         <Link
                           to="/privacy-policy"
                           target="_blank"

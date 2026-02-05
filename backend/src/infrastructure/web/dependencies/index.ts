@@ -512,7 +512,8 @@ export const setupDependencies = (): DependencyContainer => {
             repositories.session,
             repositories.booking,
             repositories.subscription,
-            repositories.profile
+            repositories.profile,
+            repositories.user
         ),
         brevo: new BrevoService(),
     };
@@ -975,7 +976,8 @@ export const setupDependencies = (): DependencyContainer => {
             repositories.subscription
         ),
         verifyCheckoutSession: new VerifyCheckoutSessionUseCase(
-            services.payment
+            services.payment,
+            repositories.user
         ),
         createCustomerPortal: new CreateCustomerPortalUseCase(
             services.payment,

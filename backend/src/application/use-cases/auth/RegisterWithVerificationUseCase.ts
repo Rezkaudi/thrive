@@ -47,6 +47,7 @@ export class RegisterWithVerificationUseCase {
                 existingUser.marketingEmails = dto.marketingEmails;
             }
             existingUser.updatedAt = new Date();
+            existingUser.marketingEmails = dto.marketingEmails || false;
 
             const updatedUser = await this.userRepository.update(existingUser);
 
@@ -75,6 +76,7 @@ export class RegisterWithVerificationUseCase {
         expirationDate.setMinutes(expirationDate.getMinutes() + 10);
 
         // Create new user with isverify = false
+        // Trial dates are set to null initially - they will be set on email verification
         const user = new User(
             `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
             dto.email.trim(),
@@ -84,8 +86,11 @@ export class RegisterWithVerificationUseCase {
             false, // isverify
             verificationCode,
             expirationDate,
-            false,
+            false, // hasSeedTourVideo
             dto.marketingEmails || false,
+            null, // trialStartDate - set on email verification
+            null, // trialEndDate - set on email verification
+            false, // trialConvertedToPaid
             new Date(),
             new Date()
         );

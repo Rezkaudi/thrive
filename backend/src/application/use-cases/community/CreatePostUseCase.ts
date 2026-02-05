@@ -21,22 +21,30 @@ export class CreatePostUseCase {
   ) { }
 
   async execute(dto: CreatePostDTO): Promise<Post> {
-    // 1. Subscription Check (Priority)
+    // Get user first to check free trial status
+    const user = await this.userRepository.findById(dto.userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Check if user is in free trial (no subscription, but has trial dates set)
+    const now = new Date();
+    const isInFreeTrial = user.trialStartDate !== null &&
+      user.trialEndDate !== null &&
+      now < user.trialEndDate;
+
+    // 1. Subscription Check (Priority) - Skip if user is in free trial
     const subscription = await this.subscriptionRepository.findActiveByUserId(dto.userId);
-    
+
     // Strict check: Must allow 'active' or 'trialing'. Explicitly block 'canceled'.
     if (subscription && subscription.status === 'canceled') {
       throw new Error('Your subscription is canceled. You cannot create posts.');
     }
-    
-    // Optional: If you want to require *some* active plan (not just non-canceled):
-    if (!subscription || !['active', 'trialing'].includes(subscription.status)) {
-      throw new Error('Active subscription required to post in the community.');
-    }
 
-    const user = await this.userRepository.findById(dto.userId);
-    if (!user) {
-      throw new Error('User not found');
+    // Allow posting if user has active subscription OR is in free trial
+    const hasActiveSubscription = subscription && ['active', 'trialing'].includes(subscription.status);
+    if (!hasActiveSubscription && !isInFreeTrial) {
+      throw new Error('Active subscription required to post in the community.');
     }
 
     // Get user profile for author info
