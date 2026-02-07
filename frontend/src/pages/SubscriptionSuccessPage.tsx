@@ -197,41 +197,41 @@ export const SubscriptionSuccessPage: React.FC = () => {
 
             // 🟢 CASE 3: TRIAL CONVERTED TO PAID (fires only ONCE per user)
             // This event is critical for revenue tracking
-            if (trialConversion?.isFirstConversion) {
-              const trialConvertedEventData = {
-                event: "trial_converted_to_paid",
-                value: eventValue,
-                currency: currency,
-                subscription_plan: transactionDetails.plan,
-                subscription_name: transactionDetails.name,
-                billing_interval: transactionDetails.interval || "monthly",
-                is_trial: false,
-                transaction_id: transactionDetails.transactionId,
-                user_id: metadata?.userId || null,
-                ecommerce: {
-                  transaction_id: transactionDetails.transactionId,
-                  value: eventValue,
-                  currency: currency,
-                  items: [
-                    {
-                      item_id: `conversion_${transactionDetails.plan}`,
-                      item_name: transactionDetails.name,
-                      item_category: "Subscription",
-                      price: eventValue,
-                      quantity: 1,
-                    },
-                  ],
-                },
-                is_subscription_paid: true,
-                subscription_status: "converted",
-              };
+            // if (trialConversion?.isFirstConversion) {
+            //   const trialConvertedEventData = {
+            //     event: "trial_converted_to_paid",
+            //     value: eventValue,
+            //     currency: currency,
+            //     subscription_plan: transactionDetails.plan,
+            //     subscription_name: transactionDetails.name,
+            //     billing_interval: transactionDetails.interval || "monthly",
+            //     is_trial: false,
+            //     transaction_id: transactionDetails.transactionId,
+            //     user_id: metadata?.userId || null,
+            //     ecommerce: {
+            //       transaction_id: transactionDetails.transactionId,
+            //       value: eventValue,
+            //       currency: currency,
+            //       items: [
+            //         {
+            //           item_id: `conversion_${transactionDetails.plan}`,
+            //           item_name: transactionDetails.name,
+            //           item_category: "Subscription",
+            //           price: eventValue,
+            //           quantity: 1,
+            //         },
+            //       ],
+            //     },
+            //     is_subscription_paid: true,
+            //     subscription_status: "converted",
+            //   };
 
-              console.log(
-                "📊 DataLayer Push (Trial Converted to Paid):",
-                trialConvertedEventData,
-              );
-              window.dataLayer.push(trialConvertedEventData);
-            }
+            //   console.log(
+            //     "📊 DataLayer Push (Trial Converted to Paid):",
+            //     trialConvertedEventData,
+            //   );
+            //   window.dataLayer.push(trialConvertedEventData);
+            // }
           }
         }
 
