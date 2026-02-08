@@ -82,7 +82,23 @@ export class BookingValidationService implements IBookingValidationService {
   }
 
   async getBookingLimits(userId: string): Promise<BookingLimitsInfo> {
+    const user = await this.userRepository.findById(userId);
     const subscription = await this.subscriptionRepository.findActiveByUserId(userId);
+
+    // Admin users have unlimited access
+    if (user?.role === 'ADMIN') {
+      return {
+        userPlan: 'premium' as SubscriptionPlan, // Treat as premium
+        hasActiveSubscription: true,
+        activeBookingsCount: 0,
+        maxActiveBookings: 999, // Effectively unlimited
+        activeBookingsRemaining: 999,
+        monthlyBookingCount: 0,
+        monthlyBookingLimit: null, // No limit
+        remainingMonthlyBookings: null,
+        currentMonth: this.getCurrentMonthString()
+      };
+    }
 
     // Check for free trial (no subscription but has trial dates)
     const { isInFreeTrial } = await this.isUserInFreeTrial(userId);
@@ -169,16 +185,20 @@ export class BookingValidationService implements IBookingValidationService {
     const { userId, sessionId } = params;
     const reasons: string[] = [];
 
-    const [session, subscription, activeBookings, profile] = await Promise.all([
+    const [session, subscription, activeBookings, profile, user] = await Promise.all([
       this.sessionRepository.findById(sessionId),
       this.subscriptionRepository.findActiveByUserId(userId),
       this.bookingRepository.findActiveByUserId(userId),
-      this.profileRepository.findByUserId(userId)
+      this.profileRepository.findByUserId(userId),
+      this.userRepository.findById(userId)
     ]);
 
     if (!session) {
       return { canBook: false, reasons: ['Session not found'], validationDetails: this.getEmptyValidationDetails() };
     }
+
+    // Admin users bypass all subscription and booking limit checks
+    const isAdmin = user?.role === 'ADMIN';
 
     // --- Basic Checks (Time, Capacity, Points) ---
     const now = new Date();
@@ -193,8 +213,8 @@ export class BookingValidationService implements IBookingValidationService {
     // Check for free trial (no subscription but has trial dates)
     const { isInFreeTrial } = await this.isUserInFreeTrial(userId);
 
-    // User has access if they have subscription OR are in free trial
-    const hasAccess = hasActiveSubscription || isInFreeTrial;
+    // User has access if they have subscription OR are in free trial OR are admin
+    const hasAccess = hasActiveSubscription || isInFreeTrial || isAdmin;
 
     if (!hasAccess) reasons.push('Active subscription or free trial required to book sessions');
 
@@ -224,8 +244,16 @@ export class BookingValidationService implements IBookingValidationService {
     let monthlyBookingCount = 0;
     let remainingMonthlyBookings: number | null = null;
 
+    // === ADMIN BYPASS: Admins have unlimited access ===
+    if (isAdmin) {
+      maxActiveBookings = 999; // Effectively unlimited
+      canAccessSessionType = true; // Can access all session types
+      activeBookingsRemaining = 999;
+      monthlyLimit = null; // No monthly limit
+      remainingMonthlyBookings = null;
+    }
     // === CASE 0: FREE TRIAL USERS (no subscription, but trial dates set) ===
-    if (isInFreeTrial && !hasActiveSubscription) {
+    else if (isInFreeTrial && !hasActiveSubscription) {
       maxActiveBookings = this.TRIAL_LIFETIME_LIMIT;
       canAccessSessionType = true; // Free trial can access ALL session types
 

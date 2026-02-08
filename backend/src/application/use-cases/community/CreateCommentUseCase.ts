@@ -34,16 +34,16 @@ export class CreateCommentUseCase {
       user.trialEndDate !== null &&
       now < user.trialEndDate;
 
-    // 1. Subscription Check (Priority) - Skip if user is in free trial
+    // 1. Subscription Check (Priority) - Skip if user is in free trial or is admin
     const subscription = await this.subscriptionRepository.findActiveByUserId(dto.userId);
 
-    if (subscription && subscription.status === 'canceled') {
+    if (subscription && subscription.status === 'canceled' && user.role !== 'ADMIN') {
       throw new Error('Your subscription is canceled. You cannot post comments.');
     }
 
-    // Allow commenting if user has active subscription OR is in free trial
+    // Allow commenting if user has active subscription OR is in free trial OR is admin
     const hasActiveSubscription = subscription && ['active', 'trialing'].includes(subscription.status);
-    if (!hasActiveSubscription && !isInFreeTrial) {
+    if (!hasActiveSubscription && !isInFreeTrial && user.role !== 'ADMIN') {
       throw new Error('Active subscription required to comment.');
     }
 

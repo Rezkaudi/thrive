@@ -41,9 +41,9 @@ export class CreatePostUseCase {
       throw new Error('Your subscription is canceled. You cannot create posts.');
     }
 
-    // Allow posting if user has active subscription OR is in free trial
+    // Allow posting if user has active subscription OR is in free trial OR Admin
     const hasActiveSubscription = subscription && ['active', 'trialing'].includes(subscription.status);
-    if (!hasActiveSubscription && !isInFreeTrial) {
+    if (!hasActiveSubscription && !isInFreeTrial && user.role !== 'ADMIN') {
       throw new Error('Active subscription required to post in the community.');
     }
 

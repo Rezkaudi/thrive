@@ -25,6 +25,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     hasSubscription,
     isInFreeTrial,
     freeTrialExpired,
+    status,
   } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
@@ -56,13 +57,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+  console.log(status);
+
+  // Admin users can access everything regardless of subscription status
+  const isAdmin = user?.role === "ADMIN";
 
   // Redirect to subscription page if:
-  // 1. No active subscription AND free trial has expired
-  // 2. No subscription AND no active trial AND trial not expired (edge case - never had trial)
+  // 1. No subscription
+  // 2. No trial
+  // 3. Trial expired
+  // 4. Has subscription but not active
+  // BUT: Skip this check for admin users
   if (
-    !hasSubscription &&
-    (freeTrialExpired || (!isInFreeTrial && !freeTrialExpired))
+    !isAdmin &&
+    (status !== "active" ||
+      (!hasSubscription && (freeTrialExpired || !isInFreeTrial)))
   ) {
     return <Navigate to="/subscription" replace />;
   }
