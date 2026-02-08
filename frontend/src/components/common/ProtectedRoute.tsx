@@ -22,7 +22,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     loading,
     user,
     authChecking,
-    hasSubscription,
     isInFreeTrial,
     freeTrialExpired,
     status,
@@ -57,22 +56,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  console.log(status);
 
   // Admin users can access everything regardless of subscription status
   const isAdmin = user?.role === "ADMIN";
 
-  // Redirect to subscription page if:
-  // 1. No subscription
-  // 2. No trial
-  // 3. Trial expired
-  // 4. Has subscription but not active
-  // BUT: Skip this check for admin users
-  if (
-    !isAdmin &&
-    (status !== "active" ||
-      (!hasSubscription && (freeTrialExpired || !isInFreeTrial)))
-  ) {
+  // Allow access if:
+  // 1. User is admin (bypass all checks)
+  // 2. Has active subscription (status = 'active')
+  // 3. Has Stripe trial subscription (status = 'trialing') - backend validates currentPeriodEnd
+  // 4. In free trial period (status = 'free_trial' OR isInFreeTrial && !freeTrialExpired)
+  const hasValidAccess =
+    isAdmin ||
+    status === "active" ||
+    status === "trialing" ||
+    status === "free_trial" ||
+    (isInFreeTrial && !freeTrialExpired);
+
+  if (!hasValidAccess) {
     return <Navigate to="/subscription" replace />;
   }
 

@@ -69,16 +69,33 @@ export class CheckUserSubscriptionUseCase {
 
         // Determine access based on subscription OR free trial
         const hasSubscription = subscription !== null;
-        const hasAccessToCourses = activeSubscription !== null || isInFreeTrial;
-        const status = subscription ? subscription.status : (isInFreeTrial ? 'free_trial' : null);
+
+        // Check if subscription trial/period has expired based on currentPeriodEnd
+        let actualStatus = subscription ? subscription.status : (isInFreeTrial ? 'free_trial' : null);
+        let isSubscriptionValid = false;
+
+        if (subscription) {
+            const subscriptionEndDate = new Date(subscription.currentPeriodEnd);
+            const hasExpired = now >= subscriptionEndDate;
+
+            // If currentPeriodEnd has passed, treat as expired regardless of database status
+            if (hasExpired && (subscription.status === 'trialing' || subscription.status === 'active')) {
+                actualStatus = 'expired'; // Override status
+                isSubscriptionValid = false;
+            } else {
+                isSubscriptionValid = ['active', 'trialing'].includes(subscription.status);
+            }
+        }
+
+        const hasAccessToCourses = (subscription && isSubscriptionValid) || isInFreeTrial;
         const currentPlan = subscription ? subscription.subscriptionPlan : null;
         // isTrialing is true for subscription-based trial OR free trial (no credit card)
-        const isTrialing = subscription?.status === 'trialing' || isInFreeTrial;
+        const isTrialing = (subscription?.status === 'trialing' && isSubscriptionValid) || isInFreeTrial;
 
         return {
             hasSubscription,
             hasAccessToCourses,
-            status,
+            status: actualStatus,
             currentPlan,
             isTrialing,
             isInFreeTrial,
@@ -89,7 +106,7 @@ export class CheckUserSubscriptionUseCase {
                 ? {
                     id: subscription.id,
                     plan: subscription.subscriptionPlan,
-                    status: subscription.status,
+                    status: actualStatus || 'inactive', // Ensure non-null status
                     currentPeriodEnd: subscription.currentPeriodEnd,
                 }
                 : null,
