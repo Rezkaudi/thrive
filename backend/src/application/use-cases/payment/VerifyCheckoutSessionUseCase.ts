@@ -25,6 +25,8 @@ export interface VerifyCheckoutSessionResponse {
         wasInFreeTrial: boolean;
         isFirstConversion: boolean; // Only true if this is the FIRST time converting
     };
+    // New field for first-time payment tracking (GA4)
+    isFirstEverPaid: boolean; // Only true if this is the user's first ever paid subscription
 }
 
 export class VerifyCheckoutSessionUseCase {
@@ -57,6 +59,7 @@ export class VerifyCheckoutSessionUseCase {
         // Check trial conversion status
         let wasInFreeTrial = false;
         let isFirstConversion = false;
+        let isFirstEverPaid = false;
 
         const userId = session.metadata?.userId;
         if (userId && this.userRepository) {
@@ -66,13 +69,22 @@ export class VerifyCheckoutSessionUseCase {
                 wasInFreeTrial = user.trialStartDate !== null && user.trialEndDate !== null;
 
                 // Check if this is the first conversion
-                // The webhook already set trialConvertedToPaid=true if this was a conversion
-                // So isFirstConversion should only be true if user just converted
-                // We track this by checking if they had a trial AND trialConvertedToPaid is now true
-                // BUT we need to detect if this specific payment is the conversion
-                // Since webhook sets it, we check if the payment is not a trial (isTrial=false)
-                // and user was in trial before
                 isFirstConversion = wasInFreeTrial && !isTrial && user.trialConvertedToPaid;
+
+                // 🎯 Check hasEverPaid flag - this is set when user makes their FIRST paid transaction
+                // This flag is permanent and never resets, even if they cancel and re-subscribe
+                if (!user.hasEverPaid && !isTrial) {
+                    // This is the first paid transaction ever
+                    isFirstEverPaid = true;
+
+                    // Mark user as having paid (permanent flag)
+                    user.hasEverPaid = true;
+                    await this.userRepository.update(user);
+
+                    console.log(`✅ First-time paid subscription for user ${userId}. GA4 tracking enabled. Flag set permanently.`);
+                } else if (user.hasEverPaid) {
+                    console.log(`ℹ️ User ${userId} has already made a payment before (hasEverPaid=true). Not counting as first payment.`);
+                }
             }
         }
 
@@ -94,7 +106,8 @@ export class VerifyCheckoutSessionUseCase {
             trialConversion: {
                 wasInFreeTrial,
                 isFirstConversion,
-            }
+            },
+            isFirstEverPaid,
         };
     }
 }

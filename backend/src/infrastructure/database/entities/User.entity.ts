@@ -48,6 +48,9 @@ export class UserEntity {
   @Column({ default: false })
   trialConvertedToPaid!: boolean; // Flag to ensure trial_converted_to_paid event fires only once
 
+  @Column({ default: false })
+  hasEverPaid!: boolean; // Permanent flag - set to true on first paid transaction (never resets)
+
   @CreateDateColumn()
   createdAt!: Date;
 

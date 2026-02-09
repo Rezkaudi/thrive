@@ -20,6 +20,7 @@ export interface IUser {
   trialStartDate: Date | null;
   trialEndDate: Date | null;
   trialConvertedToPaid: boolean; // Flag to ensure trial_converted_to_paid event fires only once
+  hasEverPaid: boolean; // Permanent flag - set to true on first paid transaction (never resets)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +41,7 @@ export class User implements IUser {
     public trialStartDate: Date | null,
     public trialEndDate: Date | null,
     public trialConvertedToPaid: boolean,
+    public hasEverPaid: boolean,
     public createdAt: Date,
     public updatedAt: Date
   ) { }

@@ -127,6 +127,9 @@ export const VerifyEmailPage: React.FC = () => {
           currency: "JPY",
           is_trial: true,
           transaction_id: null,
+          user_id: response.data?.user?.id || null,
+          is_subscription_paid: false,
+          subscription_status: "trial",
           ecommerce: {
             transaction_id: null,
             value: 0,
@@ -141,12 +144,10 @@ export const VerifyEmailPage: React.FC = () => {
               },
             ],
           },
-          user_id: response.data?.userId || null,
-          is_subscription_paid: false,
-          subscription_status: "trial",
         };
 
         console.log("📊 DataLayer Push (Free Trial - No CC):", trialEventData);
+        console.table(trialEventData);
         window.dataLayer.push(trialEventData);
 
         window.location.href = "/dashboard";

@@ -59,6 +59,7 @@ export class UserRepository implements IUserRepository {
       entity.trialStartDate,
       entity.trialEndDate,
       entity.trialConvertedToPaid,
+      entity.hasEverPaid,
       entity.createdAt,
       entity.updatedAt
     );
@@ -79,6 +80,7 @@ export class UserRepository implements IUserRepository {
     entity.trialStartDate = domain.trialStartDate;
     entity.trialEndDate = domain.trialEndDate;
     entity.trialConvertedToPaid = domain.trialConvertedToPaid;
+    entity.hasEverPaid = domain.hasEverPaid;
     entity.createdAt = domain.createdAt;
     entity.updatedAt = domain.updatedAt;
     return entity;
