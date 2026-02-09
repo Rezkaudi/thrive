@@ -11,7 +11,6 @@ import {
   Paper,
   Typography,
   Button,
-  Alert,
 } from "@mui/material";
 import { AttachFile, Lock } from "@mui/icons-material";
 import { usePostInput } from "../../hooks/usePostInput";
@@ -24,7 +23,7 @@ import { useNavigate } from "react-router-dom"; // Import useNavigate
 interface IPostInputProps {
   onShowSnackbar?: (
     message: string,
-    severity: "success" | "error" | "info" | "warning"
+    severity: "success" | "error" | "info" | "warning",
   ) => void;
 }
 
@@ -32,7 +31,12 @@ export const PostInput = ({ onShowSnackbar }: IPostInputProps) => {
   const navigate = useNavigate();
   // Check subscription status from Redux
   const subStatus = useSelector((state: RootState) => state.auth.status);
-  const isCanceled = subStatus === 'canceled' || subStatus === 'past_due' || subStatus === 'unpaid';
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
+  const isAdmin = userRole === "ADMIN";
+  const isCanceled =
+    subStatus === "canceled" ||
+    subStatus === "past_due" ||
+    subStatus === "unpaid";
 
   const {
     newPost,
@@ -57,20 +61,22 @@ export const PostInput = ({ onShowSnackbar }: IPostInputProps) => {
   } = usePostInput({ onShowSnackbar });
 
   // --- RESTRICTION VIEW ---
-  if (isCanceled) {
+  // Admin users can always post regardless of subscription status
+  if (isCanceled && !isAdmin) {
     return (
-      <Card sx={{ mb: 4, p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
-        <Lock sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+      <Card sx={{ mb: 4, p: 3, textAlign: "center", bgcolor: "grey.50" }}>
+        <Lock sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
         <Typography variant="h6" gutterBottom>
           Community Access Paused
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Your subscription is currently canceled. Renew your plan to create posts, share feedback, and interact with the community.
+          Your subscription is currently canceled. Renew your plan to create
+          posts, share feedback, and interact with the community.
         </Typography>
         <Button
           variant="contained"
           color="primary"
-          onClick={() => navigate('/subscription')}
+          onClick={() => navigate("/subscription")}
         >
           Renew Subscription
         </Button>

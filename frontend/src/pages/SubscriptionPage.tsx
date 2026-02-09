@@ -268,7 +268,7 @@ export const SubscriptionPage: React.FC = () => {
     if (!hasSubscription || !currentPlan) {
       return {
         disabled: false,
-        label: "Start 14-Day Free Trial",
+        label: "Subscribe Now",
         variant: "subscribe",
       };
     }
@@ -351,16 +351,7 @@ export const SubscriptionPage: React.FC = () => {
         premium: "premium",
       };
 
-      // Don't offer Stripe trial if:
-      // - User already had free trial (isInFreeTrial or freeTrialExpired)
-      // - User has pre-selected plan
-      // - User already has subscription
-      const shouldHaveTrial =
-        !hasPreSelectedPlan &&
-        !hasSubscription &&
-        !isInFreeTrial &&
-        !freeTrialExpired;
-
+      // Note: Stripe trials are disabled. Trials are only managed in the application code.
       const response = await paymentService.createCheckoutSession({
         planType: planTypeMap[planId],
         mode: "subscription",
@@ -369,7 +360,7 @@ export const SubscriptionPage: React.FC = () => {
         metadata: {
           plan: planId,
         },
-        hasTrial: shouldHaveTrial,
+        hasTrial: false,
       });
 
       console.log("Checkout session response:", response);
