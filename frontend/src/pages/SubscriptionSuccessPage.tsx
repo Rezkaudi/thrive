@@ -118,8 +118,18 @@ export const SubscriptionSuccessPage: React.FC = () => {
           response.data.status === "paid" &&
           response.data.transactionDetails
         ) {
-          const { transactionDetails, metadata, trialConversion } =
-            response.data;
+          const {
+            transactionDetails,
+            metadata,
+            trialConversion,
+            isFirstEverPaid,
+          } = response.data;
+
+          console.log("📊 GA4 Tracking Decision:", {
+            isTrial: transactionDetails.isTrial,
+            isFirstEverPaid,
+            willPushToGA4: transactionDetails.isTrial || isFirstEverPaid,
+          });
 
           // --- GTM / Data Layer Logic ---
           window.dataLayer = window.dataLayer || [];
@@ -164,8 +174,9 @@ export const SubscriptionSuccessPage: React.FC = () => {
 
             console.log("📊 DataLayer Push (Free Trial):", trialEventData);
             window.dataLayer.push(trialEventData);
-          } else {
-            // 🟢 CASE 2: PAID SUBSCRIPTION
+          } else if (isFirstEverPaid) {
+            // 🟢 CASE 2: FIRST-TIME PAID SUBSCRIPTION (fires only ONCE per user, ever)
+            // This is critical for GA4 tracking - prevents duplicate events on renewal/re-subscription
             const paidEventData = {
               event: "subscription_paid",
               value: eventValue,
@@ -192,46 +203,23 @@ export const SubscriptionSuccessPage: React.FC = () => {
               },
             };
 
-            console.log("📊 DataLayer Push (Paid):", paidEventData);
+            console.log(
+              "📊 DataLayer Push (First-Time Paid - ONE TIME ONLY):",
+              paidEventData,
+            );
             window.dataLayer.push(paidEventData);
-
-            // 🟢 CASE 3: TRIAL CONVERTED TO PAID (fires only ONCE per user)
-            // This event is critical for revenue tracking
-            // if (trialConversion?.isFirstConversion) {
-            //   const trialConvertedEventData = {
-            //     event: "trial_converted_to_paid",
-            //     value: eventValue,
-            //     currency: currency,
-            //     subscription_plan: transactionDetails.plan,
-            //     subscription_name: transactionDetails.name,
-            //     billing_interval: transactionDetails.interval || "monthly",
-            //     is_trial: false,
-            //     transaction_id: transactionDetails.transactionId,
-            //     user_id: metadata?.userId || null,
-            //     ecommerce: {
-            //       transaction_id: transactionDetails.transactionId,
-            //       value: eventValue,
-            //       currency: currency,
-            //       items: [
-            //         {
-            //           item_id: `conversion_${transactionDetails.plan}`,
-            //           item_name: transactionDetails.name,
-            //           item_category: "Subscription",
-            //           price: eventValue,
-            //           quantity: 1,
-            //         },
-            //       ],
-            //     },
-            //     is_subscription_paid: true,
-            //     subscription_status: "converted",
-            //   };
-
-            //   console.log(
-            //     "📊 DataLayer Push (Trial Converted to Paid):",
-            //     trialConvertedEventData,
-            //   );
-            //   window.dataLayer.push(trialConvertedEventData);
-            // }
+          } else {
+            // 🔴 CASE 3: SUBSEQUENT PAYMENT (renewal, re-subscription after cancel)
+            // Do NOT push to dataLayer - user has already been tracked
+            console.log(
+              "ℹ️ Subsequent payment detected. NOT pushing to dataLayer (user already tracked).",
+            );
+            console.log("Payment details:", {
+              transaction_id: transactionDetails.transactionId,
+              value: eventValue,
+              currency: currency,
+              plan: transactionDetails.plan,
+            });
           }
         }
 
