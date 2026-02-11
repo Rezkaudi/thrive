@@ -59,6 +59,7 @@ export class RegisterUserUseCase {
       null, // trialStartDate - set on email verification
       null, // trialEndDate - set on email verification
       false, // trialConvertedToPaid
+      false,
       new Date(),
       new Date()
     );
