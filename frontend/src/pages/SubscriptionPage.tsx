@@ -554,20 +554,22 @@ export const SubscriptionPage: React.FC = () => {
             )}
 
             {/* Current Plan Indicator */}
-            {currentPlan && (
+            {(currentPlan || isInFreeTrial || isTrialing) && (
               <Stack
                 direction="row"
                 spacing={2}
                 justifyContent="center"
                 sx={{ mt: 2 }}
               >
-                <Chip
-                  icon={<Star />}
-                  label={`Current Plan: ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`}
-                  color="primary"
-                  variant="filled"
-                />
-                {isTrialing && (
+                {currentPlan && (
+                  <Chip
+                    icon={<Star />}
+                    label={`Current Plan: ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}`}
+                    color="primary"
+                    variant="filled"
+                  />
+                )}
+                {(isTrialing || isInFreeTrial) && (
                   <Chip
                     icon={<Timer />}
                     label="Trial Active"
@@ -575,6 +577,17 @@ export const SubscriptionPage: React.FC = () => {
                     variant="outlined"
                   />
                 )}
+                {currentPlan &&
+                  status !== "active" &&
+                  status !== "trialing" &&
+                  !isInFreeTrial && (
+                    <Chip
+                      icon={<Close />}
+                      label="Canceled"
+                      color="error"
+                      variant="filled"
+                    />
+                  )}
               </Stack>
             )}
           </motion.div>
@@ -656,6 +669,72 @@ export const SubscriptionPage: React.FC = () => {
                   boxShadow: isCurrentPlanCard ? 10 : plan.recommended ? 8 : 2,
                 }}
               >
+                {/* Status Badges */}
+                {isCurrentPlanCard && (isTrialing || isInFreeTrial) && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring" }}
+                  >
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: { xs: -15, md: 60, lg: 20 },
+                        left: -10,
+                        bgcolor: "warning.main",
+                        color: "white",
+                        px: 2,
+                        py: 0.5,
+                        borderRadius: 2,
+                        fontWeight: 700,
+                        fontSize: "0.875rem",
+                        boxShadow: 3,
+                        zIndex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Timer sx={{ fontSize: 16 }} />
+                      TRIAL
+                    </Box>
+                  </motion.div>
+                )}
+
+                {isCurrentPlanCard &&
+                  status !== "active" &&
+                  status !== "trialing" &&
+                  !isInFreeTrial && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.3, type: "spring" }}
+                    >
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: { xs: -15, md: 60, lg: 20 },
+                          left: -10,
+                          bgcolor: "error.main",
+                          color: "white",
+                          px: 2,
+                          py: 0.5,
+                          borderRadius: 2,
+                          fontWeight: 700,
+                          fontSize: "0.875rem",
+                          boxShadow: 3,
+                          zIndex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                        }}
+                      >
+                        <Close sx={{ fontSize: 16 }} />
+                        CANCELED
+                      </Box>
+                    </motion.div>
+                  )}
+
                 {/* Discount Badge */}
                 {showDiscount && (
                   <motion.div
