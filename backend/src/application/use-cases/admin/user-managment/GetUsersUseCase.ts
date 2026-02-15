@@ -20,7 +20,7 @@ export class GetUsersUseCase {
             const profile = profiles.find(p => p.userId === user.id);
             const subscription = subscriptions.find(s => s.userId === user.id);
             const isTrial = user.trialEndDate && new Date(user.trialEndDate) > new Date() ;
-            console.log(`>>> DEBUG TRIAL STATUS: User ${user.email} isTrial =`, isTrial);
+            // console.log(`>>> DEBUG TRIAL STATUS: User ${user.email} isTrial =`, isTrial);
             return {
                 ...user,
                 profile,
