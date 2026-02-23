@@ -188,7 +188,7 @@ export const RegistrationPage: React.FC = () => {
                     }
                     label={
                       <Typography variant="body2">
-                        I would like to receive marketing emails and updates.
+                        I'd love to receive free Japanese learning tips, updates and special offers.
                       </Typography>
                     }
                   />
