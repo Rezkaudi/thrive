@@ -38,7 +38,8 @@ import {
   AdminPanelSettings,
   ChevronLeft,
   ChevronRight,
-  ContactMail
+  ContactMail,
+  CreditCard,
 } from '@mui/icons-material';
 import { logout } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
@@ -154,6 +155,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     },
     { title: 'Calendar', icon: <CalendarMonth sx={{ fontSize: 20 }} />, path: '/calendar' },
     { title: 'Profile', icon: <Person sx={{ fontSize: 20 }} />, path: '/profile' },
+    {title: 'Subscription', icon: <CreditCard sx={{ fontSize: 20 }} />, path: '/manage-subscription' },
     { title: 'Contact Us', icon: <ContactMail sx={{ fontSize: 20 }} />, path: 'mailto:admin@uzumibi-jp.com', isExternalLink: true },
   ];
 
@@ -353,6 +355,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <MenuItem onClick={() => { navigate('/profile'); handleCloseUserMenu(); }}>
               <ListItemIcon><Person sx={{ fontSize: 20 }} /></ListItemIcon>
               Profile
+            </MenuItem>
+            <MenuItem onClick={() => { navigate('/manage-subscription'); handleCloseUserMenu(); }}>
+              <ListItemIcon><CreditCard sx={{ fontSize: 20 }} /></ListItemIcon>
+              Subscription
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>

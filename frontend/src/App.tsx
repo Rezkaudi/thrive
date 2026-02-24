@@ -48,6 +48,7 @@ import { SpecialSubscriptionPage } from './pages/studentOfShiego/SpecialSubscrip
 import { SpecialVerifyEmailPage } from './pages/studentOfShiego/SpecialVerifyEmailPage';
 import { SpecialNewRegistrationPage } from './pages/studentOfShiego/SpecialNewRegistrationPage';
 import { SubscriptionSuccessPage } from './pages/SubscriptionSuccessPage';
+import { ManageSubscriptionPage } from './pages/ManageSubscriptionPage';
 
 
 function AppContent() {
@@ -187,6 +188,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <CalendarPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manage-subscription"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ManageSubscriptionPage />
               </Layout>
             </ProtectedRoute>
           }
