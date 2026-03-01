@@ -46,6 +46,8 @@ export const CourseDetailPage: React.FC = () => {
     handleCompleteLesson,
     handleEnroll,
     navigate,
+    activeItemRef,
+    lessonsContainerRef,
   } = useCourseDetails();
 
   // Persist sidebar state
@@ -56,10 +58,10 @@ export const CourseDetailPage: React.FC = () => {
   // Derived Values
   const selectedCourseColors = getCourseColors(selectedCourse?.type || "");
   const isEnrolled = enrollments.some(
-    (e: any) => e.courseId === selectedCourse?.id
+    (e: any) => e.courseId === selectedCourse?.id,
   );
   const currentProgress = courseProgress.find(
-    (p) => p.courseId === selectedCourse?.id
+    (p) => p.courseId === selectedCourse?.id,
   ) || {
     completedLessons: 0,
     totalLessons: 0,
@@ -130,6 +132,8 @@ export const CourseDetailPage: React.FC = () => {
         setSelectedLesson={setSelectedLesson}
         getLessonTypeIcon={getLessonIcon}
         navigate={navigate}
+        activeItemRef={activeItemRef}
+        lessonsContainerRef={lessonsContainerRef}
       />
     </>
   );
@@ -151,7 +155,9 @@ export const CourseDetailPage: React.FC = () => {
             borderRadius: 0,
             borderRight: "1px solid",
             borderColor: "divider",
-            overflowY: "auto",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
             transition: "width 0.3s ease-in-out",
           }}
         >

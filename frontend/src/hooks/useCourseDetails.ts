@@ -26,6 +26,39 @@ export const useCourseDetails = () => {
   const [completingLesson, setCompletingLesson] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  
+  // Create a ref to hold the active list item
+  const activeItemRef = useRef<HTMLLIElement | null>(null);
+  // Ref for the scrollable lessons list container
+  const lessonsContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll the active lesson into center of the lessons list container only
+  useEffect(() => {
+    // Use setTimeout to wait for React render + framer-motion layout to settle
+    const timer = setTimeout(() => {
+      const container = lessonsContainerRef.current;
+      const item = activeItemRef.current;
+      if (!container || !item) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+
+      // Calculate item's position relative to the container's scroll origin
+      const itemTopRelative =
+        itemRect.top - containerRect.top + container.scrollTop;
+
+      // Scroll so the item is centered vertically in the container
+      const scrollTarget =
+        itemTopRelative - container.clientHeight / 2 + itemRect.height / 2;
+
+      container.scrollTo({
+        top: Math.max(0, scrollTarget),
+        behavior: "smooth",
+      });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [selectedLessonId]);
+
   // 1. MEMOIZED LESSONS (Prevents loops)
   const lessons = useMemo(() => {
     return calculateLessonLocks(rawLessons, selectedCourse, hasAccessToCourses);
@@ -173,6 +206,8 @@ export const useCourseDetails = () => {
     lessonLoading,
     completingLesson,
     error,
+    activeItemRef,
+    lessonsContainerRef,
     handleCompleteLesson,
     handleEnroll,
     navigate

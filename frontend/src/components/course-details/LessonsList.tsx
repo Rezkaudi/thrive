@@ -33,9 +33,10 @@ interface LessonsListProps {
   setDrawerOpen?: (v: boolean) => void;
   getLessonTypeIcon: (
     lessonType: string,
-    size: "small" | "medium"
+    size: "small" | "medium",
   ) => React.ReactNode;
   navigate: (path: string) => void;
+  activeItemRef: React.RefObject<HTMLLIElement | null>;
 }
 
 export const LessonsList: React.FC<LessonsListProps> = ({
@@ -51,6 +52,7 @@ export const LessonsList: React.FC<LessonsListProps> = ({
   setDrawerOpen,
   getLessonTypeIcon,
   navigate,
+  activeItemRef,
 }) => {
   if (lessonLoading) {
     return (
@@ -87,6 +89,7 @@ export const LessonsList: React.FC<LessonsListProps> = ({
           >
             <ListItem
               disablePadding
+              ref={isSelected ? activeItemRef : null}
               sx={{
                 mb: sidebarCollapsed ? 0.5 : 1,
                 px: sidebarCollapsed ? 0.5 : 0,
@@ -294,7 +297,7 @@ export const LessonsList: React.FC<LessonsListProps> = ({
                       >
                         {getLessonTypeIcon(
                           lesson.lessonType,
-                          sidebarCollapsed ? "small" : "medium"
+                          sidebarCollapsed ? "small" : "medium",
                         )}
                       </Box>
                     )}
