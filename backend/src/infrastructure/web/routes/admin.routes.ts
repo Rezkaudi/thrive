@@ -66,7 +66,7 @@ const adminRouter = (adminController: AdminController): Router => {
     [
       body('title').notEmpty(),
       body('description').notEmpty(),
-      body('type').isIn(['SPEAKING', 'EVENT', 'STANDARD']),
+      body('type').isIn(['SPEAKING', 'EVENT', 'STANDARD', 'PREMIUM']),
       body('scheduledAt').isISO8601(),
       body('duration').isInt({ min: 15 }),
       body('maxParticipants').isInt({ min: 1 }),

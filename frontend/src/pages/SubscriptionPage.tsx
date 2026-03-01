@@ -115,7 +115,7 @@ const plans: PlanOption[] = [
     savings: 30,
     features: [
       { title: "Full Curriculum Access", included: true },
-      { title: "4 Standard Speaking Sessions / month", included: true },
+      { title: "4 Standard Sessions / month", included: true },
       { title: "View All Sessions & Events", included: true }, // Can see everything
       { title: "Sessions do not roll over", included: true }, // Limitation clearly stated
     ],
@@ -131,7 +131,7 @@ const plans: PlanOption[] = [
     recommended: true,
     features: [
       { title: "Full Curriculum Access", included: true },
-      { title: "Unlimited Speaking Sessions", included: true },
+      { title: "Unlimited Premium Sessions", included: true },
       { title: "Join All Premium & Standard Sessions", included: true },
       { title: "Access to Exclusive Events", included: true },
     ],

@@ -34,6 +34,7 @@ const filterOptions = [
       { value: "SPEAKING", label: "Speaking Sessions" },
       { value: "EVENT", label: "Special Events" },
       { value: "STANDARD", label: "Standard Sessions" },
+      { value: "PREMIUM", label: "Premium Sessions" },
     ],
   },
   {

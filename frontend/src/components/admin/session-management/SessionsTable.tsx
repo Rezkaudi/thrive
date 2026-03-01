@@ -25,6 +25,7 @@ import {
   Repeat,
   Star,
   VideoCall,
+  WorkspacePremium,
 } from "@mui/icons-material";
 import { Session } from "../../../services/sessionService";
 
@@ -112,7 +113,7 @@ const SessionRow: React.FC<{
             )}
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center">
-            {session.type === "SPEAKING" ? (
+            {session.type === "SPEAKING" || session.type === "PREMIUM" ? (
               <>
                 <VideoCall sx={{ fontSize: 16, color: "text.secondary" }} />
                 <Typography variant="caption" color="text.secondary">
@@ -166,13 +167,15 @@ const SessionRow: React.FC<{
             <Mic sx={{ fontSize: 16 }} />
           ) : session.type === "STANDARD" ? (
             <Star sx={{ fontSize: 16 }} />
+          ) : session.type === "PREMIUM" ? (
+            <WorkspacePremium sx={{ fontSize: 16 }} />
           ) : (
             <Event sx={{ fontSize: 16 }} />
           )}
           <Chip
-            label={session.type === "SPEAKING" ? "Speaking" : session.type === "STANDARD" ? "Standard" : "Event"}
+            label={session.type === "SPEAKING" ? "Speaking" : session.type === "PREMIUM" ? "Premium" : session.type === "STANDARD" ? "Standard" : "Event"}
             size="small"
-            color={session.type === "SPEAKING" ? "primary" : session.type === "STANDARD" ? "info" : "secondary"}
+            color={session.type === "SPEAKING" || session.type === "PREMIUM" ? "primary" : session.type === "STANDARD" ? "info" : "secondary"}
             sx={{ color: "white" }}
           />
         </Stack>

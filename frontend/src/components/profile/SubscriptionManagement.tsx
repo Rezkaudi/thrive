@@ -78,7 +78,7 @@ const PLANS: PlanInfo[] = [
     },
     features: [
       "Full Curriculum Access",
-      "4 Standard Speaking Sessions / month",
+      "4 Standard Sessions / month",
       "View All Sessions & Events",
       "Sessions do not roll over",
     ],
@@ -100,7 +100,7 @@ const PLANS: PlanInfo[] = [
     },
     features: [
       "Full Curriculum Access",
-      "Unlimited Speaking Sessions",
+      "Unlimited Premium Sessions",
       "Join All Premium & Standard Sessions",
       "Access to Exclusive Events",
     ],
