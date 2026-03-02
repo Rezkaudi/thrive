@@ -194,7 +194,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                           height: 6,
                           borderRadius: "50%",
                           bgcolor:
-                            session.type === "SPEAKING"
+                            session.type === "SPEAKING" || session.type === "PREMIUM"
                               ? isSelected
                                 ? "white"
                                 : "primary.main"

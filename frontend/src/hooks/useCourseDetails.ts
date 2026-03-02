@@ -26,6 +26,56 @@ export const useCourseDetails = () => {
   const [completingLesson, setCompletingLesson] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  
+  // Ref to store the active DOM node
+  const activeNodeRef = useRef<HTMLLIElement | null>(null);
+  // Ref for the scrollable lessons list container
+  const lessonsContainerRef = useRef<HTMLDivElement | null>(null);
+  // Timeout ref for scroll debouncing and cleanup
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Callback ref that scrolls the active lesson into view whenever it mounts or changes
+  const activeItemRef = useCallback((node: HTMLLIElement | null) => {
+    activeNodeRef.current = node;
+
+    // Clear any pending scroll
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
+    }
+
+    if (!node) return;
+
+    // Delay to ensure container ref is assigned and framer-motion animations settle
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (!node.isConnected) return;
+
+      const container = lessonsContainerRef.current;
+      if (!container) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const itemRect = node.getBoundingClientRect();
+      const itemTopRelative =
+        itemRect.top - containerRect.top + container.scrollTop;
+      const scrollTarget =
+        itemTopRelative - container.clientHeight / 2 + itemRect.height / 2;
+
+      container.scrollTo({
+        top: Math.max(0, scrollTarget),
+        behavior: "smooth",
+      });
+    }, 150);
+  }, []);
+
+  // Cleanup scroll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // 1. MEMOIZED LESSONS (Prevents loops)
   const lessons = useMemo(() => {
     return calculateLessonLocks(rawLessons, selectedCourse, hasAccessToCourses);
@@ -173,6 +223,8 @@ export const useCourseDetails = () => {
     lessonLoading,
     completingLesson,
     error,
+    activeItemRef,
+    lessonsContainerRef,
     handleCompleteLesson,
     handleEnroll,
     navigate

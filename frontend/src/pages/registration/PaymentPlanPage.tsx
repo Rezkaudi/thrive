@@ -59,7 +59,7 @@ const plans: PlanOption[] = [
         recommended: true,
         features: [
             { title: 'Thrive in Japan Platform', included: true },
-            { title: 'Unlimited Speaking Sessions', included: true },
+            { title: 'Unlimited Premium Sessions', included: true },
             { title: '"Japan in Context" Curriculum', included: true },
             { title: '"JLPT in Context" Curriculum', included: true },
             { title: 'Access to Exclusive Events and Meet Ups', included: true },
@@ -73,7 +73,7 @@ const plans: PlanOption[] = [
         period: 'year',
         features: [
             { title: 'Thrive in Japan Platform', included: true },
-            { title: 'Unlimited Speaking Sessions', included: true },
+            { title: 'Unlimited Premium Sessions', included: true },
             { title: '"Japan in Context" Curriculum', included: true },
             { title: '"JLPT in Context" Curriculum', included: true },
             { title: 'Access to Exclusive Events and Meet Ups', included: true },

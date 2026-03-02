@@ -150,9 +150,29 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/classroom/:levelId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ClassroomPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
 
         <Route
-          path="/classroom/:courseId"
+          path="/classroom/:levelId/:courseId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CourseDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/classroom/course/:courseId"
           element={
             <ProtectedRoute>
               <Layout>

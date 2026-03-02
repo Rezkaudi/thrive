@@ -26,6 +26,8 @@ interface LessonSidebarProps {
     size: "small" | "medium"
   ) => React.ReactNode;
   navigate: (path: string) => void;
+  activeItemRef: React.RefCallback<HTMLLIElement>;
+  lessonsContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const LessonSidebar: React.FC<LessonSidebarProps> = ({
@@ -45,13 +47,15 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
   setSelectedLesson,
   getLessonTypeIcon,
   navigate,
+  activeItemRef,
+  lessonsContainerRef,
 }) => {
   const currentProgress = selectedCourse
     ? getCourseProgress?.(selectedCourse.id)
     : null;
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ flexGrow: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* Header with collapse toggle */}
       <Box
         sx={{
@@ -99,6 +103,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
 
       {/* Lessons List */}
       <Box
+        ref={lessonsContainerRef}
         sx={{ flexGrow: 1, overflowY: "auto", p: sidebarCollapsed ? 0.5 : 2 }}
       >
         <LessonsList
@@ -114,6 +119,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
           setDrawerOpen={setDrawerOpen}
           getLessonTypeIcon={getLessonTypeIcon}
           navigate={navigate}
+          activeItemRef={activeItemRef}
         />
       </Box>
     </Box>

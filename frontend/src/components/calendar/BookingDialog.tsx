@@ -106,7 +106,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             color={
               session.type === "STANDARD"
                 ? "warning"
-                : session.type === "SPEAKING"
+                : session.type === "SPEAKING" || session.type === "PREMIUM"
                   ? "primary"
                   : session.type === "EVENT"
                     ? "secondary"

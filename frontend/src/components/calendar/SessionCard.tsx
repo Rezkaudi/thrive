@@ -26,7 +26,7 @@ import {
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { CalendarSession, Booking } from "../../services/calendarService";
-import { formatTimeUntilSession, isWithin24Hours } from "../../utils/session";
+import { formatTimeUntilSession, getTimeUntilSession, isWithin24Hours } from "../../utils/session";
 
 interface SessionCardProps {
   session: CalendarSession;
@@ -62,7 +62,7 @@ const getSessionTypeColor = (
 ): "primary" | "secondary" | "info" | "warning" | "default" => {
   switch (type) {
     case "PREMIUM":
-      return "secondary";
+      return "primary";
     case "SPEAKING":
       return "primary";
     case "EVENT":
@@ -103,11 +103,12 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   user,
 }) => {
   const isBooked = myBookings.some((b) => b.sessionId === session.id);
-  const sessionStartTime = new Date(session.scheduledAt);
-  const sessionEndTime = new Date(
-    sessionStartTime.getTime() + session.duration * 60000,
-  );
-  const isPast = sessionEndTime < new Date();
+  const now = Date.now();
+  const sessionStartTime = new Date(session.scheduledAt).getTime();
+  const durationMs = Number(session.duration) * 60000;
+  const sessionEndTime = sessionStartTime + durationMs;
+  const isPast = sessionEndTime < now;
+  const isInProgress = sessionStartTime <= now && sessionEndTime >= now;
   const isFull = session.currentParticipants >= session.maxParticipants;
 
   // Check if user can access this session type based on plan
@@ -137,22 +138,32 @@ export const SessionCard: React.FC<SessionCardProps> = ({
       <Card
         sx={{
           mb: 2,
-          opacity: isPast ? 0.7 : cannotAccessSessionType ? 0.85 : 1,
+          opacity: isPast ? 0.5 : isInProgress ? 0.75 : cannotAccessSessionType ? 0.85 : 1,
           border: isBooked
             ? "2px solid"
-            : session.type === "STANDARD"
-              ? "1px dashed"
-              : "1px solid",
+            : isPast || isInProgress
+              ? "1px solid"
+              : within24Hours
+                ? "1px dashed"
+                : session.type === "STANDARD"
+                  ? "1px dashed"
+                  : "1px solid",
           borderColor: isBooked
             ? "primary.main"
-            : session.type === "STANDARD"
-              ? "warning.main"
-              : within24Hours && !isBooked
-                ? "warning.main"
-                : cannotAccessSessionType
-                  ? "grey.300"
-                  : "divider",
+            : isPast
+              ? "grey.300"
+              : isInProgress
+                ? "info.main"
+                : within24Hours && !isBooked
+                  ? "warning.main"
+                  : session.type === "STANDARD"
+                    ? "warning.main"
+                    : cannotAccessSessionType
+                      ? "grey.300"
+                      : "divider",
           position: "relative",
+          pointerEvents: (isPast || isInProgress) && !isBooked ? "none" : "auto",
+          filter: isPast ? "grayscale(40%)" : "none",
         }}
       >
         {/* Premium Badge Overlay */}
@@ -212,6 +223,22 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                   Hosted by {session.hostName}
                 </Typography>
               )}
+              {session.description && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    mt: 0.5,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                  }}
+                >
+                  {session.description}
+                </Typography>
+              )}
             </Box>
             {!cannotAccessSessionType && (
               <Chip
@@ -238,7 +265,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             </Stack>
 
             {/* Show time until session */}
-            {!isPast && (
+            {!isPast && getTimeUntilSession(session.scheduledAt) > 0 && (
               <Stack direction="row" spacing={1} alignItems="center">
                 <Schedule fontSize="small" color="action" />
                 <Typography
@@ -274,7 +301,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             )}
 
             <Stack direction="row" spacing={1} alignItems="center">
-              {session.type === "SPEAKING" ? (
+              {session.type === "SPEAKING" || session.type === "PREMIUM" ? (
                 <>
                   <VideoCall fontSize="small" color="action" />
                   <Typography variant="body2">Online (Google Meet)</Typography>
@@ -344,16 +371,18 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 <Button
                   fullWidth
                   variant="contained"
-                  disabled={isPast || isFull || within24Hours}
+                  disabled={isPast || isInProgress || isFull || within24Hours}
                   onClick={() => onSessionClick(session)}
                 >
                   {isPast
                     ? "Session Ended"
-                    : isFull
-                      ? "Session Full"
-                      : within24Hours
-                        ? "24h Notice Required"
-                        : "Book Session"}
+                    : isInProgress
+                      ? "Session In Progress"
+                      : isFull
+                        ? "Session Full"
+                        : within24Hours
+                          ? "24h Notice Required"
+                          : "Book Session"}
                 </Button>
               )}
             </Stack>

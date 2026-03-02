@@ -5,7 +5,7 @@ export interface Session {
   id: string;
   title: string;
   description: string;
-  type: 'SPEAKING' | 'EVENT' | 'STANDARD';
+  type: 'SPEAKING' | 'EVENT' | 'STANDARD' | 'PREMIUM';
   hostId: string;
   hostName?: string;
   meetingUrl?: string;
@@ -38,7 +38,7 @@ export interface PaginatedSessionsResponse {
 export interface CreateSessionData {
   title: string;
   description: string;
-  type: 'SPEAKING' | 'EVENT' | 'STANDARD';
+  type: 'SPEAKING' | 'EVENT' | 'STANDARD' | 'PREMIUM';
   hostId?: string;
   meetingUrl?: string;
   location?: string;
@@ -54,7 +54,7 @@ export interface CreateSessionData {
 export interface UpdateSessionData {
   title?: string;
   description?: string;
-  type?: 'SPEAKING' | 'EVENT' | 'STANDARD';
+  type?: 'SPEAKING' | 'EVENT' | 'STANDARD' | 'PREMIUM';
   hostId?: string;
   meetingUrl?: string;
   location?: string;
@@ -78,7 +78,7 @@ export interface RecurringSessionDetails {
 }
 
 export interface SessionFilters {
-  type?: 'SPEAKING' | 'EVENT' | 'STANDARD' | '';
+  type?: 'SPEAKING' | 'EVENT' | 'STANDARD' | 'PREMIUM' | '';
   isActive?: 'true' | 'false' | '';
   isRecurring?: 'true' | 'false' | '';
 }

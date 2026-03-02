@@ -31,11 +31,12 @@ import {
   Repeat,
   StarOutlined,
   Timeline,
+  WorkspacePremium,
 } from "@mui/icons-material";
 import { useForm, Controller, useWatch } from "react-hook-form";
 
 /** TYPES **/
-export type SessionType = "SPEAKING" | "EVENT" | "STANDARD";
+export type SessionType = "SPEAKING" | "EVENT" | "STANDARD" | "PREMIUM";
 
 export interface SessionFormShape {
   id?: string;
@@ -98,6 +99,12 @@ const TITLE_BY_TYPE: Record<
     edit: "Edit Standard Session",
     fieldLabel: "Standard Title",
     placeholder: "e.g, Standard Learning Session",
+  },
+  PREMIUM: {
+    create: "Create New Premium Session",
+    edit: "Edit Premium Session",
+    fieldLabel: "Session Title",
+    placeholder: "e.g., Advanced Conversation Practice",
   },
 };
 
@@ -162,7 +169,7 @@ export const SessionDialog = ({
     if (open) {
       if (type === "EVENT" && form.location) {
         setValue("location", form.location, { shouldDirty: true });
-      } else if (type === "SPEAKING" && form.meetingUrl) {
+      } else if ((type === "SPEAKING" || type === "PREMIUM") && form.meetingUrl) {
         setValue("meetingUrl", form.meetingUrl, { shouldDirty: true });
       }
     }
@@ -170,7 +177,7 @@ export const SessionDialog = ({
 
   const headerMeta = useMemo(() => TITLE_BY_TYPE[type || "SPEAKING"], [type]);
   const Icon =
-    type === "SPEAKING" ? Mic : type === "STANDARD" ? StarOutlined : Event;
+    type === "SPEAKING" ? Mic : type === "STANDARD" ? StarOutlined : type === "PREMIUM" ? WorkspacePremium : Event;
 
   const submitIcon = submitting ? undefined : isEditing ? <Edit /> : <Add />;
   const submitLabel = submitting
@@ -227,7 +234,7 @@ export const SessionDialog = ({
           patch.maxParticipants = 12;
           setValue("duration", 60, { shouldDirty: true });
           setValue("maxParticipants", 12, { shouldDirty: true });
-        } else if (val === "SPEAKING") {
+        } else if (val === "SPEAKING" || val === "PREMIUM") {
           patch.duration = 60;
           patch.maxParticipants = 4;
           setValue("duration", 60, { shouldDirty: true });
@@ -301,6 +308,8 @@ export const SessionDialog = ({
                       ? "Describe what participants will practice..."
                       : type === "STANDARD"
                       ? "Describe the standard session content..."
+                      : type === "PREMIUM"
+                      ? "Describe the premium session content..."
                       : "Describe the special event activities..."
                   }
                   error={descriptionError}
@@ -332,12 +341,12 @@ export const SessionDialog = ({
                     }}
                     onBlur={() => syncNow({ type: field.value })}
                   >
-                    <MenuItem value="SPEAKING">
+                    {/* <MenuItem value="SPEAKING">
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Mic />
                         <span>Speaking Practice Session</span>
                       </Stack>
-                    </MenuItem>
+                    </MenuItem> */}
                     <MenuItem value="EVENT">
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Event />
@@ -350,13 +359,19 @@ export const SessionDialog = ({
                         <span>Standard Event</span>
                       </Stack>
                     </MenuItem>
+                    <MenuItem value="PREMIUM">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <WorkspacePremium />
+                        <span>Premium Session</span>
+                      </Stack>
+                    </MenuItem>
                   </Select>
                 )}
               />
             </FormControl>
 
             {/* Location / Meeting URL */}
-            {type === "SPEAKING" || type === "STANDARD" ? (
+            {type === "SPEAKING" || type === "STANDARD" || type === "PREMIUM" ? (
               <Controller
                 control={control}
                 name="meetingUrl"

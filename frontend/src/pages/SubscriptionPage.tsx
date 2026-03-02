@@ -115,7 +115,7 @@ const plans: PlanOption[] = [
     savings: 30,
     features: [
       { title: "Full Curriculum Access", included: true },
-      { title: "4 Standard Speaking Sessions / month", included: true },
+      { title: "4 Standard Sessions / month", included: true },
       { title: "View All Sessions & Events", included: true }, // Can see everything
       { title: "Sessions do not roll over", included: true }, // Limitation clearly stated
     ],
@@ -131,7 +131,7 @@ const plans: PlanOption[] = [
     recommended: true,
     features: [
       { title: "Full Curriculum Access", included: true },
-      { title: "Unlimited Speaking Sessions", included: true },
+      { title: "Unlimited Premium Sessions", included: true },
       { title: "Join All Premium & Standard Sessions", included: true },
       { title: "Access to Exclusive Events", included: true },
     ],
@@ -365,25 +365,9 @@ export const SubscriptionPage: React.FC = () => {
 
       console.log("Checkout session response:", response);
 
-      // Handle direct upgrade/downgrade or pay now (no checkout needed)
-      if (response.isUpgrade || response.isPaidNow || response.isDowngrade) {
-        showSuccessToast(
-          response.message || "Subscription updated successfully!",
-        );
-        setLoading(false);
-
-        // Redirect after showing success message
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 2000);
-
-        // Refresh subscription status
-        await dispatch(checkPayment());
-
-        return;
-      }
-
-      // Handle checkout redirect
+      // Handle checkout redirect FIRST (takes priority over direct change)
+      // When a checkout session is created (e.g. no payment method on file),
+      // the user must complete payment on Stripe before the change takes effect.
       if (response.sessionId) {
         const result = await stripe.redirectToCheckout({
           sessionId: response.sessionId,
@@ -394,6 +378,21 @@ export const SubscriptionPage: React.FC = () => {
         }
 
         setLoading(false);
+        return;
+      }
+
+      // Handle direct upgrade/downgrade or pay now (no checkout needed)
+      if (response.upgraded || response.isPaidNow) {
+        // Refresh subscription status in Redux FIRST so the UI re-renders
+        await dispatch(checkPayment());
+
+        setLoading(false);
+
+        showSuccessToast(
+          response.message || "Subscription updated successfully!",
+        );
+
+        return;
       }
     } catch (err: any) {
       setError(err.message || "Failed to process payment");

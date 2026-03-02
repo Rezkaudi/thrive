@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Container,
@@ -34,7 +34,7 @@ import {
   Paper,
   useTheme,
   alpha,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Search,
   MoreVert,
@@ -51,9 +51,10 @@ import {
   School,
   CreditCard,
   ToggleOn,
-} from '@mui/icons-material';
-import api from '../../services/api';
-import { useSweetAlert } from '../../utils/sweetAlert';
+} from "@mui/icons-material";
+import { Link } from "react-router-dom";
+import api from "../../services/api";
+import { useSweetAlert } from "../../utils/sweetAlert";
 
 // ── Filter Types ───────────────────────────────────────────────────────────────
 interface FilterState {
@@ -74,20 +75,25 @@ const INITIAL_FILTERS: FilterState = {
   statuses: [],
   subscriptions: [],
   languageLevels: [],
-  dateFrom: '',
-  dateTo: '',
-  pointsMin: '',
-  pointsMax: '',
-  levelMin: '',
-  levelMax: '',
+  dateFrom: "",
+  dateTo: "",
+  pointsMin: "",
+  pointsMax: "",
+  levelMin: "",
+  levelMax: "",
 };
 
-const ROLE_OPTIONS = ['ADMIN', 'STUDENT'];
-const STATUS_OPTIONS = ['Active', 'Inactive'];
-const SUBSCRIPTION_OPTIONS = ['active', 'trialing', 'canceled', 'No Subscription'];
-const LANGUAGE_LEVEL_OPTIONS = ['N5', 'N4', 'N3', 'N2', 'N1'];
+const ROLE_OPTIONS = ["ADMIN", "STUDENT"];
+const STATUS_OPTIONS = ["Active", "Inactive"];
+const SUBSCRIPTION_OPTIONS = [
+  "active",
+  "trialing",
+  "canceled",
+  "No Subscription",
+];
+const LANGUAGE_LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"];
 
-type SortField = 'joined' | 'points' | 'level' | 'name';
+type SortField = "joined" | "points" | "level" | "name";
 
 // ── Reusable FilterChipGroup ───────────────────────────────────────────────────
 const FilterChipGroup: React.FC<{
@@ -96,7 +102,16 @@ const FilterChipGroup: React.FC<{
   options: string[];
   selected: string[];
   onChange: (value: string[]) => void;
-  colorMap?: Record<string, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'>;
+  colorMap?: Record<
+    string,
+    | "default"
+    | "primary"
+    | "secondary"
+    | "error"
+    | "info"
+    | "success"
+    | "warning"
+  >;
 }> = ({ label, icon, options, selected, onChange, colorMap }) => {
   const theme = useTheme();
 
@@ -111,30 +126,38 @@ const FilterChipGroup: React.FC<{
   return (
     <Box>
       <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
-        {React.cloneElement(icon as React.ReactElement<any>, { sx: { fontSize: 18, color: theme.palette.text.secondary } })}
-        <Typography variant="caption" fontWeight={600} color="text.secondary" textTransform="uppercase" letterSpacing={0.5}>
+        {React.cloneElement(icon as React.ReactElement<any>, {
+          sx: { fontSize: 18, color: theme.palette.text.secondary },
+        })}
+        <Typography
+          variant="caption"
+          fontWeight={600}
+          color="text.secondary"
+          textTransform="uppercase"
+          letterSpacing={0.5}
+        >
           {label}
         </Typography>
       </Stack>
       <Stack direction="row" flexWrap="wrap" gap={0.75}>
         {options.map((option) => {
           const isSelected = selected.includes(option);
-          const chipColor = colorMap?.[option] || 'default';
+          const chipColor = colorMap?.[option] || "default";
           return (
             <Chip
               key={option}
               label={option}
               size="small"
               clickable
-              variant={isSelected ? 'filled' : 'outlined'}
-              color={isSelected ? chipColor : 'default'}
+              variant={isSelected ? "filled" : "outlined"}
+              color={isSelected ? chipColor : "default"}
               onClick={() => handleToggle(option)}
               sx={{
                 fontWeight: isSelected ? 600 : 400,
                 borderWidth: isSelected ? 0 : 1,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  transform: 'translateY(-1px)',
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  transform: "translateY(-1px)",
                   boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.15)}`,
                 },
               }}
@@ -157,6 +180,7 @@ interface User {
     points: number;
     level: number;
     languageLevel: string;
+    profilePhoto?: string;
   };
   subscriptionStatus: string;
 }
@@ -167,32 +191,32 @@ export const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [pointsDialog, setPointsDialog] = useState(false);
-  const [pointsData, setPointsData] = useState({ points: 0, reason: '' });
+  const [pointsData, setPointsData] = useState({ points: 0, reason: "" });
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error' | 'warning' | 'info',
+    message: "",
+    severity: "success" as "success" | "error" | "warning" | "info",
   });
 
   // ── Filter State ───────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [sortField, setSortField] = useState<SortField>('joined');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<SortField>("joined");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const fetchUsers = useCallback(async () => {
     try {
       // setLoading(true);
-      const response = await api.get('/admin/users', {
+      const response = await api.get("/admin/users", {
         params: { page: page + 1, limit: rowsPerPage },
       });
       setUsers(response.data.users);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      console.error("Failed to fetch users:", error);
     } finally {
       // setLoading(false);
     }
@@ -207,26 +231,26 @@ export const UserManagement: React.FC = () => {
     setAnchorEl(null);
 
     switch (action) {
-      case 'toggleStatus':
+      case "toggleStatus":
         toggleUserStatus(user);
         break;
-      case 'adjustPoints':
+      case "adjustPoints":
         setPointsDialog(true);
         break;
-      case 'changeRole':
+      case "changeRole":
         // Implement role change
         break;
     }
   };
 
   const toggleUserStatus = async (user: User) => {
-    const action = user.isActive ? 'deactivate' : 'activate';
+    const action = user.isActive ? "deactivate" : "activate";
     const result = await showConfirm({
       title: `${action.charAt(0).toUpperCase() + action.slice(1)} User`,
       text: `Are you sure you want to ${action} ${user.profile?.name || user.email}?`,
-      icon: 'warning',
+      icon: "warning",
       confirmButtonText: `Yes, ${action}`,
-      cancelButtonText: 'Cancel',
+      cancelButtonText: "Cancel",
     });
 
     if (result.isConfirmed) {
@@ -237,24 +261,30 @@ export const UserManagement: React.FC = () => {
         setSnackbar({
           open: true,
           message: `User ${action}d successfully!`,
-          severity: 'success'
+          severity: "success",
         });
         fetchUsers();
       } catch (error) {
-        console.error('Failed to update user status:', error);
-        showError('Error', `Failed to ${action} user`);
+        console.error("Failed to update user status:", error);
+        showError("Error", `Failed to ${action} user`);
       }
     }
   };
 
   const handlePointsAdjustment = async () => {
     if (!selectedUser || !pointsData.reason) {
-      showError('Validation Error', 'Please provide a reason for the points adjustment');
+      showError(
+        "Validation Error",
+        "Please provide a reason for the points adjustment",
+      );
       return;
     }
 
     if (pointsData.points === 0) {
-      showError('Validation Error', 'Please enter a points value (positive or negative)');
+      showError(
+        "Validation Error",
+        "Please enter a points value (positive or negative)",
+      );
       return;
     }
 
@@ -262,27 +292,30 @@ export const UserManagement: React.FC = () => {
       await api.post(`/admin/users/${selectedUser.id}/points`, pointsData);
       setSnackbar({
         open: true,
-        message: 'Points adjusted successfully!',
-        severity: 'success',
+        message: "Points adjusted successfully!",
+        severity: "success",
       });
       setPointsDialog(false);
-      setPointsData({ points: 0, reason: '' });
+      setPointsData({ points: 0, reason: "" });
       fetchUsers();
     } catch (error) {
-      console.error('Failed to adjust points:', error);
-      showError('Error', 'Failed to adjust points');
+      console.error("Failed to adjust points:", error);
+      showError("Error", "Failed to adjust points");
     }
   };
 
   // ── Filter Helpers ─────────────────────────────────────────────────────────
-  const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+  const updateFilter = <K extends keyof FilterState>(
+    key: K,
+    value: FilterState[K],
+  ) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(0);
   };
 
   const resetFilters = () => {
     setFilters(INITIAL_FILTERS);
-    setSearchQuery('');
+    setSearchQuery("");
     setPage(0);
   };
 
@@ -306,65 +339,81 @@ export const UserManagement: React.FC = () => {
       tags.push({
         key: `role-${role}`,
         label: `Role: ${role}`,
-        onRemove: () => updateFilter('roles', filters.roles.filter((r) => r !== role)),
-      })
+        onRemove: () =>
+          updateFilter(
+            "roles",
+            filters.roles.filter((r) => r !== role),
+          ),
+      }),
     );
     filters.statuses.forEach((status) =>
       tags.push({
         key: `status-${status}`,
         label: `Status: ${status}`,
-        onRemove: () => updateFilter('statuses', filters.statuses.filter((s) => s !== status)),
-      })
+        onRemove: () =>
+          updateFilter(
+            "statuses",
+            filters.statuses.filter((s) => s !== status),
+          ),
+      }),
     );
     filters.subscriptions.forEach((sub) =>
       tags.push({
         key: `sub-${sub}`,
         label: `Subscription: ${sub}`,
-        onRemove: () => updateFilter('subscriptions', filters.subscriptions.filter((s) => s !== sub)),
-      })
+        onRemove: () =>
+          updateFilter(
+            "subscriptions",
+            filters.subscriptions.filter((s) => s !== sub),
+          ),
+      }),
     );
     filters.languageLevels.forEach((lvl) =>
       tags.push({
         key: `lang-${lvl}`,
         label: `Language: ${lvl}`,
-        onRemove: () => updateFilter('languageLevels', filters.languageLevels.filter((l) => l !== lvl)),
-      })
+        onRemove: () =>
+          updateFilter(
+            "languageLevels",
+            filters.languageLevels.filter((l) => l !== lvl),
+          ),
+      }),
     );
     if (filters.dateFrom)
       tags.push({
-        key: 'dateFrom',
+        key: "dateFrom",
         label: `From: ${filters.dateFrom}`,
-        onRemove: () => updateFilter('dateFrom', ''),
+        onRemove: () => updateFilter("dateFrom", ""),
       });
     if (filters.dateTo)
       tags.push({
-        key: 'dateTo',
+        key: "dateTo",
         label: `To: ${filters.dateTo}`,
-        onRemove: () => updateFilter('dateTo', ''),
+        onRemove: () => updateFilter("dateTo", ""),
       });
     if (filters.pointsMin)
       tags.push({
-        key: 'pointsMin',
+        key: "pointsMin",
         label: `Points ≥ ${filters.pointsMin}`,
-        onRemove: () => updateFilter('pointsMin', ''),
+        onRemove: () => updateFilter("pointsMin", ""),
       });
     if (filters.pointsMax)
       tags.push({
-        key: 'pointsMax',
+        key: "pointsMax",
         label: `Points ≤ ${filters.pointsMax}`,
-        onRemove: () => updateFilter('pointsMax', ''),
+        onRemove: () => updateFilter("pointsMax", ""),
       });
     if (filters.levelMin)
       tags.push({
-        key: 'levelMin',
+        key: "levelMin",
         label: `Level ≥ ${filters.levelMin}`,
-        onRemove: () => updateFilter('levelMin', ''),
+        onRemove: () => updateFilter("levelMin", ""),
       });
     if (filters.levelMax)
       tags.push({
-        key: 'levelMax',
+        key: "levelMax",
         label: `Level ≤ ${filters.levelMax}`,
-        onRemove: () => updateFilter('levelMax', ''),
+        onRemove: () => updateFilter("levelMax", ""),
       });
 
     return tags;
@@ -389,8 +438,8 @@ export const UserManagement: React.FC = () => {
         // Status
         const matchesStatus =
           filters.statuses.length === 0 ||
-          (filters.statuses.includes('Active') && user.isActive) ||
-          (filters.statuses.includes('Inactive') && !user.isActive);
+          (filters.statuses.includes("Active") && user.isActive) ||
+          (filters.statuses.includes("Inactive") && !user.isActive);
 
         // Subscription
         const matchesSub =
@@ -400,14 +449,16 @@ export const UserManagement: React.FC = () => {
         // Language Level
         const matchesLang =
           filters.languageLevels.length === 0 ||
-          filters.languageLevels.includes(user.profile?.languageLevel || 'N5');
+          filters.languageLevels.includes(user.profile?.languageLevel || "N5");
 
         // Date Range
         const joinedDate = new Date(user.createdAt).getTime();
         const matchesDateFrom =
-          !filters.dateFrom || joinedDate >= new Date(filters.dateFrom).getTime();
+          !filters.dateFrom ||
+          joinedDate >= new Date(filters.dateFrom).getTime();
         const matchesDateTo =
-          !filters.dateTo || joinedDate <= new Date(filters.dateTo + 'T23:59:59').getTime();
+          !filters.dateTo ||
+          joinedDate <= new Date(filters.dateTo + "T23:59:59").getTime();
 
         // Points Range
         const userPoints = user.profile?.points || 0;
@@ -442,43 +493,43 @@ export const UserManagement: React.FC = () => {
         let valB: number;
 
         switch (sortField) {
-          case 'name':
+          case "name":
             const nameA = (a.profile?.name || a.email).toLowerCase();
             const nameB = (b.profile?.name || b.email).toLowerCase();
-            return sortOrder === 'asc'
+            return sortOrder === "asc"
               ? nameA.localeCompare(nameB)
               : nameB.localeCompare(nameA);
-          case 'points':
+          case "points":
             valA = a.profile?.points || 0;
             valB = b.profile?.points || 0;
             break;
-          case 'level':
+          case "level":
             valA = a.profile?.level || 1;
             valB = b.profile?.level || 1;
             break;
-          case 'joined':
+          case "joined":
           default:
             valA = new Date(a.createdAt).getTime();
             valB = new Date(b.createdAt).getTime();
             break;
         }
 
-        return sortOrder === 'asc' ? valA - valB : valB - valA;
+        return sortOrder === "asc" ? valA - valB : valB - valA;
       });
   }, [users, searchQuery, filters, sortField, sortOrder]);
 
   const handleSortToggle = (field: SortField) => {
     if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortOrder('desc');
+      setSortOrder("desc");
     }
   };
 
   const SortIndicator: React.FC<{ field: SortField }> = ({ field }) => {
     if (sortField !== field) return null;
-    return sortOrder === 'asc' ? (
+    return sortOrder === "asc" ? (
       <ArrowUpward sx={{ fontSize: 16 }} />
     ) : (
       <ArrowDownward sx={{ fontSize: 16 }} />
@@ -488,23 +539,30 @@ export const UserManagement: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4" fontWeight={700}>
           User Management
         </Typography>
         <Stack direction="row" spacing={1.5} alignItems="center">
           <Typography variant="body2" color="text.secondary">
-            {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
+            {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
           </Typography>
-          <Tooltip title={filtersOpen ? 'Hide filters' : 'Show filters'}>
+          <Tooltip title={filtersOpen ? "Hide filters" : "Show filters"}>
             <Badge
               badgeContent={activeFilterCount}
               color="primary"
               overlap="circular"
-              sx={{ '& .MuiBadge-badge': { fontSize: 11, minWidth: 18, height: 18 } }}
+              sx={{
+                "& .MuiBadge-badge": { fontSize: 11, minWidth: 18, height: 18 },
+              }}
             >
               <Button
-                variant={filtersOpen ? 'contained' : 'outlined'}
+                variant={filtersOpen ? "contained" : "outlined"}
                 startIcon={<FilterList />}
                 onClick={() => setFiltersOpen(!filtersOpen)}
                 sx={{ minWidth: 100 }}
@@ -528,7 +586,12 @@ export const UserManagement: React.FC = () => {
             background: alpha(theme.palette.primary.main, 0.02),
           }}
         >
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2.5}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={2.5}
+          >
             <Typography variant="subtitle1" fontWeight={600}>
               Filter Users
             </Typography>
@@ -539,7 +602,7 @@ export const UserManagement: React.FC = () => {
                   startIcon={<RestartAlt />}
                   onClick={resetFilters}
                   color="inherit"
-                  sx={{ textTransform: 'none' }}
+                  sx={{ textTransform: "none" }}
                 >
                   Reset All
                 </Button>
@@ -553,8 +616,12 @@ export const UserManagement: React.FC = () => {
           {/* Row 1: Categorical filters */}
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "1fr 1fr",
+                md: "1fr 1fr 1fr 1fr",
+              },
               gap: 3,
               mb: 3,
             }}
@@ -564,32 +631,43 @@ export const UserManagement: React.FC = () => {
               icon={<Person />}
               options={ROLE_OPTIONS}
               selected={filters.roles}
-              onChange={(val) => updateFilter('roles', val)}
-              colorMap={{ ADMIN: 'error', STUDENT: 'primary' }}
+              onChange={(val) => updateFilter("roles", val)}
+              colorMap={{ ADMIN: "error", STUDENT: "primary" }}
             />
             <FilterChipGroup
               label="Account Status"
               icon={<ToggleOn />}
               options={STATUS_OPTIONS}
               selected={filters.statuses}
-              onChange={(val) => updateFilter('statuses', val)}
-              colorMap={{ Active: 'success', Inactive: 'default' }}
+              onChange={(val) => updateFilter("statuses", val)}
+              colorMap={{ Active: "success", Inactive: "default" }}
             />
             <FilterChipGroup
               label="Subscription"
               icon={<CreditCard />}
               options={SUBSCRIPTION_OPTIONS}
               selected={filters.subscriptions}
-              onChange={(val) => updateFilter('subscriptions', val)}
-              colorMap={{ active: 'info', trialing: 'warning', canceled: 'error', 'No Subscription': 'default' }}
+              onChange={(val) => updateFilter("subscriptions", val)}
+              colorMap={{
+                active: "info",
+                trialing: "warning",
+                canceled: "error",
+                "No Subscription": "default",
+              }}
             />
             <FilterChipGroup
               label="Language Level"
               icon={<School />}
               options={LANGUAGE_LEVEL_OPTIONS}
               selected={filters.languageLevels}
-              onChange={(val) => updateFilter('languageLevels', val)}
-              colorMap={{ N1: 'error', N2: 'warning', N3: 'info', N4: 'primary', N5: 'default' }}
+              onChange={(val) => updateFilter("languageLevels", val)}
+              colorMap={{
+                N1: "error",
+                N2: "warning",
+                N3: "info",
+                N4: "primary",
+                N5: "default",
+              }}
             />
           </Box>
 
@@ -598,16 +676,33 @@ export const UserManagement: React.FC = () => {
           {/* Row 2: Range filters */}
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "1fr 1fr",
+                md: "1fr 1fr 1fr",
+              },
               gap: 3,
             }}
           >
             {/* Date Range */}
             <Box>
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
-                <CalendarMonth sx={{ fontSize: 18, color: theme.palette.text.secondary }} />
-                <Typography variant="caption" fontWeight={600} color="text.secondary" textTransform="uppercase" letterSpacing={0.5}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                alignItems="center"
+                sx={{ mb: 1 }}
+              >
+                <CalendarMonth
+                  sx={{ fontSize: 18, color: theme.palette.text.secondary }}
+                />
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                  textTransform="uppercase"
+                  letterSpacing={0.5}
+                >
                   Joined Date Range
                 </Typography>
               </Stack>
@@ -617,7 +712,7 @@ export const UserManagement: React.FC = () => {
                   size="small"
                   label="From"
                   value={filters.dateFrom}
-                  onChange={(e) => updateFilter('dateFrom', e.target.value)}
+                  onChange={(e) => updateFilter("dateFrom", e.target.value)}
                   InputLabelProps={{ shrink: true }}
                   fullWidth
                 />
@@ -626,7 +721,7 @@ export const UserManagement: React.FC = () => {
                   size="small"
                   label="To"
                   value={filters.dateTo}
-                  onChange={(e) => updateFilter('dateTo', e.target.value)}
+                  onChange={(e) => updateFilter("dateTo", e.target.value)}
                   InputLabelProps={{ shrink: true }}
                   fullWidth
                 />
@@ -635,9 +730,22 @@ export const UserManagement: React.FC = () => {
 
             {/* Points Range */}
             <Box>
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
-                <Star sx={{ fontSize: 18, color: theme.palette.text.secondary }} />
-                <Typography variant="caption" fontWeight={600} color="text.secondary" textTransform="uppercase" letterSpacing={0.5}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                alignItems="center"
+                sx={{ mb: 1 }}
+              >
+                <Star
+                  sx={{ fontSize: 18, color: theme.palette.text.secondary }}
+                />
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                  textTransform="uppercase"
+                  letterSpacing={0.5}
+                >
                   Points Range
                 </Typography>
               </Stack>
@@ -647,7 +755,7 @@ export const UserManagement: React.FC = () => {
                   size="small"
                   label="Min"
                   value={filters.pointsMin}
-                  onChange={(e) => updateFilter('pointsMin', e.target.value)}
+                  onChange={(e) => updateFilter("pointsMin", e.target.value)}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   fullWidth
                 />
@@ -656,7 +764,7 @@ export const UserManagement: React.FC = () => {
                   size="small"
                   label="Max"
                   value={filters.pointsMax}
-                  onChange={(e) => updateFilter('pointsMax', e.target.value)}
+                  onChange={(e) => updateFilter("pointsMax", e.target.value)}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   fullWidth
                 />
@@ -665,9 +773,22 @@ export const UserManagement: React.FC = () => {
 
             {/* Level Range */}
             <Box>
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
-                <School sx={{ fontSize: 18, color: theme.palette.text.secondary }} />
-                <Typography variant="caption" fontWeight={600} color="text.secondary" textTransform="uppercase" letterSpacing={0.5}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                alignItems="center"
+                sx={{ mb: 1 }}
+              >
+                <School
+                  sx={{ fontSize: 18, color: theme.palette.text.secondary }}
+                />
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                  textTransform="uppercase"
+                  letterSpacing={0.5}
+                >
                   Level Range
                 </Typography>
               </Stack>
@@ -677,7 +798,7 @@ export const UserManagement: React.FC = () => {
                   size="small"
                   label="Min"
                   value={filters.levelMin}
-                  onChange={(e) => updateFilter('levelMin', e.target.value)}
+                  onChange={(e) => updateFilter("levelMin", e.target.value)}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   fullWidth
                 />
@@ -686,7 +807,7 @@ export const UserManagement: React.FC = () => {
                   size="small"
                   label="Max"
                   value={filters.levelMax}
-                  onChange={(e) => updateFilter('levelMax', e.target.value)}
+                  onChange={(e) => updateFilter("levelMax", e.target.value)}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   fullWidth
                 />
@@ -698,8 +819,19 @@ export const UserManagement: React.FC = () => {
 
       {/* ── Active Filter Chips ─────────────────────────────────────────────── */}
       {activeFilterTags.length > 0 && !filtersOpen && (
-        <Stack direction="row" flexWrap="wrap" gap={1} mb={2} alignItems="center">
-          <Typography variant="caption" color="text.secondary" fontWeight={600} mr={0.5}>
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          gap={1}
+          mb={2}
+          alignItems="center"
+        >
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            fontWeight={600}
+            mr={0.5}
+          >
             Active filters:
           </Typography>
           {activeFilterTags.map((tag) => (
@@ -713,9 +845,9 @@ export const UserManagement: React.FC = () => {
                 borderRadius: 2,
                 fontWeight: 500,
                 bgcolor: alpha(theme.palette.primary.main, 0.08),
-                '& .MuiChip-deleteIcon': {
+                "& .MuiChip-deleteIcon": {
                   color: theme.palette.text.secondary,
-                  '&:hover': { color: theme.palette.error.main },
+                  "&:hover": { color: theme.palette.error.main },
                 },
               }}
             />
@@ -725,7 +857,7 @@ export const UserManagement: React.FC = () => {
             size="small"
             variant="outlined"
             onClick={resetFilters}
-            sx={{ fontWeight: 500, borderStyle: 'dashed' }}
+            sx={{ fontWeight: 500, borderStyle: "dashed" }}
           />
         </Stack>
       )}
@@ -750,7 +882,7 @@ export const UserManagement: React.FC = () => {
               ),
               endAdornment: searchQuery ? (
                 <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery('')}>
+                  <IconButton size="small" onClick={() => setSearchQuery("")}>
                     <Close fontSize="small" />
                   </IconButton>
                 </InputAdornment>
@@ -763,42 +895,50 @@ export const UserManagement: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell
-                    sx={{ cursor: 'pointer', userSelect: 'none' }}
-                    onClick={() => handleSortToggle('name')}
+                    sx={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => handleSortToggle("name")}
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
-                      <Typography variant="body2" fontWeight={600}>User</Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        User
+                      </Typography>
                       <SortIndicator field="name" />
                     </Stack>
                   </TableCell>
                   <TableCell>Role</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell
-                    sx={{ cursor: 'pointer', userSelect: 'none' }}
-                    onClick={() => handleSortToggle('points')}
+                    sx={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => handleSortToggle("points")}
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
-                      <Typography variant="body2" fontWeight={600}>Points</Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        Points
+                      </Typography>
                       <SortIndicator field="points" />
                     </Stack>
                   </TableCell>
                   <TableCell
-                    sx={{ cursor: 'pointer', userSelect: 'none' }}
-                    onClick={() => handleSortToggle('level')}
+                    sx={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => handleSortToggle("level")}
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
-                      <Typography variant="body2" fontWeight={600}>Level</Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        Level
+                      </Typography>
                       <SortIndicator field="level" />
                     </Stack>
                   </TableCell>
                   <TableCell>Language</TableCell>
                   <TableCell>Subscription</TableCell>
                   <TableCell
-                    sx={{ cursor: 'pointer', userSelect: 'none' }}
-                    onClick={() => handleSortToggle('joined')}
+                    sx={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => handleSortToggle("joined")}
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
-                      <Typography variant="body2" fontWeight={600}>Joined</Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        Joined
+                      </Typography>
                       <SortIndicator field="joined" />
                     </Stack>
                   </TableCell>
@@ -810,7 +950,9 @@ export const UserManagement: React.FC = () => {
                   <TableRow>
                     <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                       <Stack alignItems="center" spacing={1}>
-                        <FilterList sx={{ fontSize: 40, color: 'text.disabled' }} />
+                        <FilterList
+                          sx={{ fontSize: 40, color: "text.disabled" }}
+                        />
                         <Typography color="text.secondary">
                           No users match the current filters
                         </Typography>
@@ -826,67 +968,103 @@ export const UserManagement: React.FC = () => {
                   filteredUsers
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36, fontSize: 14 }}>
-                            {user.profile?.name?.[0] || user.email[0].toUpperCase()}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2" fontWeight={500}>
-                              {user.profile?.name || 'No name'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {user.email}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={user.role}
-                          size="small"
-                          color={user.role === 'ADMIN' ? 'error' : 'default'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={user.isActive ? <CheckCircle /> : <Block />}
-                          label={user.isActive ? 'Active' : 'Inactive'}
-                          size="small"
-                          color={user.isActive ? 'success' : 'default'}
-                        />
-                      </TableCell>
-                      <TableCell>{user.profile?.points || 0}</TableCell>
-                      <TableCell>{user.profile?.level || 1}</TableCell>
-                      <TableCell>{user.profile?.languageLevel || 'N5'}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={user.subscriptionStatus}
-                          size="small"
-                          color={
-                            user.subscriptionStatus === 'active'
-                              ? 'info'
-                              : user.subscriptionStatus === 'No Subscription'
-                              ? 'default'
-                              : 'warning'
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            setAnchorEl(e.currentTarget);
-                            setSelectedUser(user);
-                          }}
-                        >
-                          <MoreVert fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                      <TableRow key={user.id} hover>
+                        <TableCell>
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="center"
+                          >
+                            <Avatar
+                              src={user.profile?.profilePhoto || undefined}
+                              sx={{
+                                bgcolor: "primary.main",
+                                width: 36,
+                                height: 36,
+                                fontSize: 14,
+                              }}
+                            >
+                              {user.profile?.name?.[0] ||
+                                user.email[0].toUpperCase()}
+                            </Avatar>
+                            <Box>
+                              <Link
+                                to={`/profile/${user.id}`}
+                                target="_blank"
+                                style={{ textDecoration: "none" }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={500}
+                                  sx={{
+                                    color: "#2D3436",
+                                    "&:hover": {
+                                      color: "primary.main",
+                                    },
+                                    transition: "color 0.2s ease-in-out",
+                                  }}
+                                >
+                                  {user.profile?.name || "No name"}
+                                </Typography>
+                              </Link>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {user.email}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.role}
+                            size="small"
+                            color={user.role === "ADMIN" ? "error" : "default"}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            icon={user.isActive ? <CheckCircle /> : <Block />}
+                            label={user.isActive ? "Active" : "Inactive"}
+                            size="small"
+                            color={user.isActive ? "success" : "default"}
+                          />
+                        </TableCell>
+                        <TableCell>{user.profile?.points || 0}</TableCell>
+                        <TableCell>{user.profile?.level || 1}</TableCell>
+                        <TableCell>
+                          {user.profile?.languageLevel || "N5"}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.subscriptionStatus}
+                            size="small"
+                            color={
+                              user.subscriptionStatus === "active"
+                                ? "info"
+                                : user.subscriptionStatus === "No Subscription"
+                                  ? "default"
+                                  : "warning"
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              setAnchorEl(e.currentTarget);
+                              setSelectedUser(user);
+                            }}
+                          >
+                            <MoreVert fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
                 )}
               </TableBody>
             </Table>
@@ -912,20 +1090,31 @@ export const UserManagement: React.FC = () => {
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
       >
-        <MenuItem onClick={() => handleUserAction('toggleStatus', selectedUser!)}>
-          {selectedUser?.isActive ? 'Deactivate User' : 'Activate User'}
+        <MenuItem
+          onClick={() => handleUserAction("toggleStatus", selectedUser!)}
+        >
+          {selectedUser?.isActive ? "Deactivate User" : "Activate User"}
         </MenuItem>
-        <MenuItem onClick={() => handleUserAction('adjustPoints', selectedUser!)}>
+        <MenuItem
+          onClick={() => handleUserAction("adjustPoints", selectedUser!)}
+        >
           Adjust Points
         </MenuItem>
-        <MenuItem onClick={() => handleUserAction('changeRole', selectedUser!)}>
+        <MenuItem onClick={() => handleUserAction("changeRole", selectedUser!)}>
           Change Role
         </MenuItem>
       </Menu>
 
       {/* ── Points Adjustment Dialog ────────────────────────────────────────── */}
-      <Dialog open={pointsDialog} onClose={() => setPointsDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Adjust Points for {selectedUser?.profile?.name || selectedUser?.email}</DialogTitle>
+      <Dialog
+        open={pointsDialog}
+        onClose={() => setPointsDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Adjust Points for {selectedUser?.profile?.name || selectedUser?.email}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 2 }}>
             <Alert severity="info">
@@ -937,7 +1126,12 @@ export const UserManagement: React.FC = () => {
               label="Points to Add/Remove"
               value={pointsData.points}
               onWheel={(e) => (e.target as HTMLInputElement).blur()}
-              onChange={(e) => setPointsData({ ...pointsData, points: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setPointsData({
+                  ...pointsData,
+                  points: parseInt(e.target.value),
+                })
+              }
               helperText="Use negative values to remove points"
             />
             <TextField
@@ -946,7 +1140,9 @@ export const UserManagement: React.FC = () => {
               rows={3}
               label="Reason"
               value={pointsData.reason}
-              onChange={(e) => setPointsData({ ...pointsData, reason: e.target.value })}
+              onChange={(e) =>
+                setPointsData({ ...pointsData, reason: e.target.value })
+              }
               required
             />
           </Stack>
@@ -972,7 +1168,7 @@ export const UserManagement: React.FC = () => {
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>

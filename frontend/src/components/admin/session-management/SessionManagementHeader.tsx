@@ -1,4 +1,4 @@
-import { Event, Mic, StarOutlined } from "@mui/icons-material";
+import { Event, StarOutlined, WorkspacePremium } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -48,7 +48,7 @@ export const SessionManagementHeader = ({
         </Typography>
       </Box>
       <Stack direction="row" spacing={2}>
-        <Button
+        {/* <Button
           variant="outlined"
           startIcon={<Mic />}
           onClick={() => {
@@ -62,6 +62,21 @@ export const SessionManagementHeader = ({
           }}
         >
           Speaking Session
+        </Button> */}
+        <Button
+          variant="outlined"
+          startIcon={<WorkspacePremium />}
+          onClick={() => {
+            dispatch(resetForm());
+            handleFormChange("type", "PREMIUM");
+            handleFormChange("duration", 60);
+            handleFormChange("maxParticipants", 4);
+            // Set default scheduledAt
+            handleFormChange("scheduledAt", getDefaultScheduledAt());
+            setSessionDialog(true);
+          }}
+        >
+          Premium Session
         </Button>
         <Button
           variant="outlined"

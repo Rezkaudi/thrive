@@ -21,16 +21,26 @@ import {
   Select,
   MenuItem,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
 } from "@mui/material";
 import {
   Add,
   Delete,
   DragIndicator,
-
+  Edit,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import api from "../../services/api";
+import { levelService, Level } from "../../services/levelService";
 
 import { useNavigate } from "react-router-dom";
 
@@ -43,7 +53,9 @@ interface Course {
   isActive: boolean;
   lessonCount?: number;
   freeLessonCount: number;
-  order?: number; // Add order field
+  order?: number;
+  levelId?: string | null;
+  level?: { id: string; name: string } | null;
 }
 
 interface Lesson {
@@ -69,6 +81,15 @@ export const CourseManagement: React.FC = () => {
   const [courseDialog, setCourseDialog] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Level state
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [levelDialog, setLevelDialog] = useState(false);
+  const [editingLevel, setEditingLevel] = useState<Level | null>(null);
+  const [levelForm, setLevelForm] = useState({ name: "", description: "" });
+
 
   // Drag and drop state for courses
   const [draggedCourse, setDraggedCourse] = useState<Course | null>(null);
@@ -81,6 +102,7 @@ export const CourseManagement: React.FC = () => {
     icon: string;
     isActive: boolean;
     freeLessonCount: number;
+    levelId: string;
   }>({
     title: "",
     description: "",
@@ -88,6 +110,7 @@ export const CourseManagement: React.FC = () => {
     icon: "🏯",
     isActive: true,
     freeLessonCount: 2,
+    levelId: "",
   });
 
   // Course Drag and Drop handlers
@@ -184,6 +207,7 @@ export const CourseManagement: React.FC = () => {
       icon: "🏯",
       isActive: true,
       freeLessonCount: 2,
+      levelId: "",
     });
     setEditingCourse(null);
   };
@@ -192,6 +216,7 @@ export const CourseManagement: React.FC = () => {
 
   useEffect(() => {
     fetchCourses();
+    fetchLevels();
   }, []);
 
   useEffect(() => {
@@ -228,10 +253,14 @@ export const CourseManagement: React.FC = () => {
 
   const handleSaveCourse = async () => {
     try {
+      const payload = {
+        ...courseForm,
+        levelId: courseForm.levelId || null,
+      };
       if (editingCourse) {
-        await api.put(`/admin/courses/${editingCourse.id}`, courseForm);
+        await api.put(`/admin/courses/${editingCourse.id}`, payload);
       } else {
-        await api.post("/admin/courses", courseForm);
+        await api.post("/admin/courses", payload);
       }
       setCourseDialog(false);
       resetCourseForm();
@@ -262,6 +291,44 @@ export const CourseManagement: React.FC = () => {
     setCourseDialog(true);
   };
 
+  // Level handlers
+  const fetchLevels = async () => {
+    try {
+      const data = await levelService.getAllLevels();
+      setLevels(data);
+    } catch (error) {
+      console.error("Failed to fetch levels:", error);
+    }
+  };
+
+  const handleSaveLevel = async () => {
+    try {
+      if (editingLevel) {
+        await levelService.updateLevel(editingLevel.id, levelForm);
+      } else {
+        await levelService.createLevel(levelForm);
+      }
+      setLevelDialog(false);
+      setEditingLevel(null);
+      setLevelForm({ name: "", description: "" });
+      fetchLevels();
+    } catch (error) {
+      console.error("Failed to save level:", error);
+    }
+  };
+
+  const handleDeleteLevel = async (levelId: string) => {
+    if (window.confirm("Are you sure? Courses with this level will become unassigned.")) {
+      try {
+        await levelService.deleteLevel(levelId);
+        fetchLevels();
+        fetchCourses();
+      } catch (error) {
+        console.error("Failed to delete level:", error);
+      }
+    }
+  };
+
 
   // Course list view with drag and drop
   return (
@@ -270,11 +337,108 @@ export const CourseManagement: React.FC = () => {
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        mb={4}
+        mb={2}
       >
         <Typography variant="h4" fontWeight={700}>
           Course Management
         </Typography>
+      </Stack>
+
+      <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 3 }}>
+        <Tab label="Courses" />
+        <Tab label="Levels Management" />
+      </Tabs>
+
+      {activeTab === 1 && (
+        <Box>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h5" fontWeight={600}>Levels</Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              sx={{ color: "white" }}
+              onClick={() => {
+                setEditingLevel(null);
+                setLevelForm({ name: "", description: "" });
+                setLevelDialog(true);
+              }}
+            >
+              Add Level
+            </Button>
+          </Stack>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {levels.map((level) => (
+                  <TableRow key={level.id}>
+                    <TableCell>{level.name}</TableCell>
+                    <TableCell>{level.description}</TableCell>
+                    <TableCell align="right">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setEditingLevel(level);
+                          setLevelForm({ name: level.name, description: level.description });
+                          setLevelDialog(true);
+                        }}
+                      >
+                        <Edit />
+                      </IconButton>
+                      <IconButton size="small" color="error" onClick={() => handleDeleteLevel(level.id)}>
+                        <Delete />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {levels.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">No levels yet. Click "Add Level" to create one.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {/* Level Dialog */}
+          <Dialog open={levelDialog} onClose={() => { setLevelDialog(false); setEditingLevel(null); }} maxWidth="sm" fullWidth>
+            <DialogTitle>{editingLevel ? "Edit Level" : "Add New Level"}</DialogTitle>
+            <DialogContent>
+              <Stack spacing={3} sx={{ pt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Level Name"
+                  value={levelForm.name}
+                  onChange={(e) => setLevelForm({ ...levelForm, name: e.target.value })}
+                />
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label="Description (optional)"
+                  value={levelForm.description}
+                  onChange={(e) => setLevelForm({ ...levelForm, description: e.target.value })}
+                />
+
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => { setLevelDialog(false); setEditingLevel(null); }}>Cancel</Button>
+              <Button variant="contained" onClick={handleSaveLevel} sx={{ color: "white" }}>Save Level</Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
+      )}
+
+      {activeTab === 0 && (
+      <>
+      <Stack direction="row" justifyContent="flex-end" mb={2}>
         <Button
           variant="contained"
           startIcon={<Add />}
@@ -421,6 +585,7 @@ export const CourseManagement: React.FC = () => {
                         icon: course.icon,
                         isActive: course.isActive,
                         freeLessonCount: course.freeLessonCount,
+                        levelId: course.levelId || "",
                       });
                       setCourseDialog(true);
                     }}
@@ -518,6 +683,21 @@ export const CourseManagement: React.FC = () => {
               }
               label="Active"
             />
+            <FormControl fullWidth>
+              <InputLabel>Level</InputLabel>
+              <Select
+                value={courseForm.levelId}
+                label="Level"
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, levelId: e.target.value })
+                }
+              >
+                <MenuItem value="">None</MenuItem>
+                {levels.map((level) => (
+                  <MenuItem key={level.id} value={level.id}>{level.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -531,6 +711,8 @@ export const CourseManagement: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      </>
+      )}
     </Container>
   );
 };
