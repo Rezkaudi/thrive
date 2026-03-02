@@ -165,7 +165,7 @@ export const CalendarPage: React.FC = () => {
         loading={bookLoading}
         onBook={handleBookSessionClick}
         onSubscribe={handleSubscription}
-        onNavigateToSubscription={() => navigate("/subscription")}
+        onNavigateToSubscription={() => navigate("/manage-subscription")}
         agreeToTerms={agreeToTerms}
         onAgreeToTermsChange={setAgreeToTerms}
         userStatus={status || "inactive"}

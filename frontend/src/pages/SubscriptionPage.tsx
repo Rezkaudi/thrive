@@ -365,25 +365,9 @@ export const SubscriptionPage: React.FC = () => {
 
       console.log("Checkout session response:", response);
 
-      // Handle direct upgrade/downgrade or pay now (no checkout needed)
-      if (response.isUpgrade || response.isPaidNow || response.isDowngrade) {
-        showSuccessToast(
-          response.message || "Subscription updated successfully!",
-        );
-        setLoading(false);
-
-        // Redirect after showing success message
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 2000);
-
-        // Refresh subscription status
-        await dispatch(checkPayment());
-
-        return;
-      }
-
-      // Handle checkout redirect
+      // Handle checkout redirect FIRST (takes priority over direct change)
+      // When a checkout session is created (e.g. no payment method on file),
+      // the user must complete payment on Stripe before the change takes effect.
       if (response.sessionId) {
         const result = await stripe.redirectToCheckout({
           sessionId: response.sessionId,
@@ -394,6 +378,21 @@ export const SubscriptionPage: React.FC = () => {
         }
 
         setLoading(false);
+        return;
+      }
+
+      // Handle direct upgrade/downgrade or pay now (no checkout needed)
+      if (response.upgraded || response.isPaidNow) {
+        // Refresh subscription status in Redux FIRST so the UI re-renders
+        await dispatch(checkPayment());
+
+        setLoading(false);
+
+        showSuccessToast(
+          response.message || "Subscription updated successfully!",
+        );
+
+        return;
       }
     } catch (err: any) {
       setError(err.message || "Failed to process payment");
