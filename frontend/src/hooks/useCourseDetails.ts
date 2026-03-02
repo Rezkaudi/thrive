@@ -27,27 +27,36 @@ export const useCourseDetails = () => {
   const [error, setError] = useState<string | null>(null);
 
   
-  // Create a ref to hold the active list item
-  const activeItemRef = useRef<HTMLLIElement | null>(null);
+  // Ref to store the active DOM node
+  const activeNodeRef = useRef<HTMLLIElement | null>(null);
   // Ref for the scrollable lessons list container
   const lessonsContainerRef = useRef<HTMLDivElement | null>(null);
+  // Timeout ref for scroll debouncing and cleanup
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Scroll the active lesson into center of the lessons list container only
-  useEffect(() => {
-    // Use setTimeout to wait for React render + framer-motion layout to settle
-    const timer = setTimeout(() => {
+  // Callback ref that scrolls the active lesson into view whenever it mounts or changes
+  const activeItemRef = useCallback((node: HTMLLIElement | null) => {
+    activeNodeRef.current = node;
+
+    // Clear any pending scroll
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
+    }
+
+    if (!node) return;
+
+    // Delay to ensure container ref is assigned and framer-motion animations settle
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (!node.isConnected) return;
+
       const container = lessonsContainerRef.current;
-      const item = activeItemRef.current;
-      if (!container || !item) return;
+      if (!container) return;
 
       const containerRect = container.getBoundingClientRect();
-      const itemRect = item.getBoundingClientRect();
-
-      // Calculate item's position relative to the container's scroll origin
+      const itemRect = node.getBoundingClientRect();
       const itemTopRelative =
         itemRect.top - containerRect.top + container.scrollTop;
-
-      // Scroll so the item is centered vertically in the container
       const scrollTarget =
         itemTopRelative - container.clientHeight / 2 + itemRect.height / 2;
 
@@ -55,9 +64,17 @@ export const useCourseDetails = () => {
         top: Math.max(0, scrollTarget),
         behavior: "smooth",
       });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [selectedLessonId]);
+    }, 150);
+  }, []);
+
+  // Cleanup scroll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 1. MEMOIZED LESSONS (Prevents loops)
   const lessons = useMemo(() => {

@@ -26,7 +26,7 @@ interface LessonSidebarProps {
     size: "small" | "medium"
   ) => React.ReactNode;
   navigate: (path: string) => void;
-  activeItemRef: React.RefObject<HTMLLIElement | null>;
+  activeItemRef: React.RefCallback<HTMLLIElement>;
   lessonsContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 

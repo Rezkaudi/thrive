@@ -36,7 +36,7 @@ interface LessonsListProps {
     size: "small" | "medium",
   ) => React.ReactNode;
   navigate: (path: string) => void;
-  activeItemRef: React.RefObject<HTMLLIElement | null>;
+  activeItemRef: React.RefCallback<HTMLLIElement>;
 }
 
 export const LessonsList: React.FC<LessonsListProps> = ({
