@@ -46,7 +46,7 @@ export class CourseRepository implements ICourseRepository {
     return entities.map(e => ({
       ...this.toDomain(e),
       lessonCount: e.lessons?.length || 0,
-      level: e.level ? { id: e.level.id, name: e.level.name, order: e.level.order } : null
+      level: e.level ? { id: e.level.id, name: e.level.name } : null
     }));
   }
 
