@@ -30,7 +30,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  CircularProgress
 } from "@mui/material";
 import {
   Add,
@@ -89,6 +90,7 @@ export const CourseManagement: React.FC = () => {
   const [levelDialog, setLevelDialog] = useState(false);
   const [editingLevel, setEditingLevel] = useState<Level | null>(null);
   const [levelForm, setLevelForm] = useState({ name: "", description: "" });
+  const [levelSaving, setLevelSaving] = useState(false);
 
 
   // Drag and drop state for courses
@@ -303,6 +305,7 @@ export const CourseManagement: React.FC = () => {
 
   const handleSaveLevel = async () => {
     try {
+      setLevelSaving(true);
       if (editingLevel) {
         await levelService.updateLevel(editingLevel.id, levelForm);
       } else {
@@ -314,6 +317,8 @@ export const CourseManagement: React.FC = () => {
       fetchLevels();
     } catch (error) {
       console.error("Failed to save level:", error);
+    } finally {
+      setLevelSaving(false);
     }
   };
 
@@ -429,8 +434,16 @@ export const CourseManagement: React.FC = () => {
               </Stack>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => { setLevelDialog(false); setEditingLevel(null); }}>Cancel</Button>
-              <Button variant="contained" onClick={handleSaveLevel} sx={{ color: "white" }}>Save Level</Button>
+              <Button onClick={() => { setLevelDialog(false); setEditingLevel(null); }} disabled={levelSaving}>Cancel</Button>
+              <Button 
+                variant="contained" 
+                onClick={handleSaveLevel} 
+                sx={{ color: "white" }} 
+                disabled={!levelForm.name.trim() || levelSaving}
+                startIcon={levelSaving ? <CircularProgress size={20} color="inherit" /> : null}
+              >
+                {levelSaving ? "Saving..." : "Save Level"}
+              </Button>
             </DialogActions>
           </Dialog>
         </Box>
@@ -649,6 +662,21 @@ export const CourseManagement: React.FC = () => {
                 <MenuItem value="JLPT_IN_CONTEXT">JLPT in Context</MenuItem>
               </Select>
             </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Level</InputLabel>
+              <Select
+                value={courseForm.levelId}
+                label="Level"
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, levelId: e.target.value })
+                }
+              >
+                <MenuItem value="">None</MenuItem>
+                {levels.map((level) => (
+                  <MenuItem key={level.id} value={level.id}>{level.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               fullWidth
               label="Icon (Emoji)"
@@ -683,21 +711,6 @@ export const CourseManagement: React.FC = () => {
               }
               label="Active"
             />
-            <FormControl fullWidth>
-              <InputLabel>Level</InputLabel>
-              <Select
-                value={courseForm.levelId}
-                label="Level"
-                onChange={(e) =>
-                  setCourseForm({ ...courseForm, levelId: e.target.value })
-                }
-              >
-                <MenuItem value="">None</MenuItem>
-                {levels.map((level) => (
-                  <MenuItem key={level.id} value={level.id}>{level.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions>
