@@ -110,7 +110,18 @@ const adminRouter = (adminController: AdminController): Router => {
     adminController.createAnnouncement.bind(adminController)
   );
 
-
+  // Level management
+  router.get('/levels', adminController.getAllLevels.bind(adminController));
+  router.post(
+    '/levels',
+    [
+      body('name').notEmpty()
+    ],
+    validateRequest,
+    adminController.createLevel.bind(adminController)
+  );
+  router.put('/levels/:levelId', adminController.updateLevel.bind(adminController));
+  router.delete('/levels/:levelId', adminController.deleteLevel.bind(adminController));
 
   return router;
 };

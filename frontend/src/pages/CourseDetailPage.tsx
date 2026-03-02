@@ -100,7 +100,7 @@ export const CourseDetailPage: React.FC = () => {
       <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
         <Button
           startIcon={<ArrowBack />}
-          onClick={() => navigate("/classroom")}
+          onClick={() => navigate(selectedCourse?.levelId ? `/classroom/${selectedCourse.levelId}` : "/classroom")}
           sx={{
             borderRadius: 2,
             textTransform: "none",

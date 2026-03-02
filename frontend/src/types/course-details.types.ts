@@ -7,6 +7,7 @@ export interface Course {
   icon: string;
   isActive: boolean;
   freeLessonCount?: number;
+  levelId?: string | null;
 }
 
 export interface Lesson {
