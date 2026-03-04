@@ -55,6 +55,7 @@ import {
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useSweetAlert } from "../../utils/sweetAlert";
+import AdminNavigationButton from "../../components/admin/AdminNavigationButton";
 
 // ── Filter Types ───────────────────────────────────────────────────────────────
 interface FilterState {
@@ -478,9 +479,7 @@ export const UserManagement: React.FC = () => {
         alignItems="center"
         mb={3}
       >
-        <Typography variant="h4" fontWeight={700}>
-          User Management
-        </Typography>
+        <AdminNavigationButton titlePage="User Management" />
         <Stack direction="row" spacing={1.5} alignItems="center">
           <Typography variant="body2" color="text.secondary">
             {totalUsers} user{totalUsers !== 1 ? "s" : ""}

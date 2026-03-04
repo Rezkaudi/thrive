@@ -42,6 +42,7 @@ import {
 import { motion } from "framer-motion";
 import api from "../../services/api";
 import { levelService, Level } from "../../services/levelService";
+import AdminNavigationButton from "../../components/admin/AdminNavigationButton";
 
 import { useNavigate } from "react-router-dom";
 
@@ -342,11 +343,9 @@ export const CourseManagement: React.FC = () => {
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        mb={2}
+        mb={1}
       >
-        <Typography variant="h4" fontWeight={700}>
-          Course Management
-        </Typography>
+        <AdminNavigationButton titlePage="Course Management" />
       </Stack>
 
       <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 3 }}>
