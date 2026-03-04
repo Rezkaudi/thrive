@@ -189,6 +189,7 @@ export const UserManagement: React.FC = () => {
   const theme = useTheme();
   const { showConfirm, showError } = useSweetAlert();
   const [users, setUsers] = useState<User[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
@@ -210,17 +211,44 @@ export const UserManagement: React.FC = () => {
 
   const fetchUsers = useCallback(async () => {
     try {
-      // setLoading(true);
       const response = await api.get("/admin/users", {
-        params: { page: page + 1, limit: rowsPerPage },
+        params: {
+          page: page + 1,
+          limit: rowsPerPage,
+          search: searchQuery || undefined,
+          roles: filters.roles.length ? filters.roles.join(",") : undefined,
+          statuses: filters.statuses.length
+            ? filters.statuses.join(",")
+            : undefined,
+          subscriptions: filters.subscriptions.length
+            ? filters.subscriptions.join(",")
+            : undefined,
+          languageLevels: filters.languageLevels.length
+            ? filters.languageLevels.join(",")
+            : undefined,
+          dateFrom: filters.dateFrom || undefined,
+          dateTo: filters.dateTo || undefined,
+          pointsMin: filters.pointsMin || undefined,
+          pointsMax: filters.pointsMax || undefined,
+          levelMin: filters.levelMin || undefined,
+          levelMax: filters.levelMax || undefined,
+          sortField,
+          sortOrder,
+        },
       });
       setUsers(response.data.users);
+      setTotalUsers(response.data.total || 0);
     } catch (error) {
       console.error("Failed to fetch users:", error);
-    } finally {
-      // setLoading(false);
     }
-  }, [page, rowsPerPage]);
+  }, [
+    page,
+    rowsPerPage,
+    searchQuery,
+    filters,
+    sortField,
+    sortOrder,
+  ]);
 
   useEffect(() => {
     fetchUsers();
@@ -420,103 +448,7 @@ export const UserManagement: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // ── Filtering + Sorting ────────────────────────────────────────────────────
-  const filteredUsers = useMemo(() => {
-    return users
-      .filter((user) => {
-        // Search
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          !query ||
-          user.email.toLowerCase().includes(query) ||
-          user.profile?.name?.toLowerCase().includes(query);
-
-        // Role
-        const matchesRole =
-          filters.roles.length === 0 || filters.roles.includes(user.role);
-
-        // Status
-        const matchesStatus =
-          filters.statuses.length === 0 ||
-          (filters.statuses.includes("Active") && user.isActive) ||
-          (filters.statuses.includes("Inactive") && !user.isActive);
-
-        // Subscription
-        const matchesSub =
-          filters.subscriptions.length === 0 ||
-          filters.subscriptions.includes(user.subscriptionStatus);
-
-        // Language Level
-        const matchesLang =
-          filters.languageLevels.length === 0 ||
-          filters.languageLevels.includes(user.profile?.languageLevel || "N5");
-
-        // Date Range
-        const joinedDate = new Date(user.createdAt).getTime();
-        const matchesDateFrom =
-          !filters.dateFrom ||
-          joinedDate >= new Date(filters.dateFrom).getTime();
-        const matchesDateTo =
-          !filters.dateTo ||
-          joinedDate <= new Date(filters.dateTo + "T23:59:59").getTime();
-
-        // Points Range
-        const userPoints = user.profile?.points || 0;
-        const matchesPointsMin =
-          !filters.pointsMin || userPoints >= Number(filters.pointsMin);
-        const matchesPointsMax =
-          !filters.pointsMax || userPoints <= Number(filters.pointsMax);
-
-        // Level Range
-        const userLevel = user.profile?.level || 1;
-        const matchesLevelMin =
-          !filters.levelMin || userLevel >= Number(filters.levelMin);
-        const matchesLevelMax =
-          !filters.levelMax || userLevel <= Number(filters.levelMax);
-
-        return (
-          matchesSearch &&
-          matchesRole &&
-          matchesStatus &&
-          matchesSub &&
-          matchesLang &&
-          matchesDateFrom &&
-          matchesDateTo &&
-          matchesPointsMin &&
-          matchesPointsMax &&
-          matchesLevelMin &&
-          matchesLevelMax
-        );
-      })
-      .sort((a, b) => {
-        let valA: number;
-        let valB: number;
-
-        switch (sortField) {
-          case "name":
-            const nameA = (a.profile?.name || a.email).toLowerCase();
-            const nameB = (b.profile?.name || b.email).toLowerCase();
-            return sortOrder === "asc"
-              ? nameA.localeCompare(nameB)
-              : nameB.localeCompare(nameA);
-          case "points":
-            valA = a.profile?.points || 0;
-            valB = b.profile?.points || 0;
-            break;
-          case "level":
-            valA = a.profile?.level || 1;
-            valB = b.profile?.level || 1;
-            break;
-          case "joined":
-          default:
-            valA = new Date(a.createdAt).getTime();
-            valB = new Date(b.createdAt).getTime();
-            break;
-        }
-
-        return sortOrder === "asc" ? valA - valB : valB - valA;
-      });
-  }, [users, searchQuery, filters, sortField, sortOrder]);
+  const filteredUsers = users;
 
   const handleSortToggle = (field: SortField) => {
     if (sortField === field) {
@@ -525,6 +457,7 @@ export const UserManagement: React.FC = () => {
       setSortField(field);
       setSortOrder("desc");
     }
+    setPage(0);
   };
 
   const SortIndicator: React.FC<{ field: SortField }> = ({ field }) => {
@@ -550,7 +483,7 @@ export const UserManagement: React.FC = () => {
         </Typography>
         <Stack direction="row" spacing={1.5} alignItems="center">
           <Typography variant="body2" color="text.secondary">
-            {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
+            {totalUsers} user{totalUsers !== 1 ? "s" : ""}
           </Typography>
           <Tooltip title={filtersOpen ? "Hide filters" : "Show filters"}>
             <Badge
@@ -965,9 +898,7 @@ export const UserManagement: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((user) => (
+                  filteredUsers.map((user) => (
                       <TableRow key={user.id} hover>
                         <TableCell>
                           <Stack
@@ -1072,7 +1003,7 @@ export const UserManagement: React.FC = () => {
 
           <TablePagination
             component="div"
-            count={filteredUsers.length}
+            count={totalUsers}
             page={page}
             onPageChange={(_e, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
