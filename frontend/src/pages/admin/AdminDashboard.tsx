@@ -1,10 +1,8 @@
-// frontend/src/pages/admin/AdminDashboard.tsx (REVERTED TO ORIGINAL)
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Container,
   Grid,
-  Chip,
   Card,
   CardContent,
   Typography,
@@ -12,8 +10,6 @@ import {
   Paper,
   IconButton,
   Tooltip,
-  Button,
-  CircularProgress,
   Skeleton,
 } from "@mui/material";
 import {
@@ -43,6 +39,39 @@ interface DashboardStats {
   revenueGrowth: number;
   pendingReviews: number;
 }
+
+const OVERVIEW_CACHE_TTL_MS = 2 * 60 * 1000;
+let overviewCache: DashboardStats | null = null;
+let overviewCacheTimestamp = 0;
+let overviewInFlightRequest: Promise<DashboardStats> | null = null;
+
+const isOverviewCacheFresh = () => {
+  if (!overviewCache || !overviewCacheTimestamp) return false;
+  return Date.now() - overviewCacheTimestamp < OVERVIEW_CACHE_TTL_MS;
+};
+
+const getOverviewWithCache = async (forceRefresh = false): Promise<DashboardStats> => {
+  if (!forceRefresh && isOverviewCacheFresh() && overviewCache) {
+    return overviewCache;
+  }
+
+  if (overviewInFlightRequest) {
+    return overviewInFlightRequest;
+  }
+
+  overviewInFlightRequest = api
+    .get("/admin/analytics/overview")
+    .then((response) => {
+      overviewCache = response.data;
+      overviewCacheTimestamp = Date.now();
+      return response.data;
+    })
+    .finally(() => {
+      overviewInFlightRequest = null;
+    });
+
+  return overviewInFlightRequest;
+};
 
 const StatCard = ({
   icon,
@@ -133,15 +162,7 @@ export const AdminDashboard: React.FC = () => {
   const [globalActivities, setGlobalActivities] = useState<any[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  useEffect(() => {
-    fetchGlobalActivities();
-  }, []);
-
-  const fetchGlobalActivities = async () => {
+  const fetchGlobalActivities = useCallback(async () => {
     setActivitiesLoading(true);
     try {
       const response = await activityService.getGlobalActivities(10);
@@ -151,19 +172,35 @@ export const AdminDashboard: React.FC = () => {
     } finally {
       setActivitiesLoading(false);
     }
-  };
+  }, []);
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async (forceRefresh = false) => {
     try {
-      setLoading(true);
-      const response = await api.get("/admin/analytics/overview");
-      setStats(response.data);
+      if (!forceRefresh && overviewCache) {
+        setStats(overviewCache);
+      }
+
+      const shouldShowLoading = forceRefresh || !overviewCache;
+      if (shouldShowLoading) {
+        setLoading(true);
+      }
+
+      const data = await getOverviewWithCache(forceRefresh);
+      setStats(data);
     } catch (error) {
       console.error("Failed to fetch dashboard stats:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardStats(false);
+  }, [fetchDashboardStats]);
+
+  useEffect(() => {
+    fetchGlobalActivities();
+  }, [fetchGlobalActivities]);
 
   const quickActions = [
     {
@@ -232,7 +269,7 @@ export const AdminDashboard: React.FC = () => {
           </Typography>
         </Box>
         <Tooltip title="Refresh data">
-          <IconButton onClick={fetchDashboardStats} color="primary">
+          <IconButton onClick={() => fetchDashboardStats(true)} color="primary">
             <Refresh />
           </IconButton>
         </Tooltip>
