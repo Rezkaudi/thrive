@@ -43,6 +43,7 @@ import api from '../../services/api';
 import { announcementService } from '../../services/announcementService';
 import { feedbackService } from '../../services/feedbackService';
 import { useSweetAlert } from '../../utils/sweetAlert';
+import AdminNavigationButton from '../../components/admin/AdminNavigationButton';
 
 interface Post {
   id: string;
@@ -744,9 +745,7 @@ export const CommunityModeration: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4" fontWeight={700}>
-          Community Moderation
-        </Typography>
+        <AdminNavigationButton titlePage="Community Moderation" />
         <Button
           variant="contained"
           startIcon={<Campaign />}

@@ -40,6 +40,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import api from '../../services/api';
+import AdminNavigationButton from '../../components/admin/AdminNavigationButton';
 
 interface AnalyticsOverview {
   totalUsers: number;
@@ -182,6 +183,7 @@ export const Analytics: React.FC = () => {
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        <AdminNavigationButton titlePage="Analytics Dashboard" />
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
           <Stack spacing={2} alignItems="center">
             <CircularProgress />
@@ -195,6 +197,7 @@ export const Analytics: React.FC = () => {
   if (error) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        <AdminNavigationButton titlePage="Analytics Dashboard" />
         <Alert severity="error" sx={{ mb: 4 }} onClose={() => setError(null)}>
           {error}
         </Alert>
@@ -208,9 +211,7 @@ export const Analytics: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4" fontWeight={700}>
-          Analytics Dashboard
-        </Typography>
+        <AdminNavigationButton titlePage="Analytics Dashboard" />
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Time Range</InputLabel>
           <Select value={timeRange} label="Time Range" onChange={(e) => setTimeRange(e.target.value)}>

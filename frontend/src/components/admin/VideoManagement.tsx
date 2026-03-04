@@ -1,5 +1,5 @@
 // frontend/src/components/admin/VideoManagement.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -18,25 +18,25 @@ import {
   FormControl,
   InputLabel,
   Select,
-  CircularProgress
-} from '@mui/material';
-import {
-  Add,
-  Edit,
-  Delete,
-  YouTube,
-  CloudDownload
-} from '@mui/icons-material';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store/store';
+  CircularProgress,
+} from "@mui/material";
+import { Add, Edit, Delete, YouTube, CloudDownload } from "@mui/icons-material";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "../../store/store";
 import {
   fetchVideo,
   checkVideoExists,
   createOrUpdateVideo,
   deleteVideo,
-  clearError
-} from '../../store/slices/videoSlice';
-import { Video, VideoType, CreateOrUpdateVideoData, videoService } from '../../services/videoService';
+  clearError,
+} from "../../store/slices/videoSlice";
+import {
+  Video,
+  VideoType,
+  CreateOrUpdateVideoData,
+  videoService,
+} from "../../services/videoService";
+import AdminNavigationButton from "./AdminNavigationButton";
 
 // ===== Forms & Types =====
 // Removed title, duration, and isActive
@@ -48,10 +48,10 @@ interface VideoFormData extends CreateOrUpdateVideoData {
 }
 
 const buildInitialForm = (video?: Video | null): VideoFormData => ({
-  description: video?.description || '',
-  videoUrl: video?.videoUrl || '',
+  description: video?.description || "",
+  videoUrl: video?.videoUrl || "",
   videoType: video?.videoType ?? VideoType.YOUTUBE,
-  thumbnailUrl: video?.thumbnailUrl || '',
+  thumbnailUrl: video?.thumbnailUrl || "",
 });
 
 const VideoForm: React.FC<{
@@ -61,7 +61,9 @@ const VideoForm: React.FC<{
   video?: Video | null;
   loading?: boolean;
 }> = ({ open, onClose, onSubmit, video, loading = false }) => {
-  const [formData, setFormData] = useState<VideoFormData>(() => buildInitialForm(video));
+  const [formData, setFormData] = useState<VideoFormData>(() =>
+    buildInitialForm(video),
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
 
@@ -86,46 +88,56 @@ const VideoForm: React.FC<{
       const thumb = videoService.getYouTubeThumbnail(formData.videoUrl);
       setPreviewThumbnail(thumb);
       if (thumb && !formData.thumbnailUrl) {
-        setFormData(prev => ({ ...prev, thumbnailUrl: thumb }));
+        setFormData((prev) => ({ ...prev, thumbnailUrl: thumb }));
       }
     } else {
       setPreviewThumbnail(null);
     }
   }, [formData.videoUrl, formData.videoType, formData.thumbnailUrl]);
 
-  const handleInputChange = (field: keyof VideoFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
-  };
+  const handleInputChange =
+    (field: keyof VideoFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+      if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+    };
 
   const handleSelectChange = (field: keyof VideoFormData) => (event: any) => {
     const nextType = event.target.value as VideoType;
-    setFormData(prev => {
-      const next: VideoFormData = { ...prev, [field]: nextType } as VideoFormData;
+    setFormData((prev) => {
+      const next: VideoFormData = {
+        ...prev,
+        [field]: nextType,
+      } as VideoFormData;
       if (nextType !== VideoType.YOUTUBE) {
         setPreviewThumbnail(null);
       }
       return next;
     });
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.description.trim())
+      newErrors.description = "Description is required";
     if (!formData.videoUrl.trim()) {
-      newErrors.videoUrl = 'Video URL is required';
-    } else if (!videoService.isValidVideoUrl(formData.videoUrl, formData.videoType)) {
+      newErrors.videoUrl = "Video URL is required";
+    } else if (
+      !videoService.isValidVideoUrl(formData.videoUrl, formData.videoType)
+    ) {
       newErrors.videoUrl = `Invalid ${formData.videoType} URL`;
     }
     if (formData.thumbnailUrl && formData.thumbnailUrl.trim()) {
-      try { new URL(formData.thumbnailUrl); } catch { newErrors.thumbnailUrl = 'Invalid thumbnail URL'; }
+      try {
+        new URL(formData.thumbnailUrl);
+      } catch {
+        newErrors.thumbnailUrl = "Invalid thumbnail URL";
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -146,18 +158,20 @@ const VideoForm: React.FC<{
     onClose();
   };
 
-  const urlHelper = useMemo(() => (
-    formData.videoType === VideoType.YOUTUBE
-      ? 'e.g., https://www.youtube.com/watch?v=VIDEO_ID'
-      : 'e.g., https://your-bucket.s3.amazonaws.com/video.mp4'
-  ), [formData.videoType]);
+  const urlHelper = useMemo(
+    () =>
+      formData.videoType === VideoType.YOUTUBE
+        ? "e.g., https://www.youtube.com/watch?v=VIDEO_ID"
+        : "e.g., https://your-bucket.s3.amazonaws.com/video.mp4",
+    [formData.videoType],
+  );
 
   return (
     <Dialog open={open} onClose={closeAndReset} maxWidth="md" fullWidth>
       <form onSubmit={handleSubmit}>
         <DialogTitle>
           <Typography variant="h5" fontWeight={600}>
-            {video ? 'Edit Tour Video' : 'Create Tour Video'}
+            {video ? "Edit Tour Video" : "Create Tour Video"}
           </Typography>
         </DialogTitle>
 
@@ -166,7 +180,7 @@ const VideoForm: React.FC<{
             <TextField
               label="Description"
               value={formData.description}
-              onChange={handleInputChange('description')}
+              onChange={handleInputChange("description")}
               error={!!errors.description}
               helperText={errors.description}
               multiline
@@ -180,7 +194,7 @@ const VideoForm: React.FC<{
               <Select
                 value={formData.videoType}
                 label="Video Type"
-                onChange={handleSelectChange('videoType')}
+                onChange={handleSelectChange("videoType")}
               >
                 <MenuItem value={VideoType.YOUTUBE}>
                   <Stack direction="row" spacing={1} alignItems="center">
@@ -198,9 +212,13 @@ const VideoForm: React.FC<{
             </FormControl>
 
             <TextField
-              label={formData.videoType === VideoType.YOUTUBE ? 'YouTube URL' : 'S3 Video URL'}
+              label={
+                formData.videoType === VideoType.YOUTUBE
+                  ? "YouTube URL"
+                  : "S3 Video URL"
+              }
               value={formData.videoUrl}
-              onChange={handleInputChange('videoUrl')}
+              onChange={handleInputChange("videoUrl")}
               error={!!errors.videoUrl}
               helperText={errors.videoUrl || urlHelper}
               fullWidth
@@ -210,7 +228,9 @@ const VideoForm: React.FC<{
             {previewThumbnail && (
               <Card>
                 <CardContent>
-                  <Typography variant="subtitle2" gutterBottom>Preview</Typography>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Preview
+                  </Typography>
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Avatar
                       src={previewThumbnail}
@@ -235,16 +255,17 @@ const VideoForm: React.FC<{
             <Stack direction="row" spacing={2}>
               <TextField
                 label="Custom Thumbnail URL"
-                value={formData.thumbnailUrl || ''}
-                onChange={handleInputChange('thumbnailUrl')}
+                value={formData.thumbnailUrl || ""}
+                onChange={handleInputChange("thumbnailUrl")}
                 error={!!errors.thumbnailUrl}
-                helperText={errors.thumbnailUrl || 'Optional'}
+                helperText={errors.thumbnailUrl || "Optional"}
                 fullWidth
               />
             </Stack>
 
             <Alert severity="info">
-              Tour videos automatically appear to new users on their first login and are accessible via the sidebar button.
+              Tour videos automatically appear to new users on their first login
+              and are accessible via the sidebar button.
             </Alert>
           </Stack>
         </DialogContent>
@@ -253,12 +274,8 @@ const VideoForm: React.FC<{
           <Button onClick={closeAndReset} disabled={loading}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : (video ? 'Update Video' : 'Create Video')}
+          <Button type="submit" variant="contained" disabled={loading}>
+            {loading ? "Saving..." : video ? "Update Video" : "Create Video"}
           </Button>
         </DialogActions>
       </form>
@@ -268,13 +285,8 @@ const VideoForm: React.FC<{
 
 export const VideoManagement: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const {
-    video,
-    loading,
-    error,
-    isCreatingOrUpdating,
-    isDeleting
-  } = useSelector((state: RootState) => state.videos);
+  const { video, loading, error, isCreatingOrUpdating, isDeleting } =
+    useSelector((state: RootState) => state.videos);
 
   const [showForm, setShowForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -289,7 +301,7 @@ export const VideoManagement: React.FC = () => {
       await dispatch(createOrUpdateVideo(data)).unwrap();
       setShowForm(false);
     } catch (error) {
-      console.error('Failed to save video:', error);
+      console.error("Failed to save video:", error);
     }
   };
 
@@ -298,7 +310,7 @@ export const VideoManagement: React.FC = () => {
       await dispatch(deleteVideo()).unwrap();
       setShowDeleteConfirm(false);
     } catch (error) {
-      console.error('Failed to delete video:', error);
+      console.error("Failed to delete video:", error);
     }
   };
 
@@ -306,27 +318,34 @@ export const VideoManagement: React.FC = () => {
     if (!video) return null;
     if (video.thumbnailUrl) return video.thumbnailUrl;
     if (video.videoType === VideoType.YOUTUBE) {
-      const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+      const regex =
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
       const match = video.videoUrl.match(regex);
       const videoId = match ? match[1] : null;
-      return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : null;
+      return videoId
+        ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+        : null;
     }
     return null;
   };
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight={700}>
-          Tour Video Management
-        </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <AdminNavigationButton titlePage="Tour Video Management" />
+
         <Button
           variant="contained"
           startIcon={video ? <Edit /> : <Add />}
           onClick={() => setShowForm(true)}
           disabled={isCreatingOrUpdating}
         >
-          {video ? 'Edit Video' : 'Add Video'}
+          {video ? "Edit Video" : "Add Video"}
         </Button>
       </Stack>
 
@@ -341,7 +360,7 @@ export const VideoManagement: React.FC = () => {
       )}
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />
         </Box>
       ) : video ? (
@@ -353,7 +372,11 @@ export const VideoManagement: React.FC = () => {
                 variant="rounded"
                 sx={{ width: 120, height: 80 }}
               >
-                {video.videoType === VideoType.YOUTUBE ? <YouTube /> : <CloudDownload />}
+                {video.videoType === VideoType.YOUTUBE ? (
+                  <YouTube />
+                ) : (
+                  <CloudDownload />
+                )}
               </Avatar>
 
               <Box sx={{ flexGrow: 1 }}>
@@ -395,12 +418,13 @@ export const VideoManagement: React.FC = () => {
       ) : (
         <Card>
           <CardContent>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Box sx={{ textAlign: "center", py: 4 }}>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 No Tour Video Created
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Create a tour video to automatically guide new users through your platform on first login.
+                Create a tour video to automatically guide new users through
+                your platform on first login.
               </Typography>
               {/* <Button
                 variant="contained"
@@ -425,11 +449,15 @@ export const VideoManagement: React.FC = () => {
       />
 
       {/* Delete Confirmation */}
-      <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+      <Dialog
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this tour video? New users will no longer see the automatic tour on first login.
+            Are you sure you want to delete this tour video? New users will no
+            longer see the automatic tour on first login.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -440,7 +468,7 @@ export const VideoManagement: React.FC = () => {
             variant="contained"
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? "Deleting..." : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>

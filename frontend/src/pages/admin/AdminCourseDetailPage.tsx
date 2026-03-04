@@ -6,6 +6,7 @@ import { BulkAudioManager } from "../../components/admin/BulkAudioManager";
 import { CourseDetailHeader, AddLessonDialog, LessonsList} from "../../components/admin-course-detail";
 import { LessonFormState } from "../../types/lsesson-form.types";
 import { useParams } from "react-router-dom";
+import AdminNavigationButton from "../../components/admin/AdminNavigationButton";
 
 type StoredLesson = LessonFormState & {
   id: string;
@@ -127,6 +128,7 @@ export const AdminCourseDetailPage: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
+      <AdminNavigationButton titlePage="Course Detail" />
       <CourseDetailHeader
         isMobile={isMobile}
         selectedCourse={selectedCourse}

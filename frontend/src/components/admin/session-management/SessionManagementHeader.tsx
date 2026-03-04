@@ -1,14 +1,13 @@
 import { Event, StarOutlined, WorkspacePremium } from "@mui/icons-material";
 import {
-  Box,
   Button,
   Stack,
-  Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { resetForm } from "../../../store/slices/sessionSlice";
 import { AppDispatch } from "../../../store/store";
+import AdminNavigationButton from "../AdminNavigationButton";
 
 interface ISessionManagementHeaderProps {
   dispatch: AppDispatch;
@@ -23,7 +22,7 @@ export const SessionManagementHeader = ({
 }: ISessionManagementHeaderProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  // Helper to generate default date
+
   const getDefaultScheduledAt = () => {
     const now = new Date();
     now.setHours(now.getHours() + 1);
@@ -33,36 +32,14 @@ export const SessionManagementHeader = ({
   return (
     <Stack
       direction={isMobile ? "column" : "row"}
-      gap={1}
       justifyContent="space-between"
       alignItems="center"
       mb={4}
+      width="100%"
     >
-      <Box>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
-          Session Management
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage speaking sessions and special events with advanced recurring
-          options
-        </Typography>
-      </Box>
-      <Stack direction="row" spacing={2}>
-        {/* <Button
-          variant="outlined"
-          startIcon={<Mic />}
-          onClick={() => {
-            dispatch(resetForm());
-            handleFormChange("type", "SPEAKING");
-            handleFormChange("duration", 60);
-            handleFormChange("maxParticipants", 4);
-            // Set default scheduledAt
-            handleFormChange("scheduledAt", getDefaultScheduledAt());
-            setSessionDialog(true);
-          }}
-        >
-          Speaking Session
-        </Button> */}
+      <AdminNavigationButton titlePage="Session Management" />
+
+      <Stack direction="row" spacing={2} alignItems="center">
         <Button
           variant="outlined"
           startIcon={<WorkspacePremium />}
@@ -71,13 +48,13 @@ export const SessionManagementHeader = ({
             handleFormChange("type", "PREMIUM");
             handleFormChange("duration", 60);
             handleFormChange("maxParticipants", 4);
-            // Set default scheduledAt
             handleFormChange("scheduledAt", getDefaultScheduledAt());
             setSessionDialog(true);
           }}
         >
           Premium Session
         </Button>
+
         <Button
           variant="outlined"
           color="secondary"
@@ -87,20 +64,19 @@ export const SessionManagementHeader = ({
             handleFormChange("type", "STANDARD");
             handleFormChange("duration", 60);
             handleFormChange("maxParticipants", 12);
-            // Set default scheduledAt
             handleFormChange("scheduledAt", getDefaultScheduledAt());
             setSessionDialog(true);
           }}
         >
           Standard Session
         </Button>
+
         <Button
           variant="contained"
           startIcon={<Event />}
           onClick={() => {
             dispatch(resetForm());
             handleFormChange("type", "EVENT");
-            // Set default scheduledAt
             handleFormChange("scheduledAt", getDefaultScheduledAt());
             setSessionDialog(true);
           }}
