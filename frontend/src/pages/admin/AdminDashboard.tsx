@@ -1,10 +1,8 @@
-// frontend/src/pages/admin/AdminDashboard.tsx (REVERTED TO ORIGINAL)
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Container,
   Grid,
-  Chip,
   Card,
   CardContent,
   Typography,
@@ -12,9 +10,8 @@ import {
   Paper,
   IconButton,
   Tooltip,
-  Button,
-  CircularProgress,
-} from '@mui/material';
+  Skeleton,
+} from "@mui/material";
 import {
   People,
   School,
@@ -26,12 +23,12 @@ import {
   ArrowUpward,
   ArrowDownward,
   VideoLibrary,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import { activityService } from '../../services/activityService';
-import { ActivityFeed } from '../../components/activity/ActivityFeed';
+} from "@mui/icons-material";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import { activityService } from "../../services/activityService";
+import { ActivityFeed } from "../../components/activity/ActivityFeed";
 
 interface DashboardStats {
   totalUsers: number;
@@ -40,24 +37,70 @@ interface DashboardStats {
   completionRate: number;
   userGrowth: number;
   revenueGrowth: number;
-  pendingReviews: number
+  pendingReviews: number;
 }
 
-const StatCard = ({ icon, title, value, subtitle, trend, color, onClick }: any) => (
+const OVERVIEW_CACHE_TTL_MS = 2 * 60 * 1000;
+let overviewCache: DashboardStats | null = null;
+let overviewCacheTimestamp = 0;
+let overviewInFlightRequest: Promise<DashboardStats> | null = null;
+
+const isOverviewCacheFresh = () => {
+  if (!overviewCache || !overviewCacheTimestamp) return false;
+  return Date.now() - overviewCacheTimestamp < OVERVIEW_CACHE_TTL_MS;
+};
+
+const getOverviewWithCache = async (forceRefresh = false): Promise<DashboardStats> => {
+  if (!forceRefresh && isOverviewCacheFresh() && overviewCache) {
+    return overviewCache;
+  }
+
+  if (overviewInFlightRequest) {
+    return overviewInFlightRequest;
+  }
+
+  overviewInFlightRequest = api
+    .get("/admin/analytics/overview")
+    .then((response) => {
+      overviewCache = response.data;
+      overviewCacheTimestamp = Date.now();
+      return response.data;
+    })
+    .finally(() => {
+      overviewInFlightRequest = null;
+    });
+
+  return overviewInFlightRequest;
+};
+
+const StatCard = ({
+  icon,
+  title,
+  value,
+  subtitle,
+  trend,
+  color,
+  onClick,
+  loading,
+}: any) => (
   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
     <Card
       sx={{
-        cursor: onClick ? 'pointer' : 'default',
-        height: '100%',
+        cursor: onClick ? "pointer" : "default",
+        height: "100%",
         background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
         border: `1px solid ${color}20`,
-        minHeight: "100%"
+        minHeight: "100%",
       }}
       onClick={onClick}
     >
       <CardContent>
         <Stack spacing={2}>
-          <Stack direction="row" justifyContent="space-between" alignItems="start">
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="start"
+          >
             <Box
               sx={{
                 p: 1.5,
@@ -71,13 +114,13 @@ const StatCard = ({ icon, title, value, subtitle, trend, color, onClick }: any) 
             {trend !== undefined && (
               <Stack direction="row" alignItems="center" spacing={0.5}>
                 {trend > 0 ? (
-                  <ArrowUpward sx={{ fontSize: 16, color: 'success.main' }} />
+                  <ArrowUpward sx={{ fontSize: 16, color: "success.main" }} />
                 ) : (
-                  <ArrowDownward sx={{ fontSize: 16, color: 'error.main' }} />
+                  <ArrowDownward sx={{ fontSize: 16, color: "error.main" }} />
                 )}
                 <Typography
                   variant="caption"
-                  color={trend > 0 ? 'success.main' : 'error.main'}
+                  color={trend > 0 ? "success.main" : "error.main"}
                   fontWeight={600}
                 >
                   {Math.abs(trend)}%
@@ -87,10 +130,10 @@ const StatCard = ({ icon, title, value, subtitle, trend, color, onClick }: any) 
           </Stack>
           <Box>
             <Typography variant="h4" fontWeight={700} color={color}>
-              {value}
+              {loading ? <Skeleton variant="text" width="60%" /> : value}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {title}
+              {loading ? <Skeleton variant="text" width="40%" /> : title}
             </Typography>
             {subtitle && (
               <Typography variant="caption" color="text.secondary">
@@ -113,93 +156,101 @@ export const AdminDashboard: React.FC = () => {
     completionRate: 0,
     userGrowth: 0,
     revenueGrowth: 0,
-    pendingReviews: 0
+    pendingReviews: 0,
   });
   const [loading, setLoading] = useState(true);
   const [globalActivities, setGlobalActivities] = useState<any[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  useEffect(() => {
-    fetchGlobalActivities();
-  }, []);
-
-  const fetchGlobalActivities = async () => {
+  const fetchGlobalActivities = useCallback(async () => {
     setActivitiesLoading(true);
     try {
       const response = await activityService.getGlobalActivities(10);
       setGlobalActivities(response.activities);
     } catch (error) {
-      console.error('Failed to fetch activities:', error);
+      console.error("Failed to fetch activities:", error);
     } finally {
       setActivitiesLoading(false);
     }
-  };
+  }, []);
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async (forceRefresh = false) => {
     try {
-      setLoading(true);
-      const response = await api.get('/admin/analytics/overview');
-      setStats(response.data);
+      if (!forceRefresh && overviewCache) {
+        setStats(overviewCache);
+      }
+
+      const shouldShowLoading = forceRefresh || !overviewCache;
+      if (shouldShowLoading) {
+        setLoading(true);
+      }
+
+      const data = await getOverviewWithCache(forceRefresh);
+      setStats(data);
     } catch (error) {
-      console.error('Failed to fetch dashboard stats:', error);
+      console.error("Failed to fetch dashboard stats:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardStats(false);
+  }, [fetchDashboardStats]);
+
+  useEffect(() => {
+    fetchGlobalActivities();
+  }, [fetchGlobalActivities]);
 
   const quickActions = [
     {
-      title: 'User Management',
-      description: 'View and manage all users',
+      title: "User Management",
+      description: "View and manage all users",
       icon: <People />,
-      path: '/admin/users',
-      color: '#5C633A',
+      path: "/admin/users",
+      color: "#5C633A",
     },
     {
-      title: 'Course Management',
-      description: 'Create and edit courses',
+      title: "Course Management",
+      description: "Create and edit courses",
       icon: <School />,
-      path: '/admin/courses',
-      color: '#A6531C',
+      path: "/admin/courses",
+      color: "#A6531C",
     },
     {
-      title: 'Tour Video Management',
-      description: 'Add and edit tour video',
+      title: "Tour Video Management",
+      description: "Add and edit tour video",
       icon: <VideoLibrary />,
-      path: '/admin/videos',
-      color: '#8B5A2B',
+      path: "/admin/videos",
+      color: "#8B5A2B",
     },
     {
-      title: 'Community Moderation',
-      description: 'Review flagged content',
+      title: "Community Moderation",
+      description: "Review flagged content",
       icon: <Forum />,
-      path: '/admin/community',
-      color: '#D4BC8C',
+      path: "/admin/community",
+      color: "#D4BC8C",
     },
     {
-      title: 'Session Management',
-      description: 'Manage speaking sessions',
+      title: "Session Management",
+      description: "Manage speaking sessions",
       icon: <CalendarMonth />,
-      path: '/admin/sessions',
-      color: '#483C32',
+      path: "/admin/sessions",
+      color: "#483C32",
     },
   ];
 
-  if (loading) {
-    return (
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <Stack spacing={2} alignItems="center">
-            <CircularProgress />
-          </Stack>
-        </Box>
-      </Container>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+  //       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+  //         <Stack spacing={2} alignItems="center">
+  //           <CircularProgress />
+  //         </Stack>
+  //       </Box>
+  //     </Container>
+  //   );
+  // }
 
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
@@ -218,7 +269,7 @@ export const AdminDashboard: React.FC = () => {
           </Typography>
         </Box>
         <Tooltip title="Refresh data">
-          <IconButton onClick={fetchDashboardStats} color="primary">
+          <IconButton onClick={() => fetchDashboardStats(true)} color="primary">
             <Refresh />
           </IconButton>
         </Tooltip>
@@ -234,7 +285,8 @@ export const AdminDashboard: React.FC = () => {
             subtitle={`${stats.activeUsers} active`}
             trend={stats.userGrowth}
             color="#5C633A"
-            onClick={() => navigate('/admin/users')}
+            onClick={() => navigate("/admin/users")}
+            loading={loading}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -244,7 +296,8 @@ export const AdminDashboard: React.FC = () => {
             value={`$${stats.monthlyRevenue.toLocaleString()}`}
             trend={stats.revenueGrowth}
             color="#A6531C"
-            onClick={() => navigate('/admin/analytics')}
+            onClick={() => navigate("/admin/analytics")}
+            loading={loading}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -254,7 +307,8 @@ export const AdminDashboard: React.FC = () => {
             value={`${stats.completionRate}%`}
             subtitle="Average across all courses"
             color="#D4BC8C"
-            onClick={() => navigate('/admin/courses')}
+            onClick={() => navigate("/admin/courses")}
+            loading={loading}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -264,7 +318,8 @@ export const AdminDashboard: React.FC = () => {
             value={`${stats.pendingReviews}`}
             subtitle="Flagged content"
             color="#FFA502"
-            onClick={() => navigate('/admin/community')}
+            onClick={() => navigate("/admin/community")}
+            loading={loading}
           />
         </Grid>
       </Grid>
@@ -284,10 +339,10 @@ export const AdminDashboard: React.FC = () => {
               <Paper
                 sx={{
                   p: 3,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
                     boxShadow: 4,
                   },
                 }}
@@ -299,7 +354,7 @@ export const AdminDashboard: React.FC = () => {
                     borderRadius: 2,
                     background: `${action.color}20`,
                     color: action.color,
-                    display: 'inline-flex',
+                    display: "inline-flex",
                     mb: 2,
                   }}
                 >
@@ -308,7 +363,11 @@ export const AdminDashboard: React.FC = () => {
                 <Typography variant="h6" fontWeight={600} gutterBottom>
                   {action.title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ flexGrow: 1 }}
+                >
                   {action.description}
                 </Typography>
               </Paper>
@@ -335,8 +394,6 @@ export const AdminDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-
-
 
         {/* <Grid size={{ xs: 12, md: 4 }}>
           <Card>

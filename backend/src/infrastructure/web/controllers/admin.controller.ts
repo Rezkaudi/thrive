@@ -89,10 +89,53 @@ export class AdminController {
 
   // ========== USER MANAGEMENT ==========
 
+  private parseArrayQuery(value: unknown): string[] {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map(String).filter(Boolean);
+    return String(value)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
   async getUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { page = 1, limit = 20 } = req.query;
-      const result = await this.getUsersUseCase.execute(Number(page), Number(limit));
+      const {
+        page = 1,
+        limit = 20,
+        search,
+        roles,
+        statuses,
+        subscriptions,
+        languageLevels,
+        dateFrom,
+        dateTo,
+        pointsMin,
+        pointsMax,
+        levelMin,
+        levelMax,
+        sortField,
+        sortOrder,
+      } = req.query;
+
+      const result = await this.getUsersUseCase.execute({
+        page: Number(page),
+        limit: Number(limit),
+        search: search ? String(search) : undefined,
+        roles: this.parseArrayQuery(roles),
+        statuses: this.parseArrayQuery(statuses),
+        subscriptions: this.parseArrayQuery(subscriptions),
+        languageLevels: this.parseArrayQuery(languageLevels),
+        dateFrom: dateFrom ? String(dateFrom) : undefined,
+        dateTo: dateTo ? String(dateTo) : undefined,
+        pointsMin: pointsMin !== undefined && pointsMin !== '' ? Number(pointsMin) : undefined,
+        pointsMax: pointsMax !== undefined && pointsMax !== '' ? Number(pointsMax) : undefined,
+        levelMin: levelMin !== undefined && levelMin !== '' ? Number(levelMin) : undefined,
+        levelMax: levelMax !== undefined && levelMax !== '' ? Number(levelMax) : undefined,
+        sortField: sortField as "joined" | "points" | "level" | "name" | undefined,
+        sortOrder: sortOrder as "asc" | "desc" | undefined,
+      });
+
       res.json(result);
     } catch (error) {
       next(error);
