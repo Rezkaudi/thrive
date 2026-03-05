@@ -40,6 +40,7 @@ import {
   ChevronRight,
   ContactMail,
   CreditCard,
+  OndemandVideo,
 } from '@mui/icons-material';
 import { logout } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
@@ -120,11 +121,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [tourVideoStatus, video, showTourModal, dispatch, user]);
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setOpenMenu(prev => !prev);
+    setOpenMenu(true);
   };
 
   const handleCloseUserMenu = () => {
-    setOpenMenu(prev => !prev);
+    setOpenMenu(false);
   };
 
   const handleLogout = () => {
@@ -144,6 +145,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     dispatch(hideTourModal());
   };
 
+  const handleOpenTourVideo = () => {
+    dispatch(setShowTourModal(true));
+    handleCloseUserMenu();
+  };
+
+  const handleContactUs = () => {
+    window.location.href = 'mailto:admin@uzumibi-jp.com';
+    handleCloseUserMenu();
+  };
+
   const menuItems = [
     { title: 'Dashboard', icon: <Dashboard sx={{ fontSize: 20 }} />, path: '/dashboard' },
     { title: 'Classroom', icon: <School sx={{ fontSize: 20 }} />, path: '/classroom' },
@@ -154,9 +165,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       isSpecial: true
     },
     { title: 'Calendar', icon: <CalendarMonth sx={{ fontSize: 20 }} />, path: '/calendar' },
-    { title: 'Profile', icon: <Person sx={{ fontSize: 20 }} />, path: '/profile' },
-    {title: 'Subscription', icon: <CreditCard sx={{ fontSize: 20 }} />, path: '/manage-subscription' },
-    { title: 'Contact Us', icon: <ContactMail sx={{ fontSize: 20 }} />, path: 'mailto:admin@uzumibi-jp.com', isExternalLink: true },
+    // { title: 'Profile', icon: <Person sx={{ fontSize: 20 }} />, path: '/profile' },
+    // {title: 'Subscription', icon: <CreditCard sx={{ fontSize: 20 }} />, path: '/manage-subscription' },
+    // { title: 'Contact Us', icon: <ContactMail sx={{ fontSize: 20 }} />, path: 'mailto:admin@uzumibi-jp.com', isExternalLink: true },
   ];
 
   if (user?.role === 'ADMIN') {
@@ -192,12 +203,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ListItemButton
                 selected={location.pathname === item.path}
                 onClick={() => {
-                  if (item.isExternalLink) {
-                    window.location.href = item.path;
-                  }
-                  else {
-                    navigate(item.path);
-                  }
+                  // if (item.isExternalLink) {
+                  //   window.location.href = item.path;
+                  // }
+                  // else {
+                    //   navigate(item.path);
+                    // }
+                  navigate(item.path);
                   if (isMobile) setMobileOpen(false);
                 }}
                 sx={{
@@ -256,10 +268,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         ))}
 
         {/* 🎯 VIDEO TOUR BUTTON IN SIDEBAR */}
-        <VideoButton
+        {/* <VideoButton
           collapsed={!desktopDrawerOpen && !isMobile}
           inSidebar={true}
-        />
+        /> */}
 
       </List>
 
@@ -359,6 +371,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <MenuItem onClick={() => { navigate('/manage-subscription'); handleCloseUserMenu(); }}>
               <ListItemIcon><CreditCard sx={{ fontSize: 20 }} /></ListItemIcon>
               Subscription
+            </MenuItem>
+            <MenuItem onClick={handleOpenTourVideo}>
+              <ListItemIcon><OndemandVideo sx={{ fontSize: 20 }} /></ListItemIcon>
+              Video Tour
+            </MenuItem>
+            <MenuItem onClick={handleContactUs}>
+              <ListItemIcon><ContactMail sx={{ fontSize: 20 }} /></ListItemIcon>
+              Contact Us
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>
