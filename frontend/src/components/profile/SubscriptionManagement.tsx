@@ -476,7 +476,7 @@ export const SubscriptionManagement: React.FC = () => {
                     Billing
                   </Button>
                 )}
-                {hasSubscription &&
+                {/* {hasSubscription &&
                   isActive &&
                   !isInFreeTrial &&
                   !isTrialing && (
@@ -501,7 +501,7 @@ export const SubscriptionManagement: React.FC = () => {
                     >
                       Cancel
                     </Button>
-                  )}
+                  )} */}
               </Stack>
             </Stack>
           </CardContent>
