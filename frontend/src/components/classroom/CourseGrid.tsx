@@ -1,13 +1,5 @@
 import React from "react";
-import {
-  Container,
-  Grid,
-  Alert,
-  Skeleton,
-  Card,
-  CardContent,
-  Box,
-} from "@mui/material";
+import { Grid, Alert, Skeleton, Card, CardContent, Box } from "@mui/material";
 import { motion } from "framer-motion";
 import { Course, CourseProgress } from "../../types/course.types";
 import { CourseCard } from "./CourseCard";
@@ -32,25 +24,36 @@ export const CourseGrid = ({
   isMobile,
 }: CourseGridProps) => {
   if (loading) {
+    const skeletonCount = isMobile ? 1 : 3;
+
     return (
       <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-        {[1, 2].map((i) => (
-          <Grid size={{xs: 12, md: 6}} key={i}>
-            <Card sx={{ height: 400, borderRadius: 4 }}>
+        {Array.from({ length: skeletonCount }).map((_, index) => (
+          <Grid size={{ xs: 12, md: 4 }} key={index} sx={{ display: "flex" }}>
+            <Card
+              sx={{
+                width: "100%",
+                height: "100%",
+                minHeight: 420,
+                borderRadius: 1,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Skeleton variant="rectangular" height={180} />
-              <CardContent>
-                <Skeleton variant="text" width="80%" height={32} />
+              <CardContent sx={{ p: { xs: 2, sm: 3 }, flex: 1 }}>
+                <Skeleton variant="text" width="75%" height={40} />
                 <Skeleton
                   variant="text"
                   width="100%"
                   height={20}
                   sx={{ mt: 1 }}
                 />
-                <Skeleton variant="text" width="100%" height={20} />
-                <Box sx={{ mt: 3 }}>
+                <Skeleton variant="text" width="85%" height={20} />
+                <Box sx={{ mt: 4 }}>
                   <Skeleton
                     variant="rectangular"
-                    height={40}
+                    height={48}
                     sx={{ borderRadius: 2 }}
                   />
                 </Box>
@@ -80,8 +83,9 @@ export const CourseGrid = ({
         };
 
         return (
-          <Grid size={{xs:12, md:6}} key={course.id}>
+          <Grid size={{ xs: 12, md: 4 }} key={course.id} sx={{ display: "flex" }}>
             <motion.div
+              style={{ width: "100%", height: "100%" }}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}

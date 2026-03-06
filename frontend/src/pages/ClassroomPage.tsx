@@ -147,7 +147,7 @@ export const ClassroomPage: React.FC = () => {
                 >
                   <Card
                     sx={{
-                      borderRadius: 2,
+                      borderRadius: 1,
                       overflow: "hidden",
                       height: "100%",
                       display: "flex",

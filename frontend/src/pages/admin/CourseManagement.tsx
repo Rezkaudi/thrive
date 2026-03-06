@@ -31,7 +31,8 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress
+  CircularProgress,
+  Skeleton
 } from "@mui/material";
 import {
   Add,
@@ -77,9 +78,10 @@ interface Lesson {
 
 export const CourseManagement: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const navigate = useNavigate();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [, setLessons] = useState<Lesson[]>([]);
   const [courseDialog, setCourseDialog] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
@@ -229,6 +231,7 @@ export const CourseManagement: React.FC = () => {
   }, [selectedCourse]);
 
   const fetchCourses = async () => {
+    setCoursesLoading(true);
     try {
       const response = await api.get("/courses");
       // Sort courses by order if they have it, otherwise by creation date
@@ -241,6 +244,8 @@ export const CourseManagement: React.FC = () => {
       setCourses(sortedCourses);
     } catch (error) {
       console.error("Failed to fetch courses:", error);
+    } finally {
+      setCoursesLoading(false);
     }
   };
 
@@ -462,7 +467,26 @@ export const CourseManagement: React.FC = () => {
       </Stack>
 
       <Grid container spacing={3}>
-        {courses.map((course, index) => (
+        {coursesLoading &&
+          Array.from({ length: 6 }).map((_, index) => (
+            <Grid size={{ xs: 12, md: 4 }} key={`course-skeleton-${index}`}>
+              <Card>
+                <Skeleton variant="rectangular" height={120} />
+                <CardContent>
+                  <Skeleton variant="text" width="70%" height={36} />
+                  <Skeleton variant="text" width="100%" />
+                  <Skeleton variant="text" width="90%" />
+                  <Skeleton variant="text" width="35%" sx={{ mt: 1 }} />
+                </CardContent>
+                <CardActions>
+                  <Skeleton variant="rounded" width={100} height={32} />
+                  <Skeleton variant="rounded" width={64} height={32} />
+                  <Skeleton variant="circular" width={32} height={32} />
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        {!coursesLoading && courses.map((course, index) => (
           <Grid
             size={{ xs: 12, md: 4 }}
             key={course.id}
