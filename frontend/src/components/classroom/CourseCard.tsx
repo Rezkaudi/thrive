@@ -47,9 +47,11 @@ export const CourseCard = memo(
           sx={{
             cursor: "pointer",
             height: "100%",
+            display: "flex",
+            flexDirection: "column",
             position: "relative",
             overflow: "hidden",
-            borderRadius: 2,
+            borderRadius: 1,
             boxShadow: isEnrolled
               ? `0 8px 32px ${theme.primary}20`
               : "0 4px 20px rgba(0,0,0,0.08)",
@@ -170,7 +172,14 @@ export const CourseCard = memo(
             )}
           </Box>
 
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+          <CardContent
+            sx={{
+              p: { xs: 2, sm: 3 },
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             {/* Course title and description */}
             <Typography
               variant="h5"
@@ -178,7 +187,8 @@ export const CourseCard = memo(
               fontWeight={700}
               sx={{
                 mb: 1,
-                lineHeight: 1.6,
+                lineHeight: 1.4,
+                minHeight: "calc(1.4em * 2)",
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -194,6 +204,7 @@ export const CourseCard = memo(
               sx={{
                 mb: 3,
                 lineHeight: 1.6,
+                minHeight: "calc(1.6em * 2)",
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -281,6 +292,7 @@ export const CourseCard = memo(
               direction="row"
               justifyContent="space-between"
               alignItems="center"
+              mt="auto"
             >
               {isEnrolled ? (
                 <>
