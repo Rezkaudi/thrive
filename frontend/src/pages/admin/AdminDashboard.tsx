@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Box,
   Container,
@@ -8,159 +8,155 @@ import {
   Typography,
   Stack,
   Paper,
-  IconButton,
-  Tooltip,
-  Skeleton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   People,
   School,
   Forum,
   CalendarMonth,
-  AttachMoney,
-  Warning,
-  Refresh,
-  ArrowUpward,
-  ArrowDownward,
   VideoLibrary,
+  ExpandMore,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import api from "../../services/api";
 import { activityService } from "../../services/activityService";
 import { ActivityFeed } from "../../components/activity/ActivityFeed";
 
-interface DashboardStats {
-  totalUsers: number;
-  activeUsers: number;
-  monthlyRevenue: number;
-  completionRate: number;
-  userGrowth: number;
-  revenueGrowth: number;
-  pendingReviews: number;
-}
+// interface DashboardStats {
+//   totalUsers: number;
+//   activeUsers: number;
+//   monthlyRevenue: number;
+//   completionRate: number;
+//   userGrowth: number;
+//   revenueGrowth: number;
+//   pendingReviews: number;
+// }
 
-const OVERVIEW_CACHE_TTL_MS = 2 * 60 * 1000;
-let overviewCache: DashboardStats | null = null;
-let overviewCacheTimestamp = 0;
-let overviewInFlightRequest: Promise<DashboardStats> | null = null;
+// const OVERVIEW_CACHE_TTL_MS = 2 * 60 * 1000;
+// let overviewCache: DashboardStats | null = null;
+// let overviewCacheTimestamp = 0;
+// let overviewInFlightRequest: Promise<DashboardStats> | null = null;
 
-const isOverviewCacheFresh = () => {
-  if (!overviewCache || !overviewCacheTimestamp) return false;
-  return Date.now() - overviewCacheTimestamp < OVERVIEW_CACHE_TTL_MS;
-};
+// const isOverviewCacheFresh = () => {
+//   if (!overviewCache || !overviewCacheTimestamp) return false;
+//   return Date.now() - overviewCacheTimestamp < OVERVIEW_CACHE_TTL_MS;
+// };
 
-const getOverviewWithCache = async (forceRefresh = false): Promise<DashboardStats> => {
-  if (!forceRefresh && isOverviewCacheFresh() && overviewCache) {
-    return overviewCache;
-  }
+// const getOverviewWithCache = async (forceRefresh = false): Promise<DashboardStats> => {
+//   if (!forceRefresh && isOverviewCacheFresh() && overviewCache) {
+//     return overviewCache;
+//   }
 
-  if (overviewInFlightRequest) {
-    return overviewInFlightRequest;
-  }
+//   if (overviewInFlightRequest) {
+//     return overviewInFlightRequest;
+//   }
 
-  overviewInFlightRequest = api
-    .get("/admin/analytics/overview")
-    .then((response) => {
-      overviewCache = response.data;
-      overviewCacheTimestamp = Date.now();
-      return response.data;
-    })
-    .finally(() => {
-      overviewInFlightRequest = null;
-    });
+//   overviewInFlightRequest = api
+//     .get("/admin/analytics/overview")
+//     .then((response) => {
+//       overviewCache = response.data;
+//       overviewCacheTimestamp = Date.now();
+//       return response.data;
+//     })
+//     .finally(() => {
+//       overviewInFlightRequest = null;
+//     });
 
-  return overviewInFlightRequest;
-};
+//   return overviewInFlightRequest;
+// };
 
-const StatCard = ({
-  icon,
-  title,
-  value,
-  subtitle,
-  trend,
-  color,
-  onClick,
-  loading,
-}: any) => (
-  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-    <Card
-      sx={{
-        cursor: onClick ? "pointer" : "default",
-        height: "100%",
-        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-        border: `1px solid ${color}20`,
-        minHeight: "100%",
-      }}
-      onClick={onClick}
-    >
-      <CardContent>
-        <Stack spacing={2}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="start"
-          >
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                background: `${color}20`,
-                color: color,
-              }}
-            >
-              {icon}
-            </Box>
-            {trend !== undefined && (
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                {trend > 0 ? (
-                  <ArrowUpward sx={{ fontSize: 16, color: "success.main" }} />
-                ) : (
-                  <ArrowDownward sx={{ fontSize: 16, color: "error.main" }} />
-                )}
-                <Typography
-                  variant="caption"
-                  color={trend > 0 ? "success.main" : "error.main"}
-                  fontWeight={600}
-                >
-                  {Math.abs(trend)}%
-                </Typography>
-              </Stack>
-            )}
-          </Stack>
-          <Box>
-            <Typography variant="h4" fontWeight={700} color={color}>
-              {loading ? <Skeleton variant="text" width="60%" /> : value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {loading ? <Skeleton variant="text" width="40%" /> : title}
-            </Typography>
-            {subtitle && (
-              <Typography variant="caption" color="text.secondary">
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
-        </Stack>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+// const StatCard = ({
+//   icon,
+//   title,
+//   value,
+//   subtitle,
+//   trend,
+//   color,
+//   onClick,
+//   loading,
+// }: any) => (
+//   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+//     <Card
+//       sx={{
+//         cursor: onClick ? "pointer" : "default",
+//         height: "100%",
+//         background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
+//         border: `1px solid ${color}20`,
+//         minHeight: "100%",
+//       }}
+//       onClick={onClick}
+//     >
+//       <CardContent>
+//         <Stack spacing={2}>
+//           <Stack
+//             direction="row"
+//             justifyContent="space-between"
+//             alignItems="start"
+//           >
+//             <Box
+//               sx={{
+//                 p: 1.5,
+//                 borderRadius: 2,
+//                 background: `${color}20`,
+//                 color: color,
+//               }}
+//             >
+//               {icon}
+//             </Box>
+//             {trend !== undefined && (
+//               <Stack direction="row" alignItems="center" spacing={0.5}>
+//                 {trend > 0 ? (
+//                   <ArrowUpward sx={{ fontSize: 16, color: "success.main" }} />
+//                 ) : (
+//                   <ArrowDownward sx={{ fontSize: 16, color: "error.main" }} />
+//                 )}
+//                 <Typography
+//                   variant="caption"
+//                   color={trend > 0 ? "success.main" : "error.main"}
+//                   fontWeight={600}
+//                 >
+//                   {Math.abs(trend)}%
+//                 </Typography>
+//               </Stack>
+//             )}
+//           </Stack>
+//           <Box>
+//             <Typography variant="h4" fontWeight={700} color={color}>
+//               {loading ? <Skeleton variant="text" width="60%" /> : value}
+//             </Typography>
+//             <Typography variant="body2" color="text.secondary">
+//               {loading ? <Skeleton variant="text" width="40%" /> : title}
+//             </Typography>
+//             {subtitle && (
+//               <Typography variant="caption" color="text.secondary">
+//                 {subtitle}
+//               </Typography>
+//             )}
+//           </Box>
+//         </Stack>
+//       </CardContent>
+//     </Card>
+//   </motion.div>
+// );
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 0,
-    activeUsers: 0,
-    monthlyRevenue: 0,
-    completionRate: 0,
-    userGrowth: 0,
-    revenueGrowth: 0,
-    pendingReviews: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  // const [stats, setStats] = useState<DashboardStats>({
+  //   totalUsers: 0,
+  //   activeUsers: 0,
+  //   monthlyRevenue: 0,
+  //   completionRate: 0,
+  //   userGrowth: 0,
+  //   revenueGrowth: 0,
+  //   pendingReviews: 0,
+  // });
+  // const [loading, setLoading] = useState(true);
   const [globalActivities, setGlobalActivities] = useState<any[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [activityExpanded, setActivityExpanded] = useState(false);
 
   const fetchGlobalActivities = useCallback(async () => {
     setActivitiesLoading(true);
@@ -174,33 +170,40 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const fetchDashboardStats = useCallback(async (forceRefresh = false) => {
-    try {
-      if (!forceRefresh && overviewCache) {
-        setStats(overviewCache);
-      }
+  // const fetchDashboardStats = useCallback(async (forceRefresh = false) => {
+  //   try {
+  //     if (!forceRefresh && overviewCache) {
+  //       setStats(overviewCache);
+  //     }
 
-      const shouldShowLoading = forceRefresh || !overviewCache;
-      if (shouldShowLoading) {
-        setLoading(true);
-      }
+  //     const shouldShowLoading = forceRefresh || !overviewCache;
+  //     if (shouldShowLoading) {
+  //       setLoading(true);
+  //     }
 
-      const data = await getOverviewWithCache(forceRefresh);
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to fetch dashboard stats:", error);
-    } finally {
-      setLoading(false);
+  //     const data = await getOverviewWithCache(forceRefresh);
+  //     setStats(data);
+  //   } catch (error) {
+  //     console.error("Failed to fetch dashboard stats:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
+
+  // useEffect(() => {
+  //   fetchDashboardStats(false);
+  // }, [fetchDashboardStats]);
+
+  const handleActivityAccordionChange = (
+    _event: React.SyntheticEvent,
+    isExpanded: boolean,
+  ) => {
+    setActivityExpanded(isExpanded);
+
+    if (isExpanded && !activitiesLoading) {
+      void fetchGlobalActivities();
     }
-  }, []);
-
-  useEffect(() => {
-    fetchDashboardStats(false);
-  }, [fetchDashboardStats]);
-
-  useEffect(() => {
-    fetchGlobalActivities();
-  }, [fetchGlobalActivities]);
+  };
 
   const quickActions = [
     {
@@ -268,15 +271,15 @@ export const AdminDashboard: React.FC = () => {
             Welcome back! Here's your platform overview.
           </Typography>
         </Box>
-        <Tooltip title="Refresh data">
+        {/* <Tooltip title="Refresh data">
           <IconButton onClick={() => fetchDashboardStats(true)} color="primary">
             <Refresh />
           </IconButton>
-        </Tooltip>
+        </Tooltip> */}
       </Stack>
 
       {/* Stats Grid */}
-      <Grid container spacing={3} mb={4}>
+      {/* <Grid container spacing={3} mb={4}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={<People />}
@@ -322,12 +325,12 @@ export const AdminDashboard: React.FC = () => {
             loading={loading}
           />
         </Grid>
-      </Grid>
+      </Grid> */}
 
       {/* Quick Actions */}
-      <Typography variant="h5" fontWeight={600} mb={3}>
+      {/* <Typography variant="h5" fontWeight={600} mb={3}>
         Quick Actions
-      </Typography>
+      </Typography> */}
       <Grid container spacing={3} mb={4}>
         {quickActions.map((action, index) => (
           <Grid size={{ xs: 12, sm: 6, md: 6, lg: 4 }} key={index}>
@@ -377,25 +380,47 @@ export const AdminDashboard: React.FC = () => {
       </Grid>
 
       {/* Recent Activity */}
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                Recent Platform Activity
-              </Typography>
-              <ActivityFeed
-                activities={globalActivities}
-                loading={activitiesLoading}
-                showUser
-                compact
-                maxItems={100}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: quickActions.length * 0.1 }}
+      >
+        <Accordion
+          expanded={activityExpanded}
+          onChange={handleActivityAccordionChange}
+          disableGutters
+          sx={{
+            borderRadius: 2,
+            overflow: "hidden",
+            "&:before": { display: "none" },
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMore />}
+            sx={{ px: { xs: 2, sm: 3 }, py: 0.5 }}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              Recent Platform Activity
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ p: 0 }}>
+            <Card elevation={0} sx={{ borderRadius: 0 }}>
+              <CardContent sx={{ pt: 0 }}>
+                <ActivityFeed
+                  activities={globalActivities}
+                  loading={activitiesLoading}
+                  showUser
+                  compact
+                  maxItems={100}
+                />
+              </CardContent>
+            </Card>
+          </AccordionDetails>
+        </Accordion>
+      </motion.div>
 
-        {/* <Grid size={{ xs: 12, md: 4 }}>
+      {/* <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -425,7 +450,7 @@ export const AdminDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </Grid> */}
-      </Grid>
+      {/* </Grid> */}
     </Container>
   );
 };
