@@ -32,6 +32,7 @@ import {
   Badge,
   Tooltip,
   Paper,
+  Skeleton,
   useTheme,
   alpha,
 } from "@mui/material";
@@ -191,6 +192,7 @@ export const UserManagement: React.FC = () => {
   const { showConfirm, showError } = useSweetAlert();
   const [users, setUsers] = useState<User[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
@@ -211,6 +213,8 @@ export const UserManagement: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const fetchUsers = useCallback(async () => {
+    setUsersLoading(true);
+
     try {
       const response = await api.get("/admin/users", {
         params: {
@@ -241,6 +245,8 @@ export const UserManagement: React.FC = () => {
       setTotalUsers(response.data.total || 0);
     } catch (error) {
       console.error("Failed to fetch users:", error);
+    } finally {
+      setUsersLoading(false);
     }
   }, [
     page,
@@ -450,6 +456,7 @@ export const UserManagement: React.FC = () => {
   }, [filters]);
 
   const filteredUsers = users;
+  const skeletonRowCount = Math.min(rowsPerPage, 8);
 
   const handleSortToggle = (field: SortField) => {
     if (sortField === field) {
@@ -878,7 +885,50 @@ export const UserManagement: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredUsers.length === 0 ? (
+                {usersLoading ? (
+                  Array.from({ length: skeletonRowCount }).map((_, index) => (
+                    <TableRow key={`skeleton-row-${index}`}>
+                      <TableCell>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Skeleton variant="circular" width={36} height={36} />
+                          <Box sx={{ width: "100%" }}>
+                            <Skeleton variant="text" width="45%" height={22} />
+                            <Skeleton variant="text" width="60%" height={18} />
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="rounded" width={70} height={24} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="rounded" width={90} height={24} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={30} height={22} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={30} height={22} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={28} height={22} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="rounded" width={110} height={24} />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton variant="text" width={78} height={22} />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Skeleton
+                          variant="circular"
+                          width={30}
+                          height={30}
+                          sx={{ ml: "auto" }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                       <Stack alignItems="center" spacing={1}>
